@@ -1,0 +1,13 @@
+[workspace]
+members = ["crates/pandora-gene","crates/pandora-harness", "crates/pandora-memory", "crates/pandora-model", "crates/pandora-panoptikon", "crates/pandora-policy", "crates/pandora-signal","crates/pandora-types", "test-runner"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Arka <arka@pandora.local>"]
+license = "MIT"
+
+[profile.release]
+opt-level = 3
+lto = true
