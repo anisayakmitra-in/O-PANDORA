@@ -603,6 +603,11 @@ dependencies = [
 [[package]]
 name = "pandora-gene"
 version = "0.1.0"
+dependencies = [
+ "pandora-types",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "pandora-harness"
@@ -621,6 +626,10 @@ dependencies = [
 [[package]]
 name = "pandora-memory"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "pandora-model"
@@ -1040,6 +1049,7 @@ dependencies = [
 name = "test-runner"
 version = "0.1.0"
 dependencies = [
+ "pandora-gene",
  "pandora-harness",
  "pandora-types",
  "tokio",

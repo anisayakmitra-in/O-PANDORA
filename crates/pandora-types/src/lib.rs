@@ -15,3 +15,6 @@ mod tests {
 
 pub mod harness;
 pub use harness::HarnessSpec;
+
+pub mod harness_gene;
+pub use harness_gene::HarnessGene;

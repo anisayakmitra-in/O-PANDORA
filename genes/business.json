@@ -1,0 +1,15 @@
+{
+  "name": "business",
+  "domains": [
+    "strategy",
+    "analysis"
+  ],
+  "avg_score": 0.0,
+  "total_runs": 0,
+  "supports_tools": false,
+  "supports_memory": true,
+  "supports_subagents": false,
+  "tags": [
+    "reasoning"
+  ]
+}

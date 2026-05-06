@@ -14,7 +14,9 @@ impl HarnessRunner {
     pub fn new(endpoint: &str) -> Self {
         Self {
             client: OllamaClient::new(endpoint),
-            performance: HarnessPerformance::new(),
+            performance: HarnessPerformance::load(
+    "memory/performance.json"
+),
         }
     }
 
@@ -25,21 +27,9 @@ impl HarnessRunner {
         specs: &[HarnessSpec],
     ) -> Result<String, String> {
 
-        let llm_choice = select_harness(&self.client, model, input, specs).await;
-
-// performance-based override
-let perf_choice = crate::harness_selector::select_best_by_performance(
-    specs,
-    &self.performance,
-);
-
-// simple arbitration
-let harness_type = if self.performance.count(&llm_choice) > 3 {
-    llm_choice
-} else {
-    perf_choice
-};
-
+        let harness_type =
+    select_harness(&self.client, model, input, specs).await;
+ 
         let planned_prompt = match harness_type.as_str() {
             "coding" => format!(
                 "You are a senior Rust engineer.\nTask: {}\nAnswer precisely.",
@@ -68,12 +58,17 @@ let harness_type = if self.performance.count(&llm_choice) > 3 {
 
         // record performance
         self.performance.record(&harness_type, score);
-
+        self.performance.save(
+    "memory/performance.json"
+);
+        
         // debug output
         println!("HARNESS: {}", harness_type);
         println!("SCORE: {}", score);
         println!("AVG: {}", self.performance.average(&harness_type));
+        println!("RUNS: {}", self.performance.count(&harness_type));
 
-        Ok(output)
+        Ok(output) 
+       
     }
 }

@@ -7,23 +7,32 @@ pub async fn select_harness(
     input: &str,
     specs: &[HarnessSpec],
 ) -> String {
+
     let options = specs
         .iter()
-        .map(|s| s.name.clone())
+        .map(|s| format!(
+            "{} specializes in {}",
+            s.name,
+            s.domain
+        ))
         .collect::<Vec<_>>()
         .join(", ");
 
     let prompt = format!(
-        "You are a strict classifier.\n\
-Available labels: {}\n\
+        "You are a strict routing system.\n\
+Available harnesses: {}\n\
 Task: {}\n\
-Return ONLY one label from the list.\n\
-No explanation.",
-        options, input
+Return EXACTLY one harness name.\n\
+No explanation.\n\
+No extra text.",
+        options,
+        input
     );
 
     match client.chat(model, &prompt).await {
+
         Ok(res) => {
+
             let raw = res.message.content.trim().to_lowercase();
 
             let candidate = raw
@@ -32,58 +41,55 @@ No explanation.",
                 .unwrap_or("default")
                 .to_string();
 
-            // ✅ validation
             if specs.iter().any(|s| s.name == candidate) {
-                return candidate;
+
+                candidate
+
+            } else {
+
+                // fallback routing
+                if input.to_lowercase().contains("rust") {
+                    return "coding".to_string();
+                }
+
+                "default".to_string()
             }
-
-            // ✅ fallback logic
-            let input_lc = input.to_lowercase();
-
-            if input_lc.contains("rust")
-                || input_lc.contains("code")
-                || input_lc.contains("bug")
-            {
-                return "coding".to_string();
-            }
-
-            if input_lc.contains("business")
-                || input_lc.contains("market")
-                || input_lc.contains("strategy")
-            {
-                return "business".to_string();
-            }
-
-            "default".to_string()
         }
 
         Err(_) => {
-            let input_lc = input.to_lowercase();
 
-            if input_lc.contains("rust") {
-                "coding".to_string()
-            } else {
-                "default".to_string()
+            if input.to_lowercase().contains("rust") {
+                return "coding".to_string();
             }
+
+            "default".to_string()
         }
     }
 }
 
 pub fn select_best_by_performance(
-    specs: &[HarnessSpec],
-    performance: &pandora_memory::HarnessPerformance,
-) -> String {
-    let mut best = "default".to_string();
-    let mut best_score = f32::MIN;
+    scores: &std::collections::HashMap<String, Vec<i32>>,
+) -> Option<String> {
 
-    for spec in specs {
-        let avg = performance.average(&spec.name);
+    let mut best_name = None;
+    let mut best_avg = f32::MIN;
 
-        if avg > best_score {
-            best_score = avg;
-            best = spec.name.clone();
+    for (name, values) in scores {
+
+        if values.is_empty() {
+            continue;
+        }
+
+        let sum: i32 = values.iter().sum();
+
+        let avg = sum as f32 / values.len() as f32;
+
+        if avg > best_avg {
+
+            best_avg = avg;
+            best_name = Some(name.clone());
         }
     }
 
-    best
+    best_name
 }

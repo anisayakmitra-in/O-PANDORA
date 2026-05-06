@@ -1,0 +1,16 @@
+{
+  "name": "coding",
+  "domains": [
+    "rust",
+    "systems"
+  ],
+  "avg_score": 2.0,
+  "total_runs": 1,
+  "supports_tools": true,
+  "supports_memory": true,
+  "supports_subagents": false,
+  "tags": [
+    "fast",
+    "local"
+  ]
+}
