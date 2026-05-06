@@ -1,11 +1,14 @@
 {
   "name": "coding",
+  "gene_id": "coding-v1",
+  "parent_gene": null,
+  "generation": 1,
   "domains": [
     "rust",
     "systems"
   ],
-  "avg_score": 2.0,
-  "total_runs": 1,
+  "avg_score": 1.8888888,
+  "total_runs": 9,
   "supports_tools": true,
   "supports_memory": true,
   "supports_subagents": false,

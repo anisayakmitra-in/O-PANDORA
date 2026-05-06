@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HarnessGene {
     pub name: String,
-
+    pub gene_id: String,
+    pub parent_gene: Option<String>,
+    pub generation: usize,
+    
     // strengths
     pub domains: Vec<String>,
 

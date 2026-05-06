@@ -1,5 +1,6 @@
 use std::fs;
 
+use pandora_memory::HarnessPerformance;
 use pandora_types::HarnessGene;
 
 pub fn load_genes(
@@ -52,7 +53,6 @@ pub fn find_best_gene(
 
         let mut score = 0.0;
 
-        // semantic domain scoring
         for domain in &gene.domains {
 
             if input.contains(
@@ -62,14 +62,11 @@ pub fn find_best_gene(
             }
         }
 
-        // historical performance bonus
         score += gene.avg_score;
 
-        // experience bonus
         score +=
             gene.total_runs as f32 * 0.05;
 
-        // capability bonuses
         if gene.supports_tools {
             score += 0.25;
         }
@@ -140,5 +137,33 @@ pub fn save_genes(
             file_path,
             json
         ).unwrap();
+    }
+}
+
+pub fn sync_genes_with_memory(
+    genes: &mut Vec<HarnessGene>,
+    memory: &HarnessPerformance,
+) {
+
+    for gene in genes {
+
+        let scores =
+            memory.get_scores(
+                &gene.name
+            );
+
+        if scores.is_empty() {
+            continue;
+        }
+
+        let total: i32 =
+            scores.iter().sum();
+
+        gene.total_runs =
+            scores.len();
+
+        gene.avg_score =
+            total as f32
+            / scores.len() as f32;
     }
 }

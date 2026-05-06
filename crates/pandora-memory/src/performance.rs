@@ -30,7 +30,6 @@ impl HarnessPerformance {
 
         entry.push(score);
 
-        // trim old history
         if entry.len() > self.max_history {
             entry.remove(0);
         }
@@ -71,6 +70,17 @@ impl HarnessPerformance {
             .unwrap_or(0)
     }
 
+    pub fn get_scores(
+        &self,
+        harness: &str,
+    ) -> Vec<i32> {
+
+        self.scores
+            .get(harness)
+            .cloned()
+            .unwrap_or_default()
+    }
+
     pub fn save(
         &self,
         path: &str,
@@ -107,3 +117,5 @@ impl HarnessPerformance {
         }
     }
 }
+
+

@@ -604,6 +604,7 @@ dependencies = [
 name = "pandora-gene"
 version = "0.1.0"
 dependencies = [
+ "pandora-memory",
  "pandora-types",
  "serde",
  "serde_json",
@@ -1051,6 +1052,7 @@ version = "0.1.0"
 dependencies = [
  "pandora-gene",
  "pandora-harness",
+ "pandora-memory",
  "pandora-types",
  "tokio",
 ]

@@ -1,5 +1,8 @@
 {
   "name": "business",
+  "gene_id": "business-v1",
+  "parent_gene": null,
+  "generation": 1,
   "domains": [
     "strategy",
     "analysis"
