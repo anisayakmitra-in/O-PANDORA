@@ -4,7 +4,6 @@ use pandora_gene::{
 };
 
 use pandora_gene::{
-    find_best_gene,
     load_genes,
     save_genes,
     sync_genes_with_memory,
@@ -26,7 +25,7 @@ async fn main() {
         .find(|g| g.name == "coding")
         .unwrap();
 
-    let mutated =
+    let _mutated =
         mutate_gene(
         coding_gene,
         "coding"
@@ -79,7 +78,7 @@ sync_genes_with_memory(
         .find(|g| g.name == "coding")
     .unwrap();
 
-    let mutated =
+    let _mutated =
     mutate_gene(
         coding_gene,
         "coding"

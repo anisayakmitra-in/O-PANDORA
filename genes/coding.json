@@ -7,8 +7,8 @@
     "rust",
     "systems"
   ],
-  "avg_score": 1.9090909,
-  "total_runs": 11,
+  "avg_score": 1.9166666,
+  "total_runs": 12,
   "supports_tools": true,
   "supports_memory": true,
   "supports_subagents": false,

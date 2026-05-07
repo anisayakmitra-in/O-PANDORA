@@ -1,8 +1,8 @@
 {
   "name": "coding",
-  "gene_id": "coding-v2",
-  "parent_gene": "coding-v1",
-  "generation": 2,
+  "gene_id": "coding-v3",
+  "parent_gene": "coding-v2",
+  "generation": 3,
   "domains": [
     "rust",
     "systems"
@@ -15,6 +15,7 @@
   "tags": [
     "fast",
     "local",
+    "mutated",
     "mutated"
   ]
 }

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = [
+members = ["crates/anubis-memory",
     "crates/pandora-gene",
     "crates/pandora-harness",
     "crates/pandora-memory",
@@ -9,8 +9,10 @@ members = [
     "crates/pandora-panoptikon",
     "crates/pandora-tui",
     "crates/pandora-types",
+    "crates/anubis-memory",
+    "crates/pandora-runtime",
     "test-runner"
-]
+, "crates/pandora-runtime"]
 
 [workspace.package]
 version = "0.1.0"

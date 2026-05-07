@@ -1,0 +1,11 @@
+[package]
+name = "pandora-runtime"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+pandora-gene = { path = "../pandora-gene" }
+anubis-memory = { path = "../anubis-memory" }
+chrono = "0.4"
