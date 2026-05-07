@@ -18,11 +18,20 @@ use ratatui::{
     Terminal,
 };
 
+use pandora_gene::load_genes;
+
 fn main() -> Result<(), io::Error> {
+
+    let genes =
+        load_genes("genes");
+
+    let gene =
+        genes.first().unwrap();
 
     enable_raw_mode()?;
 
-    let mut stdout = io::stdout();
+    let mut stdout =
+        io::stdout();
 
     execute!(
         stdout,
@@ -51,7 +60,13 @@ fn main() -> Result<(), io::Error> {
 
             let left =
                 Paragraph::new(
-                    "ACTIVE GENE\ncoding-v2\n\nAVG SCORE: 1.9"
+                    format!(
+                        "ACTIVE GENE\n{}\n\nGENERATION: {}\nAVG SCORE: {}\nRUNS: {}",
+                        gene.gene_id,
+                        gene.generation,
+                        gene.avg_score,
+                        gene.total_runs
+                    )
                 )
                 .block(
                     Block::default()
@@ -61,7 +76,10 @@ fn main() -> Result<(), io::Error> {
 
             let center =
                 Paragraph::new(
-                    "Mutation created\nHarness active\nMemory synced"
+                    format!(
+                        "Mutation lineage active\nParent: {:?}\n\nHarness active\nMemory synced",
+                        gene.parent_gene
+                    )
                 )
                 .block(
                     Block::default()
@@ -71,7 +89,7 @@ fn main() -> Result<(), io::Error> {
 
             let right =
                 Paragraph::new(
-                    "MODEL:\nqwen2.5-coder:7b\n\nSTATUS:\nACTIVE"
+                    "MODEL:\nqwen2.5-coder:7b\n\nHARNESS:\ncoding\n\nSTATUS:\nACTIVE"
                 )
                 .block(
                     Block::default()
@@ -79,9 +97,20 @@ fn main() -> Result<(), io::Error> {
                         .borders(Borders::ALL)
                 );
 
-            f.render_widget(left, chunks[0]);
-            f.render_widget(center, chunks[1]);
-            f.render_widget(right, chunks[2]);
+            f.render_widget(
+                left,
+                chunks[0]
+            );
+
+            f.render_widget(
+                center,
+                chunks[1]
+            );
+
+            f.render_widget(
+                right,
+                chunks[2]
+            );
 
         })?;
 

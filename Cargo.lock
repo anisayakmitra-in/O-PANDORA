@@ -759,6 +759,7 @@ name = "pandora-tui"
 version = "0.1.0"
 dependencies = [
  "crossterm",
+ "pandora-gene",
  "ratatui",
  "tokio",
 ]
