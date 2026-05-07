@@ -1,19 +1,20 @@
 {
   "name": "coding",
-  "gene_id": "coding-v1",
-  "parent_gene": null,
-  "generation": 1,
+  "gene_id": "coding-v2",
+  "parent_gene": "coding-v1",
+  "generation": 2,
   "domains": [
     "rust",
     "systems"
   ],
-  "avg_score": 1.9090909,
-  "total_runs": 11,
+  "avg_score": 1.9,
+  "total_runs": 10,
   "supports_tools": true,
   "supports_memory": true,
   "supports_subagents": false,
   "tags": [
     "fast",
-    "local"
+    "local",
+    "mutated"
   ]
 }

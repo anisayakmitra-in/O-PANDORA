@@ -17,7 +17,10 @@ use pandora_types::HarnessSpec;
 
 #[tokio::main]
 async fn main() {
-     
+      
+    let genes =
+    load_genes("genes");
+
     let coding_gene =
         genes.iter()
         .find(|g| g.name == "coding")
@@ -27,16 +30,6 @@ async fn main() {
         mutate_gene(
         coding_gene,
         "coding"
-);
-
-    println!(
-       "MUTATED GENE: {}",
-       mutated.gene_id
-);
-
-    save_gene(
-       &mutated,
-       "genes/coding-v2.json"
 );
 
     let mut runner =
@@ -91,28 +84,6 @@ sync_genes_with_memory(
         coding_gene,
         "coding"
 );
-
-       println!(
-           "MUTATED GENE: {}",
-       mutated.gene_id
-);
-
-    save_gene(
-    &mutated,
-    "genes/coding-v2.json"
-);
-
-    if let Some(gene) =
-        find_best_gene(
-            input,
-            &harness_genes
-        )
-    {
-        println!(
-            "BEST GENE: {}",
-            gene.name
-        );
-    }
 
     let result = runner
         .run_with_specs(

@@ -210,20 +210,4 @@ pub fn save_gene(
         .unwrap();
 }
 
-    let mut mutated = parent.clone();
-
-    mutated.name =
-        new_name.to_string();
-
-    mutated.gene_id =
-        format!(
-       
-
-    // simple mutation marker
-    mutated.tags.push(
-        "mutated".to_string()
-    );
-
-    mutate
-}
-
+   
