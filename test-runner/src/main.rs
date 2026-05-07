@@ -1,4 +1,9 @@
 use pandora_gene::{
+    mutate_gene,
+    save_gene,
+};
+
+use pandora_gene::{
     find_best_gene,
     load_genes,
     save_genes,
@@ -12,6 +17,27 @@ use pandora_types::HarnessSpec;
 
 #[tokio::main]
 async fn main() {
+     
+    let coding_gene =
+        genes.iter()
+        .find(|g| g.name == "coding")
+        .unwrap();
+
+    let mutated =
+        mutate_gene(
+        coding_gene,
+        "coding"
+);
+
+    println!(
+       "MUTATED GENE: {}",
+       mutated.gene_id
+);
+
+    save_gene(
+       &mutated,
+       "genes/coding-v2.json"
+);
 
     let mut runner =
         HarnessRunner::new(
@@ -53,10 +79,28 @@ sync_genes_with_memory(
     let input =
         "Explain Rust ownership in 2 lines";
 
-    println!(
-        "LOADED GENES: {}",
-        harness_genes.len()
-    );
+    println!("LOADED GENES: {}", genes.len());
+
+    let coding_gene =
+        genes.iter()
+        .find(|g| g.name == "coding")
+    .unwrap();
+
+    let mutated =
+    mutate_gene(
+        coding_gene,
+        "coding"
+);
+
+       println!(
+           "MUTATED GENE: {}",
+       mutated.gene_id
+);
+
+    save_gene(
+    &mutated,
+    "genes/coding-v2.json"
+);
 
     if let Some(gene) =
         find_best_gene(
@@ -77,6 +121,27 @@ sync_genes_with_memory(
             &harnesses,
         )
         .await;
+
+    let coding_gene =
+        genes.iter()
+        .find(|g| g.name == "coding")
+        .unwrap();
+
+    let mutated =
+        mutate_gene(
+        coding_gene,
+        "coding"
+);
+
+println!(
+    "MUTATED GENE: {}",
+    mutated.gene_id
+);
+
+save_gene(
+    &mutated,
+    "genes/coding-v2.json"
+);  
 
     match result {
 
@@ -107,3 +172,4 @@ sync_genes_with_memory(
         }
     }
 }
+   

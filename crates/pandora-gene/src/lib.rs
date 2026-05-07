@@ -167,3 +167,63 @@ pub fn sync_genes_with_memory(
             / scores.len() as f32;
     }
 }
+
+pub fn mutate_gene(
+    parent: &HarnessGene,
+    new_name: &str,
+) -> HarnessGene {
+
+    let mut mutated = parent.clone();
+
+    mutated.name = new_name.to_string();
+
+    mutated.gene_id =
+        format!("{}-v{}",
+            new_name,
+            parent.generation + 1
+        );
+
+    mutated.parent_gene =
+        Some(parent.gene_id.clone());
+
+    mutated.generation =
+        parent.generation + 1;
+
+    // simple mutation example
+    mutated.tags.push(
+        "mutated".to_string()
+    );
+
+    mutated
+}
+
+pub fn save_gene(
+    gene: &HarnessGene,
+    path: &str,
+) {
+
+    let json =
+        serde_json::to_string_pretty(gene)
+            .unwrap();
+
+    fs::write(path, json)
+        .unwrap();
+}
+
+    let mut mutated = parent.clone();
+
+    mutated.name =
+        new_name.to_string();
+
+    mutated.gene_id =
+        format!(
+       
+
+    // simple mutation marker
+    mutated.tags.push(
+        "mutated".to_string()
+    );
+
+    mutate
+}
+
