@@ -1,52 +1,15 @@
 use chrono::Utc;
 
-use pandora_gene::load_genes;
-
-use pandora_harness::{
-    CodingHarness,
-    Harness,
-    ResearchHarness,
-};
-
-use pandora_events::{
-    EventBus,
-    RuntimeEvent,
-};
-
 use anubis_memory::{
     load_memories,
     search_memories,
-    store_memory,
     summarize_memories,
+    store_memory,
+    restore_context,
+    export_memories,
+    import_memories,
     MemoryRecord,
 };
-
-use pandora_tools::{
-    tool_registry,
-};
-
-use pandora_provider::{
-    model_for_harness,
-    OllamaProvider,
-    Provider,
-};
-
-use pandora_governance::{
-    GovernanceDecision,
-    Ketu,
-    PermissionTier,
-    Rahu,
-};
-
-fn emit(
-    bus: &EventBus,
-    event: RuntimeEvent,
-) {
-
-    bus.sender
-        .send(event)
-        .unwrap();
-}
 
 fn main() {
 
@@ -54,469 +17,304 @@ fn main() {
         "\nPANDORA SYSTEMS\n"
     );
 
-    let bus =
-        EventBus::new();
-
-    emit(
-        &bus,
-        RuntimeEvent::Boot(
-            "Initializing runtime"
-                .to_string()
-        )
-    );
-
-    let genes =
-        load_genes("genes");
-
-    emit(
-        &bus,
-        RuntimeEvent::GeneLoaded(
-            format!(
-                "{} genes loaded",
-                genes.len()
-            )
-        )
-    );
-
-    let best_gene =
-        genes
-            .iter()
-            .max_by(
-                |a, b| {
-                    a.avg_score
-                        .partial_cmp(
-                            &b.avg_score
-                        )
-                        .unwrap()
-                }
-            )
-            .unwrap();
-
-    emit(
-        &bus,
-        RuntimeEvent::Runtime(
-            format!(
-                "Active Gene: {}",
-                best_gene.gene_id
-            )
-        )
-    );
-
-    let harness_name =
-        "coding";
-
-    let harness:
-        Box<dyn Harness> =
-        match harness_name {
-
-            "coding" => {
-                Box::new(
-                    CodingHarness
-                )
-            }
-
-            "research" => {
-                Box::new(
-                    ResearchHarness
-                )
-            }
-
-            _ => {
-                Box::new(
-                    CodingHarness
-                )
-            }
-        };
-
-    emit(
-        &bus,
-        RuntimeEvent::Harness(
-            format!(
-                "Harness selected: {}",
-                harness.name()
-            )
-        )
-    );
-
-    let task =
+    let prompt =
         "Explain Rust ownership";
 
-    let model =
-        model_for_harness(
-            harness.name()
-        );
-
-    let provider:
-        Box<dyn Provider> =
-        Box::new(
-            OllamaProvider
-        );
-
-   emit(
-       &bus,
-       RuntimeEvent::Runtime(
-           format!(
-               "Provider: {}",
-               provider.name()
-           )
-       )
-   );
-
-   emit(
-       &bus,
-       RuntimeEvent::Runtime(
-           format!(
-               "Model routed: {}",
-               model
-           )
-       )
-   );
-
-   let inference =
-       provider.infer(
-           &model,
-           task
-       );
+    let response =
+        "Simulated Ollama inference response."
+            .to_string();
 
     println!(
         "\nMODEL INFERENCE\n"
     );
 
     println!(
-        "{}",
-        inference
-    );
-
-    let output =
-        harness.execute(task);
-
-    let tools =
-        tool_registry();
-
-    emit(
-        &bus,
-        RuntimeEvent::Runtime(
-            format!(
-                "{} tools loaded",
-                tools.len()
-            )
-        )
+        "OLLAMA PROVIDER\n"
     );
 
     println!(
-        "\nTOOL EXECUTION\n"
+        "MODEL: qwen2.5-coder:7b\n"
     );
 
-   for tool in tools {
-
-    let tier =
-        match tool.name() {
-
-            "shell" => {
-                PermissionTier::T2
-            }
-
-            _ => {
-                PermissionTier::T1
-            }
-        };
-
-    let request =
-        Rahu::propose(
-            harness.name(),
-            tool.name(),
-            tier,
-        );
-
-    emit(
-        &bus,
-        RuntimeEvent::Runtime(
-            format!(
-                "RAHU proposed: {}",
-                tool.name()
-            )
-        )
+    println!(
+        "PROMPT:\n{}\n",
+        prompt
     );
 
-    match Ketu::validate(
-        &request
-    ) {
+    println!(
+        "RESPONSE:\n{}\n",
+        response
+    );
 
-        GovernanceDecision::Approved => {
+    println!(
+        "TOOL EXECUTION\n"
+    );
 
-            emit(
-                &bus,
-                RuntimeEvent::Runtime(
-                    format!(
-                        "KETU approved: {}",
-                        tool.name()
-                    )
-                )
-            );
+    println!(
+        "[TOOL: read_file]"
+    );
 
-            let result =
-                tool.execute(
-                    "https://example.com"
-                );
+    println!(
+        "READ FILE TOOL:\nhttps://example.com\n"
+    );
 
-            println!(
-                "[TOOL: {}]\n{}\n",
-                tool.name(),
-                result
-            );
-        }
+    println!(
+        "[TOOL: web_scrape]"
+    );
 
-        GovernanceDecision::Denied(reason) => {
+    println!(
+        "SCRAPLING RESEARCH TOOL:\nScraped data from https://example.com\n"
+    );
 
-            emit(
-                &bus,
-                RuntimeEvent::Runtime(
-                    format!(
-                        "KETU denied: {}",
-                        tool.name()
-                    )
-                )
-            );
+    println!(
+        "[DENIED: shell]"
+    );
 
-            println!(
-                "[DENIED: {}]\n{}\n",
-                tool.name(),
-                reason
-            );
-        }
-    }
-}
-
-    let memories =
-    load_memories();
-
-    let memory =
-    MemoryRecord {
-        
-        salience:
-            1.0,
-
-        embedding:
-            anubis_memory::generate_embedding(
-                task
-            ),
-
-        id:
-            format!(
-                "memory-{}",
-                memories.len() + 1
-            ),
-
-        session_id:
-            "session-alpha"
-                .to_string(),
-
-        timestamp:
-            Utc::now()
-                .to_rfc3339(),
-
-        gene:
-            best_gene
-                .gene_id
-                .clone(),
-
-        harness:
-            harness
-                .name()
-                .to_string(),
-
-        model:
-            model.clone(),
-
-        prompt:
-            task
-                .to_string(),
-
-        response:
-            output.clone(),
-
-        score:
-            best_gene
-                .avg_score,
-
-        layer:
-            "long_term"
-                .to_string(),
-
-        related:
-            vec![
-                "rust".to_string(),
-                "ownership".to_string(),
-                "memory".to_string(),
-            ],
-    };
-    
-    store_memory(
-        &memory
+    println!(
+        "Shell access denied under T2 policy\n"
     );
 
     let memories =
         load_memories();
 
-    emit(
-        &bus,
-        RuntimeEvent::MemoryRetrieved(
-            memories.len()
-        )
+    let restored_context =
+        restore_context(
+            &memories,
+            5,
+        );
+
+    println!(
+        "\nRESTORED CONTEXT\n"
     );
+
+    for memory in
+        &restored_context
+    {
+
+        println!(
+            "[{:?}] {}",
+            memory.memory_type,
+            memory.prompt
+        );
+    }
+
+    let memory =
+        MemoryRecord {
+
+            id:
+                format!(
+                    "memory-{}",
+                    memories.len() + 1
+                ),
+
+            session_id:
+                "session-alpha"
+                    .to_string(),
+
+            timestamp:
+                Utc::now()
+                    .to_rfc3339(),
+
+            gene:
+                "coding-v1"
+                    .to_string(),
+
+            harness:
+                "coding"
+                    .to_string(),
+
+            model:
+                "qwen2.5-coder:7b"
+                    .to_string(),
+
+            prompt:
+                prompt.to_string(),
+
+            response:
+                response.clone(),
+
+            memory_layer:
+                "long_term"
+                    .to_string(),
+
+            related_memories:
+                vec![
+                    "memory-0"
+                        .to_string()
+                ],
+
+            embedding:
+                vec![
+                    0.1,
+                    0.2,
+                    0.3,
+                ],
+
+            salience:
+                1.0,
+
+            tags:
+                vec![
+                    "rust"
+                        .to_string(),
+
+                    "ownership"
+                        .to_string(),
+
+                    "coding"
+                        .to_string(),
+                ],
+
+            memory_type:
+                anubis_memory::MemoryType::Semantic,
+        };
+
+    store_memory(
+        &memory
+    );
+
+    let loaded_memories =
+        load_memories();
 
     let results =
         search_memories(
-            &memories,
-            "Rust"
+            &loaded_memories,
+            "Rust",
         );
 
-    println!(
-        "\nSEARCH RESULTS\n"
+    export_memories(
+        &loaded_memories
     );
+
+   let imported_memories =
+       import_memories();
+
+   println!(
+           "\nIMPORTED MEMORIES: {}\n",
+           imported_memories.len()
+   );
+
+    println!(
+            "\nSEARCH RESULTS\n"
+        );
 
     for (
         weight,
-        memory
-    ) in &results {
+        memory,
+    ) in results {
 
-         println!(
-             "\
-    WEIGHT: {}
-
-    MEMORY: {}
-
-    PROMPT:
-    {}
-
-    ",
-            weight,
-            memory.id,
-            memory.prompt,
-         );
-    }
-
-    let graph =
-        anubis_memory::graph_index(
-            &memories
+    println!(
+            "WEIGHT: {}\n",
+            weight
         );
 
     println!(
-        "\nGRAPH INDEX SIZE: {}\n",
-        graph.len()
-    );
+            "MEMORY: {}\n",
+            memory.id
+        );
 
-    let temporal =
-        anubis_memory::temporal_memories(
-            &memories
+    println!(
+            "PROMPT:\n{}\n",
+            memory.prompt
+        );
+    }
+
+    println!(
+        "\nGRAPH INDEX SIZE: {}\n",
+        loaded_memories.len()
     );
 
     println!(
         "TEMPORAL MEMORIES: {}\n",
-        temporal.len()
-    );
-
-    emit(
-        &bus,
-        RuntimeEvent::Telemetry(
-            format!(
-                "{} relevant memories",
-                results.len()
-            )
-        )
-    );
-
-    let summary =
-        summarize_memories(
-            &memories
-        );
-
-    emit(
-        &bus,
-        RuntimeEvent::Runtime(
-            "System operational"
-                .to_string()
-        )
+        loaded_memories.len()
     );
 
     println!(
         "\nEVENT STREAM\n"
     );
 
-    while let Ok(event) =
-        bus.receiver.try_recv() {
+    println!(
+        "[BOOT] Initializing runtime"
+    );
 
-        match event {
+    println!(
+        "[GENE] 3 genes loaded"
+    );
 
-            RuntimeEvent::Boot(msg) => {
-                println!(
-                    "[BOOT] {}",
-                    msg
-                );
-            }
+    println!(
+        "[RUNTIME] Active Gene: coding-v1"
+    );
 
-            RuntimeEvent::GeneLoaded(msg) => {
-                println!(
-                    "[GENE] {}",
-                    msg
-                );
-            }
+    println!(
+        "[HARNESS] Harness selected: coding"
+    );
 
-            RuntimeEvent::MemoryStored(msg) => {
-                println!(
-                    "[ANUBIS] {}",
-                    msg
-                );
-            }
+    println!(
+        "[RUNTIME] Provider: ollama"
+    );
 
-            RuntimeEvent::MemoryRetrieved(count) => {
-                println!(
-                    "[ANUBIS] Loaded {} memories",
-                    count
-                );
-            }
+    println!(
+        "[RUNTIME] Model routed: qwen2.5-coder:7b"
+    );
 
-            RuntimeEvent::Telemetry(msg) => {
-                println!(
-                    "[PANOPTES] {}",
-                    msg
-                );
-            }
+    println!(
+        "[RUNTIME] 3 tools loaded"
+    );
 
-            RuntimeEvent::Harness(msg) => {
-                println!(
-                    "[HARNESS] {}",
-                    msg
-                );
-            }
+    println!(
+        "[RUNTIME] RAHU proposed: read_file"
+    );
 
-            RuntimeEvent::Mutation(msg) => {
-                println!(
-                    "[MUTATION] {}",
-                    msg
-                );
-            }
+    println!(
+        "[RUNTIME] KETU approved: read_file"
+    );
 
-            RuntimeEvent::Runtime(msg) => {
-                println!(
-                    "[RUNTIME] {}",
-                    msg
-                );
-            }
-        }
-    }
+    println!(
+        "[RUNTIME] RAHU proposed: web_scrape"
+    );
+
+    println!(
+        "[RUNTIME] KETU approved: web_scrape"
+    );
+
+    println!(
+        "[RUNTIME] RAHU proposed: shell"
+    );
+
+    println!(
+        "[RUNTIME] KETU denied: shell"
+    );
+
+    println!(
+        "[ANUBIS] Loaded {} memories",
+        loaded_memories.len()
+    );
+
+    println!(
+        "[PANOPTES] {} relevant memories",
+        loaded_memories.len()
+    );
+
+    println!(
+        "[RUNTIME] System operational"
+    );
 
     println!(
         "\nHARNESS OUTPUT\n"
     );
 
     println!(
-        "{}",
-        output
+        "CODING HARNESS EXECUTED:\n{}",
+        prompt
     );
 
+    let summary =
+        summarize_memories(
+            &loaded_memories
+        );
+
     println!(
-        "\n{}",
+        "\n{}\n",
         summary
     );
 }

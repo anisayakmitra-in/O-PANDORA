@@ -63,3 +63,28 @@ pub fn search_memories(
         memories,
     )
 }
+
+pub fn restore_context(
+    memories: &[MemoryRecord],
+    limit: usize,
+) -> Vec<MemoryRecord> {
+
+    let mut sorted =
+        memories.to_vec();
+
+    sorted.sort_by(
+        |a, b| {
+
+            b.salience
+                .partial_cmp(
+                    &a.salience
+                )
+                .unwrap()
+        }
+    );
+
+    sorted
+        .into_iter()
+        .take(limit)
+        .collect()
+}

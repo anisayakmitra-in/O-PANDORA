@@ -53,3 +53,45 @@ pub fn generate_relationships(
 
     related
 }
+
+use std::collections::HashMap;
+
+pub fn cluster_memories(
+    memories: &[MemoryRecord]
+) -> HashMap<String, Vec<String>> {
+
+    let mut clusters =
+        HashMap::new();
+
+    for memory in memories {
+
+        for tag in &memory.tags {
+
+            clusters
+                .entry(tag.clone())
+                .or_insert(vec![])
+                .push(memory.id.clone());
+        }
+    }
+
+    clusters
+}
+
+pub fn related_by_tag(
+    memories: &[MemoryRecord],
+    tag: &str,
+) -> Vec<MemoryRecord> {
+
+    memories
+        .iter()
+        .filter(
+            |m| {
+
+                m.tags.contains(
+                    &tag.to_string()
+                )
+            }
+        )
+        .cloned()
+        .collect()
+}

@@ -1,22 +1,49 @@
-use crate::storage::MemoryRecord;
+use crate::MemoryRecord;
 
-pub fn reflect(
-    memories:
-        &[MemoryRecord],
+pub fn synthesize_reflection(
+    memories: &[MemoryRecord]
 ) -> String {
 
-    format!(
-        "\
-ANUBIS REFLECTION
+    let mut synthesis =
+        String::new();
 
-Observed {} memories.
+    synthesis.push_str(
+        "ANUBIS SYNTHESIS\n\n"
+    );
 
-Primary operational pattern:
-Persistent Rust cognition workflows.
+    synthesis.push_str(
+        &format!(
+            "Observed {} memories.\n\n",
+            memories.len()
+        )
+    );
 
-Dominant harness:
-coding
-",
-        memories.len()
-    )
+    let tags: Vec<String> =
+        memories
+            .iter()
+            .flat_map(
+                |m| m.tags.clone()
+            )
+            .collect();
+
+    synthesis.push_str(
+        &format!(
+            "Dominant tags: {:?}\n\n",
+            tags
+        )
+    );
+
+    if let Some(memory) =
+        memories.last()
+    {
+
+        synthesis.push_str(
+            &format!(
+                "Latest cognition:\n{}\n",
+                memory.prompt
+            )
+        );
+    }
+
+    synthesis
 }

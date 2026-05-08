@@ -18,7 +18,7 @@ pub fn build_graph(
 
         graph.insert(
             memory.id.clone(),
-            memory.related.clone(),
+            memory.related_memories.clone(),
         );
     }
 

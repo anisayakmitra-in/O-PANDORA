@@ -7,21 +7,22 @@ use anubis_memory::{
     load_memories,
     summarize_memories,
     search_memories,
-    reflect,
+    synthesize_reflection,
     build_graph,
+    export_memories,
+    import_memories,
 };
 
 #[derive(Parser)]
 #[command(
-    name = "pandora",
-    version = "0.1",
-    about = "PANDORA SYSTEMS CLI"
+    author = "Pandora Systems",
+    version = "0.1.0",
+    about = "Sovereign cognition CLI"
 )]
 struct Cli {
 
     #[command(subcommand)]
-    command:
-        Commands,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
@@ -32,35 +33,44 @@ enum Commands {
     Memory,
 
     Search {
-
-        query:
-            String,
+        query: String,
     },
 
     Reflect,
 
     Graph,
+
+    Export,
+
+    Import,
 }
 
 fn main() {
 
-    let cli =
-        Cli::parse();
+    let cli = Cli::parse();
 
     match cli.command {
 
         Commands::Status => {
 
             println!(
-                "\
-PANDORA SYSTEMS
+                "PANDORA SYSTEMS\n"
+            );
 
-STATUS: OPERATIONAL
+            println!(
+                "STATUS: OPERATIONAL\n"
+            );
 
-ANUBIS: ONLINE
-RAHU/KETU: ACTIVE
-EVENT BUS: ACTIVE
-"
+            println!(
+                "ANUBIS: ONLINE"
+            );
+
+            println!(
+                "RAHU/KETU: ACTIVE"
+            );
+
+            println!(
+                "EVENT BUS: ACTIVE"
             );
         }
 
@@ -94,29 +104,27 @@ EVENT BUS: ACTIVE
                 );
 
             println!(
-                "\
-SEARCH RESULTS
-"
+                "SEARCH RESULTS\n"
             );
 
             for (
                 weight,
-                memory
+                memory,
             ) in results {
 
                 println!(
-                    "\
-WEIGHT: {}
+                    "WEIGHT: {}\n",
+                    weight
+                );
 
-MEMORY: {}
+                println!(
+                    "MEMORY: {}\n",
+                    memory.id
+                );
 
-PROMPT:
-{}
-
-",
-                    weight,
-                    memory.id,
-                    memory.prompt,
+                println!(
+                    "PROMPT:\n{}\n",
+                    memory.prompt
                 );
             }
         }
@@ -127,7 +135,7 @@ PROMPT:
                 load_memories();
 
             let reflection =
-                reflect(
+                synthesize_reflection(
                     &memories
                 );
 
@@ -148,23 +156,46 @@ PROMPT:
                 );
 
             println!(
-                "\
-GRAPH NODES: {}
-",
+                "GRAPH NODES: {}\n",
                 graph.len()
             );
 
             for (
                 node,
-                edges
+                edges,
             ) in graph {
 
                 println!(
                     "{} -> {:?}",
                     node,
-                    edges,
+                    edges
                 );
             }
+        }
+
+        Commands::Export => {
+
+            let memories =
+                load_memories();
+
+            export_memories(
+                &memories
+            );
+
+            println!(
+                "ANUBIS EXPORT COMPLETE"
+            );
+        }
+
+        Commands::Import => {
+
+            let memories =
+                import_memories();
+
+            println!(
+                "IMPORTED {} MEMORIES",
+                memories.len()
+            );
         }
     }
 }

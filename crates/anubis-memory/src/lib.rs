@@ -8,10 +8,14 @@ pub mod compression;
 pub mod salience;
 
 pub use storage::*;
-pub use embeddings::*;
-pub use relationships::*;
-pub use graph::*;
 pub use retrieval::*;
 pub use reflection::*;
-pub use compression::*;
+pub use relationships::*;
+pub use graph::*;
 pub use salience::*;
+pub use compression::*;
+pub use embeddings::*;
+pub use storage::{
+    export_memories,
+    import_memories,
+};

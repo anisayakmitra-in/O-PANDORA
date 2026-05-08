@@ -4,163 +4,183 @@ use serde::{
 };
 
 #[derive(
-    Serialize,
-    Deserialize,
     Debug,
     Clone,
+    Serialize,
+    Deserialize,
 )]
 pub struct MemoryRecord {
 
-    pub id:
-        String,
+    pub id: String,
 
-    pub session_id:
-        String,
+    pub session_id: String,
 
-    pub timestamp:
-        String,
+    pub timestamp: String,
 
-    pub gene:
-        String,
+    pub gene: String,
 
-    pub harness:
-        String,
+    pub harness: String,
 
-    pub model:
-        String,
+    pub model: String,
 
-    pub prompt:
-        String,
+    pub prompt: String,
 
-    pub response:
-        String,
+    pub response: String,
 
-    pub score:
-        f32,
+    pub memory_layer: String,
 
-    pub salience:
-        f32,
-
-    pub layer:
-        String,
+    pub related_memories:
+        Vec<String>,
 
     pub embedding:
         Vec<f32>,
 
-    pub related:
+    pub salience: f32,
+
+    pub tags:
         Vec<String>,
+
+    pub memory_type:
+        MemoryType,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+pub enum MemoryType {
+
+    Episodic,
+
+    Semantic,
+
+    Procedural,
+
+    Reflection,
+
+    ToolUse,
+
+    Conversation,
 }
 
 use std::{
     fs::{
-        create_dir_all,
         OpenOptions,
-        write,
+        read_to_string,
     },
-    io::{
-        BufRead,
-        BufReader,
-        Write,
-    },
+    io::Write,
 };
 
 pub fn store_memory(
-    memory: &MemoryRecord,
+    memory: &MemoryRecord
 ) {
 
-    create_dir_all(
-        "memory/sessions"
-    ).unwrap();
-
-    let file =
-        OpenOptions::new()
-
-            .create(true)
-
-            .append(true)
-
-            .open(
-                "memory/sessions/runtime.jsonl"
-            )
-
-            .unwrap();
-
-    let mut writer =
-        std::io::BufWriter::new(
-            file
-        );
-
-    let json =
+    let serialized =
         serde_json::to_string(
             memory
-        ).unwrap();
+        )
+        .unwrap();
+
+    let mut file =
+        OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(
+                "memory/memory.jsonl"
+            )
+            .unwrap();
 
     writeln!(
-        writer,
+        file,
         "{}",
-        json
-    ).unwrap();
+        serialized
+    )
+    .unwrap();
 }
 
 pub fn load_memories()
--> Vec<MemoryRecord> {
+    -> Vec<MemoryRecord>
+{
 
-    let file =
-        OpenOptions::new()
+    let path =
+        "memory/memory.jsonl";
 
-            .read(true)
+    let contents =
+        read_to_string(path)
+            .unwrap_or_default();
 
-            .write(true)
-
-            .create(true)
-
-            .truncate(false)
-
-            .open(
-                "memory/sessions/runtime.jsonl"
-            )
-
-            .unwrap();
-
-    let reader =
-        BufReader::new(file);
-
-    reader
+    contents
         .lines()
-
         .filter_map(
             |line| {
 
-                line.ok().and_then(
-                    |l| {
-                        serde_json::from_str::<MemoryRecord>(&l).ok()
-                    }
-                )
+                serde_json::from_str::<
+                    MemoryRecord
+                >(line)
+                .ok()
             }
         )
         .collect()
 }
 
 pub fn summarize_memories(
-    memories:
-        &[MemoryRecord],
+    memories: &[MemoryRecord]
 ) -> String {
 
     if memories.is_empty() {
 
         return
-            "NO MEMORIES"
+            "No memories stored."
                 .to_string();
     }
 
     let latest =
-        memories
-            .last()
-            .unwrap();
+        memories.last().unwrap();
+
+#[allow(dead_code)]
+pub fn export_memories(
+    memories: &[MemoryRecord]
+) {
+
+    std::fs::create_dir_all(
+        "memory/export"
+    )
+    .unwrap();
+
+    let serialized =
+        serde_json::to_string_pretty(
+            memories
+        )
+        .unwrap();
+
+    std::fs::write(
+        "memory/export/anubis-export.json",
+        serialized,
+    )
+    .unwrap();
+}
+
+#[allow(dead_code)]
+pub fn import_memories()
+    -> Vec<MemoryRecord>
+{
+
+    let contents =
+        std::fs::read_to_string(
+            "memory/export/anubis-export.json"
+        )
+        .unwrap_or_default();
+
+    serde_json::from_str(
+        &contents
+    )
+    .unwrap_or_default()
+}
 
     format!(
-        "\
-ANUBIS MEMORY SUMMARY
+r#"ANUBIS MEMORY SUMMARY
 
 TOTAL MEMORIES: {}
 
@@ -179,69 +199,54 @@ MEMORY LAYER:
 {}
 
 RELATED MEMORIES:
-{}
-",
+{}"#,
         memories.len(),
-
         latest.session_id,
-
         latest.gene,
-
         latest.harness,
-
         latest.model,
-
         latest.prompt,
-
-        latest.layer,
-
-        latest.related.len(),
+        latest.memory_layer,
+        latest
+            .related_memories
+            .len(),
     )
 }
-
-pub fn delete_memory(
-    memory_id:
-        &str,
+    
+pub fn export_memories(
+    memories: &[MemoryRecord]
 ) {
 
-    let memories =
-        load_memories();
-
-    let filtered:
-        Vec<MemoryRecord> =
-        memories
-
-            .into_iter()
-
-            .filter(
-                |m| {
-                    m.id != memory_id
-                }
-            )
-            .collect();
-
-    let mut output =
-        String::new();
-
-    for memory
-    in &filtered {
-
-        let json =
-            serde_json::to_string(
-                memory
-            )
-            .unwrap();
-
-        output.push_str(
-            &json
-        );
-
-        output.push('\n');
-    }
-
-    write(
-        "memory/sessions/runtime.jsonl",
-        output,
+    std::fs::create_dir_all(
+        "memory/export"
     )
     .unwrap();
+
+    let serialized =
+        serde_json::to_string_pretty(
+            memories
+        )
+        .unwrap();
+
+    std::fs::write(
+        "memory/export/anubis-export.json",
+        serialized,
+    )
+    .unwrap();
+}
+
+pub fn import_memories()
+    -> Vec<MemoryRecord>
+{
+
+    let contents =
+        std::fs::read_to_string(
+            "memory/export/anubis-export.json"
+        )
+        .unwrap_or_default();
+
+    serde_json::from_str(
+        &contents
+    )
+    .unwrap_or_default()
 }

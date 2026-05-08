@@ -1,22 +1,27 @@
-use crate::storage::MemoryRecord;
+use crate::MemoryRecord;
 
 pub fn compute_salience(
-    memory:
-        &MemoryRecord,
+    memory: &MemoryRecord
 ) -> f32 {
 
-    let mut salience =
-        memory.score;
+    let mut score = 1.0;
 
-    salience +=
-        memory.related.len()
-        as f32;
+    score +=
+        memory
+            .related_memories
+            .len() as f32;
 
-    if memory.layer
-        == "long_term"
-    {
-        salience += 5.0;
-    }
+    score +=
+        memory
+            .tags
+            .len() as f32 * 0.5;
 
-    salience
+    score
+}
+
+pub fn decay_salience(
+    memory: &mut MemoryRecord
+) {
+
+    memory.salience *= 0.98;
 }
