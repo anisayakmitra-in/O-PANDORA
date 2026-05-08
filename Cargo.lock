@@ -777,6 +777,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-events"
+version = "0.1.0"
+
+[[package]]
 name = "pandora-gene"
 version = "0.1.0"
 dependencies = [
@@ -785,6 +789,10 @@ dependencies = [
  "serde",
  "serde_json",
 ]
+
+[[package]]
+name = "pandora-governance"
+version = "0.1.0"
 
 [[package]]
 name = "pandora-harness"
@@ -825,13 +833,26 @@ name = "pandora-panoptikon"
 version = "0.1.0"
 
 [[package]]
+name = "pandora-provider"
+version = "0.1.0"
+
+[[package]]
 name = "pandora-runtime"
 version = "0.1.0"
 dependencies = [
  "anubis-memory",
  "chrono",
+ "pandora-events",
  "pandora-gene",
+ "pandora-governance",
+ "pandora-harness",
+ "pandora-provider",
+ "pandora-tools",
 ]
+
+[[package]]
+name = "pandora-tools"
+version = "0.1.0"
 
 [[package]]
 name = "pandora-tui"
