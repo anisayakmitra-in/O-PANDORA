@@ -1,0 +1,14 @@
+[package]
+name = "pandora-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+anubis-memory = { path = "../anubis-memory" }
+pandora-events = { path = "../pandora-events" }
+pandora-governance = { path = "../pandora-governance" }
+pandora-provider = { path = "../pandora-provider" }
+pandora-tools = { path = "../pandora-tools" }
+clap = { version = "4", features = ["derive"] }

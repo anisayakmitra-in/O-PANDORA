@@ -15,8 +15,9 @@ members = ["crates/anubis-memory",
     "crates/pandora-tools",
     "crates/pandora-provider",
     "crates/pandora-governance",
+    "crates/pandora-cli",
     "test-runner"
-, "crates/pandora-runtime", "crates/pandora-events", "crates/pandora-tools", "crates/pandora-provider"]
+, "crates/pandora-runtime", "crates/pandora-events", "crates/pandora-tools", "crates/pandora-provider", "crates/pandora-cli"]
 
 [workspace.package]
 version = "0.1.0"

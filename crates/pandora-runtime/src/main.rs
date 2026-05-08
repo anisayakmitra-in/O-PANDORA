@@ -287,49 +287,72 @@ fn main() {
     }
 }
 
+    let memories =
+    load_memories();
+
     let memory =
-        MemoryRecord {
+    MemoryRecord {
+        
+        salience:
+            1.0,
 
-            timestamp:
-                Utc::now()
-                    .to_rfc3339(),
-
-            gene:
-                best_gene
-                    .gene_id
-                    .clone(),
-
-            harness:
-                harness
-                    .name()
-                    .to_string(),
-
-            model:
-                model.clone(),
-                    
-
-            prompt:
+        embedding:
+            anubis_memory::generate_embedding(
                 task
-                    .to_string(),
+            ),
 
-            response:
-                output.clone(),
+        id:
+            format!(
+                "memory-{}",
+                memories.len() + 1
+            ),
 
-            score:
-                best_gene
-                    .avg_score,
-        };
+        session_id:
+            "session-alpha"
+                .to_string(),
 
+        timestamp:
+            Utc::now()
+                .to_rfc3339(),
+
+        gene:
+            best_gene
+                .gene_id
+                .clone(),
+
+        harness:
+            harness
+                .name()
+                .to_string(),
+
+        model:
+            model.clone(),
+
+        prompt:
+            task
+                .to_string(),
+
+        response:
+            output.clone(),
+
+        score:
+            best_gene
+                .avg_score,
+
+        layer:
+            "long_term"
+                .to_string(),
+
+        related:
+            vec![
+                "rust".to_string(),
+                "ownership".to_string(),
+                "memory".to_string(),
+            ],
+    };
+    
     store_memory(
         &memory
-    );
-
-    emit(
-        &bus,
-        RuntimeEvent::MemoryStored(
-            "Runtime memory stored"
-                .to_string()
-        )
     );
 
     let memories =
@@ -347,6 +370,51 @@ fn main() {
             &memories,
             "Rust"
         );
+
+    println!(
+        "\nSEARCH RESULTS\n"
+    );
+
+    for (
+        weight,
+        memory
+    ) in &results {
+
+         println!(
+             "\
+    WEIGHT: {}
+
+    MEMORY: {}
+
+    PROMPT:
+    {}
+
+    ",
+            weight,
+            memory.id,
+            memory.prompt,
+         );
+    }
+
+    let graph =
+        anubis_memory::graph_index(
+            &memories
+        );
+
+    println!(
+        "\nGRAPH INDEX SIZE: {}\n",
+        graph.len()
+    );
+
+    let temporal =
+        anubis_memory::temporal_memories(
+            &memories
+    );
+
+    println!(
+        "TEMPORAL MEMORIES: {}\n",
+        temporal.len()
+    );
 
     emit(
         &bus,
