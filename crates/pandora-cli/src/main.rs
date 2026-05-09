@@ -50,6 +50,9 @@ enum Commands {
     Genes,
 
     Verify,
+
+    Lineage,
+
 }
 
 fn main() {
@@ -58,6 +61,56 @@ fn main() {
         Cli::parse();
 
     match cli.command {
+
+        Commands::Lineage => {
+
+            println!(
+                "PANDORA GENE LINEAGE\n"
+            );
+
+            let genes =
+                load_genes();
+
+            for gene in genes {
+
+                println!(
+                    "GENE: {}",
+                    gene.name
+                );
+
+                println!(
+                    "NAMESPACE: {}",
+                    gene.namespace
+                );
+
+                println!(
+                    "TYPE: {}",
+                    gene.gene_type
+                );
+
+                println!(
+                    "GENERATION: {}",
+                    gene.lineage.generation
+                );
+
+                println!(
+                    "PARENT: {}",
+                    gene.lineage.parent
+                );
+
+                println!(
+                    "MUTATION: {}",
+                    gene.lineage.mutation
+                );
+
+                println!(
+                    "SIGNATURE: {:?}",
+                    gene.signature
+                );
+
+                println!();
+        }
+   }, 
 
         Commands::Status => {
 
