@@ -1,14 +1,20 @@
-use chrono::Utc;
+mod gene;
+
+use gene::{
+    load_genes,
+    validate_gene,
+};
 
 use anubis_memory::{
     load_memories,
     search_memories,
-    summarize_memories,
     store_memory,
+    summarize_memories,
     restore_context,
     export_memories,
     import_memories,
     MemoryRecord,
+    MemoryType,
 };
 
 fn main() {
@@ -17,12 +23,41 @@ fn main() {
         "\nPANDORA SYSTEMS\n"
     );
 
-    let prompt =
-        "Explain Rust ownership";
+    let loaded_genes =
+        load_genes();
 
-    let response =
-        "Simulated Ollama inference response."
-            .to_string();
+    println!(
+        "LOADED GENES: {}\n",
+        loaded_genes.len()
+    );
+
+    for gene in
+        &loaded_genes
+    {
+
+        let valid =
+            validate_gene(
+                gene
+            );
+
+        if valid {
+
+            println!(
+                "[VALID {}] {} {}",
+                gene.gene_type,
+                gene.namespace,
+                gene.name
+            );
+
+        } else {
+
+            println!(
+                "[INVALID] {} {}",
+                gene.namespace,
+                gene.name
+            );
+        }
+    }
 
     println!(
         "\nMODEL INFERENCE\n"
@@ -36,14 +71,16 @@ fn main() {
         "MODEL: qwen2.5-coder:7b\n"
     );
 
+    let prompt =
+        "Explain Rust ownership";
+
     println!(
         "PROMPT:\n{}\n",
         prompt
     );
 
     println!(
-        "RESPONSE:\n{}\n",
-        response
+        "RESPONSE:\nSimulated Ollama inference response.\n"
     );
 
     println!(
@@ -74,6 +111,73 @@ fn main() {
         "Shell access denied under T2 policy\n"
     );
 
+    let memory =
+        MemoryRecord {
+
+            id:
+                "memory-1".to_string(),
+
+            prompt:
+                prompt.to_string(),
+
+            response:
+                "Simulated Ollama inference response."
+                    .to_string(),
+
+            embedding:
+                vec![
+                    0.1,
+                    0.2,
+                    0.3,
+                ],
+
+            timestamp:
+                "2026-05-09T00:00:00Z"
+                    .to_string(),
+
+            memory_type:
+                MemoryType::Semantic,
+
+            session_id:
+                "session-alpha"
+                    .to_string(),
+
+            gene:
+                "coding-v1"
+                    .to_string(),
+
+            harness:
+                "coding"
+                    .to_string(),
+
+            model:
+                "qwen2.5-coder:7b"
+                    .to_string(),
+
+            memory_layer:
+                "long_term"
+                    .to_string(),
+
+            related_memories:
+                vec![
+                    "memory-0".to_string()
+                ],
+            
+            salience:
+                0.95,
+               
+            tags:
+                vec![
+                    "rust".to_string(),
+                    "ownership".to_string(),
+                    "coding".to_string(),
+                ],
+        };
+
+    store_memory(
+        &memory
+    );
+
     let memories =
         load_memories();
 
@@ -98,135 +202,56 @@ fn main() {
         );
     }
 
-    let memory =
-        MemoryRecord {
-
-            id:
-                format!(
-                    "memory-{}",
-                    memories.len() + 1
-                ),
-
-            session_id:
-                "session-alpha"
-                    .to_string(),
-
-            timestamp:
-                Utc::now()
-                    .to_rfc3339(),
-
-            gene:
-                "coding-v1"
-                    .to_string(),
-
-            harness:
-                "coding"
-                    .to_string(),
-
-            model:
-                "qwen2.5-coder:7b"
-                    .to_string(),
-
-            prompt:
-                prompt.to_string(),
-
-            response:
-                response.clone(),
-
-            memory_layer:
-                "long_term"
-                    .to_string(),
-
-            related_memories:
-                vec![
-                    "memory-0"
-                        .to_string()
-                ],
-
-            embedding:
-                vec![
-                    0.1,
-                    0.2,
-                    0.3,
-                ],
-
-            salience:
-                1.0,
-
-            tags:
-                vec![
-                    "rust"
-                        .to_string(),
-
-                    "ownership"
-                        .to_string(),
-
-                    "coding"
-                        .to_string(),
-                ],
-
-            memory_type:
-                anubis_memory::MemoryType::Semantic,
-        };
-
-    store_memory(
-        &memory
+    export_memories(
+        &memories
     );
 
-    let loaded_memories =
-        load_memories();
+    let imported =
+        import_memories();
+
+    println!(
+        "\nIMPORTED MEMORIES: {}\n",
+        imported.len()
+    );
 
     let results =
         search_memories(
-            &loaded_memories,
-            "Rust",
+            &memories,
+            prompt,
         );
 
-    export_memories(
-        &loaded_memories
+    println!(
+        "\nSEARCH RESULTS\n"
     );
 
-   let imported_memories =
-       import_memories();
+    for result in
+        &results
+    {
 
-   println!(
-           "\nIMPORTED MEMORIES: {}\n",
-           imported_memories.len()
-   );
-
-    println!(
-            "\nSEARCH RESULTS\n"
-        );
-
-    for (
-        weight,
-        memory,
-    ) in results {
-
-    println!(
+        println!(
             "WEIGHT: {}\n",
-            weight
+            result.0
         );
 
-    println!(
+        println!(
             "MEMORY: {}\n",
-            memory.id
+            result.1.id
         );
 
-    println!(
+        println!(
             "PROMPT:\n{}\n",
-            memory.prompt
+            result.1.prompt
         );
     }
 
     println!(
         "\nGRAPH INDEX SIZE: {}\n",
-        loaded_memories.len()
+        memories.len()
     );
 
     println!(
         "TEMPORAL MEMORIES: {}\n",
-        loaded_memories.len()
+        memories.len()
     );
 
     println!(
@@ -238,7 +263,8 @@ fn main() {
     );
 
     println!(
-        "[GENE] 3 genes loaded"
+        "[GENE] {} genes loaded",
+        loaded_genes.len()
     );
 
     println!(
@@ -287,12 +313,12 @@ fn main() {
 
     println!(
         "[ANUBIS] Loaded {} memories",
-        loaded_memories.len()
+        memories.len()
     );
 
     println!(
         "[PANOPTES] {} relevant memories",
-        loaded_memories.len()
+        results.len()
     );
 
     println!(
@@ -310,11 +336,17 @@ fn main() {
 
     let summary =
         summarize_memories(
-            &loaded_memories
+            &memories
         );
 
     println!(
-        "\n{}\n",
-        summary
+        "\nANUBIS MEMORY SUMMARY\n"
     );
+
+    println!(
+        "{}",
+        summary
+    ); 
+    
 }
+    

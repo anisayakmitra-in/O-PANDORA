@@ -1,3 +1,5 @@
+use std::fs;
+
 use clap::{
     Parser,
     Subcommand,
@@ -37,6 +39,8 @@ enum Commands {
     },
 
     Reflect,
+
+    Genes,
 
     Graph,
 
@@ -175,17 +179,14 @@ fn main() {
 
         Commands::Export => {
 
-            let memories =
-                load_memories();
-
             export_memories(
-                &memories
+                &load_memories()
             );
 
             println!(
                 "ANUBIS EXPORT COMPLETE"
             );
-        }
+        },
 
         Commands::Import => {
 
@@ -196,6 +197,43 @@ fn main() {
                 "IMPORTED {} MEMORIES",
                 memories.len()
             );
+        },
+
+        Commands::Genes => {
+
+            println!(
+                "PANDORA GENE REGISTRY\n"
+            );
+
+            let paths =
+                fs::read_dir(
+                    "genes"
+                )
+                .unwrap();
+
+            for path in paths {
+
+                let entry =
+                    path.unwrap();
+
+                let file_path =
+                    entry.path();
+
+                if file_path
+                    .extension()
+                    .and_then(
+                        |ext|
+                        ext.to_str()
+                    ) == Some("json")
+                {
+
+                    println!(
+                        "{}",
+                        file_path.display()
+                    );
+                }
+            }
         }
     }
 }
+                

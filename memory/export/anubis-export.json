@@ -71,5 +71,135 @@
       "coding"
     ],
     "memory_type": "Semantic"
+  },
+  {
+    "id": "memory-3",
+    "session_id": "session-alpha",
+    "timestamp": "2026-05-09T04:37:32.328482884+00:00",
+    "gene": "coding-v1",
+    "harness": "coding",
+    "model": "qwen2.5-coder:7b",
+    "prompt": "Explain Rust ownership",
+    "response": "Simulated Ollama inference response.",
+    "memory_layer": "long_term",
+    "related_memories": [
+      "memory-0"
+    ],
+    "embedding": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "salience": 1.0,
+    "tags": [
+      "rust",
+      "ownership",
+      "coding"
+    ],
+    "memory_type": "Semantic"
+  },
+  {
+    "id": "memory-4",
+    "session_id": "session-alpha",
+    "timestamp": "2026-05-09T04:41:31.209674194+00:00",
+    "gene": "coding-v1",
+    "harness": "coding",
+    "model": "qwen2.5-coder:7b",
+    "prompt": "Explain Rust ownership",
+    "response": "Simulated Ollama inference response.",
+    "memory_layer": "long_term",
+    "related_memories": [
+      "memory-0"
+    ],
+    "embedding": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "salience": 1.0,
+    "tags": [
+      "rust",
+      "ownership",
+      "coding"
+    ],
+    "memory_type": "Semantic"
+  },
+  {
+    "id": "memory-5",
+    "session_id": "session-alpha",
+    "timestamp": "2026-05-09T04:57:57.987053701+00:00",
+    "gene": "coding-v1",
+    "harness": "coding",
+    "model": "qwen2.5-coder:7b",
+    "prompt": "Explain Rust ownership",
+    "response": "Simulated Ollama inference response.",
+    "memory_layer": "long_term",
+    "related_memories": [
+      "memory-0"
+    ],
+    "embedding": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "salience": 1.0,
+    "tags": [
+      "rust",
+      "ownership",
+      "coding"
+    ],
+    "memory_type": "Semantic"
+  },
+  {
+    "id": "memory-6",
+    "session_id": "session-alpha",
+    "timestamp": "2026-05-09T06:04:22.564457128+00:00",
+    "gene": "coding-v1",
+    "harness": "coding",
+    "model": "qwen2.5-coder:7b",
+    "prompt": "Explain Rust ownership",
+    "response": "Simulated Ollama inference response.",
+    "memory_layer": "long_term",
+    "related_memories": [
+      "memory-0"
+    ],
+    "embedding": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "salience": 1.0,
+    "tags": [
+      "rust",
+      "ownership",
+      "coding"
+    ],
+    "memory_type": "Semantic"
+  },
+  {
+    "id": "memory-1",
+    "session_id": "session-alpha",
+    "timestamp": "2026-05-09T00:00:00Z",
+    "gene": "coding-v1",
+    "harness": "coding",
+    "model": "qwen2.5-coder:7b",
+    "prompt": "Explain Rust ownership",
+    "response": "Simulated Ollama inference response.",
+    "memory_layer": "long_term",
+    "related_memories": [
+      "memory-0"
+    ],
+    "embedding": [
+      0.1,
+      0.2,
+      0.3
+    ],
+    "salience": 0.95,
+    "tags": [
+      "rust",
+      "ownership",
+      "coding"
+    ],
+    "memory_type": "Semantic"
   }
 ]

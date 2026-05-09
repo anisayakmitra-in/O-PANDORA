@@ -968,6 +968,8 @@ dependencies = [
  "pandora-harness",
  "pandora-provider",
  "pandora-tools",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

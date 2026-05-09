@@ -1,11 +1,9 @@
 {
-  "name": "business",
-  "gene_id": "business-v1",
-  "parent_gene": null,
-  "generation": 1,
-  "domains": [
-    "strategy",
-    "analysis"
+  "name": "business-gene",
+  "namespace": "@pandora",
+  "version": "0.1.0",
+  "gene_type": "workflow",
+  "entry": "main.rs"
   ],
   "avg_score": 0.0,
   "total_runs": 0,

@@ -1,19 +1,37 @@
 {
-  "name": "coding",
-  "gene_id": "coding-v1",
-  "parent_gene": null,
-  "generation": 1,
-  "domains": [
-    "rust",
-    "systems"
-  ],
-  "avg_score": 1.9166666,
-  "total_runs": 12,
-  "supports_tools": true,
-  "supports_memory": true,
-  "supports_subagents": false,
+  "name": "coding-gene",
+
+  "namespace": "@pandora",
+
+  "version": "0.1.0",
+
+  "schema_version": "1.0",
+
+  "gene_type": "workflow",
+
   "tags": [
-    "fast",
-    "local"
-  ]
+    "coding",
+    "rust",
+    "automation"
+  ],
+
+  "entry": "main.rs",
+
+  "lineage": {
+    "parent": "@pandora/base-workflow",
+    "generation": 1,
+    "mutation": "initial"
+  },
+
+  "signature": {
+    "algorithm": "RSA-2048",
+    "signed_by": "@pandora",
+    "public_key_id": "AEGIS-001"
+  },
+
+  "tier": {
+    "classification": "core",
+    "monetized": false,
+    "trusted": true
+  }
 }
