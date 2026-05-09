@@ -1,16 +1,22 @@
-use std::fs;
-
 use clap::{
     Parser,
     Subcommand,
 };
 
+use std::fs;
+
+#[path = "../../pandora-runtime/src/gene.rs"]
+mod gene;
+
+use gene::{
+    load_genes,
+    validate_gene,
+};
+
 use anubis_memory::{
     load_memories,
-    summarize_memories,
     search_memories,
-    synthesize_reflection,
-    build_graph,
+    summarize_memories,
     export_memories,
     import_memories,
 };
@@ -19,12 +25,13 @@ use anubis_memory::{
 #[command(
     author = "Pandora Systems",
     version = "0.1.0",
-    about = "Sovereign cognition CLI"
+    about = "Pandora CLI"
 )]
 struct Cli {
 
     #[command(subcommand)]
-    command: Commands,
+    command:
+        Commands,
 }
 
 #[derive(Subcommand)]
@@ -34,24 +41,21 @@ enum Commands {
 
     Memory,
 
-    Search {
-        query: String,
-    },
-
-    Reflect,
-
-    Genes,
-
-    Graph,
+    Search,
 
     Export,
 
     Import,
+
+    Genes,
+
+    Verify,
 }
 
 fn main() {
 
-    let cli = Cli::parse();
+    let cli =
+        Cli::parse();
 
     match cli.command {
 
@@ -89,14 +93,16 @@ fn main() {
                 );
 
             println!(
+                "ANUBIS MEMORY SUMMARY\n"
+            );
+
+            println!(
                 "{}",
                 summary
             );
         }
 
-        Commands::Search {
-            query
-        } => {
+        Commands::Search => {
 
             let memories =
                 load_memories();
@@ -104,89 +110,47 @@ fn main() {
             let results =
                 search_memories(
                     &memories,
-                    &query,
+                    "Rust",
                 );
 
             println!(
-                "SEARCH RESULTS\n"
+                "ANUBIS SEARCH RESULTS\n"
             );
 
-            for (
-                weight,
-                memory,
-            ) in results {
+            for result in
+                results
+            {
 
                 println!(
                     "WEIGHT: {}\n",
-                    weight
+                    result.0
                 );
 
                 println!(
                     "MEMORY: {}\n",
-                    memory.id
+                    result.1.id
                 );
 
                 println!(
                     "PROMPT:\n{}\n",
-                    memory.prompt
-                );
-            }
-        }
-
-        Commands::Reflect => {
-
-            let memories =
-                load_memories();
-
-            let reflection =
-                synthesize_reflection(
-                    &memories
-                );
-
-            println!(
-                "{}",
-                reflection
-            );
-        }
-
-        Commands::Graph => {
-
-            let memories =
-                load_memories();
-
-            let graph =
-                build_graph(
-                    &memories
-                );
-
-            println!(
-                "GRAPH NODES: {}\n",
-                graph.len()
-            );
-
-            for (
-                node,
-                edges,
-            ) in graph {
-
-                println!(
-                    "{} -> {:?}",
-                    node,
-                    edges
+                    result.1.prompt
                 );
             }
         }
 
         Commands::Export => {
 
+            let memories =
+                load_memories();
+
             export_memories(
-                &load_memories()
+                &memories
             );
 
             println!(
                 "ANUBIS EXPORT COMPLETE"
             );
-        },
+        }
 
         Commands::Import => {
 
@@ -197,7 +161,7 @@ fn main() {
                 "IMPORTED {} MEMORIES",
                 memories.len()
             );
-        },
+        }
 
         Commands::Genes => {
 
@@ -211,7 +175,9 @@ fn main() {
                 )
                 .unwrap();
 
-            for path in paths {
+            for path in
+                paths
+            {
 
                 let entry =
                     path.unwrap();
@@ -234,6 +200,63 @@ fn main() {
                 }
             }
         }
+
+        Commands::Verify => {
+
+            println!(
+                "PANDORA GENE VERIFICATION\n"
+            );
+
+            let genes =
+                load_genes();
+
+            for gene in
+                &genes
+            {
+
+                let valid =
+                    validate_gene(
+                        gene
+                    );
+
+                if valid {
+
+                    println!(
+                        "[VALID] {} {}",
+                        gene.namespace,
+                        gene.name
+                    );
+
+                    println!(
+                        "SCHEMA: {}",
+                        gene.schema_version
+                    );
+
+                    println!(
+                        "GENERATION: {}",
+                        gene.lineage.generation
+                    );
+
+                    println!(
+                        "SIGNATURE: {}",
+                        gene.signature.algorithm
+                    );
+
+                    println!(
+                        "TRUSTED: {}\n",
+                        gene.tier.trusted
+                    );
+
+                } else {
+
+                    println!(
+                        "[INVALID] {} {}\n",
+                        gene.namespace,
+                        gene.name
+                    );
+                }
+            }
+        }
     }
 }
-                
+    
