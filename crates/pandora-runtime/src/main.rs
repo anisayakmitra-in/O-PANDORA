@@ -1,8 +1,11 @@
 mod evolution;
 
 use evolution::{
+    EvolutionCandidate,
     generate_candidates,
     evaluate_candidate,
+    select_winner,
+    promote_winner,
 };
 
 mod ingest;
@@ -516,17 +519,24 @@ fn main() {
         "GEPA CANDIDATES\n"
     );
 
+    let mut evaluated: Vec<EvolutionCandidate> =
+        Vec::new();
+
     for mut candidate in candidates {
 
         evaluate_candidate(
             &mut candidate
-    );
+        );
 
-    println!(
-        "{:#?}",
-        candidate
-    );
-}
+        println!(
+            "{:#?}",
+            candidate
+        );
+
+        evaluated.push(
+            candidate
+        );
+    }
 
     println!();
 
@@ -542,6 +552,43 @@ fn main() {
     println!(
         "MUTATION: {}",
         evolving_gene.lineage.mutation
+    );
+
+    println!(
+        "INSTRUCTIONS:\n{}",
+        evolving_gene.instructions
+    );
+
+    let winner =
+        select_winner(
+            &evaluated
+    );
+
+    println!();
+
+    println!(
+        "GEPA WINNER\n"
+    );
+
+    println!(
+        "{:#?}",
+        winner
+    );
+
+    promote_winner(
+        &mut evolving_gene,
+        &winner,
+    );
+
+    println!();
+
+    println!(
+        "PROMOTED GENE\n"
+    );
+
+    println!(
+        "GENERATION: {}",
+        evolving_gene.lineage.generation
     );
 
     println!(

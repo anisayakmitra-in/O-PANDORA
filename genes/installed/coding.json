@@ -1,27 +1,9 @@
 {
   "name": "coding-gene",
-
   "namespace": "@pandora",
-
-  "version": "0.1.0",
-
-  "schema_version": "1.0",
-
   "gene_type": "workflow",
-
-  "tags": [
-    "coding",
-    "rust",
-    "automation"
-  ],
-
-  "entry": "main.rs",
-
-  "lineage": {
-    "parent": "@pandora/base-workflow",
-    "generation": 1,
-    "mutation": "initial"
-  },
+  "instructions": "You are an expert Rust coding workflow.",
+  "schema_version": "1.0",
 
   "signature": {
     "algorithm": "RSA-2048",
@@ -29,9 +11,11 @@
     "public_key_id": "AEGIS-001"
   },
 
-  "tier": {
-    "classification": "core",
-    "monetized": false,
-    "trusted": true
+  "lineage": {
+    "generation": 1,
+    "parent": "@pandora/base-workflow",
+    "mutation": "initial",
+    "fitness": 1.0
   }
 }
+

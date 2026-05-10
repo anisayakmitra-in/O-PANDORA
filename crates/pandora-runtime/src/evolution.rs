@@ -1,5 +1,41 @@
 use crate::gene::GeneManifest;
 
+use std::fs;
+
+pub fn promote_winner(
+    gene: &mut GeneManifest,
+    winner: &EvolutionCandidate,
+) {
+
+    let archive_path =
+        format!(
+            "genes/archive/{}-gen-{}.json",
+            gene.name,
+            gene.lineage.generation
+        );
+
+    let archived =
+        serde_json::to_string_pretty(
+            gene
+        )
+        .unwrap();
+
+    fs::write(
+        archive_path,
+        archived,
+    )
+    .unwrap();
+
+    gene.instructions =
+        winner.instructions.clone();
+
+    gene.lineage.generation += 1;
+
+    gene.lineage.mutation =
+        "winner-promotion"
+        .to_string();
+}
+
 #[derive(Debug, Clone)]
 pub struct EvolutionCandidate {
 
@@ -58,4 +94,22 @@ pub fn evaluate_candidate(
     candidate.fitness =
         length_score / 10.0;
 }
+pub fn select_winner(
+    candidates: &[EvolutionCandidate],
+) -> EvolutionCandidate {
 
+    let mut winner =
+        candidates[0].clone();
+
+    for candidate in candidates {
+
+        if candidate.fitness >
+            winner.fitness {
+
+            winner =
+                candidate.clone();
+        }
+    }
+
+    winner
+}

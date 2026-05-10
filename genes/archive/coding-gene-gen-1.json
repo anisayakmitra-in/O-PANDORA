@@ -1,21 +1,18 @@
 {
-  "name": "ollama-provider",
+  "name": "coding-gene",
   "namespace": "@pandora",
-  "gene_type": "provider",
-  "instructions": "Routes inference through Ollama.",
+  "gene_type": "workflow",
+  "instructions": "You are an expert Rust coding workflow.",
   "schema_version": "1.0",
-
   "signature": {
     "algorithm": "RSA-2048",
     "signed_by": "@pandora",
     "public_key_id": "AEGIS-001"
   },
-
   "lineage": {
     "generation": 1,
-    "parent": "@pandora/base-provider",
+    "parent": "@pandora/base-workflow",
     "mutation": "initial",
     "fitness": 1.0
   }
 }
-
