@@ -67,6 +67,9 @@ pub struct GeneTier {
 )]
 pub struct GeneManifest {
 
+    pub instructions:
+        String,
+
     pub name:
         String,
 

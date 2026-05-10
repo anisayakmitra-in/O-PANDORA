@@ -1,0 +1,24 @@
+{
+  "name": "llamacpp-provider-gene",
+  "namespace": "@pandora",
+  "version": "0.1.0",
+  "gene_type": "provider",
+
+  "provider": {
+    "engine": "llama.cpp",
+    "binary": "./llama-server"
+  },
+
+  "lineage": {
+    "generation": 1,
+    "parent": "@pandora/base-provider",
+    "mutation": "initial"
+  },
+
+  "signature": {
+    "algorithm": "RSA-2048",
+    "signed_by": "@pandora",
+    "public_key_id": "AEGIS-001"
+  }
+}
+

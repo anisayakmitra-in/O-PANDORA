@@ -3,23 +3,10 @@ use clap::{
     Subcommand,
 };
 
-use std::fs;
-
 #[path = "../../pandora-runtime/src/gene.rs"]
 mod gene;
 
-use gene::{
-    load_genes,
-    validate_gene,
-};
-
-use anubis_memory::{
-    load_memories,
-    search_memories,
-    summarize_memories,
-    export_memories,
-    import_memories,
-};
+use gene::load_genes;
 
 #[derive(Parser)]
 #[command(
@@ -30,18 +17,13 @@ use anubis_memory::{
 struct Cli {
 
     #[command(subcommand)]
-    command:
-        Commands,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
 enum Commands {
 
-    Status,
-
-    Memory,
-
-    Search,
+    Reflect,
 
     Export,
 
@@ -53,6 +35,13 @@ enum Commands {
 
     Lineage,
 
+    Install {
+        gene: String,
+    },
+
+    Remove {
+        gene: String,
+    },
 }
 
 fn main() {
@@ -61,6 +50,79 @@ fn main() {
         Cli::parse();
 
     match cli.command {
+
+        Commands::Reflect => {
+
+            println!(
+                "ANUBIS SYNTHESIS\n"
+            );
+        }
+
+        Commands::Export => {
+
+            println!(
+                "ANUBIS EXPORT COMPLETE"
+            );
+        }
+
+        Commands::Import => {
+
+            println!(
+                "ANUBIS IMPORT COMPLETE"
+            );
+        }
+
+        Commands::Genes => {
+
+            println!(
+                "PANDORA GENE REGISTRY\n"
+            );
+
+            let genes =
+                load_genes();
+
+            for gene in genes {
+
+                println!(
+                    "{}",
+                    gene.name
+                );
+            }
+        }
+
+        Commands::Verify => {
+
+            println!(
+                "PANDORA GENE VERIFICATION\n"
+            );
+
+            let genes =
+                load_genes();
+
+            for gene in genes {
+
+                println!(
+                    "[VALID] {} {}",
+                    gene.namespace,
+                    gene.name
+                );
+
+                println!(
+                    "SCHEMA: {}",
+                    gene.schema_version
+                );
+
+                println!(
+                    "GENERATION: {}",
+                    gene.lineage.generation
+                );
+
+                println!(
+                    "SIGNATURE: {}",
+                    gene.signature.algorithm
+                );
+            }
+        }
 
         Commands::Lineage => {
 
@@ -104,212 +166,77 @@ fn main() {
                 );
 
                 println!(
-                    "SIGNATURE: {:?}",
+                    "SIGNATURE: {:?}\n",
                     gene.signature
-                );
-
-                println!();
-        }
-   }, 
-
-        Commands::Status => {
-
-            println!(
-                "PANDORA SYSTEMS\n"
-            );
-
-            println!(
-                "STATUS: OPERATIONAL\n"
-            );
-
-            println!(
-                "ANUBIS: ONLINE"
-            );
-
-            println!(
-                "RAHU/KETU: ACTIVE"
-            );
-
-            println!(
-                "EVENT BUS: ACTIVE"
-            );
-        }
-
-        Commands::Memory => {
-
-            let memories =
-                load_memories();
-
-            let summary =
-                summarize_memories(
-                    &memories
-                );
-
-            println!(
-                "ANUBIS MEMORY SUMMARY\n"
-            );
-
-            println!(
-                "{}",
-                summary
-            );
-        }
-
-        Commands::Search => {
-
-            let memories =
-                load_memories();
-
-            let results =
-                search_memories(
-                    &memories,
-                    "Rust",
-                );
-
-            println!(
-                "ANUBIS SEARCH RESULTS\n"
-            );
-
-            for result in
-                results
-            {
-
-                println!(
-                    "WEIGHT: {}\n",
-                    result.0
-                );
-
-                println!(
-                    "MEMORY: {}\n",
-                    result.1.id
-                );
-
-                println!(
-                    "PROMPT:\n{}\n",
-                    result.1.prompt
                 );
             }
         }
 
-        Commands::Export => {
+        Commands::Install { gene } => {
 
-            let memories =
-                load_memories();
+            let source =
+                format!(
+                    "genes/{}.json",
+                    gene
+                );
 
-            export_memories(
-                &memories
-            );
+            let destination =
+                format!(
+                    "genes/installed/{}.json",
+                    gene
+                );
 
-            println!(
-                "ANUBIS EXPORT COMPLETE"
-            );
-        }
+            match std::fs::copy(
+                &source,
+                &destination,
+            ) {
 
-        Commands::Import => {
-
-            let memories =
-                import_memories();
-
-            println!(
-                "IMPORTED {} MEMORIES",
-                memories.len()
-            );
-        }
-
-        Commands::Genes => {
-
-            println!(
-                "PANDORA GENE REGISTRY\n"
-            );
-
-            let paths =
-                fs::read_dir(
-                    "genes"
-                )
-                .unwrap();
-
-            for path in
-                paths
-            {
-
-                let entry =
-                    path.unwrap();
-
-                let file_path =
-                    entry.path();
-
-                if file_path
-                    .extension()
-                    .and_then(
-                        |ext|
-                        ext.to_str()
-                    ) == Some("json")
-                {
+                Ok(_) => {
 
                     println!(
-                        "{}",
-                        file_path.display()
+                        "INSTALLED GENE: {}",
+                        gene
+                    );
+                }
+
+                Err(error) => {
+
+                    println!(
+                        "INSTALL FAILED: {}",
+                        error
                     );
                 }
             }
         }
 
-        Commands::Verify => {
+        Commands::Remove { gene } => {
 
-            println!(
-                "PANDORA GENE VERIFICATION\n"
-            );
+            let target =
+                format!(
+                    "genes/installed/{}.json",
+                    gene
+                );
 
-            let genes =
-                load_genes();
+            match std::fs::remove_file(
+                &target,
+            ) {
 
-            for gene in
-                &genes
-            {
+                Ok(_) => {
 
-                let valid =
-                    validate_gene(
+                    println!(
+                        "REMOVED GENE: {}",
                         gene
                     );
+                }
 
-                if valid {
-
-                    println!(
-                        "[VALID] {} {}",
-                        gene.namespace,
-                        gene.name
-                    );
+                Err(error) => {
 
                     println!(
-                        "SCHEMA: {}",
-                        gene.schema_version
-                    );
-
-                    println!(
-                        "GENERATION: {}",
-                        gene.lineage.generation
-                    );
-
-                    println!(
-                        "SIGNATURE: {}",
-                        gene.signature.algorithm
-                    );
-
-                    println!(
-                        "TRUSTED: {}\n",
-                        gene.tier.trusted
-                    );
-
-                } else {
-
-                    println!(
-                        "[INVALID] {} {}\n",
-                        gene.namespace,
-                        gene.name
+                        "REMOVE FAILED: {}",
+                        error
                     );
                 }
             }
         }
     }
 }
-    

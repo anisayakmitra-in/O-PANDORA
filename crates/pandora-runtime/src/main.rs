@@ -1,3 +1,22 @@
+mod evolution;
+
+use evolution::{
+    generate_candidates,
+    evaluate_candidate,
+};
+
+mod ingest;
+
+use ingest::ingest_traces;
+
+use std::fs;
+
+use serde_json;
+
+mod trace;
+
+use trace::RuntimeTrace;
+
 mod gene;
 
 use gene::{
@@ -25,11 +44,27 @@ fn main() {
 
     let loaded_genes =
         load_genes();
+    
+    let genes =
+        load_genes(); 
 
     println!(
-        "LOADED GENES: {}\n",
-        loaded_genes.len()
+        "LOADED GENES: {}",
+        genes.len()
     );
+
+    println!();
+
+    for gene in &genes {
+
+        if gene.gene_type == "provider" {
+
+            println!(
+                "[PROVIDER] {}",
+                gene.name
+         );
+     }
+ }
 
     for gene in
         &loaded_genes
@@ -346,7 +381,182 @@ fn main() {
     println!(
         "{}",
         summary
+    );
+
+    let trace =
+    RuntimeTrace {
+
+        session_id:
+            "session-alpha"
+            .to_string(),
+
+        gene:
+            "coding-v1"
+            .to_string(),
+
+        provider:
+            "ollama"
+            .to_string(),
+
+        prompt:
+            prompt.to_string(),
+
+        approved_tools:
+            vec![
+                "read_file".to_string(),
+                "web_scrape".to_string(),
+            ],
+
+        denied_tools:
+            vec![
+                "shell".to_string(),
+            ],
+
+        memory_hits:
+            results.len(),
+
+        success: true,
+    };
+
+    println!();
+
+    println!(
+        "ANUBIS TRACE\n"
+    );
+
+    println!(
+        "{:#?}",
+        trace
+    );
+
+    let trace_json =
+        serde_json::to_string_pretty(
+            &trace
+        )
+        .unwrap();
+
+    let trace_path =
+        format!(
+            "traces/{}.json",
+            trace.session_id
+        );
+
+    fs::write(
+        &trace_path,
+        trace_json,
+    )
+    .unwrap();
+
+    println!();
+
+    println!(
+        "[ANUBIS] Trace persisted: {}",
+        trace_path
     ); 
     
+    let traces =
+        ingest_traces();
+
+    println!();
+
+    println!(
+        "ANUBIS TRACE INGESTION\n"
+    );
+
+    println!(
+        "TOTAL TRACES: {}",
+        traces.len()
+    );
+
+    let mut total_score =
+        0.0;
+
+    for trace in &traces {
+
+        let mut score =
+            0.0;
+
+        if trace.success {
+
+           score += 5.0;
+        }
+
+        score +=
+            trace.approved_tools.len()
+            as f32;
+
+        score -=
+           trace.denied_tools.len()
+           as f32;
+
+        score +=
+            trace.memory_hits
+            as f32 * 0.1;
+
+        total_score += score;
+    }
+
+    println!(
+        "EVOLUTIONARY FITNESS: {}",
+        total_score
+    );
+
+    let mut evolving_gene =
+        genes[0].clone();
+
+    let candidates =
+        generate_candidates(
+            &genes[0],
+            5,
+        );
+
+    println!();
+
+    println!(
+        "GEPA CANDIDATES\n"
+    );
+
+    for mut candidate in candidates {
+
+        evaluate_candidate(
+            &mut candidate
+    );
+
+    println!(
+        "{:#?}",
+        candidate
+    );
+}
+
+    println!();
+
+    println!(
+        "GEPA EVOLUTION\n"
+    );
+
+    println!(
+        "GENERATION: {}",
+        evolving_gene.lineage.generation
+    );
+
+    println!(
+        "MUTATION: {}",
+        evolving_gene.lineage.mutation
+    );
+
+    println!(
+        "INSTRUCTIONS:\n{}",
+        evolving_gene.instructions
+    );
+
 }
     
+
+
+
+
+
+
+
+
+
