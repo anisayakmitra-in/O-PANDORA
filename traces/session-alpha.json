@@ -10,6 +10,6 @@
   "denied_tools": [
     "shell"
   ],
-  "memory_hits": 15,
+  "memory_hits": 0,
   "success": true
 }

@@ -51,13 +51,30 @@ pub struct GeneManifest {
 
     pub gene_type: String,
 
-    pub instructions: String,
+    pub version: String,
 
     pub schema_version: String,
+
+    pub description: String,
+    
+    pub instructions: String,
+    
+    pub capabilities: Vec<String>,
+
+    pub required_harnesses: Vec<String>,
+
+    pub dependencies: Vec<String>,
+
+    pub permissions: Vec<String>,
+
+    pub entrypoint: String,
+
+    pub compatible_runtimes: Vec<String>,
 
     pub signature: GeneSignature,
 
     pub lineage: GeneLineage,
+
 }
 
 pub fn validate_gene(
@@ -70,15 +87,114 @@ pub fn validate_gene(
         vec![
             "meta_harness",
             "workflow",
-            "skill",
-            "mcp",
+            "tool",
             "provider",
             "memory",
-            "tool",
-            "interface",
+            "governance",
+            "sandbox",
+            "security",
+            "gateway",
+            "scheduler",
             "runtime",
+            "kernel",
             "agent",
             "subagent",
+            "interface",
+            "training",
+            "dataset",
+            "evaluation",
+            "inference",
+            "hardware",
+            "distributed",
+            "routing",
+            "telemetry",
+            "execution",
+            "automation",
+            "integration",
+            "connector",
+            "bridge",
+            "registry",
+            "marketplace",
+            "identity",
+            "persona",
+            "adapter",
+            "optimization",
+            "evolution",
+            "mutation",
+            "reflection",
+            "planning",
+            "reasoning",
+            "retrieval",
+            "embedding",
+            "compression",
+            "simulation",
+            "research",
+            "compliance",
+            "audit",
+            "containment",
+            "policy",
+            "verification",
+            "monitoring",
+            "deployment",
+            "infrastructure",
+            "observability",
+            "storage",
+            "database",
+            "network",
+            "communication",
+            "mcp",
+            "skill",
+            "plugin",
+            "service",
+            "orchestrator",
+            "compiler",
+            "translator",
+            "multimodal",
+            "voice",
+            "vision",
+            "robotics",
+            "sensor",
+            "mobile",
+            "desktop",
+            "web",
+            "api",
+            "filesystem",
+            "browser",
+            "shell",
+            "search",
+            "scraper",
+            "crawler",
+            "validator",
+            "parser",
+            "transformer",
+            "executor",
+            "indexer",
+            "cache",
+            "archive",
+            "consensus",
+            "swarm",
+            "cluster",
+            "federation",
+            "replication",
+            "synchronization",
+            "quantization",
+            "alignment",
+            "benchmark",
+            "judge",
+            "critic",
+            "redteam",
+            "simulation_environment",
+            "world_model",
+            "cognitive_model",
+            "user_model",
+            "behavior_model",
+            "preference_model",
+            "localization",
+            "virtualization",
+            "container",
+            "backup",
+            "migration",
+            "recovery",
         ];
 
     if gene.name.is_empty() {
@@ -91,7 +207,7 @@ pub fn validate_gene(
         return false;
     }
 
-    if gene.instructions.is_empty() {
+    if gene.description.is_empty() {
 
         return false;
     }
@@ -155,13 +271,6 @@ pub fn load_genes()
 
                     genes.push(
                         gene
-                    );
-                }
-                else {
-
-                    println!(
-                        "INVALID GENE: {:?}",
-                        path
                     );
                 }
             }

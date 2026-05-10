@@ -1,42 +1,59 @@
+use std::fs;
+
 mod evolution;
+mod gene;
+mod harness;
+mod panoptes;
+mod trace;
+mod capability;
+mod registry;
+mod sandbox;
+mod runtime;
+mod task;
+mod scheduler;
 
 use evolution::{
     EvolutionCandidate,
-    generate_candidates,
     evaluate_candidate,
-    select_winner,
+    generate_candidates,
     promote_winner,
+    select_winner,
 };
-
-mod ingest;
-
-use ingest::ingest_traces;
-
-use std::fs;
-
-use serde_json;
-
-mod trace;
-
-use trace::RuntimeTrace;
-
-mod gene;
 
 use gene::{
     load_genes,
-    validate_gene,
 };
 
-use anubis_memory::{
-    load_memories,
-    search_memories,
-    store_memory,
-    summarize_memories,
-    restore_context,
-    export_memories,
-    import_memories,
-    MemoryRecord,
-    MemoryType,
+use harness::MetaHarness;
+
+use panoptes::PanoptesHarness;
+
+use trace::RuntimeTrace;
+
+use capability::{
+    CapabilityDecision,
+    CapabilityRequest,
+};
+
+use registry::{
+    capability_registry,
+};
+
+use sandbox::{
+    determine_sandbox,
+    SandboxLevel,
+};
+
+use runtime::RuntimeState;
+
+use task::{
+    RuntimeTask,
+    TaskStatus,
+};
+
+use scheduler::{
+    runtime_heartbeat,
+    schedule_task,
 };
 
 fn main() {
@@ -45,19 +62,168 @@ fn main() {
         "\nPANDORA SYSTEMS\n"
     );
 
-    let loaded_genes =
-        load_genes();
-    
     let genes =
-        load_genes(); 
+        load_genes();
+
+    let runtime_state =
+        RuntimeState::new(
+            genes.clone()
+        );
+
+    let harness =
+        PanoptesHarness;
+
+    if genes.is_empty() {
+
+        println!(
+            "NO GENES INSTALLED"
+        );
+
+        return;
+    }
+
+    let shell_request =
+    CapabilityRequest {
+
+        capability:
+            String::from(
+                "shell.execute"
+            ),
+
+        requester:
+            genes[0]
+                .name
+                .clone(),
+
+        target:
+            String::from(
+                "localhost"
+            ),
+
+        reason:
+            String::from(
+                "Tool execution"
+            ),
+    };
+
+match harness.authorize(
+    runtime_state
+    .active_gene
+    .as_ref()
+    .unwrap(),
+    &shell_request,
+) {
+
+    CapabilityDecision::Approved => {
+
+        println!(
+            "[AUTHORIZED: shell]"
+        );
+    }
+
+    CapabilityDecision::Denied => {
+
+        println!(
+            "[DENIED: shell]"
+        );
+    }
+
+    CapabilityDecision::Escalated => {
+
+        println!(
+            "[ESCALATED: shell]"
+        );
+    }
+}
+
+println!(
+    "LOADED GENES: {}\n",
+    genes.len()
+);
+
+println!(
+    "[RUNTIME STATUS] {}",
+    runtime_state
+        .runtime_status
+);
+
+println!(
+    "[ACTIVE HARNESS] {}",
+    runtime_state
+        .active_harness
+        .clone()
+        .unwrap()
+);
+
+println!(
+    "[ACTIVE PROVIDER] {}\n",
+    runtime_state
+        .active_provider
+        .clone()
+        .unwrap()
+);
+
+println!(
+    "CAPABILITY REGISTRY\n"
+);
+
+let capabilities =
+    capability_registry();
+
+for capability
+    in &capabilities
+{
 
     println!(
-        "LOADED GENES: {}",
-        genes.len()
+        "[CAPABILITY] {}",
+        capability.name
     );
 
-    println!();
+    println!(
+        "TRUST LEVEL: {}",
+        capability.trust_level
+    );
 
+    println!(
+        "SANDBOX: {}",
+        capability.requires_sandbox
+    );
+
+    println!(
+        "ESCALATION: {}\n",
+        capability.requires_escalation
+    );
+}
+
+let sandbox_level =
+    determine_sandbox(
+        &shell_request
+    );
+
+match sandbox_level {
+
+    SandboxLevel::None => {
+
+        println!(
+            "[SANDBOX] none"
+        );
+    }
+
+    SandboxLevel::Restricted => {
+
+        println!(
+            "[SANDBOX] restricted"
+        );
+    }
+
+    SandboxLevel::Isolated => {
+
+        println!(
+            "[SANDBOX] isolated"
+        );
+    }
+}     
+    
     for gene in &genes {
 
         if gene.gene_type == "provider" {
@@ -65,36 +231,15 @@ fn main() {
             println!(
                 "[PROVIDER] {}",
                 gene.name
-         );
-     }
- }
-
-    for gene in
-        &loaded_genes
-    {
-
-        let valid =
-            validate_gene(
-                gene
-            );
-
-        if valid {
-
-            println!(
-                "[VALID {}] {} {}",
-                gene.gene_type,
-                gene.namespace,
-                gene.name
-            );
-
-        } else {
-
-            println!(
-                "[INVALID] {} {}",
-                gene.namespace,
-                gene.name
             );
         }
+
+        println!(
+            "[VALID {}] {} {}",
+            gene.gene_type,
+            gene.namespace,
+            gene.name
+        );
     }
 
     println!(
@@ -108,7 +253,47 @@ fn main() {
     println!(
         "MODEL: qwen2.5-coder:7b\n"
     );
+let inference_task =
+    RuntimeTask {
 
+        id:
+            String::from(
+                "task-001"
+            ),
+
+        task_type:
+            String::from(
+                "inference"
+            ),
+
+        target:
+            String::from(
+                "ollama"
+            ),
+
+        status:
+            TaskStatus::Running,
+    };
+
+schedule_task(
+    inference_task.clone()
+);
+
+println!(
+    "[TASK CREATED] {}",
+    inference_task.id
+);
+
+println!(
+    "[TASK TYPE] {}",
+    inference_task.task_type
+);
+
+println!(
+    "[TASK TARGET] {}\n",
+    inference_task.target
+);
+    
     let prompt =
         "Explain Rust ownership";
 
@@ -146,381 +331,87 @@ fn main() {
     );
 
     println!(
-        "Shell access denied under T2 policy\n"
+        "Shell access denied under PANOPTES policy\n"
     );
 
-    let memory =
-        MemoryRecord {
+    let trace =
+        RuntimeTrace {
 
-            id:
-                "memory-1".to_string(),
+            session_id:
+                String::from(
+                    "session-alpha"
+                ),
+
+            gene:
+                String::from(
+                    "coding-v1"
+                ),
+
+            provider:
+                String::from(
+                    "ollama"
+                ),
 
             prompt:
                 prompt.to_string(),
 
-            response:
-                "Simulated Ollama inference response."
-                    .to_string(),
-
-            embedding:
+            approved_tools:
                 vec![
-                    0.1,
-                    0.2,
-                    0.3,
+                    String::from(
+                        "read_file"
+                    ),
+                    String::from(
+                        "web_scrape"
+                    ),
                 ],
 
-            timestamp:
-                "2026-05-09T00:00:00Z"
-                    .to_string(),
-
-            memory_type:
-                MemoryType::Semantic,
-
-            session_id:
-                "session-alpha"
-                    .to_string(),
-
-            gene:
-                "coding-v1"
-                    .to_string(),
-
-            harness:
-                "coding"
-                    .to_string(),
-
-            model:
-                "qwen2.5-coder:7b"
-                    .to_string(),
-
-            memory_layer:
-                "long_term"
-                    .to_string(),
-
-            related_memories:
+            denied_tools:
                 vec![
-                    "memory-0".to_string()
+                    String::from(
+                        "shell"
+                    ),
                 ],
-            
-            salience:
-                0.95,
-               
-            tags:
-                vec![
-                    "rust".to_string(),
-                    "ownership".to_string(),
-                    "coding".to_string(),
-                ],
+
+            memory_hits: 0,
+
+            success: true,
         };
 
-    store_memory(
-        &memory
-    );
-
-    let memories =
-        load_memories();
-
-    let restored_context =
-        restore_context(
-            &memories,
-            5,
-        );
-
-    println!(
-        "\nRESTORED CONTEXT\n"
-    );
-
-    for memory in
-        &restored_context
-    {
-
-        println!(
-            "[{:?}] {}",
-            memory.memory_type,
-            memory.prompt
-        );
-    }
-
-    export_memories(
-        &memories
-    );
-
-    let imported =
-        import_memories();
-
-    println!(
-        "\nIMPORTED MEMORIES: {}\n",
-        imported.len()
-    );
-
-    let results =
-        search_memories(
-            &memories,
-            prompt,
-        );
-
-    println!(
-        "\nSEARCH RESULTS\n"
-    );
-
-    for result in
-        &results
-    {
-
-        println!(
-            "WEIGHT: {}\n",
-            result.0
-        );
-
-        println!(
-            "MEMORY: {}\n",
-            result.1.id
-        );
-
-        println!(
-            "PROMPT:\n{}\n",
-            result.1.prompt
-        );
-    }
-
-    println!(
-        "\nGRAPH INDEX SIZE: {}\n",
-        memories.len()
-    );
-
-    println!(
-        "TEMPORAL MEMORIES: {}\n",
-        memories.len()
-    );
-
-    println!(
-        "\nEVENT STREAM\n"
-    );
-
-    println!(
-        "[BOOT] Initializing runtime"
-    );
-
-    println!(
-        "[GENE] {} genes loaded",
-        loaded_genes.len()
-    );
-
-    println!(
-        "[RUNTIME] Active Gene: coding-v1"
-    );
-
-    println!(
-        "[HARNESS] Harness selected: coding"
-    );
-
-    println!(
-        "[RUNTIME] Provider: ollama"
-    );
-
-    println!(
-        "[RUNTIME] Model routed: qwen2.5-coder:7b"
-    );
-
-    println!(
-        "[RUNTIME] 3 tools loaded"
-    );
-
-    println!(
-        "[RUNTIME] RAHU proposed: read_file"
-    );
-
-    println!(
-        "[RUNTIME] KETU approved: read_file"
-    );
-
-    println!(
-        "[RUNTIME] RAHU proposed: web_scrape"
-    );
-
-    println!(
-        "[RUNTIME] KETU approved: web_scrape"
-    );
-
-    println!(
-        "[RUNTIME] RAHU proposed: shell"
-    );
-
-    println!(
-        "[RUNTIME] KETU denied: shell"
-    );
-
-    println!(
-        "[ANUBIS] Loaded {} memories",
-        memories.len()
-    );
-
-    println!(
-        "[PANOPTES] {} relevant memories",
-        results.len()
-    );
-
-    println!(
-        "[RUNTIME] System operational"
-    );
-
-    println!(
-        "\nHARNESS OUTPUT\n"
-    );
-
-    println!(
-        "CODING HARNESS EXECUTED:\n{}",
-        prompt
-    );
-
-    let summary =
-        summarize_memories(
-            &memories
-        );
-
-    println!(
-        "\nANUBIS MEMORY SUMMARY\n"
-    );
-
-    println!(
-        "{}",
-        summary
-    );
-
-    let trace =
-    RuntimeTrace {
-
-        session_id:
-            "session-alpha"
-            .to_string(),
-
-        gene:
-            "coding-v1"
-            .to_string(),
-
-        provider:
-            "ollama"
-            .to_string(),
-
-        prompt:
-            prompt.to_string(),
-
-        approved_tools:
-            vec![
-                "read_file".to_string(),
-                "web_scrape".to_string(),
-            ],
-
-        denied_tools:
-            vec![
-                "shell".to_string(),
-            ],
-
-        memory_hits:
-            results.len(),
-
-        success: true,
-    };
-
-    println!();
-
-    println!(
-        "ANUBIS TRACE\n"
-    );
-
-    println!(
-        "{:#?}",
-        trace
-    );
-
-    let trace_json =
-        serde_json::to_string_pretty(
-            &trace
-        )
-        .unwrap();
-
-    let trace_path =
-        format!(
-            "traces/{}.json",
-            trace.session_id
-        );
-
-    fs::write(
-        &trace_path,
-        trace_json,
+    fs::create_dir_all(
+        "traces"
     )
     .unwrap();
 
-    println!();
+    fs::write(
+        "traces/session-alpha.json",
+        serde_json::to_string_pretty(
+            &trace
+        )
+        .unwrap(),
+    )
+    .unwrap();
 
     println!(
-        "[ANUBIS] Trace persisted: {}",
-        trace_path
-    ); 
-    
-    let traces =
-        ingest_traces();
-
-    println!();
-
-    println!(
-        "ANUBIS TRACE INGESTION\n"
+        "[ANUBIS] Trace persisted: traces/session-alpha.json\n"
     );
 
     println!(
-        "TOTAL TRACES: {}",
-        traces.len()
-    );
-
-    let mut total_score =
-        0.0;
-
-    for trace in &traces {
-
-        let mut score =
-            0.0;
-
-        if trace.success {
-
-           score += 5.0;
-        }
-
-        score +=
-            trace.approved_tools.len()
-            as f32;
-
-        score -=
-           trace.denied_tools.len()
-           as f32;
-
-        score +=
-            trace.memory_hits
-            as f32 * 0.1;
-
-        total_score += score;
-    }
-
-    println!(
-        "EVOLUTIONARY FITNESS: {}",
-        total_score
+        "EVOLUTIONARY PIPELINE\n"
     );
 
     let mut evolving_gene =
         genes[0].clone();
 
-    let candidates =
-        generate_candidates(
-            &genes[0],
-            5,
-        );
+    let candidates:
+        Vec<EvolutionCandidate> =
+            generate_candidates(
+                &evolving_gene,
+                5,
+            );
 
-    println!();
-
-    println!(
-        "GEPA CANDIDATES\n"
-    );
-
-    let mut evaluated: Vec<EvolutionCandidate> =
-        Vec::new();
+    let mut evaluated:
+        Vec<EvolutionCandidate> =
+            Vec::new();
 
     for mut candidate in candidates {
 
@@ -528,82 +419,70 @@ fn main() {
             &mut candidate
         );
 
-        println!(
-            "{:#?}",
-            candidate
-        );
-
         evaluated.push(
             candidate
         );
     }
 
-    println!();
-
-    println!(
-        "GEPA EVOLUTION\n"
-    );
-
-    println!(
-        "GENERATION: {}",
-        evolving_gene.lineage.generation
-    );
-
-    println!(
-        "MUTATION: {}",
-        evolving_gene.lineage.mutation
-    );
-
-    println!(
-        "INSTRUCTIONS:\n{}",
-        evolving_gene.instructions
-    );
-
     let winner =
         select_winner(
             &evaluated
-    );
-
-    println!();
-
-    println!(
-        "GEPA WINNER\n"
-    );
-
-    println!(
-        "{:#?}",
-        winner
-    );
+        );
 
     promote_winner(
         &mut evolving_gene,
         &winner,
     );
 
-    println!();
-
     println!(
-        "PROMOTED GENE\n"
+        "PROMOTED GENE:\n{}",
+        evolving_gene.name
     );
 
     println!(
         "GENERATION: {}",
-        evolving_gene.lineage.generation
+        evolving_gene
+            .lineage
+            .generation
     );
 
     println!(
-        "INSTRUCTIONS:\n{}",
-        evolving_gene.instructions
+        "FITNESS: {}",
+        evolving_gene
+            .lineage
+            .fitness
     );
 
+    let active_tasks =
+        vec![
+            inference_task
+                 .clone()
+        ];
+
+    let heartbeat =
+        runtime_heartbeat(
+            &active_tasks
+        );
+
+    println!(
+        "\nRUNTIME HEARTBEAT\n"
+    );
+
+    println!(
+        "CYCLE: {}",
+        heartbeat.cycle
+    );
+
+    println!(
+        "ACTIVE TASKS: {}",
+        heartbeat.active_tasks
+    );
+
+    println!(
+        "STATUS: {}\n",
+        heartbeat.runtime_status
+    );  
+
 }
-    
-
-
-
-
-
-
-
 
 
