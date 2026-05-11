@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use tokio::sync::mpsc;
+
 use tracing::{
-    error,
     info,
     instrument,
     warn,
@@ -247,12 +247,23 @@ impl ExecutionRouter {
         event_tx
             .send(
                 ExecutionEvent::new(
-                    ctx,
-                    ExecutionEventKind::SandboxProvisioned {
-                        container_id:
-                            String::from(
-                                "placeholder"
-                            ),
+                    ctx.clone(),
+                    ExecutionEventKind::Stdout {
+                        line: String::from(
+                            "sandbox execution placeholder started"
+                        ),
+                    },
+                )
+            )
+            .await
+            .ok();
+
+        event_tx
+            .send(
+                ExecutionEvent::new(
+                    ctx.clone(),
+                    ExecutionEventKind::Finished {
+                        exit_code: 0,
                     },
                 )
             )
@@ -280,13 +291,39 @@ impl ExecutionRouter {
         event_tx
             .send(
                 ExecutionEvent::new(
-                    ctx,
+                    ctx.clone(),
                     ExecutionEventKind::HostExecutionStarted,
                 )
             )
             .await
             .ok();
 
+        event_tx
+            .send(
+                ExecutionEvent::new(
+                    ctx.clone(),
+                    ExecutionEventKind::Stdout {
+                        line: String::from(
+                            "host execution placeholder started"
+                        ),
+                    },
+                )
+            )
+            .await
+            .ok();
+
+        event_tx
+            .send(
+                ExecutionEvent::new(
+                    ctx.clone(),
+                    ExecutionEventKind::Finished {
+                        exit_code: 0,
+                    },
+                )
+            )
+            .await
+            .ok();
+
         Ok(0)
-    }
+}
 }

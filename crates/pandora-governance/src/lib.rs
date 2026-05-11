@@ -7,6 +7,7 @@ pub mod tier;
 pub mod traits;
 pub mod telemetry;
 pub mod error;
+pub mod jsonl_logger;
 
 #[derive(Debug)]
 pub enum PermissionTier {

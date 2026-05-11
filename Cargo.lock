@@ -1212,6 +1212,7 @@ dependencies = [
  "async-trait",
  "pandora-sandbox",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tokio-util",

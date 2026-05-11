@@ -21,3 +21,5 @@ async-trait = "0.1"
 pandora-sandbox = { path = "../pandora-sandbox" }
 
 thiserror = "1"
+
+serde_json = "1"
