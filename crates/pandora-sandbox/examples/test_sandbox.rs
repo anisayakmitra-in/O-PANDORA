@@ -73,8 +73,8 @@ async fn main() {
 
             cmd:
                 vec![
-                    String::from("sleep"),
-                    String::from("30"),
+                    String::from("echo"),
+                    String::from("hello-pandora"),
                 ],
 
             env:
@@ -84,7 +84,7 @@ async fn main() {
                 String::from("/"),
 
             timeout:
-                Duration::from_secs(3),
+                Duration::from_secs(10),
         };
 
     let execution =
@@ -143,3 +143,4 @@ async fn main() {
         .teardown()
         .await;
     } 
+
