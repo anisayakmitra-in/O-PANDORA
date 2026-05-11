@@ -11,6 +11,8 @@ mod sandbox;
 mod runtime;
 mod task;
 mod scheduler;
+mod provider;
+mod config;
 
 use evolution::{
     EvolutionCandidate,
@@ -56,6 +58,14 @@ use scheduler::{
     schedule_task,
 };
 
+use provider::Provider;
+
+use provider::ollama::OllamaProvider;
+
+use config::RuntimeConfig;
+
+use pandora_tools::filesystem::read_file;
+
 fn main() {
 
     println!(
@@ -72,6 +82,9 @@ fn main() {
 
     let harness =
         PanoptesHarness;
+
+    let config =
+        RuntimeConfig::load();
 
     if genes.is_empty() {
 
@@ -106,35 +119,49 @@ fn main() {
             ),
     };
 
-match harness.authorize(
-    runtime_state
-    .active_gene
-    .as_ref()
-    .unwrap(),
-    &shell_request,
-) {
+let shell_decision =
+    harness.authorize(
+        &genes[0],
+        &shell_request,
+    );
 
-    CapabilityDecision::Approved => {
+if config.allow_shell {
 
-        println!(
-            "[AUTHORIZED: shell]"
-        );
-    }
+    println!(
+        "[AUTHORIZED: shell]"
+    );
 
-    CapabilityDecision::Denied => {
+} else {
 
-        println!(
-            "[DENIED: shell]"
-        );
-    }
+    match shell_decision {
 
-    CapabilityDecision::Escalated => {
+        CapabilityDecision::Approved => {
 
-        println!(
-            "[ESCALATED: shell]"
-        );
-    }
-}
+            println!(
+                "[AUTHORIZED: shell]"
+            );
+        }
+
+        CapabilityDecision::Denied => {
+
+            println!(
+                "[DENIED: shell]"
+            );
+
+            println!(
+                "Shell access denied under PANOPTES policy"
+            );
+       }
+
+       CapabilityDecision::Escalated => {
+
+           println!(
+               "[ESCALATED: shell]"
+           );
+       }
+
+           }
+       }
 
 println!(
     "LOADED GENES: {}\n",
@@ -303,10 +330,6 @@ println!(
     );
 
     println!(
-        "RESPONSE:\nSimulated Ollama inference response.\n"
-    );
-
-    println!(
         "TOOL EXECUTION\n"
     );
 
@@ -314,9 +337,26 @@ println!(
         "[TOOL: read_file]"
     );
 
-    println!(
-        "READ FILE TOOL:\nhttps://example.com\n"
-    );
+    match read_file(
+        "Cargo.toml"
+    ) {
+
+        Ok(content) => {
+
+            println!(
+                "FILE CONTENT:\n{}\n",
+                content
+            );
+       }
+
+       Err(error) => {
+
+           println!(
+               "FILE READ ERROR:\n{}\n",
+               error
+           );
+       }
+    }
 
     println!(
         "[TOOL: web_scrape]"
@@ -324,14 +364,6 @@ println!(
 
     println!(
         "SCRAPLING RESEARCH TOOL:\nScraped data from https://example.com\n"
-    );
-
-    println!(
-        "[DENIED: shell]"
-    );
-
-    println!(
-        "Shell access denied under PANOPTES policy\n"
     );
 
     let trace =
@@ -483,6 +515,20 @@ println!(
         heartbeat.runtime_status
     );  
 
-}
+    let provider =
+        OllamaProvider;
+
+    let response =
+        provider.infer(
+            "qwen2.5-coder:7b",
+            prompt,
+        );
+
+    println!(
+        "RESPONSE:\n{}",
+        response
+    );
+
+    }
 
 

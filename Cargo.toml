@@ -1,23 +1,26 @@
 [workspace]
 resolver = "2"
 
-members = ["crates/anubis-memory",
+members = [
+    "crates/anubis-memory",
+    "crates/pandora-cli",
+    "crates/pandora-events",
     "crates/pandora-gene",
+    "crates/pandora-governance",
     "crates/pandora-harness",
     "crates/pandora-memory",
     "crates/pandora-model",
     "crates/pandora-panoptikon",
+    "crates/pandora-policy",
+    "crates/pandora-provider",
+    "crates/pandora-runtime", "crates/pandora-sandbox",
+    "crates/pandora-signal",
+    "crates/pandora-tools",
     "crates/pandora-tui",
     "crates/pandora-types",
-    "crates/anubis-memory",
-    "crates/pandora-events",
-    "crates/pandora-runtime",
-    "crates/pandora-tools",
-    "crates/pandora-provider",
-    "crates/pandora-governance",
-    "crates/pandora-cli",
+    "crates/pandora-sandbox",
     "test-runner"
-, "crates/pandora-runtime", "crates/pandora-events", "crates/pandora-tools", "crates/pandora-provider", "crates/pandora-cli"]
+]
 
 [workspace.package]
 version = "0.1.0"

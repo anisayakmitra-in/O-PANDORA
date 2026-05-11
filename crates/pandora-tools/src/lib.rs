@@ -32,6 +32,8 @@ for ReadFileTool {
     }
 }
 
+pub mod filesystem;
+
 pub struct WebScrapeTool;
 
 impl Tool
