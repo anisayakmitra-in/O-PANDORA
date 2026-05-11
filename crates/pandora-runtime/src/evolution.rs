@@ -20,6 +20,18 @@ pub fn promote_winner(
         )
         .unwrap();
 
+    if let Err(error) =
+        fs::create_dir_all("genes/archive")
+    {
+
+        println!(
+            "[WARN] failed to create archive dir: {}",
+            error
+        );
+
+        return;
+    }
+ 
     fs::write(
         archive_path,
         archived,
@@ -96,7 +108,7 @@ pub fn evaluate_candidate(
 }
 pub fn select_winner(
     candidates: &[EvolutionCandidate],
-) -> EvolutionCandidate {
+) -> Option<EvolutionCandidate> {
 
     let mut winner =
         candidates[0].clone();

@@ -20,7 +20,16 @@ pub fn ingest_traces() -> Vec<RuntimeTrace> {
                 .unwrap()
                 .path();
 
-        if path.extension().unwrap() == "json" {
+        if let Some(extension) =
+            path.extension()
+                .and_then(|e| e.to_str())
+        {
+
+            if extension == "json" {
+
+                // existing logic
+            }
+        }
 
             let contents =
                 fs::read_to_string(

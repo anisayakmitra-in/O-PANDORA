@@ -249,10 +249,25 @@ pub fn load_genes()
         );
 
         let contents =
-            fs::read_to_string(
-                &path
-            )
-            .unwrap();
+            if path.is_file() {
+
+                match fs::read_to_string(&path) {
+
+                    Ok(contents) => {
+
+                        // existing parse logic
+                }
+
+                Err(error) => {
+
+                    println!(
+                        "[WARN] failed to read gene file {:?}: {}",
+                        path,
+                        error
+                    );
+                }
+            }
+        }
 
         match serde_json::from_str::<GeneManifest>(
             &contents
@@ -292,3 +307,4 @@ pub fn load_genes()
 
     genes
 }
+
