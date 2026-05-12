@@ -456,15 +456,23 @@ println!(
         );
     }
 
-    let winner =
-        select_winner(
-            &evaluated
-        );
+    if let Some(winner) =
+       select_winner(
+           &evaluated
+       )
+   {
 
-    promote_winner(
-        &mut evolving_gene,
-        &winner,
-    );
+       promote_winner(
+           &mut evolving_gene,
+           &winner,
+       );
+
+   } else {
+
+       println!(
+           "[WARN] no evolution candidates available"
+       );
+   }
 
     println!(
         "PROMOTED GENE:\n{}",

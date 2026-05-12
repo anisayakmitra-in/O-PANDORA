@@ -1,4 +1,4 @@
-use bollard::container::{Config, CreateContainerOptions, RemoveContainerOptions};
+use bollard::container::{Config, RemoveContainerOptions};
 use futures_util::StreamExt;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;

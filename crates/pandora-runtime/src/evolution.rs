@@ -21,7 +21,9 @@ pub fn promote_winner(
         .unwrap();
 
     if let Err(error) =
-        fs::create_dir_all("genes/archive")
+        fs::create_dir_all(
+            "genes/archive"
+        )
     {
 
         println!(
@@ -31,7 +33,7 @@ pub fn promote_winner(
 
         return;
     }
- 
+
     fs::write(
         archive_path,
         archived,
@@ -106,9 +108,15 @@ pub fn evaluate_candidate(
     candidate.fitness =
         length_score / 10.0;
 }
+
 pub fn select_winner(
     candidates: &[EvolutionCandidate],
 ) -> Option<EvolutionCandidate> {
+
+    if candidates.is_empty() {
+
+        return None;
+    }
 
     let mut winner =
         candidates[0].clone();
@@ -123,5 +131,5 @@ pub fn select_winner(
         }
     }
 
-    winner
+    Some(winner)
 }

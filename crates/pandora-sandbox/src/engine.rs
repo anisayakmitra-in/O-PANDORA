@@ -1,6 +1,5 @@
 use bollard::Docker;
-use tracing::{info, error, instrument};
-use std::sync::Arc;
+use tracing::info;
 use tokio::time::{interval, Duration};
 
 #[derive(Clone)]
@@ -22,7 +21,7 @@ impl SandboxEngine {
     /// Background task that hunts down and kills containers labeled `pandora.ephemeral=true`
     /// that have exceeded their maximum absolute TTL, preventing zombie resource exhaustion.
     fn spawn_reaper_task(&self) {
-        let docker = self.docker.clone();
+        let _docker = self.docker.clone();
         tokio::spawn(async move {
             let mut ticker = interval(Duration::from_secs(60));
             loop {

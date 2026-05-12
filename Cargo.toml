@@ -13,12 +13,13 @@ members = [
     "crates/pandora-panoptikon",
     "crates/pandora-policy",
     "crates/pandora-provider",
-    "crates/pandora-runtime", "crates/pandora-sandbox",
+    "crates/pandora-runtime",
+    "crates/pandora-sandbox", "crates/pandora-scheduler",
     "crates/pandora-signal",
     "crates/pandora-tools",
     "crates/pandora-tui",
     "crates/pandora-types",
-    "crates/pandora-sandbox",
+    "crates/pandora-scheduler",
     "test-runner"
 ]
 

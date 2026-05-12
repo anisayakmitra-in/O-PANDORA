@@ -248,14 +248,46 @@ pub fn load_genes()
             path
         );
 
-        let contents =
-            if path.is_file() {
+                if path.is_file() {
 
-                match fs::read_to_string(&path) {
+            match fs::read_to_string(&path) {
 
-                    Ok(contents) => {
+                Ok(contents) => {
 
-                        // existing parse logic
+                    match serde_json::from_str::<GeneManifest>(
+                        &contents
+                    ) {
+
+                        Ok(gene) => {
+
+                            println!(
+                                "PARSED GENE: {}",
+                                gene.name
+                            );
+
+                            if validate_gene(
+                                &gene
+                            ) {
+
+                                genes.push(
+                                    gene
+                                );
+                            }
+                        }
+
+                        Err(error) => {
+
+                            println!(
+                                "FAILED TO PARSE {:?}",
+                                path
+                            );
+
+                            println!(
+                                "ERROR: {}",
+                                error
+                            );
+                        }
+                    }
                 }
 
                 Err(error) => {
@@ -268,43 +300,7 @@ pub fn load_genes()
                 }
             }
         }
-
-        match serde_json::from_str::<GeneManifest>(
-            &contents
-        ) {
-
-            Ok(gene) => {
-
-                println!(
-                    "PARSED GENE: {}",
-                    gene.name
-                );
-
-                if validate_gene(
-                    &gene
-                ) {
-
-                    genes.push(
-                        gene
-                    );
-                }
-            }
-
-            Err(error) => {
-
-                println!(
-                    "FAILED TO PARSE {:?}",
-                    path
-                );
-
-                println!(
-                    "ERROR: {}",
-                    error
-                );
-            }
-        }
     }
 
     genes
 }
-
