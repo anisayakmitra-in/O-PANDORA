@@ -1,12 +1,12 @@
 use chrono::Utc;
 
 use std::collections::BTreeMap;
+
 use std::sync::Arc;
 
 use tokio::sync::{
     mpsc,
     RwLock,
-    Semaphore,
 };
 
 use tokio::time::{
@@ -24,6 +24,8 @@ use tracing::{
 };
 
 use uuid::Uuid;
+
+use crate::adapter::ExecutionAdapter;
 
 use crate::event::SchedulerEvent;
 
@@ -57,16 +59,20 @@ pub struct SchedulerKernel {
     cancel_token:
         CancellationToken,
 
-    worker_limit:
-        Arc<Semaphore>,
+    adapter:
+        Arc<dyn ExecutionAdapter>,
 }
 
 impl SchedulerKernel {
 
     pub fn new(
         store: TaskStore,
-        event_tx: mpsc::Sender<SchedulerEvent>,
-        cancel_token: CancellationToken,
+        event_tx:
+            mpsc::Sender<SchedulerEvent>,
+        cancel_token:
+            CancellationToken,
+        adapter:
+            Arc<dyn ExecutionAdapter>,
     ) -> Self {
 
         Self {
@@ -87,17 +93,16 @@ impl SchedulerKernel {
 
             cancel_token,
 
-            worker_limit:
-                Arc::new(
-                    Semaphore::new(32)
-                ),
+            adapter,
         }
     }
 
-    #[instrument(skip(self))]
     pub async fn boot(
         &self,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<
+        (),
+        Box<dyn std::error::Error>
+    > {
 
         let mut store =
             self.store.write().await;
@@ -114,7 +119,10 @@ impl SchedulerKernel {
         let mut queue =
             self.queue.write().await;
 
-        for (id, mut task) in tasks {
+        for (
+            id,
+            mut task
+        ) in tasks {
 
             if task.status ==
                 TaskStatus::Running
@@ -124,12 +132,14 @@ impl SchedulerKernel {
                     TaskStatus::Pending;
 
                 store
-                    .update_task(&task)
+                    .update_task(
+                        &task
+                    )
                     .await?;
 
                 warn!(
                     task_id = %id,
-                    "Recovered interrupted task"
+                    "recovered interrupted task"
                 );
             }
 
@@ -138,14 +148,16 @@ impl SchedulerKernel {
             {
 
                 queue
-                    .entry(task.next_run)
+                    .entry(
+                        task.next_run
+                    )
                     .or_default()
                     .push(id);
             }
         }
 
         info!(
-            "Scheduler Kernel booted"
+            "scheduler boot complete"
         );
 
         Ok(())
@@ -153,7 +165,7 @@ impl SchedulerKernel {
 
     #[instrument(skip(self))]
     pub async fn run_heartbeat_loop(
-        self: Arc<Self>
+        self: Arc<Self>,
     ) {
 
         let mut ticker =
@@ -169,14 +181,13 @@ impl SchedulerKernel {
 
                     if let Err(error) =
                         self
-                            .clone()
                             .process_due_tasks()
                             .await
                     {
 
                         error!(
-                            "heartbeat failure: {}",
-                            error
+                            error = %error,
+                            "heartbeat processing failure"
                         );
                     }
                 }
@@ -187,7 +198,7 @@ impl SchedulerKernel {
                 {
 
                     info!(
-                        "scheduler shutdown"
+                        "scheduler heartbeat shutdown"
                     );
 
                     break;
@@ -200,24 +211,29 @@ impl SchedulerKernel {
     pub async fn enqueue(
         &self,
         task: Task,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<
+        (),
+        Box<dyn std::error::Error>
+    > {
 
         {
             let mut store =
                 self.store.write().await;
 
             store
-                .update_task(&task)
+                .update_task(
+                    &task
+                )
                 .await?;
         }
 
         let _ =
-            self
-                .event_tx
+            self.event_tx
                 .send(
-                    SchedulerEvent::TaskQueued(
-                        task.id
-                    )
+                    SchedulerEvent
+                        ::TaskQueued(
+                            task.id
+                        )
                 )
                 .await;
 
@@ -226,7 +242,9 @@ impl SchedulerKernel {
                 self.queue.write().await;
 
             queue
-                .entry(task.next_run)
+                .entry(
+                    task.next_run
+                )
                 .or_default()
                 .push(task.id);
         }
@@ -235,8 +253,11 @@ impl SchedulerKernel {
     }
 
     async fn process_due_tasks(
-        self: Arc<Self>
-    ) -> Result<(), Box<dyn std::error::Error>> {
+        &self,
+    ) -> Result<
+        (),
+        Box<dyn std::error::Error>
+    > {
 
         let now =
             Utc::now();
@@ -256,58 +277,58 @@ impl SchedulerKernel {
                 &mut future_tasks,
             );
 
-            let due_tasks =
-                future_tasks;
+            for (
+                _,
+                mut task_ids
+            ) in future_tasks {
 
-            for (_, mut task_ids)
-                in due_tasks
-            {
-
-                to_execute
-                    .append(
-                        &mut task_ids
-                    );
+                to_execute.append(
+                    &mut task_ids
+                );
             }
         }
 
         for task_id in to_execute {
 
             let kernel =
-                self.clone();
-
-            let permit =
-                match kernel
-                    .worker_limit
-                    .clone()
-                    .acquire_owned()
-                    .await
-            {
-
-                Ok(permit) => permit,
-
-                Err(error) => {
-
-                    error!(
-                        "failed to acquire permit: {}",
-                        error
-                    );
-
-                    return Ok(());
-                }
-            };
+                Arc::new(
+                    self.clone_inner()
+                );
 
             tokio::spawn(async move {
 
-                let _permit =
-                    permit;
-
                 kernel
-                    .dispatch_task(task_id)
+                    .dispatch_task(
+                        task_id
+                    )
                     .await;
             });
         }
 
         Ok(())
+    }
+
+    fn clone_inner(
+        &self,
+    ) -> Self {
+
+        Self {
+
+            store:
+                self.store.clone(),
+
+            queue:
+                self.queue.clone(),
+
+            event_tx:
+                self.event_tx.clone(),
+
+            cancel_token:
+                self.cancel_token.clone(),
+
+            adapter:
+                self.adapter.clone(),
+        }
     }
 
     async fn dispatch_task(
@@ -320,9 +341,9 @@ impl SchedulerKernel {
             let store =
                 self.store.read().await;
 
-            match store
-                .get_task(&task_id)
-            {
+            match store.get_task(
+                &task_id
+            ) {
 
                 Some(task) =>
                     task.clone(),
@@ -338,25 +359,117 @@ impl SchedulerKernel {
         task.attempts += 1;
 
         self
-            .update_task_state(&task)
+            .update_task_state(
+                &task
+            )
             .await;
 
         let _ =
-            self
-                .event_tx
+            self.event_tx
                 .send(
-                    SchedulerEvent::TaskStarted(
-                        task.id
-                    )
+                    SchedulerEvent
+                        ::TaskStarted(
+                            task.id
+                        )
                 )
                 .await;
 
-        let result =
-            Watchdog::execute_with_budget(
+        let (
+            stdout_tx,
+            mut stdout_rx
+        ) = mpsc::channel(1024);
+
+        let (
+            stderr_tx,
+            mut stderr_rx
+        ) = mpsc::channel(1024);
+
+        let event_tx =
+            self.event_tx.clone();
+
+        let task_id_clone =
+            task.id;
+
+        tokio::spawn(async move {
+
+            loop {
+
+                tokio::select! {
+
+                    Some(stdout) =
+                        stdout_rx.recv() =>
+                    {
+
+                        let _ =
+                            event_tx
+                                .send(
+                                    SchedulerEvent
+                                        ::TaskOutput {
+
+                                            id:
+                                                task_id_clone,
+
+                                            stream:
+                                                "stdout"
+                                                    .into(),
+
+                                            data:
+                                                stdout,
+                                        }
+                                )
+                                .await;
+                    }
+
+                    Some(stderr) =
+                        stderr_rx.recv() =>
+                    {
+
+                        let _ =
+                            event_tx
+                                .send(
+                                    SchedulerEvent
+                                        ::TaskOutput {
+
+                                            id:
+                                                task_id_clone,
+
+                                            stream:
+                                                "stderr"
+                                                    .into(),
+
+                                            data:
+                                                stderr,
+                                        }
+                                )
+                                .await;
+                    }
+
+                    else => break,
+                }
+            }
+        });
+
+        let adapter =
+            self.adapter.clone();
+
+        let cancel_token =
+            self.cancel_token.clone();
+
+        let execution_future =
+            adapter.execute_task(
                 &task,
-                self.cancel_token.clone(),
-            )
-            .await;
+                cancel_token,
+                stdout_tx,
+                stderr_tx,
+            );
+
+        let result =
+            Watchdog
+                ::enforce_temporal_budget(
+                    &task,
+                    execution_future,
+                )
+                .await;
 
         match result {
 
@@ -372,43 +485,16 @@ impl SchedulerKernel {
                     );
 
                 self
-                    .update_task_state(&task)
+                    .update_task_state(
+                        &task
+                    )
                     .await;
 
                 let _ =
-                    self
-                        .event_tx
-                        .send(
-                            SchedulerEvent::TaskCompleted(
-                                task.id
-                            )
-                        )
-                        .await;
-            }
-
-            Err(
-                crate::watchdog
-                    ::WatchdogError::Timeout
-            ) => {
-
-                error!(
-                    task_id = %task.id,
-                    "task timeout"
-                );
-
-                task.status =
-                    TaskStatus::Failed;
-
-                self
-                    .update_task_state(&task)
-                    .await;
-
-                let _ =
-                    self
-                        .event_tx
+                    self.event_tx
                         .send(
                             SchedulerEvent
-                                ::WatchdogTriggered(
+                                ::TaskCompleted(
                                     task.id
                                 )
                         )
@@ -420,7 +506,7 @@ impl SchedulerKernel {
                 warn!(
                     task_id = %task.id,
                     error = %error,
-                    "task failed"
+                    "task execution failed"
                 );
 
                 crate::retry
@@ -429,43 +515,20 @@ impl SchedulerKernel {
                     );
 
                 self
-                    .update_task_state(&task)
+                    .update_task_state(
+                        &task
+                    )
                     .await;
 
-                if task.status ==
-                    TaskStatus::Failed
-                {
-
-                    let _ =
-                        self
-                            .event_tx
-                            .send(
-                                SchedulerEvent::TaskFailed(
+                let _ =
+                    self.event_tx
+                        .send(
+                            SchedulerEvent
+                                ::TaskFailed(
                                     task.id
                                 )
-                            )
-                            .await;
-                }
-                else {
-
-                    let _ =
-                        self
-                            .event_tx
-                            .send(
-                                SchedulerEvent::TaskRetried(
-                                    task.id
-                                )
-                            )
-                            .await;
-
-                    let mut queue =
-                        self.queue.write().await;
-
-                    queue
-                        .entry(task.next_run)
-                        .or_default()
-                        .push(task.id);
-                }
+                        )
+                        .await;
             }
         }
     }
@@ -485,8 +548,8 @@ impl SchedulerKernel {
         {
 
             error!(
-                "failed to persist task: {}",
-                error
+                error = %error,
+                "failed persisting task"
             );
         }
     }

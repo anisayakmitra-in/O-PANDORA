@@ -1,3 +1,5 @@
+use pandora_governance::tier::ExecutionTier;
+
 use chrono::{
     DateTime,
     Utc,
@@ -18,30 +20,9 @@ use crate::budget::{
 #[derive(
     Debug,
     Clone,
+    PartialEq,
     Serialize,
     Deserialize,
-    PartialEq,
-    Eq,
-)]
-pub enum ExecutionTier {
-
-    Tier1Isolated,
-
-    Tier2Governed,
-
-    Tier3Host,
-
-    Tier4Autonomous,
-
-    Tier5Unbounded,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
 )]
 pub enum TaskStatus {
 
@@ -113,7 +94,8 @@ pub enum TaskPayload {
 )]
 pub struct Task {
 
-    pub id: Uuid,
+    pub id:
+        Uuid,
 
     pub created_at:
         DateTime<Utc>,
@@ -136,9 +118,11 @@ pub struct Task {
     pub budget:
         ExecutionBudget,
 
-    pub attempts: u32,
+    pub attempts:
+        u32,
 
-    pub invocations: u64,
+    pub invocations:
+        u64,
 
     pub payload:
         TaskPayload,
@@ -147,8 +131,13 @@ pub struct Task {
 impl Task {
 
     pub fn new(
-        tier: ExecutionTier,
-        payload: TaskPayload,
+
+        tier:
+            ExecutionTier,
+
+        payload:
+            TaskPayload,
+
     ) -> Self {
 
         Self {
@@ -187,16 +176,72 @@ impl Task {
     }
 
     pub fn with_delay(
+
         mut self,
-        seconds: u64,
+
+        seconds:
+            u64,
+
     ) -> Self {
 
         self.next_run =
             Utc::now()
-            + chrono::Duration::seconds(
+            +
+            chrono::Duration::seconds(
                 seconds as i64
             );
 
         self
+    }
+
+    pub fn mark_running(
+        &mut self,
+    ) {
+
+        self.status =
+            TaskStatus::Running;
+
+        self.attempts += 1;
+    }
+
+    pub fn mark_completed(
+        &mut self,
+    ) {
+
+        self.status =
+            TaskStatus::Completed;
+
+        self.invocations += 1;
+    }
+
+    pub fn mark_failed(
+        &mut self,
+    ) {
+
+        self.status =
+            TaskStatus::Failed;
+    }
+
+    pub fn cancel(
+        &mut self,
+    ) {
+
+        self.status =
+            TaskStatus::Cancelled;
+    }
+
+    pub fn is_terminal(
+        &self,
+    ) -> bool {
+
+        matches!(
+            self.status,
+
+            TaskStatus::Completed
+            |
+            TaskStatus::Failed
+            |
+            TaskStatus::Cancelled
+        )
     }
 }

@@ -1,19 +1,21 @@
 use std::sync::Arc;
 
+use tokio::process::Command;
+
 use tokio::sync::mpsc;
 
 use tracing::{
+    error,
     info,
     instrument,
     warn,
 };
 
-use pandora_sandbox::config::{
-    SandboxCommand,
-    SandboxConfig,
-};
+use crate::audit::AuditEvent;
 
 use crate::context::ExecutionContext;
+
+use crate::error::GovernanceError;
 
 use crate::event::{
     ExecutionEvent,
@@ -31,8 +33,12 @@ use crate::traits::{
     PolicyEvaluator,
 };
 
-use crate::error::GovernanceError;
+use pandora_sandbox::config::{
+    SandboxCommand,
+    SandboxConfig,
+};
 
+#[derive(Clone)]
 pub struct ExecutionRouter {
 
     pub policy_evaluator:
@@ -53,12 +59,14 @@ pub struct ExecutionRouter {
 
 impl ExecutionRouter {
 
-    #[instrument(skip(
-        self,
-        ctx,
-        cmd,
-        event_tx,
-    ))]
+    #[instrument(
+        skip(
+            self,
+            ctx,
+            cmd,
+            event_tx
+        )
+    )]
     pub async fn execute(
 
         &self,
@@ -72,50 +80,75 @@ impl ExecutionRouter {
         event_tx:
             mpsc::Sender<ExecutionEvent>,
 
-    ) -> Result<i64, GovernanceError> {
+    ) -> Result<
+        i64,
+        GovernanceError,
+    > {
+
+        if self
+            .kill_switch
+            .is_triggered()
+        {
+
+            return Err(
+                GovernanceError
+                    ::SystemHalted
+            );
+        }
 
         if ctx.is_cancelled() {
 
             return Err(
-                GovernanceError::SystemHalted
+                GovernanceError
+                    ::SystemHalted
             );
         }
 
-        event_tx
-            .send(
-                ExecutionEvent::new(
-                    ctx.clone(),
-                    ExecutionEventKind::Started,
-                )
+        self
+            .emit_event(
+                &event_tx,
+                ctx.clone(),
+                ExecutionEventKind::ExecutionStarted {
+                    command:
+                        cmd.cmd.clone(),
+                },
             )
-            .await
-            .ok();
+            .await;
 
         match &ctx.tier {
 
-            ExecutionTier::IsolatedSandbox => {
+            ExecutionTier
+                ::Tier1Isolated => {
 
                 info!(
-                    "Tier 1 execution approved"
+                    "tier1 isolated execution"
                 );
             }
 
-            ExecutionTier::GovernedElevated(
-                config
-            ) => {
+            ExecutionTier
+                ::Tier2Governed {
+                    ..
+                } => {
 
-                self.policy_evaluator
+                let config =
+                    SandboxConfig
+                        ::default();
+
+                self
+                    .policy_evaluator
                     .evaluate_elevated(
-                        config,
+                        &config,
                         &cmd,
                     )
                     .await?;
             }
 
-            ExecutionTier::HostUnrestricted => {
+            ExecutionTier
+                ::Tier3Host => {
 
                 let approved =
-                    self.consent_provider
+                    self
+                        .consent_provider
                         .request_sync_consent(
                             &cmd
                         )
@@ -123,30 +156,20 @@ impl ExecutionRouter {
 
                 if !approved {
 
-                    event_tx
-                        .send(
-                            ExecutionEvent::new(
-                                ctx.clone(),
-                                ExecutionEventKind::GovernanceDenied {
-                                    reason:
-                                        String::from(
-                                            "User denied execution"
-                                        ),
-                                },
-                            )
-                        )
-                        .await
-                        .ok();
-
                     return Err(
-                        GovernanceError::ConsentDenied
+                        GovernanceError
+                            ::ConsentDenied
                     );
                 }
             }
 
-            ExecutionTier::AutonomousOperator { .. } => {
+            ExecutionTier
+                ::Tier4Autonomous {
+                    ..
+                } => {
 
-                self.banner_manager
+                self
+                    .banner_manager
                     .set_warning_banner(
                         true,
                         "AUTONOMOUS OPERATOR ACTIVE",
@@ -154,9 +177,17 @@ impl ExecutionRouter {
                     .await;
             }
 
-            ExecutionTier::UnboundedExecution { .. } => {
+            ExecutionTier
+                ::Tier5Unbounded {
+                    ..
+                } => {
 
-                self.banner_manager
+                warn!(
+                    "tier5 unbounded execution active"
+                );
+
+                self
+                    .banner_manager
                     .set_warning_banner(
                         true,
                         "WARNING: UNBOUNDED EXECUTION ACTIVE",
@@ -165,65 +196,170 @@ impl ExecutionRouter {
             }
         }
 
-        let result =
-            if ctx.tier.is_host_execution() {
+        self
+            .log_intent(
+                ctx.clone(),
+                &cmd,
+                "dispatch",
+            )
+            .await;
 
-                self.dispatch_host(
-                    ctx.clone(),
-                    cmd,
-                    event_tx.clone(),
-                )
-                .await
+        let result =
+
+            if ctx
+                .tier
+                .is_host_execution()
+            {
+
+                self
+                    .dispatch_host(
+                        ctx.clone(),
+                        cmd,
+                        event_tx.clone(),
+                    )
+                    .await
 
             } else {
 
-                let config =
-                    match &ctx.tier {
-
-                        ExecutionTier::GovernedElevated(
-                            cfg
-                        ) => cfg.clone(),
-
-                        _ => SandboxConfig::default(),
-                    };
-
-                self.dispatch_sandbox(
-                    ctx.clone(),
-                    config,
-                    cmd,
-                    event_tx.clone(),
-                )
-                .await
+                self
+                    .dispatch_sandbox(
+                        ctx.clone(),
+                        SandboxConfig::default(),
+                        cmd,
+                        event_tx.clone(),
+                    )
+                    .await
             };
 
         match &result {
 
             Ok(exit_code) => {
 
-                event_tx
-                    .send(
-                        ExecutionEvent::new(
-                            ctx.clone(),
-                            ExecutionEventKind::Finished {
-                                exit_code:
-                                    *exit_code,
-                            },
-                        )
+                self
+                    .emit_event(
+                        &event_tx,
+                        ctx.clone(),
+                        ExecutionEventKind::ExecutionCompleted {
+                            exit_code:
+                                *exit_code,
+                        },
                     )
-                    .await
-                    .ok();
+                    .await;
             }
 
-            Err(error) => {
+            Err(error_value) => {
 
-                warn!(
-                    "Execution failed: {:?}",
-                    error
-                );
+                self
+                    .emit_event(
+                        &event_tx,
+                        ctx.clone(),
+                        ExecutionEventKind::ExecutionFailed {
+                            reason:
+                                error_value
+                                    .to_string(),
+                        },
+                    )
+                    .await;
             }
         }
 
         result
+    }
+
+    async fn dispatch_host(
+
+        &self,
+
+        ctx:
+            Arc<ExecutionContext>,
+
+        cmd:
+            SandboxCommand,
+
+        event_tx:
+            mpsc::Sender<ExecutionEvent>,
+
+    ) -> Result<
+        i64,
+        GovernanceError,
+    > {
+
+        let mut command =
+            Command::new(
+                &cmd.cmd[0]
+            );
+
+        if cmd.cmd.len() > 1 {
+
+            command.args(
+                &cmd.cmd[1..]
+            );
+        }
+
+        command.kill_on_drop(true);
+
+        let output =
+            command
+                .output()
+                .await
+                .map_err(
+                    |error| {
+
+                        GovernanceError
+                            ::ExecutionFailed(
+                                error
+                                    .to_string()
+                            )
+                    }
+                )?;
+
+        let stdout =
+            String::from_utf8_lossy(
+                &output.stdout
+            );
+
+        for line in stdout.lines() {
+
+            self
+                .emit_event(
+                    &event_tx,
+                    ctx.clone(),
+                    ExecutionEventKind::Stdout {
+                        line:
+                            line
+                                .to_string(),
+                    },
+                )
+                .await;
+        }
+
+        let stderr =
+            String::from_utf8_lossy(
+                &output.stderr
+            );
+
+        for line in stderr.lines() {
+
+            self
+                .emit_event(
+                    &event_tx,
+                    ctx.clone(),
+                    ExecutionEventKind::Stderr {
+                        line:
+                            line
+                                .to_string(),
+                    },
+                )
+                .await;
+        }
+
+        Ok(
+            output
+                .status
+                .code()
+                .unwrap_or(-1)
+                as i64
+        )
     }
 
     async fn dispatch_sandbox(
@@ -236,94 +372,135 @@ impl ExecutionRouter {
         _config:
             SandboxConfig,
 
-        _cmd:
+        cmd:
             SandboxCommand,
 
         event_tx:
             mpsc::Sender<ExecutionEvent>,
 
-    ) -> Result<i64, GovernanceError> {
+    ) -> Result<
+        i64,
+        GovernanceError,
+    > {
 
-        event_tx
-            .send(
-                ExecutionEvent::new(
-                    ctx.clone(),
-                    ExecutionEventKind::Stdout {
-                        line: String::from(
-                            "sandbox execution placeholder started"
+        self
+            .emit_event(
+                &event_tx,
+                ctx.clone(),
+                ExecutionEventKind::Stdout {
+                    line:
+                        format!(
+                            "[sandbox simulated] {:?}",
+                            cmd.cmd
                         ),
-                    },
-                )
+                },
             )
-            .await
-            .ok();
-
-        event_tx
-            .send(
-                ExecutionEvent::new(
-                    ctx.clone(),
-                    ExecutionEventKind::Finished {
-                        exit_code: 0,
-                    },
-                )
-            )
-            .await
-            .ok();
+            .await;
 
         Ok(0)
     }
 
-    async fn dispatch_host(
+    async fn emit_event(
+
+        &self,
+
+        event_tx:
+            &mpsc::Sender<ExecutionEvent>,
+
+        ctx:
+            Arc<ExecutionContext>,
+
+        kind:
+            ExecutionEventKind,
+
+    ) {
+
+        let event =
+            ExecutionEvent::new(
+                ctx,
+                kind,
+            );
+
+        let _ =
+            event_tx
+                .send(event)
+                .await;
+    }
+
+    async fn log_intent(
 
         &self,
 
         ctx:
             Arc<ExecutionContext>,
 
-        _cmd:
-            SandboxCommand,
+        cmd:
+            &SandboxCommand,
 
-        event_tx:
-            mpsc::Sender<ExecutionEvent>,
+        outcome:
+            &str,
 
-    ) -> Result<i64, GovernanceError> {
+    ) {
 
-        event_tx
-            .send(
-                ExecutionEvent::new(
-                    ctx.clone(),
-                    ExecutionEventKind::HostExecutionStarted,
-                )
-            )
-            .await
-            .ok();
+        let event =
+            AuditEvent {
 
-        event_tx
-            .send(
-                ExecutionEvent::new(
-                    ctx.clone(),
-                    ExecutionEventKind::Stdout {
-                        line: String::from(
-                            "host execution placeholder started"
-                        ),
+                timestamp:
+                    std::time::SystemTime
+                        ::now(),
+
+                trace_id:
+                    ctx.trace_id
+                        .to_string(),
+
+                tier:
+                    format!(
+                        "{:?}",
+                        ctx.tier
+                    ),
+
+                command:
+                    cmd.cmd.clone(),
+
+                environment:
+
+                    if ctx
+                        .tier
+                        .is_host_execution()
+                    {
+
+                        String::from(
+                            "host"
+                        )
+
+                    } else {
+
+                        String::from(
+                            "sandbox"
+                        )
                     },
-                )
-            )
-            .await
-            .ok();
 
-        event_tx
-            .send(
-                ExecutionEvent::new(
-                    ctx.clone(),
-                    ExecutionEventKind::Finished {
-                        exit_code: 0,
-                    },
-                )
-            )
-            .await
-            .ok();
+                operator_id:
+                    None,
 
-        Ok(0)
-}
+                outcome:
+                    outcome
+                        .to_string(),
+            };
+
+        if let Err(error_value) =
+
+            self
+                .audit_logger
+                .log_event(event)
+                .await
+
+        {
+
+            error!(
+                "audit logging failure: {}",
+                error_value
+            );
+        }
+    }
 }

@@ -16,6 +16,39 @@ pub enum WatchdogError {
 pub struct Watchdog;
 
 impl Watchdog {
+
+    pub async fn enforce_temporal_budget<F, T, E>(
+        task: &crate::task::Task,
+        future: F,
+    ) -> Result<T, E>
+    where
+        F: std::future::Future<
+            Output = Result<T, E>
+        >,
+    {
+
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(
+                task.budget.max_runtime_seconds
+            ),
+            future,
+        )
+        .await
+        {
+
+            Ok(result) => result,
+
+            Err(_) => {
+
+                panic!(
+                    "watchdog timeout exceeded"
+                );
+            }
+        }
+    }
+}
+
+impl Watchdog {
     /// Wraps the execution payload in a strict temporal budget and cancellation context.
     pub async fn execute_with_budget(
         task: &Task,

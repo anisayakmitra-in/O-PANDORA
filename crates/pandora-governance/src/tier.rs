@@ -1,19 +1,29 @@
+use serde::{
+    Deserialize,
+    Serialize,
+};
+
 use std::time::Duration;
 
-use pandora_sandbox::config::SandboxConfig;
-
-#[derive(Debug, Clone)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
 pub enum ExecutionTier {
 
-    IsolatedSandbox,
+    Tier1Isolated,
 
-    GovernedElevated(
-        SandboxConfig
-    ),
+    Tier2Governed {
 
-    HostUnrestricted,
+        network_access:
+            bool,
+    },
 
-    AutonomousOperator {
+    Tier3Host,
+
+    Tier4Autonomous {
 
         max_loop_duration:
             Option<Duration>,
@@ -22,7 +32,7 @@ pub enum ExecutionTier {
             String,
     },
 
-    UnboundedExecution {
+    Tier5Unbounded {
 
         operator_session_id:
             String,
@@ -32,39 +42,55 @@ pub enum ExecutionTier {
 impl ExecutionTier {
 
     pub fn is_host_execution(
-        &self
+        &self,
     ) -> bool {
 
         matches!(
             self,
 
-            Self::HostUnrestricted
-
+            Self::Tier3Host
             |
-
-            Self::AutonomousOperator { .. }
-
+            Self::Tier4Autonomous {
+                ..
+            }
             |
+            Self::Tier5Unbounded {
+                ..
+            }
+        )
+    }
 
-            Self::UnboundedExecution { .. }
+    pub fn requires_sync_consent(
+        &self,
+    ) -> bool {
+
+        matches!(
+            self,
+            Self::Tier3Host
         )
     }
 
     pub fn privilege_level(
-        &self
+        &self,
     ) -> u8 {
 
         match self {
 
-            Self::IsolatedSandbox => 1,
+            Self::Tier1Isolated => 1,
 
-            Self::GovernedElevated(_) => 2,
+            Self::Tier2Governed {
+                ..
+            } => 2,
 
-            Self::HostUnrestricted => 3,
+            Self::Tier3Host => 3,
 
-            Self::AutonomousOperator { .. } => 4,
+            Self::Tier4Autonomous {
+                ..
+            } => 4,
 
-            Self::UnboundedExecution { .. } => 5,
+            Self::Tier5Unbounded {
+                ..
+            } => 5,
         }
     }
 }

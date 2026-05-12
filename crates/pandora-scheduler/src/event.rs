@@ -10,4 +10,14 @@ pub enum SchedulerEvent {
     TaskRetried(Uuid),
     TaskCancelled(Uuid),
     WatchdogTriggered(Uuid),
+
+    TaskOutput {
+
+        id: uuid::Uuid,
+
+        stream: String,
+
+        data: String,
+    },
 }
+

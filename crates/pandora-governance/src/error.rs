@@ -3,15 +3,24 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum GovernanceError {
 
-    #[error("Consent denied")]
+    #[error("execution failed: {0}")]
+    ExecutionFailed(String),
+
+    #[error("consent denied")]
     ConsentDenied,
 
-    #[error("System halted")]
+    #[error("system halted")]
     SystemHalted,
 
-    #[error("Privilege escalation attempt")]
-    PrivilegeEscalationAttempt,
+    #[error("policy violation: {0}")]
+    PolicyViolation(String),
 
-    #[error("Governance violation: {0}")]
+    #[error("audit failure: {0}")]
+    AuditFailure(String),
+
+    #[error("violation: {0}")]
     Violation(String),
+
+    #[error("privilege escalation attempt blocked")]
+    PrivilegeEscalationAttempt,
 }

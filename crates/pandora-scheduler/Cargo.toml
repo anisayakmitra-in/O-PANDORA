@@ -13,6 +13,11 @@ tracing = "0.1"
 thiserror = "1.0"
 uuid = { version = "1.4", features = ["v4", "serde"] }
 futures = "0.3"
+async-trait = "0.1"
+
+pandora-sandbox = { path = "../pandora-sandbox" }
+
+pandora-governance = { path = "../pandora-governance" }
 
 # Assume workspace dependencies
 # pandora-governance = { path = "../pandora-governance" }

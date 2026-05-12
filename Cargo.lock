@@ -1329,8 +1329,11 @@ dependencies = [
 name = "pandora-scheduler"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "futures",
+ "pandora-governance",
+ "pandora-sandbox",
  "serde",
  "serde_json",
  "thiserror",

@@ -9,60 +9,69 @@ use tracing::{
     info,
 };
 
+use crate::adapter::ExecutionAdapter;
+
 use crate::event::SchedulerEvent;
+
+use crate::executor::GovernedExecutionAdapter;
 
 use crate::persistence::TaskStore;
 
 use crate::scheduler::SchedulerKernel;
 
-use crate::task::{
-    ExecutionTier,
-    Task,
-    TaskPayload,
-};
-
 pub struct SchedulerRuntime {
 
     kernel:
         Arc<SchedulerKernel>,
+
+    cancel_token:
+        CancellationToken,
 }
 
 impl SchedulerRuntime {
 
-    pub async fn new(
-        store_path: impl Into<std::path::PathBuf>,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn bootstrap(
+        persistence_path: impl Into<String>,
+    ) -> Result<
+        Self,
+        Box<dyn std::error::Error>
+    > {
 
-        let (event_tx, mut event_rx) =
-            mpsc::channel::<SchedulerEvent>(1024);
+        let persistence_path =
+            persistence_path.into();
+
+        let (
+            event_tx,
+            mut event_rx
+        ) = mpsc::channel(4096);
+
+        let cancel_token =
+            CancellationToken::new();
 
         let store =
             TaskStore::new(
-                store_path.into()
+                persistence_path
             );
+
+        let adapter:
+            Arc<dyn ExecutionAdapter> =
+                Arc::new(
+                    GovernedExecutionAdapter::new()
+                );
 
         let kernel =
             Arc::new(
                 SchedulerKernel::new(
                     store,
                     event_tx,
-                    CancellationToken::new(),
+                    cancel_token.clone(),
+                    adapter,
                 )
             );
 
         kernel
             .boot()
             .await?;
-
-        let heartbeat =
-            kernel.clone();
-
-        tokio::spawn(async move {
-
-            heartbeat
-                .run_heartbeat_loop()
-                .await;
-        });
 
         tokio::spawn(async move {
 
@@ -71,54 +80,58 @@ impl SchedulerRuntime {
             {
 
                 info!(
-                    "scheduler event: {:?}",
-                    event
+                    event = ?event,
+                    "scheduler event"
                 );
             }
         });
 
         Ok(
             Self {
-                kernel
+
+                kernel,
+
+                cancel_token,
             }
         )
     }
 
-    pub async fn enqueue_immediate(
+    pub async fn start(
         &self,
-        tier: ExecutionTier,
-        payload: TaskPayload,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) {
 
-        let task =
-            Task::new(
-                tier,
-                payload,
-            );
+        let kernel =
+            self.kernel.clone();
 
-        self.kernel
-            .enqueue(task)
-            .await
+        tokio::spawn(async move {
+
+            kernel
+                .run_heartbeat_loop()
+                .await;
+        });
+
+        info!(
+            "scheduler runtime started"
+        );
     }
 
-    pub async fn enqueue_delayed(
+    pub async fn shutdown(
         &self,
-        tier: ExecutionTier,
-        payload: TaskPayload,
-        delay_seconds: u64,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) {
 
-        let task =
-            Task::new(
-                tier,
-                payload,
-            )
-            .with_delay(
-                delay_seconds
-            );
+        self
+            .cancel_token
+            .cancel();
 
-        self.kernel
-            .enqueue(task)
-            .await
+        info!(
+            "scheduler runtime shutdown requested"
+        );
+    }
+
+    pub fn kernel(
+        &self,
+    ) -> Arc<SchedulerKernel> {
+
+        self.kernel.clone()
     }
 }
