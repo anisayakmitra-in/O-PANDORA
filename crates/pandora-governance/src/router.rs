@@ -38,18 +38,6 @@ use pandora_sandbox::config::{
     SandboxConfig,
 };
 
-use bollard::Docker;
-
-use pandora_sandbox::reaper::ContainerReaper;
-
-use pandora_sandbox::sandbox::ActiveSandbox;
-
-pub docker:
-    Docker,
-
-pub reaper:
-    ContainerReaper,
-
 #[derive(Clone)]
 pub struct ExecutionRouter {
 
@@ -129,18 +117,31 @@ impl ExecutionRouter {
 
         match &ctx.tier {
 
-            ExecutionTier::Tier1Isolated => {
-                SandboxConfig::default_isolated()
+            ExecutionTier
+                ::Tier1Isolated => {
+
+                info!(
+                    "tier1 isolated execution"
+                );
             }
 
-            ExecutionTier::Tier2Governed { .. } => {
-                SandboxConfig::default_isolated()
-            }
+            ExecutionTier
+                ::Tier2Governed {
+                    ..
+                } => {
 
-           _ => {
-                SandboxConfig::default()
-           }
-        }
+                let config =
+                    SandboxConfig
+                        ::default();
+
+                self
+                    .policy_evaluator
+                    .evaluate_elevated(
+                        &config,
+                        &cmd,
+                    )
+                    .await?;
+            }
 
             ExecutionTier
                 ::Tier3Host => {
