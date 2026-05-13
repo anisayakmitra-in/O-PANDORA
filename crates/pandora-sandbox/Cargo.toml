@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bollard = "0.15"
+bollard = "0.21"
 tokio = { version = "1.32", features = ["full"] }
 tokio-util = "0.7"
 tokio-stream = "0.1"

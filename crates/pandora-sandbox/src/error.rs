@@ -1,47 +1,48 @@
 use thiserror::Error;
 
 #[derive(
-    Error,
     Debug,
+    Error,
 )]
 pub enum SandboxError {
 
     #[error(
-        "Docker API error: {0}"
+        "sandbox engine initialization failed: {0}"
     )]
-    Docker(
-        #[from]
-        bollard::errors::Error
-    ),
-
-    #[error(
-        "Security violation: {0}"
-    )]
-    SecurityViolation(
+    EngineInitFailed(
         String
     ),
 
     #[error(
-        "Execution timeout"
+        "sandbox initialization failed: {0}"
     )]
-    Timeout,
+    InitFailed(
+        String
+    ),
 
     #[error(
-        "Execution cancelled"
-    )]
-    Cancelled,
-
-    #[error(
-        "Execution failed: {0}"
+        "sandbox execution failed: {0}"
     )]
     ExecutionFailed(
         String
     ),
 
     #[error(
-        "Engine initialization failed: {0}"
+        "sandbox security violation: {0}"
     )]
-    EngineInitFailed(
+    SecurityViolation(
         String
+    ),
+
+    #[error(
+        "sandbox execution cancelled"
+    )]
+    Cancelled,
+
+    #[error(
+        "sandbox execution timeout after {0}s"
+    )]
+    Timeout(
+        u64
     ),
 }
