@@ -38,6 +38,12 @@ use pandora_sandbox::config::{
     SandboxConfig,
 };
 
+use pandora_sandbox::reaper::ContainerReaper;
+
+use pandora_sandbox::sandbox::ActiveSandbox;
+
+use bollard::Docker;
+
 #[derive(Clone)]
 pub struct ExecutionRouter {
 
@@ -369,7 +375,7 @@ impl ExecutionRouter {
         ctx:
             Arc<ExecutionContext>,
 
-        _config:
+        config:
             SandboxConfig,
 
         cmd:
@@ -378,27 +384,198 @@ impl ExecutionRouter {
         event_tx:
             mpsc::Sender<ExecutionEvent>,
 
-    ) -> Result<
-        i64,
-        GovernanceError,
-    > {
+   ) -> Result<
+       i64,
+       GovernanceError,
+   > {
 
-        self
-            .emit_event(
-                &event_tx,
-                ctx.clone(),
-                ExecutionEventKind::Stdout {
-                    line:
-                        format!(
-                            "[sandbox simulated] {:?}",
-                            cmd.cmd
-                        ),
-                },
+       let docker =
+
+           Docker
+               ::connect_with_local_defaults()
+               .map_err(
+                   |error| {
+
+                       GovernanceError
+                           ::ExecutionFailed(
+                               format!(
+                                   "docker init failed: {}",
+                                   error
+                               )
+                           )
+                   }
+             )?;
+
+     let reaper =
+         ContainerReaper::new(
+             docker.clone()
+         );
+
+     let sandbox =
+
+         ActiveSandbox
+             ::provision(
+                 docker,
+                 reaper,
+                 config,
+             )
+             .await
+             .map_err(
+                 |error| {
+
+                     GovernanceError
+                         ::ExecutionFailed(
+                             format!(
+                                 "sandbox provision failed: {}",
+                                 error
+                             )
+                         )
+                 }
+             )?;
+
+     self
+         .emit_event(
+             &event_tx,
+             ctx.clone(),
+             ExecutionEventKind
+                 ::SandboxExecutionStarted {
+
+                 command:
+                     cmd.cmd.clone(),
+             },
+         )
+         .await;
+
+     let (
+         stdout_tx,
+         mut stdout_rx,
+     ) =
+         mpsc::channel::<String>(
+             1024
+         );
+
+     let (
+         stderr_tx,
+         mut stderr_rx,
+     ) =
+         mpsc::channel::<String>(
+             1024
+         );
+
+    let stdout_events =
+        event_tx.clone();
+
+    let stderr_events =
+        event_tx.clone();
+
+    let stdout_ctx =
+        ctx.clone();
+
+    let stderr_ctx =
+        ctx.clone();
+
+    tokio::spawn(
+        async move {
+
+            while let Some(line) =
+
+                stdout_rx
+                    .recv()
+                    .await
+
+            {
+
+                let event =
+                    ExecutionEvent::new(
+
+                        stdout_ctx.clone(),
+
+                        ExecutionEventKind
+                            ::Stdout {
+
+                            line,
+                        },
+                    );
+
+                let _ =
+                    stdout_events
+                        .send(event)
+                        .await;
+            }
+        }
+    );
+
+    tokio::spawn(
+        async move {
+
+            while let Some(line) =
+
+                stderr_rx
+                    .recv()
+                    .await
+
+            {
+
+                let event =
+                    ExecutionEvent::new(
+
+                        stderr_ctx.clone(),
+
+                        ExecutionEventKind
+                            ::Stderr {
+
+                            line,
+                        },
+                    );
+
+                let _ =
+                    stderr_events
+                        .send(event)
+                        .await;
+            }
+        }
+    );
+
+    let execution_result =
+
+        sandbox
+            .execute_streamed(
+
+                cmd,
+
+                ctx
+                    .cancel_token
+                    .clone(),
+
+                stdout_tx,
+
+                stderr_tx,
             )
             .await;
 
-        Ok(0)
+    sandbox
+        .teardown()
+        .await;
+
+    match execution_result {
+
+        Ok(exit_code) => {
+
+            Ok(exit_code)
+        }
+
+        Err(error_value) => {
+
+            Err(
+                GovernanceError
+                    ::ExecutionFailed(
+                        error_value
+                            .to_string()
+                    )
+            )
+        }
     }
+}
 
     async fn emit_event(
 
