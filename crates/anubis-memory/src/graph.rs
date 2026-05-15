@@ -1,3 +1,11 @@
+use crate::temporal::{
+    TemporalMetadata,
+};
+
+use crate::category::{
+    CognitionCategory,
+};
+
 use std::collections::HashMap;
 
 use crate::storage::MemoryRecord;
@@ -174,6 +182,12 @@ pub struct MemoryNode {
 
     pub namespace:
         String,
+
+    pub category:
+        CognitionCategory,
+
+    pub temporal:
+        TemporalMetadata,
 
     pub label:
         String,
