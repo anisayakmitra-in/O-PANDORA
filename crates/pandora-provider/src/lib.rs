@@ -1,3 +1,9 @@
+pub mod ollama;
+
+pub mod provider;
+
+pub mod types;
+
 pub trait Provider {
 
     fn name(&self)
