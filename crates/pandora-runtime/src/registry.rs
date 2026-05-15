@@ -62,3 +62,116 @@ pub fn capability_registry()
         },
     ]
 }
+
+use std::collections::HashMap;
+
+use serde::{
+    Serialize,
+    Deserialize,
+};
+
+use crate::contract::{
+    ContractDescriptor,
+};
+
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+pub struct RegistryEntry {
+
+    pub descriptor:
+        ContractDescriptor,
+
+    pub active:
+        bool,
+}
+
+#[derive(
+    Debug,
+    Default,
+)]
+pub struct HarnessRegistry {
+
+    entries:
+        HashMap<
+            String,
+            RegistryEntry
+        >,
+}
+
+impl HarnessRegistry {
+
+    pub fn register(
+
+        &mut self,
+
+        descriptor:
+            ContractDescriptor,
+
+    ) {
+
+        let entry =
+            RegistryEntry {
+
+                descriptor:
+                    descriptor.clone(),
+
+                active:
+                    true,
+            };
+
+        self.entries.insert(
+            descriptor.name.clone(),
+            entry,
+        );
+    }
+
+    pub fn unregister(
+
+        &mut self,
+
+        name:
+            &str,
+
+    ) {
+
+        self.entries.remove(
+            name
+        );
+    }
+
+    pub fn get(
+
+        &self,
+
+        name:
+            &str,
+
+    ) -> Option<
+        &RegistryEntry
+    > {
+
+        self.entries.get(
+            name
+        )
+    }
+
+    pub fn active_entries(
+        &self,
+    ) -> Vec<
+        &RegistryEntry
+    > {
+
+        self.entries
+            .values()
+            .filter(
+                |entry| {
+                    entry.active
+                }
+            )
+            .collect()
+    }
+}

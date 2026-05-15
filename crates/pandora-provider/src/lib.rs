@@ -1,3 +1,5 @@
+pub mod registry;
+
 pub mod ollama;
 
 pub mod provider;

@@ -1,5 +1,11 @@
 use std::fs;
 
+mod dependency;
+mod contract;
+mod manifest;
+mod loader;
+mod negotiation;
+mod delegation;
 mod evolution;
 mod gene;
 mod harness;

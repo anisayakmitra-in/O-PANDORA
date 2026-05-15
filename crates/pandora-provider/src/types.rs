@@ -105,7 +105,7 @@ pub enum ProviderError {
     #[error(
         "provider unavailable: {0}"
     )]
-    Unavailable(
+    ProviderUnavailable(
         String
     ),
 
@@ -117,14 +117,7 @@ pub enum ProviderError {
     ),
 
     #[error(
-        "request cancelled"
+        "generation cancelled"
     )]
     Cancelled,
-
-    #[error(
-        "embedding failed: {0}"
-    )]
-    EmbeddingFailed(
-        String
-    ),
 }

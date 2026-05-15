@@ -324,7 +324,7 @@ impl Provider for OllamaProvider {
 
         Err(
             ProviderError
-                ::Unavailable(
+                ::ProviderUnavailable(
                     String::from(
                         "embeddings not implemented yet"
                     )
