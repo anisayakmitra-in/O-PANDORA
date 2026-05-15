@@ -6,6 +6,9 @@ pub mod retrieval;
 pub mod reflection;
 pub mod compression;
 pub mod salience;
+pub mod namespace;
+pub mod lineage;
+pub mod query;
 
 pub use storage::*;
 pub use retrieval::*;
@@ -19,3 +22,4 @@ pub use storage::{
     export_memories,
     import_memories,
 };
+

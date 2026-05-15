@@ -1,5 +1,8 @@
 use std::fs;
 
+pub mod permission;
+mod abi;
+mod plugin;
 mod dependency;
 mod contract;
 mod manifest;

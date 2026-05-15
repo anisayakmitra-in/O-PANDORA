@@ -5,3 +5,6 @@ pub mod loader;
 pub mod negotiation;
 pub mod delegation;
 pub mod dependency;
+pub mod plugin;
+pub mod abi;
+pub mod permission;
