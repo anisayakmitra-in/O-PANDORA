@@ -4,14 +4,10 @@ use tokio::sync::mpsc;
 
 use tokio_util::sync::CancellationToken;
 
-use tracing::{
-    error,
-    info,
-};
+use tracing::info;
 
 use crate::adapter::ExecutionAdapter;
 
-use crate::event::SchedulerEvent;
 
 use crate::executor::GovernedExecutionAdapter;
 
