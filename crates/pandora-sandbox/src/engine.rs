@@ -1,5 +1,4 @@
 use bollard::Docker;
-use tracing::info;
 use tokio::time::{interval, Duration};
 
 #[derive(Clone)]

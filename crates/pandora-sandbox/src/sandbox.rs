@@ -37,7 +37,6 @@ use tracing::{
     error,
     info,
     instrument,
-    warn,
 };
 
 pub struct ActiveSandbox {
