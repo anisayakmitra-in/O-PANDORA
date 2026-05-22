@@ -15,6 +15,13 @@ pub mod temporal;
 pub mod temporal_query;
 pub mod replay;
 pub mod causal;
+pub mod branch;
+pub mod branch_replay;
+pub mod evolution;
+pub mod governance;
+pub mod merge;
+pub mod distributed;
+pub mod shadow_council;
 
 pub use storage::*;
 pub use retrieval::*;

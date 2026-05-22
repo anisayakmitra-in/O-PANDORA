@@ -1,58 +1,150 @@
 use anubis_memory::lineage::{
     LineageEngine,
-    MemoryLineage,
-    MutationRecord,
+    MutationLineage,
+    RollbackCheckpoint,
+    RollbackEngine,
 };
 
 fn main() {
 
-    let mut lineage =
-        MemoryLineage {
+    let lineages =
+        vec![
 
-            memory_id:
-                String::from(
-                    "reasoning-gene"
-                ),
+            MutationLineage {
 
-            mutations:
-                Vec::new(),
-        };
-
-    LineageEngine
-        ::append_mutation(
-
-            &mut lineage,
-
-            MutationRecord {
-
-                mutation_id:
+                branch_id:
                     String::from(
-                        "mutation-001"
+                        "branch-c"
                     ),
 
-                parent_id:
+                parent_branch:
+                    Some(
+                        String::from(
+                            "branch-b"
+                        )
+                    ),
+
+                mutation_epoch:
+                    3,
+
+                checkpoint_id:
+                    String::from(
+                        "checkpoint-c"
+                    ),
+            },
+
+            MutationLineage {
+
+                branch_id:
+                    String::from(
+                        "branch-b"
+                    ),
+
+                parent_branch:
+                    Some(
+                        String::from(
+                            "branch-a"
+                        )
+                    ),
+
+                mutation_epoch:
+                    2,
+
+                checkpoint_id:
+                    String::from(
+                        "checkpoint-b"
+                    ),
+            },
+
+            MutationLineage {
+
+                branch_id:
+                    String::from(
+                        "branch-a"
+                    ),
+
+                parent_branch:
                     None,
 
-                actor:
+                mutation_epoch:
+                    1,
+
+                checkpoint_id:
                     String::from(
-                        "gepa-engine"
+                        "checkpoint-a"
+                    ),
+            },
+        ];
+
+    let checkpoints =
+        vec![
+
+            RollbackCheckpoint {
+
+                checkpoint_id:
+                    String::from(
+                        "checkpoint-a"
+                    ),
+
+                branch_id:
+                    String::from(
+                        "branch-a"
                     ),
 
                 timestamp:
                     1000,
 
-                reason:
+                description:
                     String::from(
-                        "improved reasoning accuracy"
+                        "stable cognition"
                     ),
-            }
-        );
+            },
+
+            RollbackCheckpoint {
+
+                checkpoint_id:
+                    String::from(
+                        "checkpoint-b"
+                    ),
+
+                branch_id:
+                    String::from(
+                        "branch-b"
+                    ),
+
+                timestamp:
+                    2000,
+
+                description:
+                    String::from(
+                        "optimized reasoning"
+                    ),
+            },
+        ];
+
+    let ancestry =
+
+        LineageEngine
+            ::ancestry(
+                &lineages,
+                "branch-c"
+            );
 
     println!(
         "{:#?}",
-        LineageEngine
-            ::latest_mutation(
-                &lineage
-            )
+        ancestry
+    );
+
+    let rollback =
+
+        RollbackEngine
+            ::latest_checkpoint(
+                &checkpoints,
+                "branch-b"
+            );
+
+    println!(
+        "{:#?}",
+        rollback
     );
 }

@@ -1,6 +1,6 @@
 use serde::{
-    Serialize,
     Deserialize,
+    Serialize,
 };
 
 #[derive(
@@ -9,21 +9,18 @@ use serde::{
     Serialize,
     Deserialize,
 )]
-pub struct MutationRecord {
+pub struct MutationLineage {
 
-    pub mutation_id:
+    pub branch_id:
         String,
 
-    pub parent_id:
+    pub parent_branch:
         Option<String>,
 
-    pub actor:
-        String,
-
-    pub timestamp:
+    pub mutation_epoch:
         u64,
 
-    pub reason:
+    pub checkpoint_id:
         String,
 }
 
@@ -33,47 +30,108 @@ pub struct MutationRecord {
     Serialize,
     Deserialize,
 )]
-pub struct MemoryLineage {
+pub struct RollbackCheckpoint {
 
-    pub memory_id:
+    pub checkpoint_id:
         String,
 
-    pub mutations:
-        Vec<MutationRecord>,
+    pub branch_id:
+        String,
+
+    pub timestamp:
+        u64,
+
+    pub description:
+        String,
 }
 
 pub struct LineageEngine;
 
 impl LineageEngine {
 
-    pub fn append_mutation(
+    pub fn ancestry<'a>(
 
-        lineage:
-            &mut MemoryLineage,
+        lineages:
+            &'a [MutationLineage],
 
-        mutation:
-            MutationRecord,
+        branch_id:
+            &str,
 
-    ) {
+    ) -> Vec<&'a MutationLineage> {
 
-        lineage
-            .mutations
-            .push(
-                mutation
+        let mut collected =
+            Vec::new();
+
+        let mut current =
+            Some(
+                branch_id.to_string()
             );
-    }
 
-    pub fn latest_mutation(
+        while let Some(id) = current {
 
-        lineage:
-            &MemoryLineage,
+            if let Some(lineage) =
 
-    ) -> Option<
-        &MutationRecord
-    > {
+                lineages
+                    .iter()
+                    .find(
+                        |l| {
 
-        lineage
-            .mutations
-            .last()
+                            l.branch_id
+                                ==
+                                id
+                        }
+                    )
+            {
+
+                collected.push(
+                    lineage
+                );
+
+                current =
+                    lineage
+                        .parent_branch
+                        .clone();
+
+            } else {
+
+                break;
+            }
+        }
+
+        collected
     }
 }
+
+pub struct RollbackEngine;
+
+impl RollbackEngine {
+
+    pub fn latest_checkpoint<'a>(
+
+        checkpoints:
+            &'a [RollbackCheckpoint],
+
+        branch_id:
+            &str,
+
+    ) -> Option<&'a RollbackCheckpoint> {
+
+        checkpoints
+            .iter()
+            .filter(
+                |checkpoint| {
+
+                    checkpoint.branch_id
+                        ==
+                        branch_id
+                }
+            )
+            .max_by_key(
+                |checkpoint| {
+
+                    checkpoint.timestamp
+                }
+            )
+    }
+}
+
