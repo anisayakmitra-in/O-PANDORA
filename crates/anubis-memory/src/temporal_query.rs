@@ -13,7 +13,7 @@ impl TemporalQueryEngine {
             &'a MemoryGraph,
 
         timestamp:
-            u64,
+            String,
 
     ) -> Vec<&'a MemoryNode> {
 
@@ -25,7 +25,7 @@ impl TemporalQueryEngine {
 
                     node.temporal.timestamp
                         >
-                        timestamp
+                        timestamp.clone()
                 }
             )
             .collect()
@@ -47,7 +47,9 @@ impl TemporalQueryEngine {
         nodes.sort_by_key(
             |node| {
 
-                node.temporal.timestamp
+                node.temporal
+                    .timestamp
+                    .clone()
             }
         );
 

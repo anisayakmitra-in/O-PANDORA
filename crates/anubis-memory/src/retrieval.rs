@@ -1,90 +1,46 @@
-use crate::{
-    embeddings::cosine_similarity,
-    storage::MemoryRecord,
+use serde::{
+    Deserialize,
+    Serialize,
 };
 
-pub fn retrieve_context(
-    query_embedding:
-        &[f32],
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+pub struct RetrievalQuery {
 
-    memories:
-        &[MemoryRecord],
-) -> Vec<(f32, MemoryRecord)> {
+    pub query_id:
+        String,
 
-    let mut scored =
-        Vec::new();
+    pub semantic_query:
+        String,
 
-    for memory
-    in memories {
+    pub namespace:
+        Option<String>,
 
-        let similarity =
-            cosine_similarity(
-                query_embedding,
-                &memory.embedding,
-            );
+    pub tags:
+        Vec<String>,
 
-        let weight =
-            similarity
-            + memory.salience;
-
-        scored.push(
-            (
-                weight,
-                memory.clone()
-            )
-        );
-    }
-
-    scored.sort_by(
-        |a, b| {
-            b.0.partial_cmp(&a.0)
-                .unwrap()
-        }
-    );
-
-    scored
+    pub limit:
+        usize,
 }
 
-pub fn search_memories(
-    memories:
-        &[MemoryRecord],
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+pub struct RetrievalResult {
 
-    query:
-        &str,
-) -> Vec<(f32, MemoryRecord)> {
+    pub memory_id:
+        String,
 
-    let query_embedding =
-        crate::generate_embedding(
-            query
-        );
+    pub score:
+        f32,
 
-    retrieve_context(
-        &query_embedding,
-        memories,
-    )
-}
-
-pub fn restore_context(
-    memories: &[MemoryRecord],
-    limit: usize,
-) -> Vec<MemoryRecord> {
-
-    let mut sorted =
-        memories.to_vec();
-
-    sorted.sort_by(
-        |a, b| {
-
-            b.salience
-                .partial_cmp(
-                    &a.salience
-                )
-                .unwrap()
-        }
-    );
-
-    sorted
-        .into_iter()
-        .take(limit)
-        .collect()
+    pub matched_content:
+        String,
 }

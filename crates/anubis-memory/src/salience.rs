@@ -1,27 +1,28 @@
-use crate::MemoryRecord;
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-pub fn compute_salience(
-    memory: &MemoryRecord
-) -> f32 {
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+pub struct SalienceScore {
 
-    let mut score = 1.0;
+    pub memory_id:
+        String,
 
-    score +=
-        memory
-            .related_memories
-            .len() as f32;
+    pub replay_frequency:
+        f32,
 
-    score +=
-        memory
-            .tags
-            .len() as f32 * 0.5;
+    pub governance_importance:
+        f32,
 
-    score
-}
+    pub graph_centrality:
+        f32,
 
-pub fn decay_salience(
-    memory: &mut MemoryRecord
-) {
-
-    memory.salience *= 0.98;
+    pub final_score:
+        f32,
 }

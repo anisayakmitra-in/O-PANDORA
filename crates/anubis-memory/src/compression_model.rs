@@ -9,17 +9,20 @@ use serde::{
     Serialize,
     Deserialize,
 )]
-pub struct CausalLink {
+pub struct CompressionRecord {
 
-    pub link_id:
+    pub compression_id:
         String,
 
     pub source_memory:
         String,
 
-    pub target_memory:
+    pub compressed_summary:
         String,
 
-    pub causal_reason:
-        String,
+    pub compression_ratio:
+        f32,
+
+    pub retained_salience:
+        f32,
 }

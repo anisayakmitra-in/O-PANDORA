@@ -1,6 +1,4 @@
-use crate::temporal::{
-    TemporalMetadata,
-};
+use crate::temporal::TemporalMemory;
 
 use crate::category::{
     CognitionCategory,
@@ -187,7 +185,7 @@ pub struct MemoryNode {
         CognitionCategory,
 
     pub temporal:
-        TemporalMetadata,
+        TemporalMemory,
 
     pub label:
         String,

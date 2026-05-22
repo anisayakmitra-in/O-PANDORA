@@ -9,17 +9,17 @@ use serde::{
     Serialize,
     Deserialize,
 )]
-pub struct CausalLink {
+pub struct MemoryEmbedding {
 
-    pub link_id:
+    pub embedding_id:
         String,
 
-    pub source_memory:
+    pub memory_id:
         String,
 
-    pub target_memory:
-        String,
+    pub vector:
+        Vec<f32>,
 
-    pub causal_reason:
+    pub model:
         String,
 }

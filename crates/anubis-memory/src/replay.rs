@@ -23,7 +23,9 @@ impl ReplayEngine {
         timeline.sort_by_key(
             |node| {
 
-                node.temporal.timestamp
+                node.temporal
+                    .timestamp
+                    .clone()
             }
         );
 
@@ -39,10 +41,10 @@ impl ReplayEngine {
             &'a MemoryGraph,
 
         start:
-            u64,
+            String,
 
         end:
-            u64,
+            String,
 
     ) -> Vec<&'a MemoryNode> {
 
@@ -54,12 +56,12 @@ impl ReplayEngine {
                     |node| {
 
                         node.temporal.timestamp
-                            >= start
+                            >= start.clone()
 
                         &&
 
                         node.temporal.timestamp
-                            <= end
+                            <= end.clone()
                     }
                 )
                 .collect::<Vec<_>>();
@@ -67,11 +69,12 @@ impl ReplayEngine {
         timeline.sort_by_key(
             |node| {
 
-                node.temporal.timestamp
+                node.temporal
+                    .timestamp
+                    .clone()
             }
         );
 
         timeline
     }
 }
-

@@ -9,17 +9,21 @@ use serde::{
     Serialize,
     Deserialize,
 )]
-pub struct TemporalMemory {
+pub struct ArbitrationScore {
 
     pub memory_id:
         String,
 
-    pub timestamp:
-        String,
+    pub semantic_score:
+        f32,
 
-    pub sequence:
-        u64,
+    pub temporal_score:
+        f32,
 
-    pub recency_score:
+    pub graph_score:
+        f32,
+
+    pub final_score:
         f32,
 }
+	

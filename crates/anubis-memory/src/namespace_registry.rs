@@ -9,17 +9,17 @@ use serde::{
     Serialize,
     Deserialize,
 )]
-pub struct CausalLink {
+pub struct NamespaceRecord {
 
-    pub link_id:
+    pub namespace_id:
         String,
 
-    pub source_memory:
+    pub owner:
         String,
 
-    pub target_memory:
-        String,
+    pub memory_count:
+        usize,
 
-    pub causal_reason:
-        String,
+    pub isolated:
+        bool,
 }
