@@ -1,7 +1,15 @@
+use crate::capability_registry::CapabilityRegistry;
+
 use serde::{
-    Serialize,
     Deserialize,
+    Serialize,
 };
+
+use crate::capability::CapabilityRequest;
+
+use crate::negotiation::negotiate_capability;
+
+use crate::registry::HarnessRegistry;
 
 #[derive(
     Debug,
@@ -45,22 +53,13 @@ pub struct DelegationResult {
         String,
 }
 
-use crate::negotiation::{
-    CapabilityRequest,
-    NegotiationEngine,
-};
-
-use crate::registry::{
-    HarnessRegistry,
-};
-
 pub struct DelegationEngine;
 
 impl DelegationEngine {
 
     pub fn delegate(
 
-        registry:
+        _registry:
             &HarnessRegistry,
 
         requester:
@@ -71,60 +70,83 @@ impl DelegationEngine {
 
     ) -> DelegationResult {
 
-        let requester =
+        let _requester =
             requester.into();
 
         let capability =
             capability.into();
 
+        let request =
+            CapabilityRequest {
+
+                request_id:
+                    String::from(
+                        "delegation_request"
+                    ),
+
+                required_inputs:
+                    vec![],
+
+                required_outputs:
+                    vec![
+                        capability.clone()
+                    ],
+
+                required_permissions:
+                    vec![],
+
+                required_modes:
+                    vec![],
+
+                preferred_tags:
+                    vec![],
+            };
+
+        let registry =
+            CapabilityRegistry::new();
+
         let negotiation =
-            NegotiationEngine
-                ::negotiate(
+            negotiate_capability(
+                &request,
+                &registry,
+            );
 
-                    registry,
+        match negotiation {
 
-                    CapabilityRequest {
+            Some(capability) => {
 
-                        capability:
-                            capability.clone(),
+                DelegationResult {
 
-                        requester:
-                            requester.clone(),
+                    success:
+                        true,
 
-                        minimum_version:
-                            None,
-                    }
-                );
+                    executor:
+                        capability.name,
 
-        if negotiation.approved {
-
-            DelegationResult {
-
-                success:
-                    true,
-
-                executor:
-                    negotiation
-                        .selected_provider
-                        .unwrap_or_default(),
-
-                reasoning:
-                    negotiation.reasoning,
+                    reasoning:
+                        String::from(
+                            "Capability negotiated successfully"
+                        ),
+                }
             }
 
-        } else {
+            None => {
 
-            DelegationResult {
+                DelegationResult {
 
-                success:
-                    false,
+                    success:
+                        false,
 
-                executor:
-                    String::new(),
+                    executor:
+                        String::new(),
 
-                reasoning:
-                    negotiation.reasoning,
+                    reasoning:
+                        String::from(
+                            "No compatible capability found"
+                        ),
+                }
             }
         }
     }
 }
+

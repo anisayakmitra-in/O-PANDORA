@@ -22,6 +22,8 @@ pub mod governance;
 pub mod merge;
 pub mod distributed;
 pub mod shadow_council;
+pub mod memory_entry;
+pub mod memory_index;
 
 pub use storage::*;
 pub use retrieval::*;

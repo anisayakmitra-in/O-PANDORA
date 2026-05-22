@@ -19,29 +19,29 @@ pub fn determine_sandbox(
     -> SandboxLevel
 {
 
-    match request
-        .capability
-        .as_str()
+    if request
+        .required_permissions
+        .contains(
+            &String::from(
+                "shell.execute"
+            )
+        )
     {
 
-        "read_file" => {
-
-            SandboxLevel::Restricted
-        }
-
-        "web_scrape" => {
-
-            SandboxLevel::Restricted
-        }
-
-        "shell.execute" => {
-
-            SandboxLevel::Isolated
-        }
-
-        _ => {
-
-            SandboxLevel::None
-        }
+        return SandboxLevel::Isolated;
     }
+
+    if request
+        .required_permissions
+        .contains(
+            &String::from(
+                "web_scrape"
+            )
+        )
+    {
+
+        return SandboxLevel::Restricted;
+    }
+
+    SandboxLevel::None
 }

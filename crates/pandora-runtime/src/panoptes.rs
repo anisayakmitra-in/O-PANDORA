@@ -1,87 +1,40 @@
-use crate::capability::{
-    CapabilityDecision,
-    CapabilityRequest,
+use serde::{
+    Deserialize,
+    Serialize,
 };
 
-use crate::gene::GeneManifest;
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+)]
+pub struct CognitionScore {
 
-use crate::harness::MetaHarness;
+    pub score_id:
+        String,
 
-pub struct PanoptesHarness;
+    pub target_graph:
+        String,
 
-impl MetaHarness
-    for PanoptesHarness
-{
+    pub target_mutation:
+        String,
 
-    fn name(
-        &self
-    ) -> String {
+    pub execution_score:
+        f32,
 
-        String::from(
-            "PANOPTES"
-        )
-    }
+    pub governance_score:
+        f32,
 
-    fn authorize(
-        &self,
-        gene: &GeneManifest,
-        request: &CapabilityRequest,
-    )
-        -> CapabilityDecision
-    {
+    pub replay_confidence:
+        f32,
 
-        println!(
-            "[PANOPTES] evaluating capability: {}",
-            request.capability
-        );
+    pub mutation_stability:
+        f32,
 
-        println!(
-            "[PANOPTES] requester: {}",
-            gene.name
-        );
+    pub evaluator:
+        String,
 
-        if request.capability
-            == "shell.execute"
-        {
-
-           return CapabilityDecision::Denied;
-    }
-
-    CapabilityDecision::Approved
-}
-
-    fn validate(
-        &self,
-        gene: &GeneManifest,
-    ) -> bool {
-
-        println!(
-            "[PANOPTES] validating gene: {}",
-            gene.name
-        );
-
-        true
-    }
-
-    fn govern(
-        &self,
-        gene: &GeneManifest,
-    ) {
-
-        println!(
-            "[PANOPTES] governing {}",
-            gene.name
-        );
-    }
-
-    fn evolve(
-        &self,
-        gene: &GeneManifest,
-    ) {
-
-        println!(
-            "[PANOPTES] supervising evolution for {}",
-            gene.name
-        );
-    }
+    pub timestamp:
+        String,
 }

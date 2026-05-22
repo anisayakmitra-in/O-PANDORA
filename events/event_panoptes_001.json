@@ -1,0 +1,10 @@
+{
+  "event_id": "event_panoptes_001",
+  "event_type": "cognition.scored",
+  "timestamp": "2026-05-22",
+  "source_gene": "panoptes_runtime",
+  "payload": {
+    "execution_score": 0.9100000262260437,
+    "score": "score_001"
+  }
+}

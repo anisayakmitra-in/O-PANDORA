@@ -1,0 +1,9 @@
+{
+  "lineage_id": "lineage_001",
+  "parent_lineage": null,
+  "originating_gene": "execution_gene",
+  "mutation_reason": "Initial cognition execution",
+  "associated_graph": "graph_001",
+  "associated_event": "event_negotiation_001",
+  "timestamp": "2026-05-22"
+}

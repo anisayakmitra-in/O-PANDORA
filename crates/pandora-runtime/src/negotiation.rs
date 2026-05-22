@@ -1,124 +1,53 @@
-use serde::{
-    Serialize,
-    Deserialize,
+use crate::capability::{
+    CapabilityDescriptor,
+    CapabilityRequest,
 };
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
-pub struct CapabilityRequest {
+use crate::capability_registry::CapabilityRegistry;
 
-    pub capability:
-        String,
+pub fn negotiate_capability(
 
-    pub requester:
-        String,
+    request:
+        &CapabilityRequest,
 
-    pub minimum_version:
-        Option<String>,
-}
+    registry:
+        &CapabilityRegistry,
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
-pub struct NegotiationResult {
+)
+    -> Option<CapabilityDescriptor>
+{
 
-    pub approved:
-        bool,
+    for capability
+        in registry.list()
+    {
 
-    pub selected_provider:
-        Option<String>,
+        let outputs_match =
+            request
+                .required_outputs
+                .iter()
+                .all(
+                    |required_output| {
 
-    pub reasoning:
-        String,
-}
+                        capability
+                            .outputs
+                            .iter()
+                            .any(
+                                |output| {
 
-use crate::registry::{
-    HarnessRegistry,
-};
+                                    output.name
+                                        == *required_output
+                                }
+                            )
+                    }
+                );
 
-pub struct NegotiationEngine;
+        if outputs_match {
 
-impl NegotiationEngine {
-
-    pub fn negotiate(
-
-        registry:
-            &HarnessRegistry,
-
-        request:
-            CapabilityRequest,
-
-    ) -> NegotiationResult {
-
-        for entry in
-            registry.active_entries()
-        {
-
-            let supports =
-
-                entry
-                    .descriptor
-                    .capabilities
-                    .iter()
-                    .any(
-                        |capability| {
-
-                            capability
-                                .capability_id
-
-                                ==
-
-                            request
-                                .capability
-                        }
-                    );
-
-            if supports {
-
-                return NegotiationResult {
-
-                    approved:
-                        true,
-
-                    selected_provider:
-                        Some(
-                            entry
-                                .descriptor
-                                .name
-                                .clone()
-                        ),
-
-                    reasoning:
-                        format!(
-                            "capability resolved via {}",
-                            entry
-                                .descriptor
-                                .name
-                        ),
-                };
-            }
-        }
-
-        NegotiationResult {
-
-            approved:
-                false,
-
-            selected_provider:
-                None,
-
-            reasoning:
-                String::from(
-                    "no compatible provider found"
-                ),
+            return Some(
+                capability.clone()
+            );
         }
     }
-}
 
+    None
+}

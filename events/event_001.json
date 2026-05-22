@@ -1,0 +1,10 @@
+{
+  "event_id": "event_001",
+  "event_type": "execution.graph.persisted",
+  "timestamp": "2026-05-22",
+  "source_gene": "anubis_graph_store",
+  "payload": {
+    "graph_id": "graph_001",
+    "root_task": "task_root"
+  }
+}
