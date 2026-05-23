@@ -1,66 +1,28 @@
-use anubis_memory::causal::{
-    CausalLink,
-    CausalChainEngine,
-};
+use anubis_memory::causal::{CausalChainEngine, CausalLink};
 
 fn main() {
+    let links = vec![
+        CausalLink {
+            source_event: String::from("reasoning-1"),
 
-    let links =
-        vec![
+            target_event: String::from("mutation-1"),
 
-            CausalLink {
+            reason: String::from("low reasoning accuracy"),
 
-                source_event:
-                    String::from(
-                        "reasoning-1"
-                    ),
+            confidence: 0.92,
+        },
+        CausalLink {
+            source_event: String::from("mutation-1"),
 
-                target_event:
-                    String::from(
-                        "mutation-1"
-                    ),
+            target_event: String::from("rollback-1"),
 
-                reason:
-                    String::from(
-                        "low reasoning accuracy"
-                    ),
+            reason: String::from("failed validation"),
 
-                confidence:
-                    0.92,
-            },
+            confidence: 0.88,
+        },
+    ];
 
-            CausalLink {
+    let causes = CausalChainEngine::causes_of(&links, "rollback-1");
 
-                source_event:
-                    String::from(
-                        "mutation-1"
-                    ),
-
-                target_event:
-                    String::from(
-                        "rollback-1"
-                    ),
-
-                reason:
-                    String::from(
-                        "failed validation"
-                    ),
-
-                confidence:
-                    0.88,
-            },
-        ];
-
-    let causes =
-
-        CausalChainEngine
-            ::causes_of(
-                &links,
-                "rollback-1"
-            );
-
-    println!(
-        "{:#?}",
-        causes
-    );
+    println!("{:#?}", causes);
 }

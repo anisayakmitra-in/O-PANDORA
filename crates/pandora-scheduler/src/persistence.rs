@@ -11,10 +11,10 @@ use crate::task::{Task, TaskStatus};
 pub enum PersistenceError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("State corruption: {0}")]
     Corruption(String),
 }
@@ -44,7 +44,10 @@ impl TaskStore {
         if let Some(parent) = self.file_path.parent() {
             if !parent.exists() {
                 fs::create_dir_all(parent).await?;
-                info!("Created scheduler persistence directory at {}", parent.display());
+                info!(
+                    "Created scheduler persistence directory at {}",
+                    parent.display()
+                );
             }
         }
 
@@ -68,7 +71,11 @@ impl TaskStore {
                 }
                 line.clear();
             }
-            debug!(replayed_lines = line_count, active_tasks = self.cache.len(), "Replayed persistence log");
+            debug!(
+                replayed_lines = line_count,
+                active_tasks = self.cache.len(),
+                "Replayed persistence log"
+            );
         }
 
         // 2. Filter out completed/cancelled tasks that no longer need tracking
@@ -79,20 +86,23 @@ impl TaskStore {
         // 3. Compact: Write the current exact state to a temporary file
         let tmp_path = self.file_path.with_extension("jsonl.tmp");
         let mut tmp_file = File::create(&tmp_path).await?;
-        
+
         let mut serialized_buffer = Vec::with_capacity(self.cache.len() * 256);
         for task in self.cache.values() {
             let mut json = serde_json::to_vec(task)?;
             json.push(b'\n');
             serialized_buffer.extend_from_slice(&json);
         }
-        
+
         tmp_file.write_all(&serialized_buffer).await?;
         tmp_file.sync_data().await?; // Guarantee it hits disk before rename
 
         // 4. Atomic Replace: Prevents corruption if the runtime crashes right here
         fs::rename(&tmp_path, &self.file_path).await?;
-        info!("Scheduler storage compacted atomically. Tracking {} active tasks.", self.cache.len());
+        info!(
+            "Scheduler storage compacted atomically. Tracking {} active tasks.",
+            self.cache.len()
+        );
 
         // 5. Open file in append mode for future runtime mutations
         let append_file = OpenOptions::new()
@@ -100,7 +110,7 @@ impl TaskStore {
             .append(true)
             .open(&self.file_path)
             .await?;
-            
+
         self.append_handle = Some(append_file);
 
         Ok(())
@@ -110,19 +120,21 @@ impl TaskStore {
     #[instrument(skip(self, task), fields(task_id = %task.id, status = ?task.status))]
     pub async fn update_task(&mut self, task: &Task) -> Result<(), PersistenceError> {
         let handle = self.append_handle.as_mut().ok_or_else(|| {
-            PersistenceError::Corruption("Attempted to update task before storage was booted/compacted".into())
+            PersistenceError::Corruption(
+                "Attempted to update task before storage was booted/compacted".into(),
+            )
         })?;
 
         // Fast append to JSONL
         let mut line = serde_json::to_vec(task)?;
         line.push(b'\n');
-        
+
         handle.write_all(&line).await?;
         handle.sync_data().await?; // Fsync ensures survival against sudden power loss
 
         // Only update in-memory cache after disk write succeeds
         self.cache.insert(task.id, task.clone());
-        
+
         Ok(())
     }
 

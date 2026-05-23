@@ -1,96 +1,41 @@
-use anubis_memory::shadow_council::{
-    CouncilVote,
-    ShadowCouncil,
-    VoteDecision,
-};
+use anubis_memory::shadow_council::{CouncilVote, ShadowCouncil, VoteDecision};
 
 fn main() {
+    let votes = vec![
+        CouncilVote {
+            member_id: String::from("security-harness"),
 
-    let votes =
-        vec![
+            proposal_id: String::from("mutation-1"),
 
-            CouncilVote {
+            decision: VoteDecision::Approve,
 
-                member_id:
-                    String::from(
-                        "security-harness"
-                    ),
+            confidence: 0.91,
+        },
+        CouncilVote {
+            member_id: String::from("governance-harness"),
 
-                proposal_id:
-                    String::from(
-                        "mutation-1"
-                    ),
+            proposal_id: String::from("mutation-1"),
 
-                decision:
-                    VoteDecision
-                        ::Approve,
+            decision: VoteDecision::Reject,
 
-                confidence:
-                    0.91,
-            },
+            confidence: 0.84,
+        },
+        CouncilVote {
+            member_id: String::from("reasoning-harness"),
 
-            CouncilVote {
+            proposal_id: String::from("mutation-1"),
 
-                member_id:
-                    String::from(
-                        "governance-harness"
-                    ),
+            decision: VoteDecision::Approve,
 
-                proposal_id:
-                    String::from(
-                        "mutation-1"
-                    ),
+            confidence: 0.96,
+        },
+    ];
 
-                decision:
-                    VoteDecision
-                        ::Reject,
+    let consensus = ShadowCouncil::consensus(&votes);
 
-                confidence:
-                    0.84,
-            },
+    println!("{:#?}", consensus);
 
-            CouncilVote {
+    let confidence = ShadowCouncil::weighted_confidence(&votes);
 
-                member_id:
-                    String::from(
-                        "reasoning-harness"
-                    ),
-
-                proposal_id:
-                    String::from(
-                        "mutation-1"
-                    ),
-
-                decision:
-                    VoteDecision
-                        ::Approve,
-
-                confidence:
-                    0.96,
-            },
-        ];
-
-    let consensus =
-
-        ShadowCouncil
-            ::consensus(
-                &votes
-            );
-
-    println!(
-        "{:#?}",
-        consensus
-    );
-
-    let confidence =
-
-        ShadowCouncil
-            ::weighted_confidence(
-                &votes
-            );
-
-    println!(
-        "Council confidence: {}",
-        confidence
-    );
+    println!("Council confidence: {}", confidence);
 }

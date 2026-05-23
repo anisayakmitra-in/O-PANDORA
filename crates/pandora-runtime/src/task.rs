@@ -1,9 +1,5 @@
-#[derive(
-    Debug,
-    Clone,
-)]
+#[derive(Debug, Clone)]
 pub enum TaskStatus {
-
     Pending,
 
     Running,
@@ -13,12 +9,8 @@ pub enum TaskStatus {
     Failed,
 }
 
-#[derive(
-    Debug,
-    Clone,
-)]
+#[derive(Debug, Clone)]
 pub struct RuntimeTask {
-
     pub id: String,
 
     pub task_type: String,

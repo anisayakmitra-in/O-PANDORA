@@ -1,17 +1,16 @@
 pub mod audit;
 pub mod context;
+pub mod error;
 pub mod event;
+pub mod jsonl_logger;
 pub mod killswitch;
 pub mod router;
+pub mod telemetry;
 pub mod tier;
 pub mod traits;
-pub mod telemetry;
-pub mod error;
-pub mod jsonl_logger;
 
 #[derive(Debug)]
 pub enum PermissionTier {
-
     T1,
     T2,
     T3,
@@ -19,20 +18,15 @@ pub enum PermissionTier {
 
 #[derive(Debug)]
 pub struct ActionRequest {
+    pub source: String,
 
-    pub source:
-        String,
+    pub action: String,
 
-    pub action:
-        String,
-
-    pub tier:
-        PermissionTier,
+    pub tier: PermissionTier,
 }
 
 #[derive(Debug)]
 pub enum GovernanceDecision {
-
     Approved,
 
     Denied(String),
@@ -41,20 +35,11 @@ pub enum GovernanceDecision {
 pub struct Rahu;
 
 impl Rahu {
-
-    pub fn propose(
-        source: &str,
-        action: &str,
-        tier: PermissionTier,
-    ) -> ActionRequest {
-
+    pub fn propose(source: &str, action: &str, tier: PermissionTier) -> ActionRequest {
         ActionRequest {
+            source: source.to_string(),
 
-            source:
-                source.to_string(),
-
-            action:
-                action.to_string(),
+            action: action.to_string(),
 
             tier,
         }
@@ -64,41 +49,20 @@ impl Rahu {
 pub struct Ketu;
 
 impl Ketu {
-
-    pub fn validate(
-        request: &ActionRequest,
-    ) -> GovernanceDecision {
-
+    pub fn validate(request: &ActionRequest) -> GovernanceDecision {
         match request.tier {
-
-            PermissionTier::T1 => {
-
-                GovernanceDecision::Approved
-            }
+            PermissionTier::T1 => GovernanceDecision::Approved,
 
             PermissionTier::T2 => {
-
-                if request.action
-                    .contains("shell")
-                {
-
-                    GovernanceDecision::Denied(
-                        "Shell access denied under T2 policy"
-                            .to_string()
-                    )
-
+                if request.action.contains("shell") {
+                    GovernanceDecision::Denied("Shell access denied under T2 policy".to_string())
                 } else {
-
                     GovernanceDecision::Approved
                 }
             }
 
             PermissionTier::T3 => {
-
-                GovernanceDecision::Denied(
-                    "T3 actions require sovereign approval"
-                        .to_string()
-                )
+                GovernanceDecision::Denied("T3 actions require sovereign approval".to_string())
             }
         }
     }

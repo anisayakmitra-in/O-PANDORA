@@ -8,7 +8,6 @@ use tracing::info;
 
 use crate::adapter::ExecutionAdapter;
 
-
 use crate::executor::GovernedExecutionAdapter;
 
 use crate::persistence::TaskStore;
@@ -16,65 +15,36 @@ use crate::persistence::TaskStore;
 use crate::scheduler::SchedulerKernel;
 
 pub struct SchedulerRuntime {
+    kernel: Arc<SchedulerKernel>,
 
-    kernel:
-        Arc<SchedulerKernel>,
-
-    cancel_token:
-        CancellationToken,
+    cancel_token: CancellationToken,
 }
 
 impl SchedulerRuntime {
-
     pub async fn bootstrap(
         persistence_path: impl Into<String>,
-    ) -> Result<
-        Self,
-        Box<dyn std::error::Error>
-    > {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let persistence_path = persistence_path.into();
 
-        let persistence_path =
-            persistence_path.into();
+        let (event_tx, mut event_rx) = mpsc::channel(4096);
 
-        let (
+        let cancel_token = CancellationToken::new();
+
+        let store = TaskStore::new(persistence_path);
+
+        let adapter: Arc<dyn ExecutionAdapter> = Arc::new(GovernedExecutionAdapter::new());
+
+        let kernel = Arc::new(SchedulerKernel::new(
+            store,
             event_tx,
-            mut event_rx
-        ) = mpsc::channel(4096);
+            cancel_token.clone(),
+            adapter,
+        ));
 
-        let cancel_token =
-            CancellationToken::new();
-
-        let store =
-            TaskStore::new(
-                persistence_path
-            );
-
-        let adapter:
-            Arc<dyn ExecutionAdapter> =
-                Arc::new(
-                    GovernedExecutionAdapter::new()
-                );
-
-        let kernel =
-            Arc::new(
-                SchedulerKernel::new(
-                    store,
-                    event_tx,
-                    cancel_token.clone(),
-                    adapter,
-                )
-            );
-
-        kernel
-            .boot()
-            .await?;
+        kernel.boot().await?;
 
         tokio::spawn(async move {
-
-            while let Some(event) =
-                event_rx.recv().await
-            {
-
+            while let Some(event) = event_rx.recv().await {
                 info!(
                     event = ?event,
                     "scheduler event"
@@ -82,52 +52,30 @@ impl SchedulerRuntime {
             }
         });
 
-        Ok(
-            Self {
+        Ok(Self {
+            kernel,
 
-                kernel,
-
-                cancel_token,
-            }
-        )
+            cancel_token,
+        })
     }
 
-    pub async fn start(
-        &self,
-    ) {
-
-        let kernel =
-            self.kernel.clone();
+    pub async fn start(&self) {
+        let kernel = self.kernel.clone();
 
         tokio::spawn(async move {
-
-            kernel
-                .run_heartbeat_loop()
-                .await;
+            kernel.run_heartbeat_loop().await;
         });
 
-        info!(
-            "scheduler runtime started"
-        );
+        info!("scheduler runtime started");
     }
 
-    pub async fn shutdown(
-        &self,
-    ) {
+    pub async fn shutdown(&self) {
+        self.cancel_token.cancel();
 
-        self
-            .cancel_token
-            .cancel();
-
-        info!(
-            "scheduler runtime shutdown requested"
-        );
+        info!("scheduler runtime shutdown requested");
     }
 
-    pub fn kernel(
-        &self,
-    ) -> Arc<SchedulerKernel> {
-
+    pub fn kernel(&self) -> Arc<SchedulerKernel> {
         self.kernel.clone()
     }
 }

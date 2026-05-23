@@ -4,7 +4,7 @@
   "timestamp": "2026-05-22",
   "source_gene": "anubis_graph_store",
   "payload": {
-    "graph_id": "graph_001",
-    "root_task": "task_root"
+    "graph_id": "runtime_graph_001",
+    "root_task": "runtime_graph_001"
   }
 }

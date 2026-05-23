@@ -1,96 +1,39 @@
-use anubis_memory::graph::{
-    MemoryGraph,
-    MemoryNode,
-    MemoryEdge,
-    RelationshipType,
-};
+use anubis_memory::graph::{MemoryEdge, MemoryGraph, MemoryNode, RelationshipType};
 
 fn main() {
+    let mut graph = MemoryGraph::default();
 
-    let mut graph =
-        MemoryGraph::default();
+    graph.add_node(MemoryNode {
+        node_id: String::from("reasoning-node"),
 
-    graph.add_node(
-        MemoryNode {
+        namespace: String::from("shadow-council"),
 
-            node_id:
-                String::from(
-                    "reasoning-node"
-                ),
+        label: String::from("Reasoning"),
 
-            namespace:
-                String::from(
-                    "shadow-council"
-                ),
+        content: String::from("Evaluate mutation"),
+    });
 
-            label:
-                String::from(
-                    "Reasoning"
-                ),
+    graph.add_node(MemoryNode {
+        node_id: String::from("mutation-node"),
 
-            content:
-                String::from(
-                    "Evaluate mutation"
-                ),
-        }
-    );
+        namespace: String::from("gepa"),
 
-    graph.add_node(
-        MemoryNode {
+        label: String::from("Mutation"),
 
-            node_id:
-                String::from(
-                    "mutation-node"
-                ),
+        content: String::from("Prompt optimization"),
+    });
 
-            namespace:
-                String::from(
-                    "gepa"
-                ),
+    graph.add_edge(MemoryEdge {
+        edge_id: String::from("edge-001"),
 
-            label:
-                String::from(
-                    "Mutation"
-                ),
+        source: String::from("reasoning-node"),
 
-            content:
-                String::from(
-                    "Prompt optimization"
-                ),
-        }
-    );
+        target: String::from("mutation-node"),
 
-    graph.add_edge(
-        MemoryEdge {
+        relationship: RelationshipType::Deliberation,
 
-            edge_id:
-                String::from(
-                    "edge-001"
-                ),
+        weight: 0.9,
+    });
 
-            source:
-                String::from(
-                    "reasoning-node"
-                ),
-
-            target:
-                String::from(
-                    "mutation-node"
-                ),
-
-            relationship:
-                RelationshipType
-                    ::Deliberation,
-
-            weight:
-                0.9,
-        }
-    );
-
-    println!(
-        "{:#?}",
-        graph.neighbors(
-            "reasoning-node"
-        )
-    );
+    println!("{:#?}", graph.neighbors("reasoning-node"));
 }

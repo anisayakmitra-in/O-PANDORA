@@ -33,7 +33,7 @@ pub fn calculate_next_recurrence(task: &mut Task) {
         }
         Recurrence::Cron(_) => {
             // Stub: Integrate `cron` crate logic here later
-            task.status = TaskStatus::Completed; 
+            task.status = TaskStatus::Completed;
         }
     }
 }

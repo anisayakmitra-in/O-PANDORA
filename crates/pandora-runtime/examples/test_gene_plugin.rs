@@ -1,119 +1,52 @@
-use pandora_runtime::abi::{
-    GeneExecutionRequest,
-    GeneExecutionResponse,
-    GenePluginABI,
-};
+use pandora_runtime::abi::{GeneExecutionRequest, GeneExecutionResponse, GenePluginABI};
 
-use pandora_runtime::permission::{
-    GenePermissionProfile,
-    RuntimePermission,
-};
+use pandora_runtime::permission::{GenePermissionProfile, RuntimePermission};
 
 struct EchoGene;
 
 impl GenePluginABI for EchoGene {
-
-    fn initialize(
-        &mut self,
-    ) {
-
-        println!(
-            "EchoGene initialized"
-        );
+    fn initialize(&mut self) {
+        println!("EchoGene initialized");
     }
 
-    fn execute(
-
-        &self,
-
-        request:
-            GeneExecutionRequest,
-
-    ) -> GeneExecutionResponse {
-
+    fn execute(&self, request: GeneExecutionRequest) -> GeneExecutionResponse {
         GeneExecutionResponse {
+            success: true,
 
-            success:
-                true,
+            output: format!("echo: {}", request.input),
 
-            output:
-                format!(
-                    "echo: {}",
-                    request.input
-                ),
-
-            reasoning:
-                format!(
-                    "permissions: {:?}",
-                    request
-                        .permissions
-                        .granted
-                ),
+            reasoning: format!("permissions: {:?}", request.permissions.granted),
         }
     }
 
-    fn shutdown(
-        &mut self,
-    ) {
-
-        println!(
-            "EchoGene shutdown"
-        );
+    fn shutdown(&mut self) {
+        println!("EchoGene shutdown");
     }
 }
 
 fn main() {
-
-    let mut gene =
-        EchoGene;
+    let mut gene = EchoGene;
 
     gene.initialize();
 
-    let response =
+    let response = gene.execute(GeneExecutionRequest {
+        gene_id: String::from("echo-gene"),
 
-        gene.execute(
-            GeneExecutionRequest {
+        capability: String::from("echo"),
 
-                gene_id:
-                    String::from(
-                        "echo-gene"
-                    ),
+        input: String::from("PANDORA"),
 
-                capability:
-                    String::from(
-                        "echo"
-                    ),
+        permissions: GenePermissionProfile {
+            gene_id: String::from("echo-gene"),
 
-                input:
-                    String::from(
-                        "PANDORA"
-                    ),
+            granted: vec![
+                RuntimePermission::MemoryRead,
+                RuntimePermission::TelemetryAccess,
+            ],
+        },
+    });
 
-                permissions:
-                    GenePermissionProfile {
-
-                        gene_id:
-                            String::from(
-                                "echo-gene"
-                            ),
-
-                        granted:
-                            vec![
-
-                                RuntimePermission
-                                    ::MemoryRead,
-
-                                RuntimePermission
-                                    ::TelemetryAccess,
-                            ],
-                    },
-            }
-        );
-
-    println!(
-        "{:#?}",
-        response
-    );
+    println!("{:#?}", response);
 
     gene.shutdown();
 }

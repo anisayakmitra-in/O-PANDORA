@@ -1,16 +1,7 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MergeStrategy {
-
     Consensus,
 
     Weighted,
@@ -20,55 +11,31 @@ pub enum MergeStrategy {
     EvolutionaryBest,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SynthesizedBranch {
+    pub synthesized_id: String,
 
-    pub synthesized_id:
-        String,
+    pub source_branches: Vec<String>,
 
-    pub source_branches:
-        Vec<String>,
+    pub strategy: MergeStrategy,
 
-    pub strategy:
-        MergeStrategy,
-
-    pub summary:
-        String,
+    pub summary: String,
 }
 
 pub struct MergeEngine;
 
 impl MergeEngine {
-
     pub fn synthesize(
+        branch_ids: Vec<String>,
 
-        branch_ids:
-            Vec<String>,
+        strategy: MergeStrategy,
 
-        strategy:
-            MergeStrategy,
-
-        summary:
-            String,
-
+        summary: String,
     ) -> SynthesizedBranch {
-
         SynthesizedBranch {
+            synthesized_id: format!("merge-{}", uuid::Uuid::new_v4()),
 
-            synthesized_id:
-                format!(
-                    "merge-{}",
-                    uuid::Uuid
-                        ::new_v4()
-                ),
-
-            source_branches:
-                branch_ids,
+            source_branches: branch_ids,
 
             strategy,
 
@@ -78,19 +45,7 @@ impl MergeEngine {
 }
 
 impl MergeEngine {
-
-    pub fn consensus_score(
-
-        branch_count:
-            usize,
-
-        agreement_ratio:
-            f32,
-
-    ) -> f32 {
-
-        branch_count as f32
-            *
-            agreement_ratio
+    pub fn consensus_score(branch_count: usize, agreement_ratio: f32) -> f32 {
+        branch_count as f32 * agreement_ratio
     }
 }

@@ -16,33 +16,23 @@ pub enum WatchdogError {
 pub struct Watchdog;
 
 impl Watchdog {
-
     pub async fn enforce_temporal_budget<F, T, E>(
         task: &crate::task::Task,
         future: F,
     ) -> Result<T, E>
     where
-        F: std::future::Future<
-            Output = Result<T, E>
-        >,
+        F: std::future::Future<Output = Result<T, E>>,
     {
-
         match tokio::time::timeout(
-            std::time::Duration::from_secs(
-                task.budget.max_runtime_seconds
-            ),
+            std::time::Duration::from_secs(task.budget.max_runtime_seconds),
             future,
         )
         .await
         {
-
             Ok(result) => result,
 
             Err(_) => {
-
-                panic!(
-                    "watchdog timeout exceeded"
-                );
+                panic!("watchdog timeout exceeded");
             }
         }
     }
@@ -55,7 +45,7 @@ impl Watchdog {
         system_cancel: CancellationToken,
     ) -> Result<(), WatchdogError> {
         let duration = Duration::from_secs(task.budget.max_runtime_seconds);
-        
+
         let execution_future = async {
             // Mock execution routing. In reality, this interfaces with `pandora-runtime`
             // and passes `task.tier` and `task.payload` to the Executor.
@@ -65,7 +55,7 @@ impl Watchdog {
                 }
                 // Simulate work
                 _ = tokio::time::sleep(Duration::from_millis(100)) => {
-                    Ok(()) 
+                    Ok(())
                 }
             }
         };

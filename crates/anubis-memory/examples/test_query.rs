@@ -1,106 +1,43 @@
-use anubis_memory::graph::{
-    MemoryGraph,
-    MemoryNode,
-    MemoryEdge,
-    RelationshipType,
-};
+use anubis_memory::graph::{MemoryEdge, MemoryGraph, MemoryNode, RelationshipType};
 
-use anubis_memory::query::{
-    GraphQueryEngine,
-};
+use anubis_memory::query::GraphQueryEngine;
 
 fn main() {
+    let mut graph = MemoryGraph::default();
 
-    let mut graph =
-        MemoryGraph::default();
+    graph.add_node(MemoryNode {
+        node_id: String::from("council"),
 
-    graph.add_node(
-        MemoryNode {
+        namespace: String::from("shadow"),
 
-            node_id:
-                String::from(
-                    "council"
-                ),
+        label: String::from("Council"),
 
-            namespace:
-                String::from(
-                    "shadow"
-                ),
+        content: String::from("Evaluate mutation"),
+    });
 
-            label:
-                String::from(
-                    "Council"
-                ),
+    graph.add_node(MemoryNode {
+        node_id: String::from("mutation"),
 
-            content:
-                String::from(
-                    "Evaluate mutation"
-                ),
-        }
-    );
+        namespace: String::from("gepa"),
 
-    graph.add_node(
-        MemoryNode {
+        label: String::from("Mutation"),
 
-            node_id:
-                String::from(
-                    "mutation"
-                ),
+        content: String::from("Prompt optimization"),
+    });
 
-            namespace:
-                String::from(
-                    "gepa"
-                ),
+    graph.add_edge(MemoryEdge {
+        edge_id: String::from("edge-1"),
 
-            label:
-                String::from(
-                    "Mutation"
-                ),
+        source: String::from("council"),
 
-            content:
-                String::from(
-                    "Prompt optimization"
-                ),
-        }
-    );
+        target: String::from("mutation"),
 
-    graph.add_edge(
-        MemoryEdge {
+        relationship: RelationshipType::Deliberation,
 
-            edge_id:
-                String::from(
-                    "edge-1"
-                ),
+        weight: 1.0,
+    });
 
-            source:
-                String::from(
-                    "council"
-                ),
+    let results = GraphQueryEngine::deliberation_chain(&graph, "council");
 
-            target:
-                String::from(
-                    "mutation"
-                ),
-
-            relationship:
-                RelationshipType
-                    ::Deliberation,
-
-            weight:
-                1.0,
-        }
-    );
-
-    let results =
-
-        GraphQueryEngine
-            ::deliberation_chain(
-                &graph,
-                "council"
-            );
-
-    println!(
-        "{:#?}",
-        results
-    );
+    println!("{:#?}", results);
 }

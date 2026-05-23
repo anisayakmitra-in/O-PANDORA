@@ -12,7 +12,6 @@ pub enum SchedulerEvent {
     WatchdogTriggered(Uuid),
 
     TaskOutput {
-
         id: uuid::Uuid,
 
         stream: String,
@@ -20,4 +19,3 @@ pub enum SchedulerEvent {
         data: String,
     },
 }
-

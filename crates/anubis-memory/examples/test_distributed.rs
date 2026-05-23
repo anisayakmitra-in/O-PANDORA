@@ -1,70 +1,30 @@
-use anubis_memory::distributed::{
-    CognitionReplica,
-    SynchronizationEngine,
-};
+use anubis_memory::distributed::{CognitionReplica, SynchronizationEngine};
 
 fn main() {
+    let replica_a = CognitionReplica {
+        replica_id: String::from("replica-a"),
 
-    let replica_a =
-        CognitionReplica {
+        node_id: String::from("node-1"),
 
-            replica_id:
-                String::from(
-                    "replica-a"
-                ),
+        last_synced_epoch: 10,
+    };
 
-            node_id:
-                String::from(
-                    "node-1"
-                ),
+    let replica_b = CognitionReplica {
+        replica_id: String::from("replica-b"),
 
-            last_synced_epoch:
-                10,
-        };
+        node_id: String::from("node-2"),
 
-    let replica_b =
-        CognitionReplica {
+        last_synced_epoch: 12,
+    };
 
-            replica_id:
-                String::from(
-                    "replica-b"
-                ),
+    let event = SynchronizationEngine::synchronize(&replica_a, &replica_b);
 
-            node_id:
-                String::from(
-                    "node-2"
-                ),
+    println!("{:#?}", event);
 
-            last_synced_epoch:
-                12,
-        };
-
-    let event =
-
-        SynchronizationEngine
-            ::synchronize(
-                &replica_a,
-                &replica_b,
-            );
-
-    println!(
-        "{:#?}",
-        event
+    let conflict = SynchronizationEngine::conflict_detected(
+        replica_a.last_synced_epoch,
+        replica_b.last_synced_epoch,
     );
 
-    let conflict =
-
-        SynchronizationEngine
-            ::conflict_detected(
-                replica_a
-                    .last_synced_epoch,
-
-                replica_b
-                    .last_synced_epoch,
-            );
-
-    println!(
-        "Conflict detected: {}",
-        conflict
-    );
+    println!("Conflict detected: {}", conflict);
 }

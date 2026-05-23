@@ -1,54 +1,26 @@
-
 use std::{
     io,
     time::{Duration, Instant},
 };
 
 use crossterm::{
-    event::{
-        self,
-        Event,
-        KeyCode,
-    },
+    event::{self, Event, KeyCode},
     execute,
-    terminal::{
-        disable_raw_mode,
-        enable_raw_mode,
-        EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
 use ratatui::{
     backend::CrosstermBackend,
-    layout::{
-        Constraint,
-        Direction,
-        Layout,
-    },
-    style::{
-        Color,
-        Modifier,
-        Style,
-    },
-    text::{
-        Line,
-        Span,
-    },
-    widgets::{
-        Block,
-        Borders,
-        Gauge,
-        Paragraph,
-        Wrap,
-    },
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, Gauge, Paragraph, Wrap},
     Terminal,
 };
 
 use pandora_gene::load_genes;
 
 struct RuntimeState {
-
     active_gene: String,
 
     generation: usize,
@@ -73,123 +45,73 @@ struct RuntimeState {
 }
 
 fn main() -> Result<(), io::Error> {
+    let genes = load_genes("genes");
 
-    let genes =
-        load_genes("genes");
+    let gene = genes
+        .iter()
+        .max_by(|a, b| a.avg_score.partial_cmp(&b.avg_score).unwrap())
+        .unwrap();
 
-    let gene =
-        genes
-            .iter()
-            .max_by(
-                |a, b| {
-                    a.avg_score
-                        .partial_cmp(&b.avg_score)
-                        .unwrap()
-                }
-            )
-            .unwrap();
+    let state = RuntimeState {
+        active_gene: gene.gene_id.clone(),
 
-    let state =
-        RuntimeState {
+        generation: gene.generation,
 
-            active_gene:
-                gene.gene_id.clone(),
+        avg_score: gene.avg_score,
 
-            generation:
-                gene.generation,
+        total_runs: gene.total_runs,
 
-            avg_score:
-                gene.avg_score,
+        mutation_count: 3,
 
-            total_runs:
-                gene.total_runs,
+        memory_syncs: 12,
 
-            mutation_count:
-                3,
+        active_model: "qwen2.5-coder:7b".to_string(),
 
-            memory_syncs:
-                12,
+        active_harness: "coding".to_string(),
 
-            active_model:
-                "qwen2.5-coder:7b"
-                    .to_string(),
+        tools: vec![
+            "read_file".to_string(),
+            "write_file".to_string(),
+            "call_model".to_string(),
+            "mutation_engine".to_string(),
+            "telemetry".to_string(),
+            "runtime_events".to_string(),
+        ],
 
-            active_harness:
-                "coding"
-                    .to_string(),
+        systems: vec![
+            "ANUBIS".to_string(),
+            "KETHER".to_string(),
+            "PANOPTES".to_string(),
+            "KUBER".to_string(),
+            "MOLOCH".to_string(),
+        ],
 
-            tools: vec![
+        event_log: vec![
+            "[BOOT] PANDORA runtime initialized".to_string(),
+            format!("[GENE] Loaded {}", gene.gene_id),
+            format!("[MODEL] Selected {}", "qwen2.5-coder:7b"),
+            "[MEMORY] ANUBIS sync complete".to_string(),
+            "[RUNTIME] Harness online".to_string(),
+            "[PANOPTES] Telemetry active".to_string(),
+        ],
+    };
 
-                "read_file".to_string(),
-                "write_file".to_string(),
-                "call_model".to_string(),
-                "mutation_engine".to_string(),
-                "telemetry".to_string(),
-                "runtime_events".to_string(),
-            ],
-
-            systems: vec![
-
-                "ANUBIS".to_string(),
-                "KETHER".to_string(),
-                "PANOPTES".to_string(),
-                "KUBER".to_string(),
-                "MOLOCH".to_string(),
-            ],
-
-            event_log: vec![
-
-                "[BOOT] PANDORA runtime initialized"
-                    .to_string(),
-
-                format!(
-                    "[GENE] Loaded {}",
-                    gene.gene_id
-                ),
-
-                format!(
-                    "[MODEL] Selected {}",
-                    "qwen2.5-coder:7b"
-                ),
-
-                "[MEMORY] ANUBIS sync complete"
-                    .to_string(),
-
-                "[RUNTIME] Harness online"
-                    .to_string(),
-
-                "[PANOPTES] Telemetry active"
-                    .to_string(),
-            ],
-        };
-
-    let start_time =
-        Instant::now();
+    let start_time = Instant::now();
 
     let mut scroll_offset: usize = 0;
 
     enable_raw_mode()?;
 
-    let mut stdout =
-        io::stdout();
+    let mut stdout = io::stdout();
 
-    execute!(
-        stdout,
-        EnterAlternateScreen
-    )?;
+    execute!(stdout, EnterAlternateScreen)?;
 
-    let backend =
-        CrosstermBackend::new(stdout);
+    let backend = CrosstermBackend::new(stdout);
 
-    let mut terminal =
-        Terminal::new(backend)?;
+    let mut terminal = Terminal::new(backend)?;
 
     loop {
-
-        let uptime =
-            start_time
-                .elapsed()
-                .as_secs();
+        let uptime = start_time.elapsed().as_secs();
 
         terminal.draw(|f| {
 
@@ -506,29 +428,19 @@ fn main() -> Result<(), io::Error> {
 
         })?;
 
-        if event::poll(
-            Duration::from_millis(250)
-        )? {
-
-            if let Event::Key(key) =
-                event::read()? {
-
+        if event::poll(Duration::from_millis(250))? {
+            if let Event::Key(key) = event::read()? {
                 match key.code {
-
                     KeyCode::Char('q') => {
                         break;
                     }
 
                     KeyCode::Down => {
-                        scroll_offset =
-                            scroll_offset
-                                .saturating_add(1);
+                        scroll_offset = scroll_offset.saturating_add(1);
                     }
 
                     KeyCode::Up => {
-                        scroll_offset =
-                            scroll_offset
-                                .saturating_sub(1);
+                        scroll_offset = scroll_offset.saturating_sub(1);
                     }
 
                     _ => {}
@@ -539,10 +451,7 @@ fn main() -> Result<(), io::Error> {
 
     disable_raw_mode()?;
 
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen
-    )?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
 
     terminal.show_cursor()?;
 

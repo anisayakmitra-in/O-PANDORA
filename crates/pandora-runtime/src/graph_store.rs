@@ -1,31 +1,15 @@
 use std::fs;
 
-use crate::execution_graph::ExecutionGraph;
+use crate::execution_graph::PersistentExecutionGraph;
 
-pub fn persist_graph(
-    graph: &ExecutionGraph,
-) {
+pub fn persist_graph(graph: &PersistentExecutionGraph) {
+    fs::create_dir_all("graphs").unwrap();
 
-    fs::create_dir_all(
-        "graphs"
-    )
-    .unwrap();
+    let path = format!("graphs/{}.json", graph.graph_id);
 
-    let path =
-        format!(
-            "graphs/{}.json",
-            graph.graph_id
-        );
+    let json = serde_json::to_string_pretty(graph).unwrap();
 
-    let serialized =
-        serde_json::to_string_pretty(
-            graph
-        )
-        .unwrap();
+    fs::write(path, json).unwrap();
 
-    fs::write(
-        path,
-        serialized,
-    )
-    .unwrap();
+    println!("[GRAPH STORE] persisted {}", graph.graph_id);
 }

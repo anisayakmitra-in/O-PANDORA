@@ -1,112 +1,51 @@
-use anubis_memory::category::{
-    CognitionCategory,
-};
+use anubis_memory::category::CognitionCategory;
 
-use anubis_memory::graph::{
-    MemoryGraph,
-    MemoryNode,
-};
+use anubis_memory::graph::{MemoryGraph, MemoryNode};
 
-use anubis_memory::temporal::{
-    TemporalMetadata,
-};
+use anubis_memory::temporal::TemporalMetadata;
 
-use anubis_memory::replay::{
-    ReplayEngine,
-};
+use anubis_memory::replay::ReplayEngine;
 
 fn main() {
+    let mut graph = MemoryGraph::default();
 
-    let mut graph =
-        MemoryGraph::default();
+    graph.add_node(MemoryNode {
+        node_id: String::from("reasoning-1"),
 
-    graph.add_node(
-        MemoryNode {
+        namespace: String::from("shadow"),
 
-            node_id:
-                String::from(
-                    "reasoning-1"
-                ),
+        category: CognitionCategory::Reasoning,
 
-            namespace:
-                String::from(
-                    "shadow"
-                ),
+        temporal: TemporalMetadata {
+            timestamp: 1000,
 
-            category:
-                CognitionCategory
-                    ::Reasoning,
+            sequence: 1,
+        },
 
-            temporal:
-                TemporalMetadata {
+        label: String::from("Reasoning"),
 
-                    timestamp:
-                        1000,
+        content: String::from("Evaluate mutation"),
+    });
 
-                    sequence:
-                        1,
-                },
+    graph.add_node(MemoryNode {
+        node_id: String::from("reasoning-2"),
 
-            label:
-                String::from(
-                    "Reasoning"
-                ),
+        namespace: String::from("shadow"),
 
-            content:
-                String::from(
-                    "Evaluate mutation"
-                ),
-        }
-    );
+        category: CognitionCategory::Planning,
 
-    graph.add_node(
-        MemoryNode {
+        temporal: TemporalMetadata {
+            timestamp: 2000,
 
-            node_id:
-                String::from(
-                    "reasoning-2"
-                ),
+            sequence: 2,
+        },
 
-            namespace:
-                String::from(
-                    "shadow"
-                ),
+        label: String::from("Planning"),
 
-            category:
-                CognitionCategory
-                    ::Planning,
+        content: String::from("Approve evolution"),
+    });
 
-            temporal:
-                TemporalMetadata {
+    let replay = ReplayEngine::replay(&graph);
 
-                    timestamp:
-                        2000,
-
-                    sequence:
-                        2,
-                },
-
-            label:
-                String::from(
-                    "Planning"
-                ),
-
-            content:
-                String::from(
-                    "Approve evolution"
-                ),
-        }
-    );
-
-    let replay =
-
-        ReplayEngine
-            ::replay(
-                &graph
-            );
-
-    println!(
-        "{:#?}",
-        replay
-    );
+    println!("{:#?}", replay);
 }

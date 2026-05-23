@@ -1,105 +1,47 @@
-use crate::branch::{
-    CognitionBranch,
-};
+use crate::branch::CognitionBranch;
 
 pub struct BranchReplayEngine;
 
 impl BranchReplayEngine {
-
     pub fn replay_branch<'a>(
+        branches: &'a [CognitionBranch],
 
-        branches:
-            &'a [CognitionBranch],
-
-        branch_id:
-            &str,
-
+        branch_id: &str,
     ) -> Vec<&'a CognitionBranch> {
-
         branches
             .iter()
-            .filter(
-                |branch| {
-
-                    branch.branch_id
-                        ==
-                        branch_id
-
-                    ||
-
-                    branch
-                        .parent_branch
-                        .as_deref()
-
-                        ==
-
-                        Some(branch_id)
-                }
-            )
+            .filter(|branch| {
+                branch.branch_id == branch_id || branch.parent_branch.as_deref() == Some(branch_id)
+            })
             .collect()
     }
 }
 
 impl BranchReplayEngine {
-
     pub fn descendants<'a>(
+        branches: &'a [CognitionBranch],
 
-        branches:
-            &'a [CognitionBranch],
-
-        root:
-            &str,
-
+        root: &str,
     ) -> Vec<&'a CognitionBranch> {
-
-        let mut collected =
-            Vec::new();
+        let mut collected = Vec::new();
 
         fn walk<'a>(
+            branches: &'a [CognitionBranch],
 
-            branches:
-                &'a [CognitionBranch],
+            current: &str,
 
-            current:
-                &str,
-
-            collected:
-                &mut Vec<
-                    &'a CognitionBranch
-                >,
-
+            collected: &mut Vec<&'a CognitionBranch>,
         ) {
+            for branch in branches {
+                if branch.parent_branch.as_deref() == Some(current) {
+                    collected.push(branch);
 
-            for branch
-            in branches {
-
-                if branch
-                    .parent_branch
-                    .as_deref()
-
-                    ==
-
-                    Some(current)
-                {
-
-                    collected.push(
-                        branch
-                    );
-
-                    walk(
-                        branches,
-                        &branch.branch_id,
-                        collected,
-                    );
+                    walk(branches, &branch.branch_id, collected);
                 }
             }
         }
 
-        walk(
-            branches,
-            root,
-            &mut collected,
-        );
+        walk(branches, root, &mut collected);
 
         collected
     }

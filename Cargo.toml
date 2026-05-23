@@ -14,13 +14,14 @@ members = [
     "crates/pandora-policy",
     "crates/pandora-provider",
     "crates/pandora-runtime",
-    "crates/pandora-sandbox", "crates/pandora-scheduler",
+    "crates/pandora-sandbox",
+    "crates/pandora-scheduler",
     "crates/pandora-signal",
     "crates/pandora-tools",
     "crates/pandora-tui",
     "crates/pandora-types",
-    "crates/pandora-scheduler",
-    "test-runner"
+    "test-runner",
+    "dynamic_harness",
 ]
 
 [workspace.package]

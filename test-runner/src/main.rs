@@ -1,6 +1,3 @@
 fn main() {
-
-    println!(
-        "PANDORA TEST RUNNER"
-    );
+    println!("PANDORA TEST RUNNER");
 }

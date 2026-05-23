@@ -352,6 +352,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dynamic_harness"
+version = "0.1.0"
+
+[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1293,17 +1297,11 @@ name = "pandora-runtime"
 version = "0.1.0"
 dependencies = [
  "anubis-memory",
- "chrono",
  "libloading",
- "pandora-events",
- "pandora-gene",
- "pandora-governance",
- "pandora-harness",
- "pandora-provider",
- "pandora-tools",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]

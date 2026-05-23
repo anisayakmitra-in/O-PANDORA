@@ -1,48 +1,22 @@
 use crate::capability::CapabilityDescriptor;
 
-#[derive(
-    Debug,
-    Clone,
-)]
+#[derive(Debug, Clone)]
 pub struct CapabilityRegistry {
-
-    pub capabilities:
-        Vec<CapabilityDescriptor>,
+    pub capabilities: Vec<CapabilityDescriptor>,
 }
 
 impl CapabilityRegistry {
-
-    pub fn new()
-        -> Self
-    {
-
+    pub fn new() -> Self {
         Self {
-
-            capabilities:
-                Vec::new(),
+            capabilities: Vec::new(),
         }
     }
 
-    pub fn register(
-
-        &mut self,
-
-        capability:
-            CapabilityDescriptor,
-    ) {
-
-        self.capabilities
-            .push(
-                capability
-            );
+    pub fn register(&mut self, capability: CapabilityDescriptor) {
+        self.capabilities.push(capability);
     }
 
-    pub fn list(
-        &self
-    )
-        -> &[CapabilityDescriptor]
-    {
-
+    pub fn list(&self) -> &[CapabilityDescriptor] {
         &self.capabilities
     }
 }

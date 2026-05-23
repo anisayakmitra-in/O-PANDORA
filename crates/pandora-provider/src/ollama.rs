@@ -13,801 +13,457 @@ use tokio_util::sync::CancellationToken;
 use crate::provider::Provider;
 
 use crate::types::{
-    GenerationRequest,
-    GenerationResponse,
-    LanguageSupport,
-    ModelCapabilities,
-    ProviderError,
+    GenerationRequest, GenerationResponse, LanguageSupport, ModelCapabilities, ProviderError,
     TokenChunk,
 };
 
 pub struct OllamaProvider {
+    client: Client,
 
-    client:
-        Client,
-
-    base_url:
-        String,
+    base_url: String,
 }
 
 impl OllamaProvider {
-
     pub fn new() -> Self {
-
         Self {
+            client: Client::new(),
 
-            client:
-                Client::new(),
-
-            base_url:
-                String::from(
-                    "http://localhost:11434"
-                ),
+            base_url: String::from("http://localhost:11434"),
         }
     }
 }
 
 #[async_trait]
 impl Provider for OllamaProvider {
-
-    fn name(
-        &self,
-    ) -> &'static str {
-
+    fn name(&self) -> &'static str {
         "ollama"
     }
 
     async fn generate(
-
         &self,
 
-        request:
-            GenerationRequest,
+        request: GenerationRequest,
 
-        cancel:
-            CancellationToken,
-
-    ) -> Result<
-        GenerationResponse,
-        ProviderError,
-    > {
-
+        cancel: CancellationToken,
+    ) -> Result<GenerationResponse, ProviderError> {
         if cancel.is_cancelled() {
-
-            return Err(
-                ProviderError::Cancelled
-            );
+            return Err(ProviderError::Cancelled);
         }
 
-        let response =
-            self.client
-                .post(
+        let response = self
+            .client
+            .post(format!("{}/api/generate", self.base_url))
+            .json(&json!({
 
-                    format!(
-                        "{}/api/generate",
-                        self.base_url
-                    )
-                )
-                .json(
+                "model":
+                    request.model,
 
-                    &json!({
+                "prompt":
+                    request.prompt,
 
-                        "model":
-                            request.model,
+                "stream":
+                    false,
 
-                        "prompt":
-                            request.prompt,
+                "options": {
 
-                        "stream":
-                            false,
+                    "temperature":
+                        request.temperature,
 
-                        "options": {
+                    "num_predict":
+                        request.max_tokens,
+                }
+            }))
+            .send()
+            .await
+            .map_err(|e| ProviderError::GenerationFailed(e.to_string()))?;
 
-                            "temperature":
-                                request.temperature,
+        let value: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| ProviderError::GenerationFailed(e.to_string()))?;
 
-                            "num_predict":
-                                request.max_tokens,
-                        }
-                    })
-                )
-                .send()
-                .await
-                .map_err(
-                    |e| {
+        let text = value["response"].as_str().unwrap_or("").to_string();
 
-                        ProviderError
-                            ::GenerationFailed(
-                                e.to_string()
-                            )
-                    }
-                )?;
+        Ok(GenerationResponse {
+            tokens_used: text.len(),
 
-        let value:
-            serde_json::Value =
-                response
-                    .json()
-                    .await
-                    .map_err(
-                        |e| {
+            text,
 
-                            ProviderError
-                                ::GenerationFailed(
-                                    e.to_string()
-                                )
-                        }
-                    )?;
-
-        let text =
-            value["response"]
-                .as_str()
-                .unwrap_or("")
-                .to_string();
-
-        Ok(
-            GenerationResponse {
-
-                tokens_used:
-                    text.len(),
-
-                text,
-
-                finish_reason:
-                    String::from(
-                        "stop"
-                    ),
-            }
-        )
+            finish_reason: String::from("stop"),
+        })
     }
 
     async fn stream_generate(
+        &self,
 
-    &self,
+        request: GenerationRequest,
 
-    request:
-        GenerationRequest,
+        cancel: CancellationToken,
 
-    cancel:
-        CancellationToken,
+        tx: mpsc::Sender<TokenChunk>,
+    ) -> Result<(), ProviderError> {
+        let response = self
+            .client
+            .post(format!("{}/api/generate", self.base_url))
+            .json(&json!({
 
-    tx:
-        mpsc::Sender<TokenChunk>,
+                "model":
+                    request.model,
 
-) -> Result<
-    (),
-    ProviderError,
-> {
+                "prompt":
+                    request.prompt,
 
-    let response =
-        self.client
-            .post(
+                "stream":
+                    true,
 
-                format!(
-                    "{}/api/generate",
-                    self.base_url
-                )
-            )
-            .json(
+                "options": {
 
-                &json!({
+                    "temperature":
+                        request.temperature,
 
-                    "model":
-                        request.model,
-
-                    "prompt":
-                        request.prompt,
-
-                    "stream":
-                        true,
-
-                    "options": {
-
-                        "temperature":
-                            request.temperature,
-
-                        "num_predict":
-                            request.max_tokens,
-                    }
-                })
-            )
+                    "num_predict":
+                        request.max_tokens,
+                }
+            }))
             .send()
             .await
-            .map_err(
-                |e| {
+            .map_err(|e| ProviderError::GenerationFailed(e.to_string()))?;
 
-                    ProviderError
-                        ::GenerationFailed(
-                            e.to_string()
-                        )
+        let mut stream = response.bytes_stream();
+
+        while let Some(chunk_result) = stream.next().await {
+            if cancel.is_cancelled() {
+                return Err(ProviderError::Cancelled);
+            }
+
+            let chunk = chunk_result.map_err(|e| ProviderError::GenerationFailed(e.to_string()))?;
+
+            let text = String::from_utf8_lossy(&chunk);
+
+            for line in text.lines() {
+                if line.trim().is_empty() {
+                    continue;
                 }
-            )?;
 
-    let mut stream =
-        response.bytes_stream();
+                let parsed: serde_json::Value = match serde_json::from_str(line) {
+                    Ok(v) => v,
 
-    while let Some(chunk_result)
-        =
-        stream.next().await
-    {
-
-        if cancel.is_cancelled() {
-
-            return Err(
-                ProviderError::Cancelled
-            );
-        }
-
-        let chunk =
-            chunk_result
-                .map_err(
-                    |e| {
-
-                        ProviderError
-                            ::GenerationFailed(
-                                e.to_string()
-                            )
+                    Err(_) => {
+                        continue;
                     }
-                )?;
+                };
 
-        let text =
-            String::from_utf8_lossy(
-                &chunk
-            );
-
-        for line in text.lines() {
-
-            if line.trim().is_empty() {
-
-                continue;
-            }
-
-            let parsed:
-                serde_json::Value =
-                    match serde_json
-                        ::from_str(line)
-                    {
-
-                        Ok(v) => v,
-
-                        Err(_) => {
-                            continue;
-                        }
-                    };
-
-            if let Some(token)
-                =
-                parsed["response"]
-                    .as_str()
-            {
-
-                tx.send(
-                    TokenChunk {
-
-                        text:
-                            token
-                                .to_string(),
-                    }
-                )
-                .await
-                .map_err(
-                    |_| {
-
-                        ProviderError
-                            ::GenerationFailed(
-                                String::from(
-                                    "stream channel closed"
-                                )
-                            )
-                    }
-                )?;
+                if let Some(token) = parsed["response"].as_str() {
+                    tx.send(TokenChunk {
+                        text: token.to_string(),
+                    })
+                    .await
+                    .map_err(|_| {
+                        ProviderError::GenerationFailed(String::from("stream channel closed"))
+                    })?;
+                }
             }
         }
+
+        Ok(())
     }
-
-    Ok(())
-}
 
     async fn embed(
-
         &self,
 
-        _text:
-            String,
+        _text: String,
 
-        _cancel:
-            CancellationToken,
-
-    ) -> Result<
-        Vec<f32>,
-        ProviderError,
-    > {
-
-        Err(
-            ProviderError
-                ::ProviderUnavailable(
-                    String::from(
-                        "embeddings not implemented yet"
-                    )
-                )
-        )
+        _cancel: CancellationToken,
+    ) -> Result<Vec<f32>, ProviderError> {
+        Err(ProviderError::ProviderUnavailable(String::from(
+            "embeddings not implemented yet",
+        )))
     }
 
-    fn capabilities(
-        &self,
-    ) -> ModelCapabilities {
-
+    fn capabilities(&self) -> ModelCapabilities {
         ModelCapabilities {
+            multilingual: true,
 
-            multilingual:
-                true,
+            supported_languages: vec![
+                LanguageSupport {
+                    language_code: String::from("en"),
 
-supported_languages:
-    vec![
+                    language_name: String::from("English"),
 
-        LanguageSupport {
+                    country: String::from("United States"),
 
-            language_code:
-                String::from("en"),
+                    confidence: 0.98,
+                },
+                LanguageSupport {
+                    language_code: String::from("bn"),
 
-            language_name:
-                String::from("English"),
+                    language_name: String::from("Bengali"),
 
-            country:
-                String::from("United States"),
+                    country: String::from("Bangladesh"),
 
-            confidence:
-                0.98,
-        },
+                    confidence: 0.90,
+                },
+                LanguageSupport {
+                    language_code: String::from("hi"),
 
-        LanguageSupport {
+                    language_name: String::from("Hindi"),
 
-            language_code:
-                String::from("bn"),
+                    country: String::from("India"),
 
-            language_name:
-                String::from("Bengali"),
+                    confidence: 0.92,
+                },
+                LanguageSupport {
+                    language_code: String::from("ja"),
 
-            country:
-                String::from("Bangladesh"),
+                    language_name: String::from("Japanese"),
 
-            confidence:
-                0.90,
-        },
+                    country: String::from("Japan"),
 
-        LanguageSupport {
+                    confidence: 0.88,
+                },
+                LanguageSupport {
+                    language_code: String::from("zh"),
 
-            language_code:
-                String::from("hi"),
+                    language_name: String::from("Mandarin Chinese"),
 
-            language_name:
-                String::from("Hindi"),
+                    country: String::from("China"),
 
-            country:
-                String::from("India"),
+                    confidence: 0.94,
+                },
+                LanguageSupport {
+                    language_code: String::from("ko"),
 
-            confidence:
-                0.92,
-        },
+                    language_name: String::from("Korean"),
 
-        LanguageSupport {
+                    country: String::from("South Korea"),
 
-            language_code:
-                String::from("ja"),
+                    confidence: 0.87,
+                },
+                LanguageSupport {
+                    language_code: String::from("ru"),
 
-            language_name:
-                String::from("Japanese"),
+                    language_name: String::from("Russian"),
 
-            country:
-                String::from("Japan"),
+                    country: String::from("Russia"),
 
-            confidence:
-                0.88,
-        },
+                    confidence: 0.86,
+                },
+                LanguageSupport {
+                    language_code: String::from("de"),
 
-        LanguageSupport {
+                    language_name: String::from("German"),
 
-            language_code:
-                String::from("zh"),
+                    country: String::from("Germany"),
 
-            language_name:
-                String::from("Mandarin Chinese"),
+                    confidence: 0.85,
+                },
+                LanguageSupport {
+                    language_code: String::from("fr"),
 
-            country:
-                String::from("China"),
+                    language_name: String::from("French"),
 
-            confidence:
-                0.94,
-        },
+                    country: String::from("France"),
 
-        LanguageSupport {
+                    confidence: 0.85,
+                },
+                LanguageSupport {
+                    language_code: String::from("es"),
 
-            language_code:
-                String::from("ko"),
+                    language_name: String::from("Spanish"),
 
-            language_name:
-                String::from("Korean"),
+                    country: String::from("Spain"),
 
-            country:
-                String::from("South Korea"),
+                    confidence: 0.90,
+                },
+                LanguageSupport {
+                    language_code: String::from("pt"),
 
-            confidence:
-                0.87,
-        },
+                    language_name: String::from("Portuguese"),
 
-        LanguageSupport {
+                    country: String::from("Brazil"),
 
-            language_code:
-                String::from("ru"),
+                    confidence: 0.84,
+                },
+                LanguageSupport {
+                    language_code: String::from("it"),
 
-            language_name:
-                String::from("Russian"),
+                    language_name: String::from("Italian"),
 
-            country:
-                String::from("Russia"),
+                    country: String::from("Italy"),
 
-            confidence:
-                0.86,
-        },
+                    confidence: 0.82,
+                },
+                LanguageSupport {
+                    language_code: String::from("tr"),
 
-        LanguageSupport {
+                    language_name: String::from("Turkish"),
 
-            language_code:
-                String::from("de"),
+                    country: String::from("Turkey"),
 
-            language_name:
-                String::from("German"),
+                    confidence: 0.80,
+                },
+                LanguageSupport {
+                    language_code: String::from("id"),
 
-            country:
-                String::from("Germany"),
+                    language_name: String::from("Indonesian"),
 
-            confidence:
-                0.85,
-        },
+                    country: String::from("Indonesia"),
 
-        LanguageSupport {
+                    confidence: 0.81,
+                },
+                LanguageSupport {
+                    language_code: String::from("vi"),
 
-            language_code:
-                String::from("fr"),
+                    language_name: String::from("Vietnamese"),
 
-            language_name:
-                String::from("French"),
+                    country: String::from("Vietnam"),
 
-            country:
-                String::from("France"),
+                    confidence: 0.79,
+                },
+                LanguageSupport {
+                    language_code: String::from("th"),
 
-            confidence:
-                0.85,
-        },
+                    language_name: String::from("Thai"),
 
-        LanguageSupport {
+                    country: String::from("Thailand"),
 
-            language_code:
-                String::from("es"),
+                    confidence: 0.77,
+                },
+                LanguageSupport {
+                    language_code: String::from("ar"),
 
-            language_name:
-                String::from("Spanish"),
+                    language_name: String::from("Arabic"),
 
-            country:
-                String::from("Spain"),
+                    country: String::from("Saudi Arabia"),
 
-            confidence:
-                0.90,
-        },
+                    confidence: 0.83,
+                },
+                LanguageSupport {
+                    language_code: String::from("fa"),
 
-        LanguageSupport {
+                    language_name: String::from("Persian"),
 
-            language_code:
-                String::from("pt"),
+                    country: String::from("Iran"),
 
-            language_name:
-                String::from("Portuguese"),
+                    confidence: 0.76,
+                },
+                LanguageSupport {
+                    language_code: String::from("pl"),
 
-            country:
-                String::from("Brazil"),
+                    language_name: String::from("Polish"),
 
-            confidence:
-                0.84,
-        },
+                    country: String::from("Poland"),
 
-        LanguageSupport {
+                    confidence: 0.78,
+                },
+                LanguageSupport {
+                    language_code: String::from("nl"),
 
-            language_code:
-                String::from("it"),
+                    language_name: String::from("Dutch"),
 
-            language_name:
-                String::from("Italian"),
+                    country: String::from("Netherlands"),
 
-            country:
-                String::from("Italy"),
+                    confidence: 0.77,
+                },
+                LanguageSupport {
+                    language_code: String::from("uk"),
 
-            confidence:
-                0.82,
-        },
+                    language_name: String::from("Ukrainian"),
 
-        LanguageSupport {
+                    country: String::from("Ukraine"),
 
-            language_code:
-                String::from("tr"),
+                    confidence: 0.74,
+                },
+                LanguageSupport {
+                    language_code: String::from("el"),
 
-            language_name:
-                String::from("Turkish"),
+                    language_name: String::from("Greek"),
 
-            country:
-                String::from("Turkey"),
+                    country: String::from("Greece"),
 
-            confidence:
-                0.80,
-        },
+                    confidence: 0.73,
+                },
+                LanguageSupport {
+                    language_code: String::from("he"),
 
-        LanguageSupport {
+                    language_name: String::from("Hebrew"),
 
-            language_code:
-                String::from("id"),
+                    country: String::from("Israel"),
 
-            language_name:
-                String::from("Indonesian"),
+                    confidence: 0.75,
+                },
+                LanguageSupport {
+                    language_code: String::from("sv"),
 
-            country:
-                String::from("Indonesia"),
+                    language_name: String::from("Swedish"),
 
-            confidence:
-                0.81,
-        },
+                    country: String::from("Sweden"),
 
-        LanguageSupport {
+                    confidence: 0.72,
+                },
+                LanguageSupport {
+                    language_code: String::from("fi"),
 
-            language_code:
-                String::from("vi"),
+                    language_name: String::from("Finnish"),
 
-            language_name:
-                String::from("Vietnamese"),
+                    country: String::from("Finland"),
 
-            country:
-                String::from("Vietnam"),
+                    confidence: 0.70,
+                },
+                LanguageSupport {
+                    language_code: String::from("ro"),
 
-            confidence:
-                0.79,
-        },
+                    language_name: String::from("Romanian"),
 
-        LanguageSupport {
+                    country: String::from("Romania"),
 
-            language_code:
-                String::from("th"),
+                    confidence: 0.71,
+                },
+                LanguageSupport {
+                    language_code: String::from("cs"),
 
-            language_name:
-                String::from("Thai"),
+                    language_name: String::from("Czech"),
 
-            country:
-                String::from("Thailand"),
+                    country: String::from("Czech Republic"),
 
-            confidence:
-                0.77,
-        },
+                    confidence: 0.70,
+                },
+                LanguageSupport {
+                    language_code: String::from("hu"),
 
-        LanguageSupport {
+                    language_name: String::from("Hungarian"),
 
-            language_code:
-                String::from("ar"),
+                    country: String::from("Hungary"),
 
-            language_name:
-                String::from("Arabic"),
+                    confidence: 0.69,
+                },
+                LanguageSupport {
+                    language_code: String::from("ur"),
 
-            country:
-                String::from("Saudi Arabia"),
+                    language_name: String::from("Urdu"),
 
-            confidence:
-                0.83,
-        },
+                    country: String::from("Pakistan"),
 
-        LanguageSupport {
+                    confidence: 0.82,
+                },
+                LanguageSupport {
+                    language_code: String::from("sw"),
 
-            language_code:
-                String::from("fa"),
+                    language_name: String::from("Swahili"),
 
-            language_name:
-                String::from("Persian"),
+                    country: String::from("Kenya"),
 
-            country:
-                String::from("Iran"),
+                    confidence: 0.65,
+                },
+            ],
 
-            confidence:
-                0.76,
-        },
+            context_window: 32768,
 
-        LanguageSupport {
+            supports_streaming: false,
 
-            language_code:
-                String::from("pl"),
+            supports_embeddings: false,
 
-            language_name:
-                String::from("Polish"),
-
-            country:
-                String::from("Poland"),
-
-            confidence:
-                0.78,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("nl"),
-
-            language_name:
-                String::from("Dutch"),
-
-            country:
-                String::from("Netherlands"),
-
-            confidence:
-                0.77,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("uk"),
-
-            language_name:
-                String::from("Ukrainian"),
-
-            country:
-                String::from("Ukraine"),
-
-            confidence:
-                0.74,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("el"),
-
-            language_name:
-                String::from("Greek"),
-
-            country:
-                String::from("Greece"),
-
-            confidence:
-                0.73,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("he"),
-
-            language_name:
-                String::from("Hebrew"),
-
-            country:
-                String::from("Israel"),
-
-            confidence:
-                0.75,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("sv"),
-
-            language_name:
-                String::from("Swedish"),
-
-            country:
-                String::from("Sweden"),
-
-            confidence:
-                0.72,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("fi"),
-
-            language_name:
-                String::from("Finnish"),
-
-            country:
-                String::from("Finland"),
-
-            confidence:
-                0.70,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("ro"),
-
-            language_name:
-                String::from("Romanian"),
-
-            country:
-                String::from("Romania"),
-
-            confidence:
-                0.71,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("cs"),
-
-            language_name:
-                String::from("Czech"),
-
-            country:
-                String::from("Czech Republic"),
-
-            confidence:
-                0.70,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("hu"),
-
-            language_name:
-                String::from("Hungarian"),
-
-            country:
-                String::from("Hungary"),
-
-            confidence:
-                0.69,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("ur"),
-
-            language_name:
-                String::from("Urdu"),
-
-            country:
-                String::from("Pakistan"),
-
-            confidence:
-                0.82,
-        },
-
-        LanguageSupport {
-
-            language_code:
-                String::from("sw"),
-
-            language_name:
-                String::from("Swahili"),
-
-            country:
-                String::from("Kenya"),
-
-            confidence:
-                0.65,
-        },
-    ],
-
-            context_window:
-                32768,
-
-            supports_streaming:
-                false,
-
-            supports_embeddings:
-                false,
-
-            supports_tools:
-                false,
+            supports_tools: false,
         }
     }
 }
-
-

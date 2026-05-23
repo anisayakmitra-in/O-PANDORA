@@ -1,9 +1,6 @@
 use crate::capability_registry::CapabilityRegistry;
 
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use crate::capability::CapabilityRequest;
 
@@ -11,142 +8,76 @@ use crate::negotiation::negotiate_capability;
 
 use crate::registry::HarnessRegistry;
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionDelegation {
+    pub delegation_id: String,
 
-    pub delegation_id:
-        String,
+    pub requester: String,
 
-    pub requester:
-        String,
+    pub executor: String,
 
-    pub executor:
-        String,
+    pub capability: String,
 
-    pub capability:
-        String,
-
-    pub approved:
-        bool,
+    pub approved: bool,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DelegationResult {
+    pub success: bool,
 
-    pub success:
-        bool,
+    pub executor: String,
 
-    pub executor:
-        String,
-
-    pub reasoning:
-        String,
+    pub reasoning: String,
 }
 
 pub struct DelegationEngine;
 
 impl DelegationEngine {
-
     pub fn delegate(
+        _registry: &HarnessRegistry,
 
-        _registry:
-            &HarnessRegistry,
+        requester: impl Into<String>,
 
-        requester:
-            impl Into<String>,
-
-        capability:
-            impl Into<String>,
-
+        capability: impl Into<String>,
     ) -> DelegationResult {
+        let _requester = requester.into();
 
-        let _requester =
-            requester.into();
+        let capability = capability.into();
 
-        let capability =
-            capability.into();
+        let request = CapabilityRequest {
+            request_id: String::from("delegation_request"),
 
-        let request =
-            CapabilityRequest {
+            required_inputs: vec![],
 
-                request_id:
-                    String::from(
-                        "delegation_request"
-                    ),
+            required_outputs: vec![capability.clone()],
 
-                required_inputs:
-                    vec![],
+            required_permissions: vec![],
 
-                required_outputs:
-                    vec![
-                        capability.clone()
-                    ],
+            required_modes: vec![],
 
-                required_permissions:
-                    vec![],
+            preferred_tags: vec![],
+        };
 
-                required_modes:
-                    vec![],
+        let registry = CapabilityRegistry::new();
 
-                preferred_tags:
-                    vec![],
-            };
-
-        let registry =
-            CapabilityRegistry::new();
-
-        let negotiation =
-            negotiate_capability(
-                &request,
-                &registry,
-            );
+        let negotiation = negotiate_capability(&request, &registry);
 
         match negotiation {
+            Some(capability) => DelegationResult {
+                success: true,
 
-            Some(capability) => {
+                executor: capability.name,
 
-                DelegationResult {
+                reasoning: String::from("Capability negotiated successfully"),
+            },
 
-                    success:
-                        true,
+            None => DelegationResult {
+                success: false,
 
-                    executor:
-                        capability.name,
+                executor: String::new(),
 
-                    reasoning:
-                        String::from(
-                            "Capability negotiated successfully"
-                        ),
-                }
-            }
-
-            None => {
-
-                DelegationResult {
-
-                    success:
-                        false,
-
-                    executor:
-                        String::new(),
-
-                    reasoning:
-                        String::from(
-                            "No compatible capability found"
-                        ),
-                }
-            }
+                reasoning: String::from("No compatible capability found"),
+            },
         }
     }
 }
-

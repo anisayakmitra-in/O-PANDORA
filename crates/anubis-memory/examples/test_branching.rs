@@ -1,107 +1,43 @@
-use anubis_memory::branch::{
-    CognitionBranch,
-    BranchStatus,
-    BranchEngine,
-};
+use anubis_memory::branch::{BranchEngine, BranchStatus, CognitionBranch};
 
 fn main() {
+    let branches = vec![
+        CognitionBranch {
+            branch_id: String::from("root"),
 
-    let branches =
-        vec![
+            parent_branch: None,
 
-            CognitionBranch {
+            origin_node: String::from("reasoning-1"),
 
-                branch_id:
-                    String::from(
-                        "root"
-                    ),
+            status: BranchStatus::Accepted,
 
-                parent_branch:
-                    None,
+            description: String::from("Primary reasoning path"),
+        },
+        CognitionBranch {
+            branch_id: String::from("speculative-1"),
 
-                origin_node:
-                    String::from(
-                        "reasoning-1"
-                    ),
+            parent_branch: Some(String::from("root")),
 
-                status:
-                    BranchStatus
-                        ::Accepted,
+            origin_node: String::from("reasoning-2"),
 
-                description:
-                    String::from(
-                        "Primary reasoning path"
-                    ),
-            },
+            status: BranchStatus::Active,
 
-            CognitionBranch {
+            description: String::from("Alternative mutation strategy"),
+        },
+        CognitionBranch {
+            branch_id: String::from("failed-1"),
 
-                branch_id:
-                    String::from(
-                        "speculative-1"
-                    ),
+            parent_branch: Some(String::from("root")),
 
-                parent_branch:
-                    Some(
-                        String::from(
-                            "root"
-                        )
-                    ),
+            origin_node: String::from("reasoning-3"),
 
-                origin_node:
-                    String::from(
-                        "reasoning-2"
-                    ),
+            status: BranchStatus::Rejected,
 
-                status:
-                    BranchStatus
-                        ::Active,
+            description: String::from("Unsafe evolution branch"),
+        },
+    ];
 
-                description:
-                    String::from(
-                        "Alternative mutation strategy"
-                    ),
-            },
+    let active = BranchEngine::active(&branches);
 
-            CognitionBranch {
-
-                branch_id:
-                    String::from(
-                        "failed-1"
-                    ),
-
-                parent_branch:
-                    Some(
-                        String::from(
-                            "root"
-                        )
-                    ),
-
-                origin_node:
-                    String::from(
-                        "reasoning-3"
-                    ),
-
-                status:
-                    BranchStatus
-                        ::Rejected,
-
-                description:
-                    String::from(
-                        "Unsafe evolution branch"
-                    ),
-            },
-        ];
-
-    let active =
-
-        BranchEngine
-            ::active(
-                &branches
-            );
-
-    println!(
-        "{:#?}",
-        active
-    );
+    println!("{:#?}", active);
 }

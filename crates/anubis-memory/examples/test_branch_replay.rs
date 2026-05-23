@@ -1,111 +1,45 @@
-use anubis_memory::branch::{
-    CognitionBranch,
-    BranchStatus,
-};
+use anubis_memory::branch::{BranchStatus, CognitionBranch};
 
-use anubis_memory::branch_replay::{
-    BranchReplayEngine,
-};
+use anubis_memory::branch_replay::BranchReplayEngine;
 
 fn main() {
+    let branches = vec![
+        CognitionBranch {
+            branch_id: String::from("root"),
 
-    let branches =
-        vec![
+            parent_branch: None,
 
-            CognitionBranch {
+            origin_node: String::from("reasoning-1"),
 
-                branch_id:
-                    String::from(
-                        "root"
-                    ),
+            status: BranchStatus::Accepted,
 
-                parent_branch:
-                    None,
+            description: String::from("Primary reasoning"),
+        },
+        CognitionBranch {
+            branch_id: String::from("branch-a"),
 
-                origin_node:
-                    String::from(
-                        "reasoning-1"
-                    ),
+            parent_branch: Some(String::from("root")),
 
-                status:
-                    BranchStatus
-                        ::Accepted,
+            origin_node: String::from("reasoning-2"),
 
-                description:
-                    String::from(
-                        "Primary reasoning"
-                    ),
-            },
+            status: BranchStatus::Active,
 
-            CognitionBranch {
+            description: String::from("Speculative mutation"),
+        },
+        CognitionBranch {
+            branch_id: String::from("branch-b"),
 
-                branch_id:
-                    String::from(
-                        "branch-a"
-                    ),
+            parent_branch: Some(String::from("branch-a")),
 
-                parent_branch:
-                    Some(
-                        String::from(
-                            "root"
-                        )
-                    ),
+            origin_node: String::from("reasoning-3"),
 
-                origin_node:
-                    String::from(
-                        "reasoning-2"
-                    ),
+            status: BranchStatus::Rejected,
 
-                status:
-                    BranchStatus
-                        ::Active,
+            description: String::from("Unsafe reasoning path"),
+        },
+    ];
 
-                description:
-                    String::from(
-                        "Speculative mutation"
-                    ),
-            },
+    let replay = BranchReplayEngine::descendants(&branches, "root");
 
-            CognitionBranch {
-
-                branch_id:
-                    String::from(
-                        "branch-b"
-                    ),
-
-                parent_branch:
-                    Some(
-                        String::from(
-                            "branch-a"
-                        )
-                    ),
-
-                origin_node:
-                    String::from(
-                        "reasoning-3"
-                    ),
-
-                status:
-                    BranchStatus
-                        ::Rejected,
-
-                description:
-                    String::from(
-                        "Unsafe reasoning path"
-                    ),
-            },
-        ];
-
-    let replay =
-
-        BranchReplayEngine
-            ::descendants(
-                &branches,
-                "root"
-            );
-
-    println!(
-        "{:#?}",
-        replay
-    );
+    println!("{:#?}", replay);
 }

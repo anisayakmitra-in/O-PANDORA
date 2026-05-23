@@ -6,133 +6,44 @@ use tokio::sync::RwLock;
 
 use crate::provider::Provider;
 
-use crate::types::{
-    ModelCapabilities,
-    ProviderError,
-};
+use crate::types::{ModelCapabilities, ProviderError};
 
 pub struct ProviderRegistry {
-
-    providers:
-        Arc<
-            RwLock<
-                HashMap<
-                    String,
-                    Arc<dyn Provider>
-                >
-            >
-        >,
+    providers: Arc<RwLock<HashMap<String, Arc<dyn Provider>>>>,
 }
 
 impl ProviderRegistry {
-
     pub fn new() -> Self {
-
         Self {
-
-            providers:
-                Arc::new(
-                    RwLock::new(
-                        HashMap::new()
-                    )
-                ),
+            providers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    pub async fn register(
+    pub async fn register(&self, name: impl Into<String>, provider: Arc<dyn Provider>) {
+        let mut providers = self.providers.write().await;
 
-        &self,
-
-        name:
-            impl Into<String>,
-
-        provider:
-            Arc<dyn Provider>,
-    ) {
-
-        let mut providers =
-            self.providers
-                .write()
-                .await;
-
-        providers.insert(
-            name.into(),
-            provider,
-        );
+        providers.insert(name.into(), provider);
     }
 
-    pub async fn get(
+    pub async fn get(&self, name: &str) -> Option<Arc<dyn Provider>> {
+        let providers = self.providers.read().await;
 
-        &self,
-
-        name:
-            &str,
-
-    ) -> Option<
-        Arc<dyn Provider>
-    > {
-
-        let providers =
-            self.providers
-                .read()
-                .await;
-
-        providers
-            .get(name)
-            .cloned()
+        providers.get(name).cloned()
     }
 
-    pub async fn list(
-        &self,
-    ) -> Vec<String> {
+    pub async fn list(&self) -> Vec<String> {
+        let providers = self.providers.read().await;
 
-        let providers =
-            self.providers
-                .read()
-                .await;
-
-        providers
-            .keys()
-            .cloned()
-            .collect()
+        providers.keys().cloned().collect()
     }
 
-    pub async fn capabilities(
+    pub async fn capabilities(&self, name: &str) -> Result<ModelCapabilities, ProviderError> {
+        let providers = self.providers.read().await;
 
-        &self,
+        let provider = providers.get(name).ok_or_else(|| {
+            ProviderError::ProviderUnavailable(format!("provider '{}' not found", name))
+        })?;
 
-        name:
-            &str,
-
-    ) -> Result<
-        ModelCapabilities,
-        ProviderError,
-    > {
-
-        let providers =
-            self.providers
-                .read()
-                .await;
-
-        let provider =
-            providers
-                .get(name)
-                .ok_or_else(
-                    || {
-
-                        ProviderError
-                            ::ProviderUnavailable(
-                                format!(
-                                    "provider '{}' not found",
-                                    name
-                                )
-                            )
-                    }
-                )?;
-
-      Ok( 
-        provider
-            .capabilities()
-      )
+        Ok(provider.capabilities())
     }
 }

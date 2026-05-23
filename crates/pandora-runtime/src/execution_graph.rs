@@ -1,88 +1,42 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
-pub struct ExecutionGraph {
+use std::fs;
 
-    pub graph_id:
-        String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecutionVertex {
+    pub node_id: String,
 
-    pub root_task_id:
-        String,
-
-    pub nodes:
-        Vec<ExecutionNode>,
-
-    pub edges:
-        Vec<ExecutionEdge>,
+    pub node_type: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
-pub struct ExecutionNode {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExecutionConnection {
+    pub from: String,
 
-    pub node_id:
-        String,
-
-    pub gene_id:
-        String,
-
-    pub harness_id:
-        String,
-
-    pub status:
-        ExecutionStatus,
-
-    pub capability:
-        String,
-
-    pub timestamp:
-        String,
+    pub to: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
-pub struct ExecutionEdge {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PersistentExecutionGraph {
+    pub graph_id: String,
 
-    pub from:
-        String,
+    pub vertices: Vec<ExecutionVertex>,
 
-    pub to:
-        String,
+    pub edges: Vec<ExecutionConnection>,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
-pub enum ExecutionStatus {
+pub struct ExecutionGraphPersistence;
 
-    Pending,
+impl ExecutionGraphPersistence {
+    pub fn persist(graph: &PersistentExecutionGraph) {
+        fs::create_dir_all("execution_graphs").unwrap();
 
-    Running,
+        let path = format!("execution_graphs/{}.json", graph.graph_id);
 
-    Completed,
+        let json = serde_json::to_string_pretty(graph).unwrap();
 
-    Failed,
+        fs::write(path, json).unwrap();
 
-    Governed,
-
-    Rejected,
+        println!("[GRAPH] persisted execution graph: {}", graph.graph_id);
+    }
 }

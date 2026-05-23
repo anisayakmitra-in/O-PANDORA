@@ -1,7 +1,4 @@
-use crate::config::{
-    SandboxCommand,
-    SandboxConfig,
-};
+use crate::config::{SandboxCommand, SandboxConfig};
 
 use crate::error::SandboxError;
 
@@ -9,20 +6,12 @@ use crate::reaper::ContainerReaper;
 
 use bollard::container::LogOutput;
 
-use bollard::exec::{
-    CreateExecOptions,
-    StartExecResults,
-};
+use bollard::exec::{CreateExecOptions, StartExecResults};
 
-use bollard::models::{
-    ContainerCreateBody,
-    HostConfig,
-};
+use bollard::models::{ContainerCreateBody, HostConfig};
 
 use bollard::query_parameters::{
-    CreateContainerOptions,
-    RemoveContainerOptions,
-    StartContainerOptions,
+    CreateContainerOptions, RemoveContainerOptions, StartContainerOptions,
 };
 
 use bollard::Docker;
@@ -33,355 +22,152 @@ use tokio::sync::mpsc;
 
 use tokio_util::sync::CancellationToken;
 
-use tracing::{
-    error,
-    info,
-    instrument,
-};
+use tracing::{error, info, instrument};
 
 pub struct ActiveSandbox {
+    docker: Docker,
 
-    docker:
-        Docker,
+    reaper: ContainerReaper,
 
-    reaper:
-        ContainerReaper,
-
-    pub container_id:
-        String,
+    pub container_id: String,
 }
 
 impl ActiveSandbox {
-
     #[instrument(skip(docker, reaper, config))]
     pub async fn provision(
+        docker: Docker,
 
-        docker:
-            Docker,
+        reaper: ContainerReaper,
 
-        reaper:
-            ContainerReaper,
-
-        config:
-            SandboxConfig,
-
+        config: SandboxConfig,
     ) -> Result<Self, SandboxError> {
+        let host_config = HostConfig {
+            memory: Some(config.limits.memory_bytes),
 
-        let host_config =
-            HostConfig {
+            nano_cpus: Some(config.limits.nano_cpus),
 
-                memory:
-                    Some(
-                        config
-                            .limits
-                            .memory_bytes
-                    ),
+            readonly_rootfs: Some(config.readonly_rootfs),
 
-                nano_cpus:
-                    Some(
-                        config
-                            .limits
-                            .nano_cpus
-                    ),
+            cap_drop: Some(config.drop_capabilities),
 
-                readonly_rootfs:
-                    Some(
-                        config
-                            .readonly_rootfs
-                    ),
+            network_mode: if config.network_disabled {
+                Some(String::from("none"))
+            } else {
+                None
+            },
 
-                cap_drop:
-                    Some(
-                        config
-                            .drop_capabilities
-                    ),
+            ..Default::default()
+        };
 
-                network_mode:
+        let container_config = ContainerCreateBody {
+            image: Some(config.image),
 
-                    if config.network_disabled {
+            user: Some(config.user_namespace),
 
-                        Some(
-                            String::from(
-                                "none"
-                            )
-                        )
+            tty: Some(false),
 
-                    } else {
+            cmd: Some(vec![String::from("sleep"), String::from("infinity")]),
 
-                        None
-                    },
+            host_config: Some(host_config),
 
-                ..Default::default()
-            };
+            ..Default::default()
+        };
 
-        let container_config =
-            ContainerCreateBody {
-
-                image:
-                    Some(
-                        config.image
-                    ),
-
-                user:
-                    Some(
-                        config.user_namespace
-                    ),
-
-                tty:
-                    Some(false),
-
-                cmd:
-                    Some(
-                        vec![
-                            String::from(
-                                "sleep"
-                            ),
-                            String::from(
-                                "infinity"
-                            ),
-                        ]
-                    ),
-
-                host_config:
-                    Some(
-                        host_config
-                    ),
-
-                ..Default::default()
-            };
-
-        let created =
-            docker
-                .create_container(
-                    None::<CreateContainerOptions>,
-                    container_config,
-                )
-                .await
-                .map_err(
-                    |error| {
-
-                        SandboxError
-                            ::InitFailed(
-                                error
-                                    .to_string()
-                            )
-                    }
-                )?;
+        let created = docker
+            .create_container(None::<CreateContainerOptions>, container_config)
+            .await
+            .map_err(|error| SandboxError::InitFailed(error.to_string()))?;
 
         docker
-            .start_container(
-                &created.id,
-                None::<StartContainerOptions>,
-            )
+            .start_container(&created.id, None::<StartContainerOptions>)
             .await
-            .map_err(
-                |error| {
+            .map_err(|error| SandboxError::InitFailed(error.to_string()))?;
 
-                    SandboxError
-                        ::InitFailed(
-                            error
-                                .to_string()
-                        )
-                }
-            )?;
+        reaper.track(created.id.clone()).await;
 
-        reaper
-            .track(
-                created.id.clone()
-            )
-            .await;
+        info!("sandbox provisioned: {}", created.id);
 
-        info!(
-            "sandbox provisioned: {}",
-            created.id
-        );
+        Ok(Self {
+            docker,
 
-        Ok(
-            Self {
+            reaper,
 
-                docker,
-
-                reaper,
-
-                container_id:
-                    created.id,
-            }
-        )
+            container_id: created.id,
+        })
     }
 
     #[instrument(skip(self, cmd, cancel_token, stdout_tx, stderr_tx))]
     pub async fn execute_streamed(
-
         &self,
 
-        cmd:
-            SandboxCommand,
+        cmd: SandboxCommand,
 
-        cancel_token:
-            CancellationToken,
+        cancel_token: CancellationToken,
 
-        stdout_tx:
-            mpsc::Sender<String>,
+        stdout_tx: mpsc::Sender<String>,
 
-        stderr_tx:
-            mpsc::Sender<String>,
-
+        stderr_tx: mpsc::Sender<String>,
     ) -> Result<i64, SandboxError> {
+        let exec = self
+            .docker
+            .create_exec(
+                &self.container_id,
+                CreateExecOptions {
+                    cmd: Some(cmd.cmd),
 
-        let exec =
-            self
-                .docker
-                .create_exec(
+                    attach_stdout: Some(true),
 
-                    &self.container_id,
+                    attach_stderr: Some(true),
 
-                    CreateExecOptions {
+                    working_dir: Some(cmd.working_dir),
 
-                        cmd:
-                            Some(
-                                cmd.cmd
-                            ),
+                    ..Default::default()
+                },
+            )
+            .await
+            .map_err(|error| SandboxError::ExecutionFailed(error.to_string()))?;
 
-                        attach_stdout:
-                            Some(true),
+        let exec_id = exec.id.clone();
 
-                        attach_stderr:
-                            Some(true),
+        let docker = self.docker.clone();
 
-                        working_dir:
-                            Some(
-                                cmd.working_dir
-                            ),
-
-                        ..Default::default()
-                    },
-                )
+        let execution_future = async move {
+            let result = docker
+                .start_exec(&exec_id, None)
                 .await
-                .map_err(
-                    |error| {
+                .map_err(|error| SandboxError::ExecutionFailed(error.to_string()))?;
 
-                        SandboxError
-                            ::ExecutionFailed(
-                                error
-                                    .to_string()
-                            )
-                    }
-                )?;
+            match result {
+                StartExecResults::Attached { mut output, .. } => {
+                    while let Some(message) = output.next().await {
+                        match message {
+                            Ok(LogOutput::StdOut { message }) => {
+                                let line = String::from_utf8_lossy(&message).to_string();
 
-        let exec_id =
-            exec.id.clone();
-
-        let docker =
-            self.docker.clone();
-
-        let execution_future =
-            async move {
-
-                let result =
-                    docker
-                        .start_exec(
-                            &exec_id,
-                            None,
-                        )
-                        .await
-                        .map_err(
-                            |error| {
-
-                                SandboxError
-                                    ::ExecutionFailed(
-                                        error
-                                            .to_string()
-                                    )
+                                let _ = stdout_tx.send(line).await;
                             }
-                        )?;
 
-                match result {
+                            Ok(LogOutput::StdErr { message }) => {
+                                let line = String::from_utf8_lossy(&message).to_string();
 
-                    StartExecResults::Attached {
-
-                        mut output,
-
-                        ..
-
-                    } => {
-
-                        while let Some(message) =
-                            output.next().await
-                        {
-
-                            match message {
-
-                                Ok(
-                                    LogOutput::StdOut {
-
-                                        message,
-
-                                    }
-                                ) => {
-
-                                    let line =
-                                        String::from_utf8_lossy(
-                                            &message
-                                        )
-                                        .to_string();
-
-                                    let _ =
-                                        stdout_tx
-                                            .send(line)
-                                            .await;
-                                }
-
-                                Ok(
-                                    LogOutput::StdErr {
-
-                                        message,
-
-                                    }
-                                ) => {
-
-                                    let line =
-                                        String::from_utf8_lossy(
-                                            &message
-                                        )
-                                        .to_string();
-
-                                    let _ =
-                                        stderr_tx
-                                            .send(line)
-                                            .await;
-                                }
-
-                                _ => {}
+                                let _ = stderr_tx.send(line).await;
                             }
+
+                            _ => {}
                         }
                     }
-
-                    _ => {}
                 }
 
-                let inspect =
-                    docker
-                        .inspect_exec(
-                            &exec_id
-                        )
-                        .await
-                        .map_err(
-                            |error| {
+                _ => {}
+            }
 
-                                SandboxError
-                                    ::ExecutionFailed(
-                                        error
-                                            .to_string()
-                                    )
-                            }
-                        )?;
+            let inspect = docker
+                .inspect_exec(&exec_id)
+                .await
+                .map_err(|error| SandboxError::ExecutionFailed(error.to_string()))?;
 
-                Ok(
-                    inspect
-                        .exit_code
-                        .unwrap_or(-1)
-                )
-            };
+            Ok(inspect.exit_code.unwrap_or(-1))
+        };
 
         tokio::select! {
 
@@ -415,53 +201,28 @@ impl ActiveSandbox {
     }
 
     #[instrument(skip(self))]
-    pub async fn teardown(
-        self
-    ) {
+    pub async fn teardown(self) {
+        let options = RemoveContainerOptions {
+            force: true,
 
-        let options =
-            RemoveContainerOptions {
+            v: true,
 
-                force:
-                    true,
-
-                v:
-                    true,
-
-                link:
-                    false,
-            };
+            link: false,
+        };
 
         match self
             .docker
-            .remove_container(
-                &self.container_id,
-                Some(options),
-            )
+            .remove_container(&self.container_id, Some(options))
             .await
         {
-
             Ok(_) => {
+                self.reaper.untrack(&self.container_id).await;
 
-                self
-                    .reaper
-                    .untrack(
-                        &self.container_id
-                    )
-                    .await;
-
-                info!(
-                    "sandbox destroyed: {}",
-                    self.container_id
-                );
+                info!("sandbox destroyed: {}", self.container_id);
             }
 
             Err(error_value) => {
-
-                error!(
-                    "sandbox teardown failed: {}",
-                    error_value
-                );
+                error!("sandbox teardown failed: {}", error_value);
             }
         }
     }

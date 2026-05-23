@@ -10,7 +10,6 @@ use crate::task::Task;
 
 #[derive(Debug, Error)]
 pub enum AdapterError {
-
     #[error("execution failed: {0}")]
     ExecutionFailed(String),
 
@@ -19,28 +18,16 @@ pub enum AdapterError {
 }
 
 #[async_trait]
-pub trait ExecutionAdapter:
-    Send
-    +
-    Sync {
-
+pub trait ExecutionAdapter: Send + Sync {
     async fn execute_task(
-
         &self,
 
         task: &Task,
 
-        cancel_token:
-            CancellationToken,
+        cancel_token: CancellationToken,
 
-        stdout_tx:
-            mpsc::Sender<String>,
+        stdout_tx: mpsc::Sender<String>,
 
-        stderr_tx:
-            mpsc::Sender<String>,
-
-    ) -> Result<
-        i64,
-        AdapterError
-    >;
+        stderr_tx: mpsc::Sender<String>,
+    ) -> Result<i64, AdapterError>;
 }

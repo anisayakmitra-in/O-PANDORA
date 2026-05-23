@@ -5,72 +5,38 @@ use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 
 use crate::types::{
-    GenerationRequest,
-    GenerationResponse,
-    ModelCapabilities,
-    ProviderError,
-    TokenChunk,
+    GenerationRequest, GenerationResponse, ModelCapabilities, ProviderError, TokenChunk,
 };
 
 #[async_trait]
-pub trait Provider:
-    Send
-    + Sync
-{
-
-    fn name(
-        &self,
-    ) -> &'static str;
+pub trait Provider: Send + Sync {
+    fn name(&self) -> &'static str;
 
     async fn generate(
-
         &self,
 
-        request:
-            GenerationRequest,
+        request: GenerationRequest,
 
-        cancel:
-            CancellationToken,
-
-    ) -> Result<
-        GenerationResponse,
-        ProviderError,
-    >;
+        cancel: CancellationToken,
+    ) -> Result<GenerationResponse, ProviderError>;
 
     async fn stream_generate(
-
         &self,
 
-        request:
-            GenerationRequest,
+        request: GenerationRequest,
 
-        cancel:
-            CancellationToken,
+        cancel: CancellationToken,
 
-        tx:
-            mpsc::Sender<TokenChunk>,
-
-    ) -> Result<
-        (),
-        ProviderError,
-    >;
+        tx: mpsc::Sender<TokenChunk>,
+    ) -> Result<(), ProviderError>;
 
     async fn embed(
-
         &self,
 
-        text:
-            String,
+        text: String,
 
-        cancel:
-            CancellationToken,
+        cancel: CancellationToken,
+    ) -> Result<Vec<f32>, ProviderError>;
 
-    ) -> Result<
-        Vec<f32>,
-        ProviderError,
-    >;
-
-    fn capabilities(
-        &self,
-    ) -> ModelCapabilities;
+    fn capabilities(&self) -> ModelCapabilities;
 }

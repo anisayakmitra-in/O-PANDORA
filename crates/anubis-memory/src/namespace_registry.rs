@@ -1,25 +1,12 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NamespaceRecord {
+    pub namespace_id: String,
 
-    pub namespace_id:
-        String,
+    pub owner: String,
 
-    pub owner:
-        String,
+    pub memory_count: usize,
 
-    pub memory_count:
-        usize,
-
-    pub isolated:
-        bool,
+    pub isolated: bool,
 }

@@ -17,11 +17,7 @@ impl OllamaClient {
         }
     }
 
-    pub async fn chat(
-        &self,
-        model: &str,
-        prompt: &str,
-    ) -> Result<ChatResponse, ModelError> {
+    pub async fn chat(&self, model: &str, prompt: &str) -> Result<ChatResponse, ModelError> {
         let url = format!("{}/api/generate", self.endpoint);
 
         let body = json!({
@@ -44,12 +40,11 @@ impl OllamaClient {
             .map_err(|e| ModelError::Http(e.to_string()))?;
 
         if std::env::var("DEBUG").is_ok() {
-    println!("RAW RESPONSE:\n{}", text);
-}
+            println!("RAW RESPONSE:\n{}", text);
+        }
 
         let parsed: serde_json::Value =
-            serde_json::from_str(&text)
-                .map_err(|e| ModelError::Http(e.to_string()))?;
+            serde_json::from_str(&text).map_err(|e| ModelError::Http(e.to_string()))?;
 
         let content = parsed["response"]
             .as_str()
@@ -66,4 +61,3 @@ impl OllamaClient {
         })
     }
 }
-

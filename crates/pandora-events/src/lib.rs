@@ -1,15 +1,7 @@
-use std::sync::mpsc::{
-    channel,
-    Receiver,
-    Sender,
-};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
-#[derive(
-    Debug,
-    Clone,
-)]
+#[derive(Debug, Clone)]
 pub enum RuntimeEvent {
-
     Boot(String),
 
     GeneLoaded(String),
@@ -28,26 +20,15 @@ pub enum RuntimeEvent {
 }
 
 pub struct EventBus {
+    pub sender: Sender<RuntimeEvent>,
 
-    pub sender:
-        Sender<RuntimeEvent>,
-
-    pub receiver:
-        Receiver<RuntimeEvent>,
+    pub receiver: Receiver<RuntimeEvent>,
 }
 
 impl EventBus {
-
     pub fn new() -> Self {
+        let (sender, receiver) = channel();
 
-        let (
-            sender,
-            receiver,
-        ) = channel();
-
-        Self {
-            sender,
-            receiver,
-        }
+        Self { sender, receiver }
     }
 }

@@ -1,116 +1,54 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DependencyRequirement {
+    pub package: String,
 
-    pub package:
-        String,
-
-    pub minimum_version:
-        String,
+    pub minimum_version: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResolutionResult {
+    pub resolved: bool,
 
-    pub resolved:
-        bool,
+    pub missing: Vec<String>,
 
-    pub missing:
-        Vec<String>,
-
-    pub resolved_packages:
-        Vec<String>,
+    pub resolved_packages: Vec<String>,
 }
 
-use crate::loader::{
-    RuntimePackageLoader,
-};
+use crate::loader::RuntimePackageLoader;
 
 pub struct DependencyResolver;
 
 impl DependencyResolver {
-
     pub fn resolve(
+        loader: &RuntimePackageLoader,
 
-        loader:
-            &RuntimePackageLoader,
-
-        requirements:
-            &[DependencyRequirement],
-
+        requirements: &[DependencyRequirement],
     ) -> ResolutionResult {
+        let mut missing = Vec::new();
 
-        let mut missing =
-            Vec::new();
+        let mut resolved = Vec::new();
 
-        let mut resolved =
-            Vec::new();
-
-        for requirement in
-            requirements
-        {
-
-            let found =
-
-                loader
-                    .active_packages()
-                    .iter()
-                    .any(
-                        |package| {
-
-                            package
-                                .manifest
-                                .package_name
-
-                                ==
-
-                            requirement
-                                .package
-                        }
-                    );
+        for requirement in requirements {
+            let found = loader
+                .active_packages()
+                .iter()
+                .any(|package| package.manifest.package_name == requirement.package);
 
             if found {
-
-                resolved.push(
-                    requirement
-                        .package
-                        .clone()
-                );
-
+                resolved.push(requirement.package.clone());
             } else {
-
-                missing.push(
-                    requirement
-                        .package
-                        .clone()
-                );
+                missing.push(requirement.package.clone());
             }
         }
 
         ResolutionResult {
-
-            resolved:
-                missing.is_empty(),
+            resolved: missing.is_empty(),
 
             missing,
 
-            resolved_packages:
-                resolved,
+            resolved_packages: resolved,
         }
     }
 }
-

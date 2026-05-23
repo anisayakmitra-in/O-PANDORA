@@ -6,7 +6,7 @@ pub struct HarnessGene {
     pub gene_id: String,
     pub parent_gene: Option<String>,
     pub generation: usize,
-    
+
     // strengths
     pub domains: Vec<String>,
 

@@ -2,7 +2,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum GovernanceError {
-
     #[error("execution failed: {0}")]
     ExecutionFailed(String),
 

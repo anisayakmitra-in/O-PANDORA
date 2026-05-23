@@ -1,150 +1,62 @@
-use anubis_memory::lineage::{
-    LineageEngine,
-    MutationLineage,
-    RollbackCheckpoint,
-    RollbackEngine,
-};
+use anubis_memory::lineage::{LineageEngine, MutationLineage, RollbackCheckpoint, RollbackEngine};
 
 fn main() {
+    let lineages = vec![
+        MutationLineage {
+            branch_id: String::from("branch-c"),
 
-    let lineages =
-        vec![
+            parent_branch: Some(String::from("branch-b")),
 
-            MutationLineage {
+            mutation_epoch: 3,
 
-                branch_id:
-                    String::from(
-                        "branch-c"
-                    ),
+            checkpoint_id: String::from("checkpoint-c"),
+        },
+        MutationLineage {
+            branch_id: String::from("branch-b"),
 
-                parent_branch:
-                    Some(
-                        String::from(
-                            "branch-b"
-                        )
-                    ),
+            parent_branch: Some(String::from("branch-a")),
 
-                mutation_epoch:
-                    3,
+            mutation_epoch: 2,
 
-                checkpoint_id:
-                    String::from(
-                        "checkpoint-c"
-                    ),
-            },
+            checkpoint_id: String::from("checkpoint-b"),
+        },
+        MutationLineage {
+            branch_id: String::from("branch-a"),
 
-            MutationLineage {
+            parent_branch: None,
 
-                branch_id:
-                    String::from(
-                        "branch-b"
-                    ),
+            mutation_epoch: 1,
 
-                parent_branch:
-                    Some(
-                        String::from(
-                            "branch-a"
-                        )
-                    ),
+            checkpoint_id: String::from("checkpoint-a"),
+        },
+    ];
 
-                mutation_epoch:
-                    2,
+    let checkpoints = vec![
+        RollbackCheckpoint {
+            checkpoint_id: String::from("checkpoint-a"),
 
-                checkpoint_id:
-                    String::from(
-                        "checkpoint-b"
-                    ),
-            },
+            branch_id: String::from("branch-a"),
 
-            MutationLineage {
+            timestamp: 1000,
 
-                branch_id:
-                    String::from(
-                        "branch-a"
-                    ),
+            description: String::from("stable cognition"),
+        },
+        RollbackCheckpoint {
+            checkpoint_id: String::from("checkpoint-b"),
 
-                parent_branch:
-                    None,
+            branch_id: String::from("branch-b"),
 
-                mutation_epoch:
-                    1,
+            timestamp: 2000,
 
-                checkpoint_id:
-                    String::from(
-                        "checkpoint-a"
-                    ),
-            },
-        ];
+            description: String::from("optimized reasoning"),
+        },
+    ];
 
-    let checkpoints =
-        vec![
+    let ancestry = LineageEngine::ancestry(&lineages, "branch-c");
 
-            RollbackCheckpoint {
+    println!("{:#?}", ancestry);
 
-                checkpoint_id:
-                    String::from(
-                        "checkpoint-a"
-                    ),
+    let rollback = RollbackEngine::latest_checkpoint(&checkpoints, "branch-b");
 
-                branch_id:
-                    String::from(
-                        "branch-a"
-                    ),
-
-                timestamp:
-                    1000,
-
-                description:
-                    String::from(
-                        "stable cognition"
-                    ),
-            },
-
-            RollbackCheckpoint {
-
-                checkpoint_id:
-                    String::from(
-                        "checkpoint-b"
-                    ),
-
-                branch_id:
-                    String::from(
-                        "branch-b"
-                    ),
-
-                timestamp:
-                    2000,
-
-                description:
-                    String::from(
-                        "optimized reasoning"
-                    ),
-            },
-        ];
-
-    let ancestry =
-
-        LineageEngine
-            ::ancestry(
-                &lineages,
-                "branch-c"
-            );
-
-    println!(
-        "{:#?}",
-        ancestry
-    );
-
-    let rollback =
-
-        RollbackEngine
-            ::latest_checkpoint(
-                &checkpoints,
-                "branch-b"
-            );
-
-    println!(
-        "{:#?}",
-        rollback
-    );
+    println!("{:#?}", rollback);
 }

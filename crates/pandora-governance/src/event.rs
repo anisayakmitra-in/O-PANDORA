@@ -2,116 +2,56 @@ use std::sync::Arc;
 
 use std::time::SystemTime;
 
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use crate::context::ExecutionContext;
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExecutionEventKind {
+    ExecutionStarted { command: Vec<String> },
 
-    ExecutionStarted {
+    ExecutionCompleted { exit_code: i64 },
 
-        command: Vec<String>,
-    },
+    ExecutionFailed { reason: String },
 
-    ExecutionCompleted {
+    HostExecutionStarted { command: Vec<String> },
 
-        exit_code: i64,
-    },
+    SandboxExecutionStarted { command: Vec<String> },
 
-    ExecutionFailed {
+    Stdout { line: String },
 
-        reason: String,
-    },
+    Stderr { line: String },
 
-    HostExecutionStarted {
+    GovernanceViolation { reason: String },
 
-        command: Vec<String>,
-    },
-
-    SandboxExecutionStarted {
-
-        command: Vec<String>,
-    },
-
-    Stdout {
-
-        line: String,
-    },
-
-    Stderr {
-
-        line: String,
-    },
-
-    GovernanceViolation {
-
-        reason: String,
-    },
-
-    WatchdogTriggered {
-
-        reason: String,
-    },
+    WatchdogTriggered { reason: String },
 
     Cancelled,
 }
 
 #[derive(Debug, Clone)]
 pub struct ExecutionEvent {
+    pub timestamp: SystemTime,
 
-    pub timestamp:
-        SystemTime,
+    pub trace_id: uuid::Uuid,
 
-    pub trace_id:
-        uuid::Uuid,
+    pub parent_trace_id: Option<uuid::Uuid>,
 
-    pub parent_trace_id:
-        Option<uuid::Uuid>,
+    pub tier: String,
 
-    pub tier:
-        String,
-
-    pub kind:
-        ExecutionEventKind,
+    pub kind: ExecutionEventKind,
 }
 
 impl ExecutionEvent {
-
-    pub fn new(
-
-        context:
-            Arc<ExecutionContext>,
-
-        kind:
-            ExecutionEventKind,
-
-    ) -> Self {
-
+    pub fn new(context: Arc<ExecutionContext>, kind: ExecutionEventKind) -> Self {
         Self {
+            timestamp: SystemTime::now(),
 
-            timestamp:
-                SystemTime::now(),
+            trace_id: context.trace_id,
 
-            trace_id:
-                context.trace_id,
+            parent_trace_id: context.parent_trace_id,
 
-            parent_trace_id:
-                context.parent_trace_id,
-
-            tier:
-                format!(
-                    "{:?}",
-                    context.tier
-                ),
+            tier: format!("{:?}", context.tier),
 
             kind,
         }

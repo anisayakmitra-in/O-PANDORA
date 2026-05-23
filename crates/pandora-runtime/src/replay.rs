@@ -1,34 +1,18 @@
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReplaySession {
+    pub replay_id: String,
 
-    pub replay_id:
-        String,
+    pub target_graph: String,
 
-    pub target_graph:
-        String,
+    pub target_lineage: String,
 
-    pub target_lineage:
-        String,
+    pub target_mutation: String,
 
-    pub target_mutation:
-        String,
+    pub replay_reason: String,
 
-    pub replay_reason:
-        String,
+    pub initiated_by: String,
 
-    pub initiated_by:
-        String,
-
-    pub timestamp:
-        String,
+    pub timestamp: String,
 }

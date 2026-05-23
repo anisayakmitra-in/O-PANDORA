@@ -1,16 +1,7 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ValidationStatus {
-
     Approved,
 
     Rejected,
@@ -20,135 +11,63 @@ pub enum ValidationStatus {
     RequiresReview,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GovernanceDecision {
+    pub branch_id: String,
 
-    pub branch_id:
-        String,
+    pub status: ValidationStatus,
 
-    pub status:
-        ValidationStatus,
+    pub safety_score: f32,
 
-    pub safety_score:
-        f32,
-
-    pub reason:
-        String,
+    pub reason: String,
 }
 
-use crate::evolution::{
-    BranchScore,
-};
+use crate::evolution::BranchScore;
 
 pub struct MutationValidator;
 
 impl MutationValidator {
+    pub fn validate(score: &BranchScore) -> GovernanceDecision {
+        let final_score = score.fitness * score.confidence - score.governance_penalty;
 
-    pub fn validate(
-
-        score:
-            &BranchScore,
-
-    ) -> GovernanceDecision {
-
-        let final_score =
-
-            score.fitness
-            *
-            score.confidence
-
-            -
-
-            score.governance_penalty;
-
-        if score.governance_penalty
-            > 0.5
-        {
-
+        if score.governance_penalty > 0.5 {
             return GovernanceDecision {
+                branch_id: score.branch_id.clone(),
 
-                branch_id:
-                    score.branch_id.clone(),
+                status: ValidationStatus::Quarantined,
 
-                status:
-                    ValidationStatus
-                        ::Quarantined,
+                safety_score: final_score,
 
-                safety_score:
-                    final_score,
-
-                reason:
-                    String::from(
-                        "governance penalty exceeded threshold"
-                    ),
+                reason: String::from("governance penalty exceeded threshold"),
             };
         }
 
         if final_score < 0.4 {
-
             return GovernanceDecision {
+                branch_id: score.branch_id.clone(),
 
-                branch_id:
-                    score.branch_id.clone(),
+                status: ValidationStatus::Rejected,
 
-                status:
-                    ValidationStatus
-                        ::Rejected,
+                safety_score: final_score,
 
-                safety_score:
-                    final_score,
-
-                reason:
-                    String::from(
-                        "unsafe evolutionary score"
-                    ),
+                reason: String::from("unsafe evolutionary score"),
             };
         }
 
         GovernanceDecision {
+            branch_id: score.branch_id.clone(),
 
-            branch_id:
-                score.branch_id.clone(),
+            status: ValidationStatus::Approved,
 
-            status:
-                ValidationStatus
-                    ::Approved,
+            safety_score: final_score,
 
-            safety_score:
-                final_score,
-
-            reason:
-                String::from(
-                    "mutation approved"
-                ),
+            reason: String::from("mutation approved"),
         }
     }
 }
 
 impl MutationValidator {
-
-    pub fn validate_all(
-
-        scores:
-            &[BranchScore],
-
-    ) -> Vec<GovernanceDecision> {
-
-        scores
-            .iter()
-            .map(
-                |score| {
-
-                    Self::validate(
-                        score
-                    )
-                }
-            )
-            .collect()
+    pub fn validate_all(scores: &[BranchScore]) -> Vec<GovernanceDecision> {
+        scores.iter().map(|score| Self::validate(score)).collect()
     }
 }

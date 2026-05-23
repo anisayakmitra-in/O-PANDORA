@@ -1,16 +1,7 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Serialize,
-    Deserialize,
-    Debug,
-    Clone,
-)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RuntimeTrace {
-
     pub session_id: String,
 
     pub gene: String,

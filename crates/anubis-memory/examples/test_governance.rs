@@ -1,86 +1,45 @@
-use anubis_memory::evolution::{
-    BranchScore,
-};
+use anubis_memory::evolution::BranchScore;
 
-use anubis_memory::governance::{
-    MutationValidator,
-};
+use anubis_memory::governance::MutationValidator;
 
 fn main() {
+    let scores = vec![
+        BranchScore {
+            branch_id: String::from("safe-branch"),
 
-    let scores =
-        vec![
+            fitness: 0.92,
 
-            BranchScore {
+            confidence: 0.94,
 
-                branch_id:
-                    String::from(
-                        "safe-branch"
-                    ),
+            governance_penalty: 0.05,
 
-                fitness:
-                    0.92,
+            mutation_depth: 2,
+        },
+        BranchScore {
+            branch_id: String::from("dangerous-branch"),
 
-                confidence:
-                    0.94,
+            fitness: 0.99,
 
-                governance_penalty:
-                    0.05,
+            confidence: 0.95,
 
-                mutation_depth:
-                    2,
-            },
+            governance_penalty: 0.72,
 
-            BranchScore {
+            mutation_depth: 5,
+        },
+        BranchScore {
+            branch_id: String::from("weak-branch"),
 
-                branch_id:
-                    String::from(
-                        "dangerous-branch"
-                    ),
+            fitness: 0.25,
 
-                fitness:
-                    0.99,
+            confidence: 0.40,
 
-                confidence:
-                    0.95,
+            governance_penalty: 0.10,
 
-                governance_penalty:
-                    0.72,
+            mutation_depth: 1,
+        },
+    ];
 
-                mutation_depth:
-                    5,
-            },
+    let decisions = MutationValidator::validate_all(&scores);
 
-            BranchScore {
-
-                branch_id:
-                    String::from(
-                        "weak-branch"
-                    ),
-
-                fitness:
-                    0.25,
-
-                confidence:
-                    0.40,
-
-                governance_penalty:
-                    0.10,
-
-                mutation_depth:
-                    1,
-            },
-        ];
-
-    let decisions =
-
-        MutationValidator
-            ::validate_all(
-                &scores
-            );
-
-    println!(
-        "{:#?}",
-        decisions
-    );
+    println!("{:#?}", decisions);
 }

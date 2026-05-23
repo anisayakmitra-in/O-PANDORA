@@ -2,57 +2,31 @@ use crate::gene::GeneManifest;
 
 use std::fs;
 
-pub fn promote_winner(
-    gene: &mut GeneManifest,
-    winner: &EvolutionCandidate,
-) {
+pub fn promote_winner(gene: &mut GeneManifest, winner: &EvolutionCandidate) {
+    let archive_path = format!(
+        "genes/archive/{}-gen-{}.json",
+        gene.name, gene.lineage.generation
+    );
 
-    let archive_path =
-        format!(
-            "genes/archive/{}-gen-{}.json",
-            gene.name,
-            gene.lineage.generation
-        );
+    let archived = serde_json::to_string_pretty(gene).unwrap();
 
-    let archived =
-        serde_json::to_string_pretty(
-            gene
-        )
-        .unwrap();
-
-    if let Err(error) =
-        fs::create_dir_all(
-            "genes/archive"
-        )
-    {
-
-        println!(
-            "[WARN] failed to create archive dir: {}",
-            error
-        );
+    if let Err(error) = fs::create_dir_all("genes/archive") {
+        println!("[WARN] failed to create archive dir: {}", error);
 
         return;
     }
 
-    fs::write(
-        archive_path,
-        archived,
-    )
-    .unwrap();
+    fs::write(archive_path, archived).unwrap();
 
-    gene.instructions =
-        winner.instructions.clone();
+    gene.instructions = winner.instructions.clone();
 
     gene.lineage.generation += 1;
 
-    gene.lineage.mutation =
-        "winner-promotion"
-        .to_string();
+    gene.lineage.mutation = "winner-promotion".to_string();
 }
 
 #[derive(Debug, Clone)]
 pub struct EvolutionCandidate {
-
     pub instructions: String,
 
     pub generation: u32,
@@ -60,74 +34,42 @@ pub struct EvolutionCandidate {
     pub fitness: f32,
 }
 
-pub fn generate_candidates(
-    gene: &GeneManifest,
-    variants: usize,
-) -> Vec<EvolutionCandidate> {
-
-    let mut candidates =
-        Vec::new();
+pub fn generate_candidates(gene: &GeneManifest, variants: usize) -> Vec<EvolutionCandidate> {
+    let mut candidates = Vec::new();
 
     for index in 0..variants {
+        let instructions = format!("{} [variant-{}]", gene.instructions, index);
 
-        let instructions =
-            format!(
-                "{} [variant-{}]",
-                gene.instructions,
-                index
-            );
+        let candidate = EvolutionCandidate {
+            instructions,
 
-        let candidate =
-            EvolutionCandidate {
+            generation: gene.lineage.generation + 1,
 
-                instructions,
+            fitness: 0.0,
+        };
 
-                generation:
-                    gene.lineage.generation + 1,
-
-                fitness:
-                    0.0,
-            };
-
-        candidates.push(
-            candidate
-        );
+        candidates.push(candidate);
     }
 
     candidates
 }
 
-pub fn evaluate_candidate(
-    candidate: &mut EvolutionCandidate,
-) {
+pub fn evaluate_candidate(candidate: &mut EvolutionCandidate) {
+    let length_score = candidate.instructions.len() as f32;
 
-    let length_score =
-        candidate.instructions.len()
-        as f32;
-
-    candidate.fitness =
-        length_score / 10.0;
+    candidate.fitness = length_score / 10.0;
 }
 
-pub fn select_winner(
-    candidates: &[EvolutionCandidate],
-) -> Option<EvolutionCandidate> {
-
+pub fn select_winner(candidates: &[EvolutionCandidate]) -> Option<EvolutionCandidate> {
     if candidates.is_empty() {
-
         return None;
     }
 
-    let mut winner =
-        candidates[0].clone();
+    let mut winner = candidates[0].clone();
 
     for candidate in candidates {
-
-        if candidate.fitness >
-            winner.fitness {
-
-            winner =
-                candidate.clone();
+        if candidate.fitness > winner.fitness {
+            winner = candidate.clone();
         }
     }
 

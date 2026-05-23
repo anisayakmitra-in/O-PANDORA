@@ -1,79 +1,97 @@
-use crate::task::{
-    RuntimeTask,
-    TaskStatus,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-)]
-pub struct Heartbeat {
+use std::collections::VecDeque;
 
-    pub cycle: u64,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TaskState {
+    Pending,
 
-    pub active_tasks: usize,
+    Running,
 
-    pub runtime_status: String,
+    Sleeping,
+
+    Failed,
+
+    Completed,
 }
 
-pub fn runtime_heartbeat(
-    tasks: &Vec<RuntimeTask>,
-)
-    -> Heartbeat
-{
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CognitionTask {
+    pub task_id: String,
 
-    Heartbeat {
+    pub task_type: String,
 
-        cycle: 1,
+    pub retries: u32,
 
-        active_tasks:
-            tasks.len(),
+    pub max_retries: u32,
 
-        runtime_status:
-            String::from(
-                "operational"
-            ),
+    pub budget_ms: u64,
+
+    pub recurring: bool,
+
+    pub wake_at: Option<u64>,
+
+    pub state: TaskState,
+}
+
+pub struct CognitionScheduler {
+    pub queue: VecDeque<CognitionTask>,
+}
+
+impl CognitionScheduler {
+    pub fn new() -> Self {
+        Self {
+            queue: VecDeque::new(),
+        }
     }
-}
 
-pub fn schedule_task(
-    task: RuntimeTask,
-)
-{
+    pub fn enqueue(&mut self, task: CognitionTask) {
+        self.queue.push_back(task);
+    }
 
-    println!(
-        "[SCHEDULER] queued task: {}",
-        task.id
-    );
+    pub fn heartbeat(&mut self) {
+        println!("[SCHEDULER] heartbeat pulse");
 
-    match task.status {
+        for task in self.queue.iter_mut() {
+            match task.state {
+                TaskState::Pending => {
+                    println!("[SCHEDULER] running task: {}", task.task_id);
 
-        TaskStatus::Pending => {
+                    task.state = TaskState::Running;
+                }
 
-            println!(
-                "[TASK STATUS] pending"
-            );
-        }
+                TaskState::Running => {
+                    println!("[SCHEDULER] completed task: {}", task.task_id);
 
-        TaskStatus::Running => {
+                    if task.recurring {
+                        task.state = TaskState::Pending;
+                    } else {
+                        task.state = TaskState::Completed;
+                    }
+                }
 
-            println!(
-                "[TASK STATUS] running"
-            );
-        }
+                TaskState::Failed => {
+                    if task.retries < task.max_retries {
+                        task.retries += 1;
 
-        TaskStatus::Completed => {
+                        println!("[SCHEDULER] retrying task: {}", task.task_id);
 
-            println!(
-                "[TASK STATUS] completed"
-            );
-        }
+                        task.state = TaskState::Pending;
+                    } else {
+                        println!("[WATCHDOG] task exceeded retry budget: {}", task.task_id);
+                    }
+                }
 
-        TaskStatus::Failed => {
+                TaskState::Sleeping => {
+                    println!("[SCHEDULER] sleeping task: {}", task.task_id);
+                }
 
-            println!(
-                "[TASK STATUS] failed"
-            );
+                TaskState::Completed => {}
+            }
+
+            if task.budget_ms > 10_000 {
+                println!("[WATCHDOG] excessive budget detected: {}", task.task_id);
+            }
         }
     }
 }

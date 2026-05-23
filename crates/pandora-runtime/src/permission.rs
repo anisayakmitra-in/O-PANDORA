@@ -1,19 +1,7 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    PartialEq,
-    Eq,
-    Hash,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum RuntimePermission {
-
     MemoryRead,
 
     MemoryWrite,
@@ -35,40 +23,17 @@ pub enum RuntimePermission {
     TelemetryAccess,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenePermissionProfile {
+    pub gene_id: String,
 
-    pub gene_id:
-        String,
-
-    pub granted:
-        Vec<RuntimePermission>,
+    pub granted: Vec<RuntimePermission>,
 }
 
 pub struct PermissionValidator;
 
 impl PermissionValidator {
-
-    pub fn has_permission(
-
-        profile:
-            &GenePermissionProfile,
-
-        permission:
-            RuntimePermission,
-
-    ) -> bool {
-
-        profile
-            .granted
-            .contains(
-                &permission
-            )
+    pub fn has_permission(profile: &GenePermissionProfile, permission: RuntimePermission) -> bool {
+        profile.granted.contains(&permission)
     }
 }
-

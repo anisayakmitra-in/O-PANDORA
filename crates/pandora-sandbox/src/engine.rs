@@ -10,10 +10,10 @@ impl SandboxEngine {
     pub fn new() -> Result<Self, crate::error::SandboxError> {
         let docker = Docker::connect_with_local_defaults()
             .map_err(|e| crate::error::SandboxError::EngineInitFailed(e.to_string()))?;
-        
+
         let engine = Self { docker };
         engine.spawn_reaper_task();
-        
+
         Ok(engine)
     }
 
@@ -25,7 +25,7 @@ impl SandboxEngine {
             let mut ticker = interval(Duration::from_secs(60));
             loop {
                 ticker.tick().await;
-                // Implementation: List containers with our specific label, 
+                // Implementation: List containers with our specific label,
                 // check their creation time, and send SIGKILL if older than 1 hour.
                 // (Omitted for brevity, but critical for production).
             }

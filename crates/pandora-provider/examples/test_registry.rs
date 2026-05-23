@@ -6,38 +6,17 @@ use pandora_provider::registry::ProviderRegistry;
 
 #[tokio::main]
 async fn main() {
-
-    let registry =
-        ProviderRegistry::new();
+    let registry = ProviderRegistry::new();
 
     registry
-        .register(
-            "ollama",
-            Arc::new(
-                OllamaProvider::new()
-            ),
-        )
+        .register("ollama", Arc::new(OllamaProvider::new()))
         .await;
 
-    let providers =
-        registry
-            .list()
-            .await;
+    let providers = registry.list().await;
 
-    println!(
-        "REGISTERED:\n{:#?}",
-        providers
-    );
+    println!("REGISTERED:\n{:#?}", providers);
 
-    let capabilities =
-        registry
-            .capabilities(
-                "ollama"
-            )
-            .await;
+    let capabilities = registry.capabilities("ollama").await;
 
-    println!(
-        "\nCAPABILITIES:\n{:#?}",
-        capabilities
-    );
+    println!("\nCAPABILITIES:\n{:#?}", capabilities);
 }

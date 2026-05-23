@@ -6,84 +6,37 @@ use pandora_provider::ollama::OllamaProvider;
 
 use pandora_provider::provider::Provider;
 
-use pandora_provider::types::{
-    GenerationRequest,
-    TokenChunk,
-};
+use pandora_provider::types::{GenerationRequest, TokenChunk};
 
 #[tokio::main]
 async fn main() {
+    let provider = OllamaProvider::new();
 
-    let provider =
-        OllamaProvider::new();
+    let request = GenerationRequest {
+        prompt: String::from("Explain Pandora Systems in three sentences."),
 
-    let request =
-        GenerationRequest {
+        model: String::from("qwen2.5-coder:7b"),
 
-            prompt:
-                String::from(
-                    "Explain Pandora Systems in three sentences."
-                ),
+        temperature: 0.7,
 
-            model:
-                String::from(
-                    "qwen2.5-coder:7b"
-                ),
+        max_tokens: 128,
+    };
 
-            temperature:
-                0.7,
+    let (tx, mut rx) = mpsc::channel::<TokenChunk>(128);
 
-            max_tokens:
-                128,
-        };
+    let cancel = CancellationToken::new();
 
-    let (
-        tx,
-        mut rx
-    ) =
-        mpsc::channel::<TokenChunk>(
-            128
-        );
+    let provider_task = tokio::spawn({
+        let cancel = cancel.clone();
 
-    let cancel =
-        CancellationToken::new();
+        async move { provider.stream_generate(request, cancel, tx).await }
+    });
 
-    let provider_task =
-        tokio::spawn({
-
-            let cancel =
-                cancel.clone();
-
-            async move {
-
-                provider
-                    .stream_generate(
-                        request,
-                        cancel,
-                        tx,
-                    )
-                    .await
-            }
-        });
-
-    while let Some(chunk)
-        =
-        rx.recv().await
-    {
-
-        print!(
-            "{}",
-            chunk.text
-        );
+    while let Some(chunk) = rx.recv().await {
+        print!("{}", chunk.text);
     }
 
-    let result =
-        provider_task
-            .await
-            .unwrap();
+    let result = provider_task.await.unwrap();
 
-    println!(
-        "\n\nFINAL:\n{:#?}",
-        result
-    );
+    println!("\n\nFINAL:\n{:#?}", result);
 }
