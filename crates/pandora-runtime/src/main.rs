@@ -1,3 +1,11 @@
+use pandora_runtime::mutation_operator::MutationOperator;
+
+use pandora_runtime::tournament::TournamentSelector;
+
+use pandora_runtime::population::{EvolutionCandidate, PopulationManager};
+
+use pandora_runtime::fitness::FitnessEngine;
+
 use pandora_runtime::harness_loader::HarnessLoader;
 
 use pandora_runtime::execution_graph::{
@@ -377,6 +385,54 @@ async fn main() {
     if entropy > 1.5 {
         println!("[PANOPTES] possible cognition meltdown detected");
     }
+
+    let fitness = FitnessEngine::evaluate("candidate_001", 0.82, 0.71, 0.91, 0.88, 0.95);
+
+    println!("[GEPA] candidate fitness score: {}", fitness.final_score);
+
+    if fitness.final_score > 0.80 {
+        println!("[GEPA] candidate selected for evolution");
+    } else {
+        println!("[GEPA] candidate rejected");
+    }
+
+    let mut population = PopulationManager::new();
+
+    population.add_candidate(EvolutionCandidate {
+        candidate_id: "candidate_001".into(),
+
+        generation: 1,
+
+        mutation_source: "execution_gene".into(),
+
+        fitness: Some(fitness.clone()),
+    });
+
+    if let Some(best) = population.best_candidate() {
+        println!("[GEPA] best candidate: {}", best.candidate_id);
+    }
+
+    let winner = TournamentSelector::select(&population.population);
+
+    if let Some(winner) = winner {
+        println!("[GEPA] tournament winner: {}", winner.candidate_id);
+
+        if let Some(fitness) = &winner.fitness {
+            println!("[GEPA] winner fitness: {}", fitness.final_score);
+        }
+    }
+
+    let operator = MutationOperator {
+        operator_id: "operator_001".into(),
+
+        mutation_type: "planner.recursive".into(),
+
+        intensity: 0.7,
+    };
+
+    let evolved = operator.apply("execution_gene");
+
+    println!("[GEPA] evolved candidate: {}", evolved);
 
     let repetitive = vec![
         ToolCall {
