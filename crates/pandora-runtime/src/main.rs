@@ -1,3 +1,49 @@
+use pandora_runtime
+    ::swarm_nervous::{
+        NervousSignal,
+        SwarmNervousSystem,
+    };
+
+use pandora_runtime::swarm_immunity::{SwarmImmunity, ThreatSignal};
+
+use pandora_runtime::swarm_instinct::InstinctEngine;
+
+use pandora_runtime::swarm_phenotype::PhenotypeEngine;
+
+use pandora_runtime::swarm_genome::{GenomeEngine, SwarmGenome};
+
+use pandora_runtime::swarm_lineage::{LineageRecord, SwarmLineage};
+
+use pandora_runtime::swarm_evolution::{EvolutionAgent, SwarmEvolutionEngine};
+
+use pandora_runtime::swarm_specialization::{SpecializedAgent, SwarmSpecializationEngine};
+
+use pandora_runtime::swarm_negotiation::{NegotiationProposal, SwarmNegotiator};
+
+use pandora_runtime::swarm_memory::{SwarmMemoryBus, SwarmMemoryEvent};
+
+use pandora_runtime::swarm::{SwarmAgent, SwarmOrchestrator, SwarmTask};
+
+use pandora_runtime::task_spawner::AutonomousTaskSpawner;
+
+use pandora_runtime::recursive_planner::{RecursivePlanner, RecursiveTask};
+
+use pandora_runtime::optimizer::{AdaptiveOptimizer, ExecutionMetric};
+
+use pandora_runtime::reputation::{ReputationConsensus, ReputationNode, ReputationVote};
+
+use pandora_runtime::consensus::{ConsensusCoordinator, ConsensusVote};
+
+use pandora_runtime::state_machine::{ExecutionState, ExecutionStateMachine};
+
+use pandora_runtime::distributed_dag::{DistributedDagScheduler, DistributedDagTask};
+
+use pandora_runtime::dag::{DagNode, ExecutionDag};
+
+use pandora_runtime::workflow::{DurableWorkflow, WorkflowEngine, WorkflowStep};
+
+use pandora_runtime::provider_arbitration::{ProviderArbitrator, ProviderCapability};
+
 use pandora_runtime::repair::AutonomousRepairCoordinator;
 
 use pandora_runtime::checkpoint::{CheckpointCoordinator, RuntimeCheckpoint};
@@ -225,6 +271,496 @@ async fn main() {
     if let Some(node) = routed {
         println!("[ROUTER] workload assigned to {}", node.node_id);
     }
+
+    let providers = vec![
+        ProviderCapability {
+            provider_id: "ollama".into(),
+
+            capabilities: vec!["planning".into(), "coding".into()],
+
+            latency: 0.4,
+
+            reliability: 0.91,
+        },
+        ProviderCapability {
+            provider_id: "llamacpp".into(),
+
+            capabilities: vec!["coding".into()],
+
+            latency: 0.3,
+
+            reliability: 0.88,
+        },
+    ];
+
+    let selected = ProviderArbitrator::select("coding", &providers);
+
+    if let Some(provider) = selected {
+        println!("[ARBITRATOR] active provider: {}", provider.provider_id);
+    }
+    let mut workflow = DurableWorkflow {
+        workflow_id: "workflow_001".into(),
+
+        steps: vec![
+            WorkflowStep {
+                step_id: "step_001".into(),
+
+                action: "retrieve_memory".into(),
+
+                completed: false,
+            },
+            WorkflowStep {
+                step_id: "step_002".into(),
+
+                action: "generate_plan".into(),
+
+                completed: false,
+            },
+            WorkflowStep {
+                step_id: "step_003".into(),
+
+                action: "execute_cognition".into(),
+
+                completed: false,
+            },
+        ],
+    };
+
+    WorkflowEngine::execute(&mut workflow);
+
+    WorkflowEngine::persist(&workflow);
+
+    let mut dag = ExecutionDag::new();
+
+    dag.add_node(DagNode {
+        node_id: "memory".into(),
+
+        action: "retrieve_context".into(),
+
+        dependencies: vec![],
+
+        completed: false,
+    });
+
+    dag.add_node(DagNode {
+        node_id: "planner".into(),
+
+        action: "generate_plan".into(),
+
+        dependencies: vec!["memory".into()],
+
+        completed: false,
+    });
+
+    dag.add_node(DagNode {
+        node_id: "executor".into(),
+
+        action: "execute_plan".into(),
+
+        dependencies: vec!["planner".into()],
+
+        completed: false,
+    });
+
+    dag.execute();
+
+    let mut distributed_tasks = vec![
+        DistributedDagTask {
+            task_id: "task_001".into(),
+
+            capability: "planning".into(),
+
+            assigned_node: None,
+
+            completed: false,
+        },
+        DistributedDagTask {
+            task_id: "task_002".into(),
+
+            capability: "memory".into(),
+
+            assigned_node: None,
+
+            completed: false,
+        },
+    ];
+
+    let cluster_nodes = distributed.nodes.values().cloned().collect::<Vec<_>>();
+
+    DistributedDagScheduler::schedule(&mut distributed_tasks, &cluster_nodes);
+
+    let _transition_1 = ExecutionStateMachine::transition(
+        "task_001",
+        ExecutionState::Pending,
+        ExecutionState::Scheduled,
+    );
+
+    let _transition_2 = ExecutionStateMachine::transition(
+        "task_001",
+        ExecutionState::Scheduled,
+        ExecutionState::Running,
+    );
+
+    let transition_3 = ExecutionStateMachine::transition(
+        "task_001",
+        ExecutionState::Running,
+        ExecutionState::Completed,
+    );
+
+    println!("[STATE] final transition: {:?}", transition_3.current);
+
+    let votes = vec![
+        ConsensusVote {
+            node_id: "pandora-node-001".into(),
+
+            proposal: "checkpoint_restore".into(),
+
+            accepted: true,
+        },
+        ConsensusVote {
+            node_id: "pandora-node-002".into(),
+
+            proposal: "checkpoint_restore".into(),
+
+            accepted: true,
+        },
+        ConsensusVote {
+            node_id: "pandora-node-003".into(),
+
+            proposal: "checkpoint_restore".into(),
+
+            accepted: false,
+        },
+    ];
+
+    let consensus = ConsensusCoordinator::evaluate("checkpoint_restore", &votes);
+
+    println!("[CONSENSUS] accepted: {}", consensus);
+
+    let reputation_nodes = vec![
+        ReputationNode {
+            node_id: "pandora-node-001".into(),
+
+            reputation: 0.95,
+        },
+        ReputationNode {
+            node_id: "pandora-node-002".into(),
+
+            reputation: 0.87,
+        },
+        ReputationNode {
+            node_id: "pandora-node-003".into(),
+
+            reputation: 0.25,
+        },
+    ];
+
+    let reputation_votes = vec![
+        ReputationVote {
+            node_id: "pandora-node-001".into(),
+
+            accepted: true,
+        },
+        ReputationVote {
+            node_id: "pandora-node-002".into(),
+
+            accepted: true,
+        },
+        ReputationVote {
+            node_id: "pandora-node-003".into(),
+
+            accepted: false,
+        },
+    ];
+
+    let reputation_consensus = ReputationConsensus::evaluate(&reputation_nodes, &reputation_votes);
+
+    println!("[REPUTATION] consensus accepted: {}", reputation_consensus);
+
+    let metrics = vec![
+        ExecutionMetric {
+            subsystem: "panoptes".into(),
+
+            latency: 1.4,
+
+            success_rate: 0.92,
+
+            entropy: 1.9,
+        },
+        ExecutionMetric {
+            subsystem: "planner".into(),
+
+            latency: 0.5,
+
+            success_rate: 0.61,
+
+            entropy: 0.7,
+        },
+    ];
+
+    let optimizations = AdaptiveOptimizer::evaluate(&metrics);
+
+    for decision in optimizations {
+        println!("[OPTIMIZER] {} -> {}", decision.subsystem, decision.action);
+    }
+
+    let root_task = RecursiveTask {
+        task_id: "root".into(),
+
+        objective: "optimize autonomous coding workflow".into(),
+
+        depth: 0,
+    };
+
+    RecursivePlanner::recurse(root_task);
+
+    let spawned = AutonomousTaskSpawner::spawn("expand coding swarm", 5);
+
+    println!("[SPAWNER] active spawned tasks: {}", spawned.len());
+
+    let swarm_agents = vec![
+        SwarmAgent {
+            agent_id: "agent-planner".into(),
+
+            specialization: "planning".into(),
+
+            active: true,
+        },
+        SwarmAgent {
+            agent_id: "agent-coder".into(),
+
+            specialization: "coding".into(),
+
+            active: true,
+        },
+        SwarmAgent {
+            agent_id: "agent-memory".into(),
+
+            specialization: "memory".into(),
+
+            active: true,
+        },
+    ];
+
+    let mut swarm_tasks = vec![
+        SwarmTask {
+            task_id: "swarm-task-001".into(),
+
+            objective: "generate execution plan".into(),
+
+            assigned_agent: None,
+        },
+        SwarmTask {
+            task_id: "swarm-task-002".into(),
+
+            objective: "optimize coding workflow".into(),
+
+            assigned_agent: None,
+        },
+    ];
+
+    SwarmOrchestrator::coordinate(&swarm_agents, &mut swarm_tasks);
+
+    let mut swarm_memory = SwarmMemoryBus::new();
+
+    swarm_memory.publish(SwarmMemoryEvent {
+        agent_id: "agent-planner".into(),
+
+        memory: "execution graph optimized".into(),
+    });
+
+    swarm_memory.publish(SwarmMemoryEvent {
+        agent_id: "agent-coder".into(),
+
+        memory: "workflow generation completed".into(),
+    });
+
+    let shared_memories = swarm_memory.retrieve();
+
+    println!("[SWARM-MEMORY] shared memories: {}", shared_memories.len());
+
+    let proposals = vec![
+        NegotiationProposal {
+            agent_id: "agent-planner".into(),
+
+            task_id: "swarm-task-001".into(),
+
+            confidence: 0.81,
+        },
+        NegotiationProposal {
+            agent_id: "agent-coder".into(),
+
+            task_id: "swarm-task-001".into(),
+
+            confidence: 0.94,
+        },
+        NegotiationProposal {
+            agent_id: "agent-memory".into(),
+
+            task_id: "swarm-task-001".into(),
+
+            confidence: 0.72,
+        },
+    ];
+
+    let negotiated = SwarmNegotiator::negotiate(&proposals);
+
+    if let Some(winner) = negotiated {
+        println!("[NEGOTIATION] final owner: {}", winner.agent_id);
+    }
+
+    let mut specialized_agents = vec![
+        SpecializedAgent {
+            agent_id: "agent-coder".into(),
+
+            specialization: "coding".into(),
+
+            performance: 0.96,
+        },
+        SpecializedAgent {
+            agent_id: "agent-memory".into(),
+
+            specialization: "memory".into(),
+
+            performance: 0.74,
+        },
+    ];
+
+    SwarmSpecializationEngine::evolve(&mut specialized_agents);
+
+    let evolution_population = vec![
+        EvolutionAgent {
+            agent_id: "agent-coder".into(),
+
+            fitness: 0.94,
+
+            generation: 1,
+        },
+        EvolutionAgent {
+            agent_id: "agent-memory".into(),
+
+            fitness: 0.72,
+
+            generation: 1,
+        },
+    ];
+
+    let evolved_agents = SwarmEvolutionEngine::evolve(&evolution_population);
+
+    println!("[EVOLUTION] evolved population: {}", evolved_agents.len());
+
+    let lineage = vec![
+        LineageRecord {
+            parent_id: "agent-coder".into(),
+
+            child_id: "agent-coder-evolved".into(),
+
+            generation: 2,
+
+            mutation: "optimization_gain".into(),
+        },
+        LineageRecord {
+            parent_id: "agent-planner".into(),
+
+            child_id: "agent-planner-evolved".into(),
+
+            generation: 2,
+
+            mutation: "routing_specialization".into(),
+        },
+    ];
+
+    SwarmLineage::trace(&lineage);
+
+    let genome = SwarmGenome {
+        genome_id: "genome-coder-001".into(),
+
+        traits: vec!["coding".into(), "planning".into()],
+
+        fitness: 0.91,
+
+        generation: 1,
+    };
+
+    let mutated = GenomeEngine::mutate(&genome);
+
+    println!(
+        "[GENOME] evolved genome={} generation={}",
+        mutated.genome_id, mutated.generation
+    );
+
+    let phenotype = PhenotypeEngine::express(&mutated);
+
+    println!(
+        "[PHENOTYPE] id={} bias={} survivability={}",
+        phenotype.phenotype_id, phenotype.execution_bias, phenotype.survivability_score
+    );
+
+    let instincts = InstinctEngine::evaluate(&phenotype);
+
+    for instinct in instincts {
+        println!("[INSTINCT] {} -> {}", instinct.instinct, instinct.action);
+    }
+
+    let threat_signals = vec![
+        ThreatSignal {
+            subsystem: "panoptes".into(),
+
+            severity: 0.91,
+
+            anomaly: "entropy_spike".into(),
+        },
+        ThreatSignal {
+            subsystem: "planner".into(),
+
+            severity: 0.42,
+
+            anomaly: "minor_latency".into(),
+        },
+    ];
+
+    let immune_responses = SwarmImmunity::detect(&threat_signals);
+
+    for response in immune_responses {
+        println!("[IMMUNITY] {} -> {}", response.action, response.target);
+    }
+
+let nervous_signals =
+    vec![
+
+        NervousSignal {
+
+            origin:
+                "panoptes"
+                    .into(),
+
+            signal:
+                "entropy escalation"
+                    .into(),
+
+            urgency:
+                0.94,
+        },
+
+        NervousSignal {
+
+            origin:
+                "scheduler"
+                    .into(),
+
+            signal:
+                "queue saturation"
+                    .into(),
+
+            urgency:
+                0.61,
+        },
+    ];
+
+SwarmNervousSystem
+    ::propagate(
+        &nervous_signals
+    );
 
     let checkpoint = RuntimeCheckpoint {
         checkpoint_id: "checkpoint_002".into(),
