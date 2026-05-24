@@ -1,13 +1,9 @@
-use crate::checkpoint::CognitionCheckpoint;
+use crate::checkpoint::RuntimeCheckpoint;
 
 pub struct RollbackEngine;
 
 impl RollbackEngine {
-    pub fn recover(checkpoints: &[CognitionCheckpoint]) -> Option<CognitionCheckpoint> {
-        checkpoints
-            .iter()
-            .rev()
-            .find(|checkpoint| checkpoint.stable)
-            .cloned()
+    pub fn recover(checkpoints: &[RuntimeCheckpoint]) -> Option<RuntimeCheckpoint> {
+        checkpoints.last().cloned()
     }
 }

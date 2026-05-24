@@ -1,3 +1,29 @@
+use pandora_runtime::repair::AutonomousRepairCoordinator;
+
+use pandora_runtime::checkpoint::{CheckpointCoordinator, RuntimeCheckpoint};
+
+use pandora_runtime::router::{Workload, WorkloadRouter};
+
+use pandora_runtime::distributed_registry::{DistributedRegistry, NodeState, RuntimeNode};
+
+use pandora_runtime::unified_graph::{ExecutionEdge, ExecutionNode, UnifiedExecutionGraph};
+
+use pandora_runtime::tracing::{TraceEngine, TraceEvent};
+
+use pandora_runtime::health::{HealthMonitor, HealthReport, HealthState};
+
+use pandora_runtime::dependency_graph::{DependencyGraph, DependencyNode};
+
+use pandora_runtime::runtime_registry::{RuntimeRegistry, RuntimeSubsystem};
+
+use pandora_runtime::lifecycle::{LifecycleManager, RuntimeState};
+
+use pandora_runtime::planner::Planner;
+
+use pandora_runtime::durable_queue::{DurableQueue, DurableTask};
+
+use pandora_runtime::benchmark::{BenchmarkHarness, BenchmarkTask};
+
 use pandora_runtime::mutation_operator::MutationOperator;
 
 use pandora_runtime::tournament::TournamentSelector;
@@ -29,8 +55,6 @@ use pandora_runtime::replay_scoring::{ReplayScore, ReplayScorer};
 use anubis_memory::retrieval_budget::RetrievalBudget;
 
 use pandora_runtime::windowed_telemetry::WindowedTelemetry;
-
-use pandora_runtime::checkpoint::CognitionCheckpoint;
 
 use pandora_runtime::rollback::RollbackEngine;
 
@@ -128,6 +152,98 @@ async fn main() {
 
     println!("Pandora Runtime Started");
 
+    let mut lifecycle = LifecycleManager::new();
+
+    lifecycle.transition(RuntimeState::Running);
+
+    println!("[LIFECYCLE] current state: {:?}", lifecycle.current());
+
+    TraceEngine::emit(&TraceEvent {
+        trace_id: "trace_001".into(),
+
+        subsystem: "lifecycle".into(),
+
+        event: "runtime initialized".into(),
+
+        timestamp: "2026-05-24".into(),
+    });
+
+    let mut graph = UnifiedExecutionGraph::new();
+
+    graph.add_node(ExecutionNode {
+        node_id: "planner".into(),
+
+        node_type: "planning".into(),
+
+        state: "running".into(),
+    });
+
+    graph.add_node(ExecutionNode {
+        node_id: "anubis".into(),
+
+        node_type: "memory".into(),
+
+        state: "running".into(),
+    });
+
+    graph.add_edge(ExecutionEdge {
+        source: "planner".into(),
+
+        target: "anubis".into(),
+
+        relationship: "retrieves".into(),
+    });
+
+    println!("[GRAPH] nodes: {}", graph.node_count());
+
+    println!("[GRAPH] edges: {}", graph.edge_count());
+
+    let mut distributed = DistributedRegistry::new();
+
+    distributed.register(RuntimeNode {
+        node_id: "pandora-node-001".into(),
+
+        address: "127.0.0.1:8080".into(),
+
+        capabilities: vec!["planning".into(), "memory".into(), "mutation".into()],
+
+        state: NodeState::Online,
+    });
+
+    println!("[DISTRIBUTED] online nodes: {}", distributed.online_nodes());
+
+    let workload = Workload {
+        workload_id: "workload_001".into(),
+
+        required_capability: "planning".into(),
+    };
+
+    let available_nodes = distributed.nodes.values().cloned().collect::<Vec<_>>();
+
+    let routed = WorkloadRouter::route(&workload, &available_nodes);
+
+    if let Some(node) = routed {
+        println!("[ROUTER] workload assigned to {}", node.node_id);
+    }
+
+    let checkpoint = RuntimeCheckpoint {
+        checkpoint_id: "checkpoint_002".into(),
+
+        runtime_state: "degraded".into(),
+
+        active_nodes: distributed.online_nodes(),
+
+        execution_graph_nodes: graph.node_count(),
+    };
+
+    CheckpointCoordinator::persist(&checkpoint);
+
+    let recovered = CheckpointCoordinator::recover("checkpoint_001");
+
+    if let Some(cp) = recovered {
+        println!("[CHECKPOINT] recovered {}", cp.checkpoint_id);
+    }
+
     let mut scheduler = CognitionScheduler::new();
 
     scheduler.enqueue(CognitionTask {
@@ -168,6 +284,133 @@ async fn main() {
 
     scheduler.heartbeat();
 
+    let moving_entropy = 1.6;
+
+    let repair = AutonomousRepairCoordinator::evaluate("panoptes", moving_entropy > 1.5);
+
+    if let Some(action) = repair {
+        AutonomousRepairCoordinator::execute(&action);
+    }
+
+    let mut registry = RuntimeRegistry::new();
+
+    registry.register(RuntimeSubsystem {
+        subsystem_id: "anubis".into(),
+
+        subsystem_type: "memory".into(),
+
+        active: true,
+    });
+
+    registry.register(RuntimeSubsystem {
+        subsystem_id: "panoptes".into(),
+
+        subsystem_type: "telemetry".into(),
+
+        active: true,
+    });
+
+    registry.register(RuntimeSubsystem {
+        subsystem_id: "gepa".into(),
+
+        subsystem_type: "evolution".into(),
+
+        active: true,
+    });
+
+    println!("[REGISTRY] active subsystems: {}", registry.active_count());
+    let mut dependencies = DependencyGraph::new();
+
+    dependencies.register(DependencyNode {
+        subsystem_id: "panoptes".into(),
+
+        dependencies: vec!["anubis".into()],
+    });
+
+    dependencies.register(DependencyNode {
+        subsystem_id: "gepa".into(),
+
+        dependencies: vec!["anubis".into(), "panoptes".into()],
+    });
+
+    let mut health = HealthMonitor::new();
+
+    health.update(HealthReport {
+        subsystem_id: "anubis".into(),
+
+        state: HealthState::Healthy,
+
+        message: "memory stable".into(),
+    });
+
+    health.update(HealthReport {
+        subsystem_id: "panoptes".into(),
+
+        state: HealthState::Degraded,
+
+        message: "entropy rising".into(),
+    });
+
+    let critical = health.critical();
+
+    println!("[HEALTH] critical systems: {}", critical.len());
+
+    let gepa_dependencies = dependencies.dependencies("gepa");
+
+    println!("[DEPENDENCY] gepa dependencies: {:?}", gepa_dependencies);
+
+    let benchmark = BenchmarkTask {
+        task_id: "benchmark_001".into(),
+
+        category: "recursive_reasoning".into(),
+
+        difficulty: 0.4,
+
+        expected_output: "stable cognition".into(),
+    };
+
+    let task = DurableTask {
+        task_id: "task_001".into(),
+
+        task_type: "autonomous.coding".into(),
+
+        payload: "refactor execution planner".into(),
+
+        retry_count: 0,
+    };
+
+    DurableQueue::persist(&task);
+
+    let recovered = DurableQueue::recover();
+
+    println!("[QUEUE] recovered tasks: {}", recovered.len());
+
+    let benchmark_result = BenchmarkHarness::evaluate("candidate_001", &benchmark);
+
+    println!("[GEPA] benchmark score: {}", benchmark_result.score);
+
+    println!("[GEPA] benchmark success: {}", benchmark_result.success);
+
+    let plan = Planner::generate("autonomously optimize coding workflow");
+
+    println!("[PLANNER] generated execution plan");
+
+    println!("[PLANNER] total steps: {}", plan.steps.len());
+
+    for step in &plan.steps {
+        println!("[PLANNER] {}", step.description);
+    }
+
+    TraceEngine::emit(&TraceEvent {
+        trace_id: "trace_002".into(),
+
+        subsystem: "planner".into(),
+
+        event: "execution plan generated".into(),
+
+        timestamp: "2026-05-24".into(),
+    });
+
     let runtime = PandoraRuntime::new();
 
     runtime.run();
@@ -195,7 +438,7 @@ async fn main() {
 
     DistributedBus::broadcast(&distributed_event);
 
-    let graph = PersistentExecutionGraph {
+    let persistent_graph = PersistentExecutionGraph {
         graph_id: "runtime_graph_001".into(),
 
         vertices: vec![
@@ -218,7 +461,7 @@ async fn main() {
         }],
     };
 
-    ExecutionGraphPersistence::persist(&graph);
+    ExecutionGraphPersistence::persist(&persistent_graph);
 
     let event = PandoraEvent {
         event_id: String::from("event_001"),
@@ -231,12 +474,12 @@ async fn main() {
 
         payload: serde_json::json!({
 
-            "graph_id":
-                graph.graph_id,
+                    "graph_id":
+                        persistent_graph.graph_id,
 
-            "root_task":
-                graph.graph_id,
-        }),
+                    "root_task":
+        persistent_graph.graph_id,
+                }),
     };
 
     emit_event(&event);
@@ -454,25 +697,27 @@ async fn main() {
     println!("[PANOPTES] repetitive loop detected: {}", loop_detected);
 
     let checkpoints = vec![
-        CognitionCheckpoint {
+        RuntimeCheckpoint {
             checkpoint_id: "cp_001".into(),
 
-            execution_graph: "graph_stable".into(),
+            runtime_state: "stable".into(),
 
-            entropy: 0.8,
+            active_nodes: distributed.online_nodes(),
 
-            stable: true,
+            execution_graph_nodes: graph.node_count(),
         },
-        CognitionCheckpoint {
+        RuntimeCheckpoint {
             checkpoint_id: "cp_002".into(),
 
-            execution_graph: "graph_unstable".into(),
+            runtime_state: "degraded".into(),
 
-            entropy: 2.4,
+            active_nodes: distributed.online_nodes(),
 
-            stable: false,
+            execution_graph_nodes: graph.node_count(),
         },
     ];
+
+    lifecycle.transition(RuntimeState::Running);
 
     let recovery = RollbackEngine::recover(&checkpoints);
 
@@ -482,6 +727,8 @@ async fn main() {
             cp.checkpoint_id
         );
     }
+
+    lifecycle.transition(RuntimeState::Recovering);
 
     let entropy_window = vec![1.1, 1.3, 1.5, 1.9, 2.2];
 
@@ -926,7 +1173,7 @@ async fn main() {
 
     persist_score(&score);
 
-    let graph = PersistentExecutionGraph {
+    let persistent_graph = PersistentExecutionGraph {
         graph_id: "runtime_graph_001".into(),
 
         vertices: vec![
@@ -949,7 +1196,7 @@ async fn main() {
         }],
     };
 
-    ExecutionGraphPersistence::persist(&graph);
+    ExecutionGraphPersistence::persist(&persistent_graph);
 
     let panoptes_event = PandoraEvent {
         event_id: String::from("event_panoptes_001"),
