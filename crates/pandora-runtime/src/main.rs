@@ -1,8 +1,25 @@
 use pandora_runtime
-    ::swarm_nervous::{
-        NervousSignal,
-        SwarmNervousSystem,
+    ::swarm_dream::{
+        DreamFragment,
+        DreamOutcome,
+        SwarmDreamEngine,
     };
+
+use pandora_runtime::swarm_subconscious::{
+    SubconsciousImprint, SubconsciousState, SwarmSubconscious,
+};
+
+use pandora_runtime::swarm_consciousness::{
+    ConsciousnessSignal, ConsciousnessState, SwarmConsciousness,
+};
+
+use pandora_runtime::swarm_homeostasis::{HomeostasisAdjustment, SwarmHomeostasis};
+
+use pandora_runtime::swarm_metabolism::{MetabolicAction, MetabolicState, SwarmMetabolism};
+
+use pandora_runtime::swarm_endocrine::{HormoneSignal, SwarmEndocrineSystem};
+
+use pandora_runtime::swarm_nervous::{NervousSignal, SwarmNervousSystem};
 
 use pandora_runtime::swarm_immunity::{SwarmImmunity, ThreatSignal};
 
@@ -725,42 +742,218 @@ async fn main() {
         println!("[IMMUNITY] {} -> {}", response.action, response.target);
     }
 
-let nervous_signals =
-    vec![
-
+    let nervous_signals = vec![
         NervousSignal {
+            origin: "panoptes".into(),
 
-            origin:
-                "panoptes"
-                    .into(),
+            signal: "entropy escalation".into(),
 
-            signal:
-                "entropy escalation"
-                    .into(),
-
-            urgency:
-                0.94,
+            urgency: 0.94,
         },
-
         NervousSignal {
+            origin: "scheduler".into(),
 
-            origin:
-                "scheduler"
-                    .into(),
+            signal: "queue saturation".into(),
 
-            signal:
-                "queue saturation"
-                    .into(),
-
-            urgency:
-                0.61,
+            urgency: 0.61,
         },
     ];
 
-SwarmNervousSystem
-    ::propagate(
-        &nervous_signals
+    SwarmNervousSystem::propagate(&nervous_signals);
+    let hormone_signals = vec![
+        HormoneSignal {
+            hormone: "stress".into(),
+
+            intensity: 0.32,
+        },
+        HormoneSignal {
+            hormone: "growth".into(),
+
+            intensity: 0.41,
+        },
+        HormoneSignal {
+            hormone: "recovery".into(),
+
+            intensity: 0.22,
+        },
+    ];
+
+    let endocrine_state = SwarmEndocrineSystem::regulate(&hormone_signals);
+
+    println!(
+        "[ENDOCRINE] aggression={} stability={} expansion={}",
+        endocrine_state.aggression, endocrine_state.stability, endocrine_state.expansion
     );
+
+    let mut metabolic_state = MetabolicState {
+        energy: 1.0,
+
+        stress: 0.2,
+
+        recovery: 0.1,
+    };
+
+    let metabolic_actions = vec![
+        MetabolicAction {
+            subsystem: "recursive-planner".into(),
+
+            cost: 0.22,
+        },
+        MetabolicAction {
+            subsystem: "distributed-swarm".into(),
+
+            cost: 0.31,
+        },
+        MetabolicAction {
+            subsystem: "genome-evolution".into(),
+
+            cost: 0.18,
+        },
+    ];
+
+    SwarmMetabolism::process(&mut metabolic_state, &metabolic_actions);
+
+    println!(
+        "[METABOLISM] energy={} stress={} recovery={}",
+        metabolic_state.energy, metabolic_state.stress, metabolic_state.recovery
+    );
+
+    let homeostasis = SwarmHomeostasis::stabilize(&metabolic_state);
+
+    for adjustment in homeostasis {
+        println!(
+            "[HOMEOSTASIS] {} intensity={}",
+            adjustment.action, adjustment.intensity
+        );
+    }
+
+    let consciousness_signals = vec![
+        ConsciousnessSignal {
+            subsystem: "planner".into(),
+
+            state: "stable".into(),
+
+            confidence: 0.94,
+        },
+        ConsciousnessSignal {
+            subsystem: "swarm-memory".into(),
+
+            state: "stable".into(),
+
+            confidence: 0.91,
+        },
+        ConsciousnessSignal {
+            subsystem: "panoptes".into(),
+
+            state: "critical".into(),
+
+            confidence: 0.52,
+        },
+    ];
+
+    let consciousness = SwarmConsciousness::synthesize(&consciousness_signals);
+
+    println!(
+        "[CONSCIOUSNESS] awareness={} coherence={} stability={} dominant={}",
+        consciousness.awareness,
+        consciousness.coherence,
+        consciousness.stability,
+        consciousness.dominant_state
+    );
+
+    let subconscious_imprints = vec![
+        SubconsciousImprint {
+            origin: "repair-engine".into(),
+
+            pattern: "risk-aversion".into(),
+
+            influence: 0.74,
+        },
+        SubconsciousImprint {
+            origin: "optimizer".into(),
+
+            pattern: "aggressive-scaling".into(),
+
+            influence: 0.91,
+        },
+        SubconsciousImprint {
+            origin: "immune-system".into(),
+
+            pattern: "defensive-execution".into(),
+
+            influence: 0.63,
+        },
+    ];
+
+    let subconscious = SwarmSubconscious::integrate(&subconscious_imprints);
+
+    println!(
+        "[SUBCONSCIOUS] dominant={} pressure={}",
+        subconscious.dominant_pattern, subconscious.behavioral_pressure
+    );
+
+let dream_fragments =
+    vec![
+
+        DreamFragment {
+
+            source:
+                "optimizer"
+                    .into(),
+
+            scenario:
+                "massive swarm scaling"
+                    .into(),
+
+            intensity:
+                0.92,
+        },
+
+        DreamFragment {
+
+            source:
+                "immune-system"
+                    .into(),
+
+            scenario:
+                "cluster containment recovery"
+                    .into(),
+
+            intensity:
+                0.61,
+        },
+
+        DreamFragment {
+
+            source:
+                "planner"
+                    .into(),
+
+            scenario:
+                "recursive coding automation"
+                    .into(),
+
+            intensity:
+                0.88,
+        },
+    ];
+
+let dream_outcomes =
+    SwarmDreamEngine
+        ::simulate(
+            &dream_fragments
+        );
+
+for outcome
+    in dream_outcomes
+{
+
+    println!(
+        "[DREAM] pattern={} projected_gain={}",
+        outcome.synthesized_pattern,
+        outcome.projected_gain
+    );
+}
 
     let checkpoint = RuntimeCheckpoint {
         checkpoint_id: "checkpoint_002".into(),
