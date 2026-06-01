@@ -1,9 +1,106 @@
 use pandora_runtime
-    ::swarm_dream::{
-        DreamFragment,
-        DreamOutcome,
-        SwarmDreamEngine,
+    ::llamacpp_provider::{
+        LlamaCppProvider,
+        LlamaCppRequest,
+        LlamaCppResponse,
     };
+
+use pandora_runtime
+    ::ollama_provider::{
+        OllamaProvider,
+        OllamaRequest,
+        OllamaResponse,
+    };
+
+use pandora_runtime::remote_execution::{
+    RemoteExecutionEngine, RemoteExecutionResult, RemoteExecutionTask,
+};
+
+use pandora_runtime::docker_sandbox::{DockerSandboxEngine, SandboxResult, SandboxTask};
+
+use pandora_runtime::network_fabric::{DistributedNetworkFabric, NetworkNode, NetworkPacket};
+
+use pandora_runtime::self_healing::{
+    HealingDirective, HealingPlan, RuntimeHealth, RuntimeSelfHealingCoordinator,
+};
+
+use pandora_runtime::adaptive_orchestration::{
+    AdaptiveOrchestrationEngine, OrchestrationNode, OrchestrationScore,
+};
+
+use pandora_runtime::repository_evolution::{
+    EvolutionMutation, EvolutionPlan, RepositoryEvolutionEngine, RepositoryTrait,
+};
+
+use pandora_runtime::execution_survivability::{
+    ExecutionSurvivabilityEngine, SurvivabilityAssessment, SurvivabilityCandidate,
+};
+
+use pandora_runtime::mutation_tournament::{
+    MutationCandidate, MutationTournamentEngine, TournamentWinner,
+};
+
+use pandora_runtime::repair_validation::{
+    RepairValidationLoop, ValidationReport, ValidationTarget,
+};
+
+use pandora_runtime::debugging_loop::{AutonomousDebugLoop, DebugCycle, DebuggingResult};
+
+use pandora_runtime::repository_memory_graph::{
+    MemoryNode, RepositoryMemoryGraph, RepositoryMemoryGraphEngine,
+};
+
+use pandora_runtime::execution_ranking::{
+    ExecutionCandidate, ExecutionRankingEngine, RankedExecution,
+};
+
+use pandora_runtime::benchmark_harness::{BenchmarkHarness, BenchmarkResult, BenchmarkTask};
+
+use pandora_runtime::repair_execution::{RepairExecutionCoordinator, RepairExecutionResult};
+
+use pandora_runtime::semantic_patch::{SemanticIssue, SemanticPatch, SemanticPatchPlanner};
+
+use pandora_runtime::repair_planner::{AutonomousRepairPlanner, FailureContext, RepairPlan};
+
+use pandora_runtime::repository_search::{
+    RepositoryDocument, RepositorySearchEngine, Result, Search,
+};
+
+use pandora_runtime::embedding_engine::{EmbeddingEngine, EmbeddingResult};
+
+use pandora_runtime::vector_store::{VectorDatabase, VectorStore};
+
+use pandora_runtime::semantic_memory::{MemoryChunk, RetrievalResult, SemanticMemoryEngine};
+
+use pandora_runtime::compiler_feedback::{
+    CompilationResult, CompilationTask, CompilerFeedbackEngine,
+};
+
+use pandora_runtime::dependency_graph::{DependencyGraph, DependencyGraphEngine, DependencyNode};
+
+use pandora_runtime::repository_indexer::{IndexedFile, RepositoryIndex, RepositoryIndexer};
+
+use pandora_runtime::ast_engine::{AstAnalysis, AstEngine, AstFunction};
+
+use pandora_runtime::coding_engine::{AutonomousCodingEngine, CodePatch, PatchResult};
+
+use pandora_runtime::filesystem_kernel::{FileOperation, FileResult, FilesystemKernel};
+
+use pandora_runtime::execution_kernel::{ExecutionKernel, ExecutionResult, ExecutionTask};
+
+use pandora_runtime::swarm_identity::{IdentityState, IdentityTrait, SwarmIdentity};
+
+use pandora_runtime::swarm_will::{SwarmWill, WillDirective, WillState};
+
+use pandora_runtime::swarm_intuition::{IntuitionDecision, IntuitionSignal, SwarmIntuition};
+
+use pandora_runtime::swarm_reflection::{ReflectionEvent, ReflectionInsight, SwarmReflection};
+
+use pandora_runtime::swarm_memory_consolidation::{
+    ConsolidatedMemory, MemoryConsolidationEngine, MemoryTrace,
+};
+
+use pandora_runtime::swarm_dream::{DreamFragment, DreamOutcome, SwarmDreamEngine};
 
 use pandora_runtime::swarm_subconscious::{
     SubconsciousImprint, SubconsciousState, SwarmSubconscious,
@@ -892,68 +989,939 @@ async fn main() {
         subconscious.dominant_pattern, subconscious.behavioral_pressure
     );
 
-let dream_fragments =
-    vec![
-
+    let dream_fragments = vec![
         DreamFragment {
+            source: "optimizer".into(),
 
-            source:
-                "optimizer"
-                    .into(),
+            scenario: "massive swarm scaling".into(),
 
-            scenario:
-                "massive swarm scaling"
-                    .into(),
-
-            intensity:
-                0.92,
+            intensity: 0.92,
         },
-
         DreamFragment {
+            source: "immune-system".into(),
 
-            source:
-                "immune-system"
-                    .into(),
+            scenario: "cluster containment recovery".into(),
 
-            scenario:
-                "cluster containment recovery"
-                    .into(),
-
-            intensity:
-                0.61,
+            intensity: 0.61,
         },
-
         DreamFragment {
+            source: "planner".into(),
 
-            source:
-                "planner"
-                    .into(),
+            scenario: "recursive coding automation".into(),
 
-            scenario:
-                "recursive coding automation"
-                    .into(),
-
-            intensity:
-                0.88,
+            intensity: 0.88,
         },
     ];
 
-let dream_outcomes =
-    SwarmDreamEngine
-        ::simulate(
-            &dream_fragments
-        );
+    let dream_outcomes = SwarmDreamEngine::simulate(&dream_fragments);
 
-for outcome
-    in dream_outcomes
-{
+    for outcome in dream_outcomes {
+        println!(
+            "[DREAM] pattern={} projected_gain={}",
+            outcome.synthesized_pattern, outcome.projected_gain
+        );
+    }
+
+    let memory_traces = vec![
+        MemoryTrace {
+            memory: "distributed repair successful".into(),
+
+            importance: 0.91,
+
+            frequency: 4,
+        },
+        MemoryTrace {
+            memory: "planner overload detected".into(),
+
+            importance: 0.52,
+
+            frequency: 2,
+        },
+        MemoryTrace {
+            memory: "recursive coding swarm stabilized".into(),
+
+            importance: 0.88,
+
+            frequency: 5,
+        },
+    ];
+
+    let consolidated = MemoryConsolidationEngine::consolidate(&memory_traces);
 
     println!(
-        "[DREAM] pattern={} projected_gain={}",
-        outcome.synthesized_pattern,
-        outcome.projected_gain
+        "[CONSOLIDATION] consolidated memories={}",
+        consolidated.len()
     );
+
+    let reflection_events = vec![
+        ReflectionEvent {
+            subsystem: "distributed-planner".into(),
+
+            outcome: "successful".into(),
+
+            efficiency: 0.94,
+        },
+        ReflectionEvent {
+            subsystem: "repair-engine".into(),
+
+            outcome: "partial_failure".into(),
+
+            efficiency: 0.58,
+        },
+        ReflectionEvent {
+            subsystem: "swarm-memory".into(),
+
+            outcome: "stable".into(),
+
+            efficiency: 0.89,
+        },
+    ];
+
+    let reflection_insights = SwarmReflection::analyze(&reflection_events);
+
+    for insight in reflection_insights {
+        println!(
+            "[REFLECTION] {} priority={}",
+            insight.insight, insight.priority
+        );
+    }
+
+    let intuition_signals = vec![
+        IntuitionSignal {
+            source: "optimizer".into(),
+
+            pattern: "resource_instability".into(),
+
+            confidence: 0.88,
+        },
+        IntuitionSignal {
+            source: "homeostasis".into(),
+
+            pattern: "high_execution_coherence".into(),
+
+            confidence: 0.93,
+        },
+        IntuitionSignal {
+            source: "immune-system".into(),
+
+            pattern: "threat_decay".into(),
+
+            confidence: 0.62,
+        },
+    ];
+
+    let intuition = SwarmIntuition::predict(&intuition_signals);
+
+    for decision in intuition {
+        println!(
+            "[INTUITION] {} urgency={}",
+            decision.prediction, decision.urgency
+        );
+    }
+
+    let will_directives = vec![
+        WillDirective {
+            objective: "expand coding swarm".into(),
+
+            persistence: 0.94,
+
+            priority: 0.88,
+        },
+        WillDirective {
+            objective: "maintain operational stability".into(),
+
+            persistence: 0.91,
+
+            priority: 0.95,
+        },
+        WillDirective {
+            objective: "optimize distributed execution".into(),
+
+            persistence: 0.82,
+
+            priority: 0.79,
+        },
+    ];
+
+    let will = SwarmWill::synthesize(&will_directives);
+
+    println!(
+        "[WILL] dominant={} determination={} pressure={}",
+        will.dominant_objective, will.determination, will.strategic_pressure
+    );
+
+    let identity_traits = vec![
+        IdentityTrait {
+            trait_name: "survivability".into(),
+
+            strength: 0.94,
+        },
+        IdentityTrait {
+            trait_name: "adaptive-scaling".into(),
+
+            strength: 0.88,
+        },
+        IdentityTrait {
+            trait_name: "distributed-coordination".into(),
+
+            strength: 0.91,
+        },
+        IdentityTrait {
+            trait_name: "recursive-self-improvement".into(),
+
+            strength: 0.97,
+        },
+    ];
+
+    let identity = SwarmIdentity::synthesize(&identity_traits);
+
+    println!(
+        "[IDENTITY] dominant={} coherence={} adaptability={} continuity={}",
+        identity.dominant_identity, identity.coherence, identity.adaptability, identity.continuity
+    );
+
+    let ethical_action = EthicalAction {
+        action: "expand distributed coding swarm".into(),
+
+        risk: 0.31,
+
+        benefit: 0.92,
+
+        survivability_impact: 0.74,
+    };
+
+    let ethical_decision = SwarmEthics::evaluate(&ethical_action);
+
+    println!(
+        "[ETHICS] allowed={} reasoning={}",
+        ethical_decision.allowed, ethical_decision.reasoning
+    );
+
+    let execution_task = ExecutionTask {
+        task_id: "kernel-task-001".into(),
+
+        command: "echo".into(),
+
+        args: vec!["Pandora execution kernel online".into()],
+    };
+
+    let execution_result = ExecutionKernel::execute(&execution_task).await;
+
+    println!("[KERNEL] success={}", execution_result.success);
+
+    println!("[KERNEL] stdout={}", execution_result.stdout);
+
+    println!("[KERNEL] stderr={}", execution_result.stderr);
+
+    let write_operation = FileOperation {
+        operation: "write".into(),
+
+        path: "pandora_runtime.log".into(),
+
+        content: Some("Pandora filesystem kernel online".into()),
+    };
+
+    let write_result = FilesystemKernel::execute(&write_operation);
+
+    println!("[FS] write success={}", write_result.success);
+
+    let read_operation = FileOperation {
+        operation: "read".into(),
+
+        path: "pandora_runtime.log".into(),
+
+        content: None,
+    };
+
+    let read_result = FilesystemKernel::execute(&read_operation);
+
+    println!("[FS] read success={}", read_result.success);
+
+    println!("[FS] content={}", read_result.output);
+
+    let patch = CodePatch {
+        target_file: "pandora_runtime.log".into(),
+
+        search: "online".into(),
+
+        replace: "fully operational".into(),
+    };
+
+    let patch_result = AutonomousCodingEngine::apply_patch(&patch);
+
+    println!("[CODING] success={}", patch_result.success);
+
+    println!("[CODING] modified_lines={}", patch_result.modified_lines);
+
+    println!("[CODING] output={}", patch_result.output);
+
+    let source_code = r#"
+
+fn initialize_kernel() {
+
+    println!("kernel initialized");
 }
+
+fn orchestrate_swarm() {
+
+    println!("swarm online");
+}
+
+fn evolve_runtime() {
+
+    println!("runtime evolving");
+}
+
+"#;
+
+    let ast = AstEngine::analyze(source_code);
+
+    println!(
+        "[AST] functions={} total_lines={}",
+        ast.functions.len(),
+        ast.total_lines
+    );
+
+    for function in ast.functions {
+        println!("[AST] discovered={} line={}", function.name, function.line);
+    }
+
+    let repository = RepositoryIndexer::index(".");
+
+    println!("[INDEXER] total files={}", repository.total_files);
+
+    for file in repository.files.iter().take(5) {
+        println!("[INDEXER] file={} size={}", file.path, file.size);
+    }
+
+    let dependency_files = vec![
+        (
+            "planner.rs".to_string(),
+            r#"
+use std::collections::HashMap;
+use tokio::sync::Mutex;
+
+fn planner() {}
+"#
+            .to_string(),
+        ),
+        (
+            "memory.rs".to_string(),
+            r#"
+use serde::{Serialize, Deserialize};
+
+fn memory() {}
+"#
+            .to_string(),
+        ),
+        (
+            "runtime.rs".to_string(),
+            r#"
+use crate::planner;
+use crate::memory;
+
+fn runtime() {}
+"#
+            .to_string(),
+        ),
+    ];
+
+    let dependency_graph = DependencyGraphEngine::analyze(&dependency_files);
+
+    println!("[GRAPH] nodes={}", dependency_graph.nodes.len());
+
+    for (file, node) in &dependency_graph.nodes {
+        println!("[GRAPH] {} dependencies={}", file, node.imports.len());
+    }
+
+    let compilation_task = CompilationTask {
+        task_id: "pandora-runtime-check".into(),
+
+        command: "cargo".into(),
+
+        args: vec!["check".into()],
+    };
+
+    let compilation_result = CompilerFeedbackEngine::validate(&compilation_task).await;
+
+    println!("[COMPILER] success={}", compilation_result.success);
+
+    println!(
+        "[COMPILER] stdout length={}",
+        compilation_result.stdout.len()
+    );
+
+    println!(
+        "[COMPILER] stderr length={}",
+        compilation_result.stderr.len()
+    );
+
+    let memory_chunks = vec![
+        MemoryChunk {
+            id: "memory-001".into(),
+
+            content: "distributed swarm orchestration".into(),
+
+            embedding: vec![0.9, 0.2, 0.7],
+        },
+        MemoryChunk {
+            id: "memory-002".into(),
+
+            content: "compiler repair feedback loop".into(),
+
+            embedding: vec![0.3, 0.8, 0.5],
+        },
+        MemoryChunk {
+            id: "memory-003".into(),
+
+            content: "semantic repository cognition".into(),
+
+            embedding: vec![0.95, 0.1, 0.85],
+        },
+    ];
+
+    let query_embedding = vec![0.92, 0.15, 0.8];
+
+    let semantic_results = SemanticMemoryEngine::retrieve(&query_embedding, &memory_chunks);
+
+    for result in semantic_results.iter().take(3) {
+        println!(
+            "[SEMANTIC] {} score={} content={}",
+            result.id, result.score, result.content
+        );
+    }
+
+    let vector_database = VectorDatabase {
+        memories: memory_chunks.clone(),
+    };
+
+    let saved = VectorStore::save("pandora_vectors.json", &vector_database);
+
+    println!("[VECTOR] saved={}", saved);
+
+    let loaded = VectorStore::load("pandora_vectors.json");
+
+    if let Some(database) = loaded {
+        println!("[VECTOR] loaded memories={}", database.memories.len());
+    }
+
+    let generated_embedding = EmbeddingEngine::generate("recursive distributed swarm cognition");
+
+    println!(
+        "[EMBEDDING] vector size={}",
+        generated_embedding.embedding.len()
+    );
+
+    println!("[EMBEDDING] vector={:?}", generated_embedding.embedding);
+
+    let repository_documents = vec![
+        RepositoryDocument {
+            id: "doc-001".into(),
+
+            content: "distributed swarm orchestration runtime".into(),
+        },
+        RepositoryDocument {
+            id: "doc-002".into(),
+
+            content: "compiler feedback autonomous repair loop".into(),
+        },
+        RepositoryDocument {
+            id: "doc-003".into(),
+
+            content: "semantic vector repository cognition".into(),
+        },
+    ];
+
+    let repository_results =
+        RepositorySearchEngine::search("repository semantic cognition", &repository_documents);
+
+    for result in repository_results.iter().take(3) {
+        println!(
+            "[SEARCH] {} score={} content={}",
+            result.id, result.score, result.content
+        );
+    }
+
+    let repair_context = FailureContext {
+        subsystem: "compiler-feedback".into(),
+
+        error: "unresolved import crate::memory".into(),
+
+        severity: 0.87,
+    };
+
+    let repair_plan = AutonomousRepairPlanner::plan(&repair_context);
+
+    println!(
+        "[REPAIR] strategy={} priority={}",
+        repair_plan.strategy, repair_plan.priority
+    );
+
+    for action in repair_plan.actions {
+        println!("[REPAIR] action={}", action);
+    }
+
+    let semantic_issue = SemanticIssue {
+        file: "runtime.rs".into(),
+
+        issue: "unresolved import crate::memory".into(),
+
+        severity: 0.84,
+    };
+
+    let semantic_patches = SemanticPatchPlanner::generate(&semantic_issue);
+
+    for patch in semantic_patches {
+        println!(
+            "[PATCH] file={} confidence={} replace {} -> {}",
+            patch.target_file, patch.confidence, patch.search, patch.replace
+        );
+    }
+
+    let repair_execution = RepairExecutionCoordinator::execute(&semantic_patches);
+
+    println!(
+        "[REPAIR-EXEC] successful={} failed={}",
+        repair_execution.successful, repair_execution.failed
+    );
+
+    let benchmark_task = BenchmarkTask {
+        name: "swarm-runtime-benchmark".into(),
+
+        iterations: 5_000_000,
+    };
+
+    let benchmark_result = BenchmarkHarness::execute(&benchmark_task);
+
+    println!(
+        "[BENCHMARK] duration={}ms throughput={}",
+        benchmark_result.duration_ms, benchmark_result.throughput
+    );
+
+    let execution_candidates = vec![
+        ExecutionCandidate {
+            candidate_id: "runtime-alpha".into(),
+
+            benchmark_score: 0.91,
+
+            repair_success_rate: 0.88,
+
+            stability_score: 0.93,
+        },
+        ExecutionCandidate {
+            candidate_id: "runtime-beta".into(),
+
+            benchmark_score: 0.82,
+
+            repair_success_rate: 0.94,
+
+            stability_score: 0.79,
+        },
+        ExecutionCandidate {
+            candidate_id: "runtime-gamma".into(),
+
+            benchmark_score: 0.97,
+
+            repair_success_rate: 0.73,
+
+            stability_score: 0.89,
+        },
+    ];
+
+    let ranked_executions = ExecutionRankingEngine::rank(&execution_candidates);
+
+    for ranked in ranked_executions {
+        println!(
+            "[RANKING] rank={} candidate={} score={}",
+            ranked.rank, ranked.candidate_id, ranked.total_score
+        );
+    }
+
+    let memory_nodes = vec![
+        MemoryNode {
+            id: "node-001".into(),
+
+            content: "semantic repository cognition".into(),
+
+            links: vec!["node-002".into(), "node-003".into()],
+        },
+        MemoryNode {
+            id: "node-002".into(),
+
+            content: "compiler repair loops".into(),
+
+            links: vec!["node-001".into()],
+        },
+        MemoryNode {
+            id: "node-003".into(),
+
+            content: "autonomous patch planning".into(),
+
+            links: vec!["node-001".into()],
+        },
+    ];
+
+    let memory_graph = RepositoryMemoryGraphEngine::build(&memory_nodes);
+
+    println!("[MEMORY-GRAPH] total nodes={}", memory_graph.nodes.len());
+
+    let related = RepositoryMemoryGraphEngine::related(&memory_graph, "node-001");
+
+    for node in related {
+        println!(
+            "[MEMORY-GRAPH] related={} content={}",
+            node.id, node.content
+        );
+    }
+
+    let debugging_issue = SemanticIssue {
+        file: "runtime.rs".into(),
+
+        issue: "cannot find type RuntimeMemory".into(),
+
+        severity: 0.79,
+    };
+
+    let debugging_result = AutonomousDebugLoop::execute(&debugging_issue, 3);
+
+    println!(
+        "[DEBUG] resolved={} cycles={}",
+        debugging_result.resolved, debugging_result.cycles
+    );
+
+    for cycle in debugging_result.history {
+        println!("[DEBUG] cycle={} repaired={}", cycle.cycle, cycle.repaired);
+    }
+
+    let validation_target = ValidationTarget {
+        subsystem: "pandora-runtime".into(),
+
+        benchmark_score: 0.89,
+
+        compiler_success: true,
+
+        repair_success_rate: 0.92,
+    };
+
+    let validation_report = RepairValidationLoop::validate(&validation_target);
+
+    println!(
+        "[VALIDATION] stable={} confidence={}",
+        validation_report.stable, validation_report.confidence
+    );
+
+    for recommendation in validation_report.recommendations {
+        println!("[VALIDATION] recommendation={}", recommendation);
+    }
+
+    let mutation_candidates = vec![
+        MutationCandidate {
+            id: "mutation-alpha".into(),
+
+            benchmark_score: 0.91,
+
+            repair_score: 0.88,
+
+            survivability_score: 0.93,
+        },
+        MutationCandidate {
+            id: "mutation-beta".into(),
+
+            benchmark_score: 0.86,
+
+            repair_score: 0.95,
+
+            survivability_score: 0.82,
+        },
+        MutationCandidate {
+            id: "mutation-gamma".into(),
+
+            benchmark_score: 0.97,
+
+            repair_score: 0.79,
+
+            survivability_score: 0.91,
+        },
+    ];
+
+    let tournament_winner = MutationTournamentEngine::compete(&mutation_candidates);
+
+    if let Some(winner) = tournament_winner {
+        println!(
+            "[TOURNAMENT] winner={} score={}",
+            winner.id, winner.evolutionary_score
+        );
+    }
+
+    let survivability_candidate = SurvivabilityCandidate {
+        runtime: "pandora-prime".into(),
+
+        stability: 0.94,
+
+        recovery_rate: 0.91,
+
+        resource_efficiency: 0.82,
+
+        mutation_resistance: 0.89,
+    };
+
+    let survivability = ExecutionSurvivabilityEngine::evaluate(&survivability_candidate);
+
+    println!(
+        "[SURVIVABILITY] runtime={} score={} resilient={}",
+        survivability.runtime, survivability.survivability_score, survivability.resilient
+    );
+
+    let repository_traits = vec![
+        RepositoryTrait {
+            trait_name: "distributed-cognition".into(),
+
+            adaptability: 0.93,
+
+            stability: 0.88,
+        },
+        RepositoryTrait {
+            trait_name: "repair-orchestration".into(),
+
+            adaptability: 0.81,
+
+            stability: 0.67,
+        },
+        RepositoryTrait {
+            trait_name: "semantic-memory".into(),
+
+            adaptability: 0.89,
+
+            stability: 0.91,
+        },
+    ];
+
+    let evolution_plan = RepositoryEvolutionEngine::evolve(&repository_traits);
+
+    println!(
+        "[EVOLUTION] dominant_trait={}",
+        evolution_plan.dominant_trait
+    );
+
+    for mutation in evolution_plan.mutations {
+        println!(
+            "[EVOLUTION] mutation={} projected_gain={}",
+            mutation.mutation, mutation.projected_gain
+        );
+    }
+
+    let orchestration_nodes = vec![
+        OrchestrationNode {
+            node_id: "node-alpha".into(),
+
+            throughput: 0.94,
+
+            latency: 0.08,
+
+            survivability: 0.91,
+
+            adaptability: 0.89,
+        },
+        OrchestrationNode {
+            node_id: "node-beta".into(),
+
+            throughput: 0.83,
+
+            latency: 0.14,
+
+            survivability: 0.87,
+
+            adaptability: 0.93,
+        },
+        OrchestrationNode {
+            node_id: "node-gamma".into(),
+
+            throughput: 0.71,
+
+            latency: 0.21,
+
+            survivability: 0.78,
+
+            adaptability: 0.74,
+        },
+    ];
+
+    let orchestration_scores = AdaptiveOrchestrationEngine::evaluate(&orchestration_nodes);
+
+    for score in orchestration_scores {
+        println!(
+            "[ORCHESTRATION] node={} score={} role={}",
+            score.node_id, score.score, score.recommended_role
+        );
+    }
+
+    let runtime_health = vec![
+        RuntimeHealth {
+            subsystem: "compiler-runtime".into(),
+
+            stability: 0.91,
+
+            repair_success: 0.89,
+
+            survivability: 0.94,
+        },
+        RuntimeHealth {
+            subsystem: "repair-engine".into(),
+
+            stability: 0.68,
+
+            repair_success: 0.61,
+
+            survivability: 0.73,
+        },
+        RuntimeHealth {
+            subsystem: "distributed-memory".into(),
+
+            stability: 0.79,
+
+            repair_success: 0.84,
+
+            survivability: 0.66,
+        },
+    ];
+
+    let healing_plan = RuntimeSelfHealingCoordinator::stabilize(&runtime_health);
+
+    println!("[HEALING] stable={}", healing_plan.stable);
+
+    for directive in healing_plan.directives {
+        println!(
+            "[HEALING] subsystem={} action={} urgency={}",
+            directive.subsystem, directive.action, directive.urgency
+        );
+    }
+
+    let mut network = DistributedNetworkFabric::new();
+
+    network.register_node(NetworkNode {
+        node_id: "node-alpha".into(),
+
+        address: "10.0.0.1".into(),
+
+        online: true,
+    });
+
+    network.register_node(NetworkNode {
+        node_id: "node-beta".into(),
+
+        address: "10.0.0.2".into(),
+
+        online: true,
+    });
+
+    let packet = NetworkPacket {
+        source: "node-alpha".into(),
+
+        target: "node-beta".into(),
+
+        payload: "synchronize repair state".into(),
+    };
+
+    let transmitted = network.transmit(&packet);
+
+    println!("[NETWORK] transmitted={}", transmitted);
+
+    println!("[NETWORK] online_nodes={}", network.online_nodes());
+
+    let sandbox_task = SandboxTask {
+        image: "alpine".into(),
+
+        command: vec!["echo".into(), "Pandora sandbox online".into()],
+    };
+
+    let sandbox_result = DockerSandboxEngine::execute(&sandbox_task).await;
+
+    println!("[SANDBOX] success={}", sandbox_result.success);
+
+    println!("[SANDBOX] stdout={}", sandbox_result.stdout);
+
+    println!("[SANDBOX] stderr={}", sandbox_result.stderr);
+
+    let remote_task = RemoteExecutionTask {
+        task_id: "distributed-repair-001".into(),
+
+        source_node: "node-alpha".into(),
+
+        target_node: "node-beta".into(),
+
+        payload: "execute recursive repair cycle".into(),
+    };
+
+    let remote_result = RemoteExecutionEngine::dispatch(&network, &remote_task);
+
+    println!(
+        "[REMOTE] accepted={} node={}",
+        remote_result.accepted, remote_result.execution_node
+    );
+
+let ollama_request =
+    OllamaRequest {
+
+        model:
+            "llama3"
+                .into(),
+
+        prompt:
+            "Analyze distributed autonomous cognition"
+                .into(),
+    };
+
+let ollama_response =
+    OllamaProvider
+        ::generate(
+            &ollama_request
+        )
+        .await;
+
+println!(
+    "[OLLAMA] success={}",
+    ollama_response.success
+);
+
+println!(
+    "[OLLAMA] response={}",
+    ollama_response.response
+);
+
+let llamacpp_request =
+    LlamaCppRequest {
+
+        model_path:
+            "./models/llama-3-8b-instruct.Q4_K_M.gguf"
+                .into(),
+
+        prompt:
+            "Analyze recursive autonomous runtime evolution"
+                .into(),
+
+        threads:
+            8,
+
+        tokens:
+            128,
+    };
+
+let llamacpp_response =
+    LlamaCppProvider
+        ::generate(
+            &llamacpp_request
+        )
+        .await;
+
+println!(
+    "[LLAMACPP] success={}",
+    llamacpp_response.success
+);
+
+println!(
+    "[LLAMACPP] output={}",
+    llamacpp_response.output
+);
 
     let checkpoint = RuntimeCheckpoint {
         checkpoint_id: "checkpoint_002".into(),
