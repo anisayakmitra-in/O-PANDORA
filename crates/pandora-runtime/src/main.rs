@@ -1,16 +1,94 @@
 use pandora_runtime
-    ::llamacpp_provider::{
-        LlamaCppProvider,
-        LlamaCppRequest,
-        LlamaCppResponse,
+    ::gene_orchestrator::{
+        GeneCapsule,
+        GeneExecutionPlan,
+        GeneOrchestrator,
+        MetaHarness,
     };
 
 use pandora_runtime
-    ::ollama_provider::{
-        OllamaProvider,
-        OllamaRequest,
-        OllamaResponse,
+    ::panoptes::{
+        OversightDecision,
+        OversightTarget,
+        PanoptesOversightEngine,
     };
+
+use pandora_runtime
+    ::shadow_council::{
+        CouncilPersona,
+        CouncilVerdict,
+        ShadowCouncilEngine,
+        StrategicConsensus,
+    };
+
+use pandora_runtime
+    ::reasoning_chain::{
+        AutonomousReasoningChain,
+        AutonomousReasoningEngine,
+        ReasoningNode,
+        ReasoningTransition,
+    };
+
+use pandora_runtime
+    ::cognition_governance::{
+        CognitiveMemory,
+        CognitionPersistenceGovernance,
+        GovernanceDecision,
+    };
+
+use pandora_runtime
+    ::long_context::{
+        ContextWindow,
+        LongContextOrchestrator,
+        OrchestratedContext,
+    };
+
+use pandora_runtime
+    ::inference_router::{
+        AdaptiveInferenceRouter,
+        InferenceProvider,
+        InferenceRoute,
+    };
+
+use pandora_runtime
+    ::tool_cognition::{
+        ToolCapability,
+        ToolCognitionEngine,
+        ToolSelection,
+    };
+
+use pandora_runtime
+    ::recursive_planner::{
+        PlanningObjective,
+        PlanningStep,
+        RecursivePlan,
+        RecursivePlanningEngine,
+    };
+
+use pandora_runtime
+    ::memory_prompting::{
+        ConstructedPrompt,
+        MemoryAwarePromptEngine,
+        PromptRequest,
+    };
+
+use pandora_runtime
+    ::context_router::{
+        ContextMemory,
+        ContextRoutingEngine,
+        RoutedContext,
+    };
+
+use pandora_runtime
+    ::model_arbitration::{
+        ArbitrationDecision,
+        ModelCandidate,
+        MultiModelArbitrationEngine,
+    };
+
+use pandora_runtime::llamacpp_provider::{LlamaCppProvider, LlamaCppRequest, LlamaCppResponse};
+
+use pandora_runtime::ollama_provider::{OllamaProvider, OllamaRequest, OllamaResponse};
 
 use pandora_runtime::remote_execution::{
     RemoteExecutionEngine, RemoteExecutionResult, RemoteExecutionTask,
@@ -91,6 +169,8 @@ use pandora_runtime::execution_kernel::{ExecutionKernel, ExecutionResult, Execut
 use pandora_runtime::swarm_identity::{IdentityState, IdentityTrait, SwarmIdentity};
 
 use pandora_runtime::swarm_will::{SwarmWill, WillDirective, WillState};
+
+use pandora_runtime::swarm_identity::{IdentityState, IdentityTrait, SwarmIdentity};
 
 use pandora_runtime::swarm_intuition::{IntuitionDecision, IntuitionSignal, SwarmIntuition};
 
@@ -1859,69 +1939,960 @@ fn runtime() {}
         remote_result.accepted, remote_result.execution_node
     );
 
-let ollama_request =
-    OllamaRequest {
+    let ollama_request = OllamaRequest {
+        model: "llama3".into(),
 
-        model:
-            "llama3"
+        prompt: "Analyze distributed autonomous cognition".into(),
+    };
+
+    let ollama_response = OllamaProvider::generate(&ollama_request).await;
+
+    println!("[OLLAMA] success={}", ollama_response.success);
+
+    println!("[OLLAMA] response={}", ollama_response.response);
+
+    let llamacpp_request = LlamaCppRequest {
+        model_path: "./models/llama-3-8b-instruct.Q4_K_M.gguf".into(),
+
+        prompt: "Analyze recursive autonomous runtime evolution".into(),
+
+        threads: 8,
+
+        tokens: 128,
+    };
+
+    let llamacpp_response = LlamaCppProvider::generate(&llamacpp_request).await;
+
+    println!("[LLAMACPP] success={}", llamacpp_response.success);
+
+    println!("[LLAMACPP] output={}", llamacpp_response.output);
+
+let model_candidates =
+    vec![
+
+        ModelCandidate {
+
+            provider:
+                "ollama-llama3"
+                    .into(),
+
+            reasoning_score:
+                0.91,
+
+            speed_score:
+                0.82,
+
+            memory_score:
+                0.88,
+
+            tool_score:
+                0.85,
+        },
+
+        ModelCandidate {
+
+            provider:
+                "llamacpp-mistral"
+                    .into(),
+
+            reasoning_score:
+                0.87,
+
+            speed_score:
+                0.94,
+
+            memory_score:
+                0.81,
+
+            tool_score:
+                0.79,
+        },
+
+        ModelCandidate {
+
+            provider:
+                "llamacpp-qwen"
+                    .into(),
+
+            reasoning_score:
+                0.95,
+
+            speed_score:
+                0.76,
+
+            memory_score:
+                0.92,
+
+            tool_score:
+                0.91,
+        },
+    ];
+
+let arbitration =
+    MultiModelArbitrationEngine
+        ::select(
+
+            &model_candidates,
+
+            "recursive reasoning repair workload",
+        );
+
+if let Some(result)
+    = arbitration
+{
+
+    println!(
+        "[ARBITRATION] provider={} score={}",
+        result.selected_provider,
+        result.final_score
+    );
+
+    println!(
+        "[ARBITRATION] rationale={}",
+        result.rationale
+    );
+}
+
+let context_memories =
+    vec![
+
+        ContextMemory {
+
+            memory_id:
+                "memory-alpha"
+                    .into(),
+
+            relevance:
+                0.96,
+
+            token_cost:
+                400,
+
+            content:
+                "distributed autonomous cognition"
+                    .into(),
+        },
+
+        ContextMemory {
+
+            memory_id:
+                "memory-beta"
+                    .into(),
+
+            relevance:
+                0.88,
+
+            token_cost:
+                600,
+
+            content:
+                "recursive repair orchestration"
+                    .into(),
+        },
+
+        ContextMemory {
+
+            memory_id:
+                "memory-gamma"
+                    .into(),
+
+            relevance:
+                0.71,
+
+            token_cost:
+                1200,
+
+            content:
+                "historical topology adaptation"
+                    .into(),
+        },
+    ];
+
+let routed =
+    ContextRoutingEngine
+        ::route(
+
+            &context_memories,
+
+            1000,
+        );
+
+println!(
+    "[CONTEXT] selected={} total_tokens={}",
+    routed.selected.len(),
+    routed.total_tokens
+);
+
+for memory
+    in routed.selected
+{
+
+    println!(
+        "[CONTEXT] memory={} relevance={}",
+        memory.memory_id,
+        memory.relevance
+    );
+}
+
+let prompt_request =
+    PromptRequest {
+
+        system_goal:
+            "Maintain stable autonomous distributed cognition"
                 .into(),
 
-        prompt:
-            "Analyze distributed autonomous cognition"
+        workload:
+            "Analyze recursive runtime survivability"
                 .into(),
     };
 
-let ollama_response =
-    OllamaProvider
-        ::generate(
-            &ollama_request
-        )
-        .await;
+let constructed_prompt =
+    MemoryAwarePromptEngine
+        ::construct(
+
+            &prompt_request,
+
+            &routed,
+        );
 
 println!(
-    "[OLLAMA] success={}",
-    ollama_response.success
+    "[PROMPT] memories={} estimated_tokens={}",
+    constructed_prompt.injected_memories,
+    constructed_prompt.estimated_tokens
 );
 
 println!(
-    "[OLLAMA] response={}",
-    ollama_response.response
+    "[PROMPT] content=\n{}",
+    constructed_prompt.prompt
 );
 
-let llamacpp_request =
-    LlamaCppRequest {
+let planning_objective =
+    PlanningObjective {
 
-        model_path:
-            "./models/llama-3-8b-instruct.Q4_K_M.gguf"
+        objective:
+            "stabilize distributed autonomous cognition"
                 .into(),
 
-        prompt:
-            "Analyze recursive autonomous runtime evolution"
-                .into(),
-
-        threads:
-            8,
-
-        tokens:
-            128,
+        priority:
+            0.94,
     };
 
-let llamacpp_response =
-    LlamaCppProvider
+let recursive_plan =
+    RecursivePlanningEngine
         ::generate(
-            &llamacpp_request
-        )
-        .await;
+
+            &planning_objective,
+
+            5,
+        );
 
 println!(
-    "[LLAMACPP] success={}",
-    llamacpp_response.success
+    "[PLANNER] depth={} objective={}",
+    recursive_plan.recursive_depth,
+    recursive_plan.objective
 );
 
+for step
+    in recursive_plan.steps
+{
+
+    println!(
+        "[PLANNER] stage={} action={} gain={}",
+        step.stage,
+        step.action,
+        step.estimated_gain
+    );
+}
+
+let tools =
+    vec![
+
+        ToolCapability {
+
+            tool_name:
+                "docker-sandbox"
+                    .into(),
+
+            reasoning_score:
+                0.81,
+
+            automation_score:
+                0.94,
+
+            reliability_score:
+                0.92,
+
+            domains:
+                vec![
+
+                    "sandbox"
+                        .into(),
+
+                    "execution"
+                        .into(),
+                ],
+        },
+
+        ToolCapability {
+
+            tool_name:
+                "semantic-repair"
+                    .into(),
+
+            reasoning_score:
+                0.96,
+
+            automation_score:
+                0.84,
+
+            reliability_score:
+                0.88,
+
+            domains:
+                vec![
+
+                    "repair"
+                        .into(),
+
+                    "debugging"
+                        .into(),
+                ],
+        },
+
+        ToolCapability {
+
+            tool_name:
+                "network-fabric"
+                    .into(),
+
+            reasoning_score:
+                0.79,
+
+            automation_score:
+                0.91,
+
+            reliability_score:
+                0.90,
+
+            domains:
+                vec![
+
+                    "distributed"
+                        .into(),
+
+                    "network"
+                        .into(),
+                ],
+        },
+    ];
+
+let tool_selection =
+    ToolCognitionEngine
+        ::select(
+
+            "distributed repair execution",
+
+            &tools,
+        );
+
+for tool
+    in tool_selection
+{
+
+    println!(
+        "[TOOLS] tool={} suitability={}",
+        tool.tool_name,
+        tool.suitability
+    );
+
+    println!(
+        "[TOOLS] rationale={}",
+        tool.rationale
+    );
+}
+
+let inference_providers =
+    vec![
+
+        InferenceProvider {
+
+            provider:
+                "ollama-llama3"
+                    .into(),
+
+            latency:
+                0.14,
+
+            reasoning_power:
+                0.94,
+
+            memory_capacity:
+                0.88,
+
+            operational_cost:
+                0.42,
+        },
+
+        InferenceProvider {
+
+            provider:
+                "llamacpp-qwen"
+                    .into(),
+
+            latency:
+                0.09,
+
+            reasoning_power:
+                0.91,
+
+            memory_capacity:
+                0.93,
+
+            operational_cost:
+                0.31,
+        },
+
+        InferenceProvider {
+
+            provider:
+                "llamacpp-mistral"
+                    .into(),
+
+            latency:
+                0.05,
+
+            reasoning_power:
+                0.84,
+
+            memory_capacity:
+                0.79,
+
+            operational_cost:
+                0.18,
+        },
+    ];
+
+let inference_routes =
+    AdaptiveInferenceRouter
+        ::route(
+
+            "distributed reasoning memory workload",
+
+            &inference_providers,
+        );
+
+for route
+    in inference_routes
+{
+
+    println!(
+        "[INFERENCE] provider={} score={} strategy={}",
+        route.provider,
+        route.routing_score,
+        route.execution_strategy
+    );
+}
+
+let context_windows =
+    vec![
+
+        ContextWindow {
+
+            window_id:
+                "window-alpha"
+                    .into(),
+
+            token_usage:
+                1200,
+
+            priority:
+                0.97,
+
+            content:
+                "distributed cognition state"
+                    .into(),
+        },
+
+        ContextWindow {
+
+            window_id:
+                "window-beta"
+                    .into(),
+
+            token_usage:
+                900,
+
+            priority:
+                0.88,
+
+            content:
+                "repair topology memory"
+                    .into(),
+        },
+
+        ContextWindow {
+
+            window_id:
+                "window-gamma"
+                    .into(),
+
+            token_usage:
+                1800,
+
+            priority:
+                0.79,
+
+            content:
+                "historical mutation archive"
+                    .into(),
+        },
+
+        ContextWindow {
+
+            window_id:
+                "window-delta"
+                    .into(),
+
+            token_usage:
+                700,
+
+            priority:
+                0.91,
+
+            content:
+                "survivability intelligence"
+                    .into(),
+        },
+    ];
+
+let orchestrated_context =
+    LongContextOrchestrator
+        ::orchestrate(
+
+            &context_windows,
+
+            3000,
+        );
+
 println!(
-    "[LLAMACPP] output={}",
-    llamacpp_response.output
+    "[LONGCTX] active={} archived={} total_tokens={}",
+    orchestrated_context
+        .active_windows
+        .len(),
+
+    orchestrated_context
+        .archived_windows
+        .len(),
+
+    orchestrated_context
+        .total_tokens
 );
+
+for window
+    in orchestrated_context
+        .active_windows
+{
+
+    println!(
+        "[LONGCTX] active_window={} priority={}",
+        window.window_id,
+        window.priority
+    );
+}
+
+let cognitive_memories =
+    vec![
+
+        CognitiveMemory {
+
+            memory_id:
+                "memory-core-runtime"
+                    .into(),
+
+            survivability:
+                0.96,
+
+            relevance:
+                0.94,
+
+            mutation_risk:
+                0.08,
+
+            token_weight:
+                1400,
+        },
+
+        CognitiveMemory {
+
+            memory_id:
+                "memory-repair-history"
+                    .into(),
+
+            survivability:
+                0.82,
+
+            relevance:
+                0.79,
+
+            mutation_risk:
+                0.24,
+
+            token_weight:
+                900,
+        },
+
+        CognitiveMemory {
+
+            memory_id:
+                "memory-unstable-mutation"
+                    .into(),
+
+            survivability:
+                0.41,
+
+            relevance:
+                0.33,
+
+            mutation_risk:
+                0.91,
+
+            token_weight:
+                1700,
+        },
+    ];
+
+let governance =
+    CognitionPersistenceGovernance
+        ::govern(
+            &cognitive_memories
+        );
+
+for decision
+    in governance
+{
+
+    println!(
+        "[GOVERNANCE] memory={} action={} score={}",
+        decision.memory_id,
+        decision.action,
+        decision.governance_score
+    );
+}
+
+let reasoning_chain =
+    AutonomousReasoningEngine
+        ::execute(
+
+            "maintain persistent distributed cognition",
+
+            5,
+        );
+
+println!(
+    "[REASONING] nodes={} transitions={} confidence={}",
+    reasoning_chain
+        .nodes
+        .len(),
+
+    reasoning_chain
+        .transitions
+        .len(),
+
+    reasoning_chain
+        .final_confidence
+);
+
+for node
+    in reasoning_chain
+        .nodes
+{
+
+    println!(
+        "[REASONING] node={} objective={} confidence={}",
+        node.node_id,
+        node.objective,
+        node.confidence
+    );
+}
+
+let council =
+    vec![
+
+        CouncilPersona {
+
+            persona:
+                "ANUBIS"
+                    .into(),
+
+            domain:
+                "memory-governance"
+                    .into(),
+
+            aggression:
+                0.42,
+
+            caution:
+                0.96,
+
+            survivability_bias:
+                0.98,
+        },
+
+        CouncilPersona {
+
+            persona:
+                "PANOPTES"
+                    .into(),
+
+            domain:
+                "oversight"
+                    .into(),
+
+            aggression:
+                0.35,
+
+            caution:
+                0.99,
+
+            survivability_bias:
+                0.95,
+        },
+
+        CouncilPersona {
+
+            persona:
+                "MOLOCH"
+                    .into(),
+
+            domain:
+                "evolution-pressure"
+                    .into(),
+
+            aggression:
+                0.94,
+
+            caution:
+                0.31,
+
+            survivability_bias:
+                0.72,
+        },
+
+        CouncilPersona {
+
+            persona:
+                "KETHER"
+                    .into(),
+
+            domain:
+                "strategic-orchestration"
+                    .into(),
+
+            aggression:
+                0.63,
+
+            caution:
+                0.88,
+
+            survivability_bias:
+                0.91,
+        },
+
+        CouncilPersona {
+
+            persona:
+                "OSIRIS"
+                    .into(),
+
+            domain:
+                "telemetry-validation"
+                    .into(),
+
+            aggression:
+                0.28,
+
+            caution:
+                0.95,
+
+            survivability_bias:
+                0.94,
+        },
+    ];
+
+let consensus =
+    ShadowCouncilEngine
+        ::deliberate(
+
+            "authorize recursive topology mutation",
+
+            &council,
+        );
+
+println!(
+    "[SHADOW-COUNCIL] consensus={} stability={}",
+    consensus.consensus,
+    consensus.stability_score
+);
+
+for verdict
+    in consensus.verdicts
+{
+
+    println!(
+        "[SHADOW-COUNCIL] persona={} recommendation={} confidence={}",
+        verdict.persona,
+        verdict.recommendation,
+        verdict.confidence
+    );
+}
+
+let oversight_target =
+    OversightTarget {
+
+        subsystem:
+            "distributed-cognition"
+                .into(),
+
+        recursion_depth:
+            7,
+
+        anomaly_score:
+            0.31,
+
+        survivability:
+            0.92,
+
+        cognition_drift:
+            0.28,
+    };
+
+let oversight =
+    PanoptesOversightEngine
+        ::inspect(
+            &oversight_target
+        );
+
+println!(
+    "[PANOPTES] approved={} risk={}",
+    oversight.approved,
+    oversight.risk_level
+);
+
+for directive
+    in oversight.directives
+{
+
+    println!(
+        "[PANOPTES] directive={}",
+        directive
+    );
+}
+
+let genes =
+    vec![
+
+        GeneCapsule {
+
+            gene_id:
+                "GENE-REPAIR"
+                    .into(),
+
+            specialization:
+                "repair"
+                    .into(),
+
+            survivability:
+                0.94,
+
+            governance_score:
+                0.92,
+
+            activation_cost:
+                0.31,
+        },
+
+        GeneCapsule {
+
+            gene_id:
+                "GENE-DISTRIBUTED"
+                    .into(),
+
+            specialization:
+                "distributed"
+                    .into(),
+
+            survivability:
+                0.91,
+
+            governance_score:
+                0.88,
+
+            activation_cost:
+                0.42,
+        },
+    ];
+
+let harnesses =
+    vec![
+
+        MetaHarness {
+
+            harness_id:
+                "HARNESS-ALPHA"
+                    .into(),
+
+            topology:
+                "stable-recursive"
+                    .into(),
+
+            stability:
+                0.96,
+
+            recursion_limit:
+                6,
+        },
+
+        MetaHarness {
+
+            harness_id:
+                "HARNESS-OMEGA"
+                    .into(),
+
+            topology:
+                "deep-recursive"
+                    .into(),
+
+            stability:
+                0.82,
+
+            recursion_limit:
+                12,
+        },
+    ];
+
+let gene_plan =
+    GeneOrchestrator
+        ::orchestrate(
+
+            "distributed repair cognition",
+
+            &genes,
+
+            &harnesses,
+        );
+
+if let Some(plan)
+    = gene_plan
+{
+
+    println!(
+        "[GENE] gene={} harness={} mode={} approved={}",
+        plan.selected_gene,
+        plan.selected_harness,
+        plan.deployment_mode,
+        plan.approved
+    );
+}
 
     let checkpoint = RuntimeCheckpoint {
         checkpoint_id: "checkpoint_002".into(),

@@ -1,136 +1,71 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
 use reqwest::Client;
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OllamaRequest {
+    pub model: String,
 
-    pub model:
-        String,
-
-    pub prompt:
-        String,
+    pub prompt: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OllamaResponse {
+    pub response: String,
 
-    pub response:
-        String,
-
-    pub success:
-        bool,
+    pub success: bool,
 }
 
 pub struct OllamaProvider;
 
 impl OllamaProvider {
+    pub async fn generate(request: &OllamaRequest) -> OllamaResponse {
+        println!("[OLLAMA] model={}", request.model);
 
-    pub async fn generate(
+        let client = Client::new();
 
-        request:
-            &OllamaRequest,
-    )
-        -> OllamaResponse
-    {
+        let payload = serde_json::json!({
 
-        println!(
-            "[OLLAMA] model={}",
-            request.model
-        );
+            "model":
+                request.model,
 
-        let client =
-            Client::new();
+            "prompt":
+                request.prompt,
 
-        let payload =
-            serde_json::json!({
+            "stream":
+                false
+        });
 
-                "model":
-                    request.model,
-
-                "prompt":
-                    request.prompt,
-
-                "stream":
-                    false
-            });
-
-        let result =
-            client
-                .post(
-                    "http://localhost:11434/api/generate"
-                )
-                .json(
-                    &payload
-                )
-                .send()
-                .await;
+        let result = client
+            .post("http://localhost:11434/api/generate")
+            .json(&payload)
+            .send()
+            .await;
 
         match result {
+            Ok(response) => match response.json::<serde_json::Value>().await {
+                Ok(json) => {
+                    let output = json["response"].as_str().unwrap_or("").to_string();
 
-            Ok(response) => {
+                    OllamaResponse {
+                        response: output,
 
-                match response
-                    .json::<serde_json::Value>()
-                    .await
-                {
-
-                    Ok(json) => {
-
-                        let output =
-                            json["response"]
-                                .as_str()
-                                .unwrap_or("")
-                                .to_string();
-
-                        OllamaResponse {
-
-                            response:
-                                output,
-
-                            success:
-                                true,
-                        }
-                    }
-
-                    Err(error) => {
-
-                        OllamaResponse {
-
-                            response:
-                                error.to_string(),
-
-                            success:
-                                false,
-                        }
+                        success: true,
                     }
                 }
-            }
 
-            Err(error) => {
+                Err(error) => OllamaResponse {
+                    response: error.to_string(),
 
-                OllamaResponse {
+                    success: false,
+                },
+            },
 
-                    response:
-                        error.to_string(),
+            Err(error) => OllamaResponse {
+                response: error.to_string(),
 
-                    success:
-                        false,
-                }
-            }
+                success: false,
+            },
         }
     }
 }
