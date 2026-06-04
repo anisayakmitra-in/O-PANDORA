@@ -1,187 +1,87 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReasoningNode {
+    pub node_id: String,
 
-    pub node_id:
-        String,
+    pub objective: String,
 
-    pub objective:
-        String,
-
-    pub confidence:
-        f64,
+    pub confidence: f64,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReasoningTransition {
+    pub from: String,
 
-    pub from:
-        String,
+    pub to: String,
 
-    pub to:
-        String,
-
-    pub rationale:
-        String,
+    pub rationale: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutonomousReasoningChain {
+    pub nodes: Vec<ReasoningNode>,
 
-    pub nodes:
-        Vec<
-            ReasoningNode
-        >,
+    pub transitions: Vec<ReasoningTransition>,
 
-    pub transitions:
-        Vec<
-            ReasoningTransition
-        >,
-
-    pub final_confidence:
-        f64,
+    pub final_confidence: f64,
 }
 
 pub struct AutonomousReasoningEngine;
 
 impl AutonomousReasoningEngine {
+    pub fn execute(root_objective: &str, depth: usize) -> AutonomousReasoningChain {
+        println!("[REASONING] objective={}", root_objective);
 
-    pub fn execute(
+        let mut nodes = Vec::new();
 
-        root_objective:
-            &str,
+        let mut transitions = Vec::new();
 
-        depth:
-            usize,
-    )
-        -> AutonomousReasoningChain
-    {
+        let mut cumulative = 0.0;
 
-        println!(
-            "[REASONING] objective={}",
-            root_objective
-        );
+        for stage in 0..depth {
+            let node_id = format!("reasoning-node-{}", stage + 1);
 
-        let mut nodes =
-            Vec::new();
+            let confidence = 0.94 - (stage as f64 * 0.05);
 
-        let mut transitions =
-            Vec::new();
+            let objective = if stage == 0 {
+                "analyze runtime state"
+            } else if stage == 1 {
+                "evaluate survivability"
+            } else if stage == 2 {
+                "optimize orchestration"
+            } else if stage == 3 {
+                "validate cognition continuity"
+            } else {
+                "recursive strategic refinement"
+            };
 
-        let mut cumulative =
-            0.0;
+            println!("[REASONING] node={} confidence={}", node_id, confidence);
 
-        for stage
-            in 0..depth
-        {
+            nodes.push(ReasoningNode {
+                node_id: node_id.clone(),
 
-            let node_id =
-                format!(
-                    "reasoning-node-{}",
-                    stage + 1
-                );
+                objective: objective.into(),
 
-            let confidence =
-                0.94
-                - (
-                    stage as f64
-                    * 0.05
-                );
+                confidence,
+            });
 
-            let objective =
-                if stage == 0 {
+            cumulative += confidence;
 
-                    "analyze runtime state"
+            if stage > 0 {
+                transitions.push(ReasoningTransition {
+                    from: format!("reasoning-node-{}", stage),
 
-                } else if stage == 1 {
+                    to: node_id,
 
-                    "evaluate survivability"
-
-                } else if stage == 2 {
-
-                    "optimize orchestration"
-
-                } else if stage == 3 {
-
-                    "validate cognition continuity"
-
-                } else {
-
-                    "recursive strategic refinement"
-                };
-
-            println!(
-                "[REASONING] node={} confidence={}",
-                node_id,
-                confidence
-            );
-
-            nodes.push(
-
-                ReasoningNode {
-
-                    node_id:
-                        node_id.clone(),
-
-                    objective:
-                        objective.into(),
-
-                    confidence,
-                }
-            );
-
-            cumulative +=
-                confidence;
-
-            if stage > 0
-            {
-
-                transitions.push(
-
-                    ReasoningTransition {
-
-                        from:
-                            format!(
-                                "reasoning-node-{}",
-                                stage
-                            ),
-
-                        to:
-                            node_id,
-
-                        rationale:
-                            "recursive cognition refinement"
-                                .into(),
-                    }
-                );
+                    rationale: "recursive cognition refinement".into(),
+                });
             }
         }
 
-        let final_confidence =
-            cumulative
-                / depth as f64;
+        let final_confidence = cumulative / depth as f64;
 
         AutonomousReasoningChain {
-
             nodes,
 
             transitions,

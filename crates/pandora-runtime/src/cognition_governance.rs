@@ -1,139 +1,59 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CognitiveMemory {
+    pub memory_id: String,
 
-    pub memory_id:
-        String,
+    pub survivability: f64,
 
-    pub survivability:
-        f64,
+    pub relevance: f64,
 
-    pub relevance:
-        f64,
+    pub mutation_risk: f64,
 
-    pub mutation_risk:
-        f64,
-
-    pub token_weight:
-        usize,
+    pub token_weight: usize,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GovernanceDecision {
+    pub memory_id: String,
 
-    pub memory_id:
-        String,
+    pub action: String,
 
-    pub action:
-        String,
-
-    pub governance_score:
-        f64,
+    pub governance_score: f64,
 }
 
 pub struct CognitionPersistenceGovernance;
 
 impl CognitionPersistenceGovernance {
+    pub fn govern(memories: &[CognitiveMemory]) -> Vec<GovernanceDecision> {
+        let mut decisions = Vec::new();
 
-    pub fn govern(
+        for memory in memories {
+            println!("[GOVERNANCE] evaluating {}", memory.memory_id);
 
-        memories:
-            &[CognitiveMemory],
-    )
-        -> Vec<
-            GovernanceDecision
-        >
-    {
+            let score = (memory.survivability * 0.40) + (memory.relevance * 0.35)
+                - (memory.mutation_risk * 0.25);
 
-        let mut decisions =
-            Vec::new();
+            let action = if score > 0.85 {
+                "persist-active"
+            } else if score > 0.65 {
+                "archive-context"
+            } else if memory.mutation_risk > 0.80 {
+                "quarantine-memory"
+            } else {
+                "purge-memory"
+            };
 
-        for memory
-            in memories
-        {
+            decisions.push(GovernanceDecision {
+                memory_id: memory.memory_id.clone(),
 
-            println!(
-                "[GOVERNANCE] evaluating {}",
-                memory.memory_id
-            );
+                action: action.into(),
 
-            let score =
-                (
-                    memory.survivability
-                        * 0.40
-                )
-                + (
-                    memory.relevance
-                        * 0.35
-                )
-                - (
-                    memory.mutation_risk
-                        * 0.25
-                );
-
-            let action =
-                if score > 0.85 {
-
-                    "persist-active"
-
-                } else if score > 0.65 {
-
-                    "archive-context"
-
-                } else if memory.mutation_risk
-                    > 0.80
-                {
-
-                    "quarantine-memory"
-
-                } else {
-
-                    "purge-memory"
-                };
-
-            decisions.push(
-
-                GovernanceDecision {
-
-                    memory_id:
-                        memory
-                            .memory_id
-                            .clone(),
-
-                    action:
-                        action.into(),
-
-                    governance_score:
-                        score,
-                }
-            );
+                governance_score: score,
+            });
         }
 
-        decisions.sort_by(
-
-            |a, b| {
-
-                b.governance_score
-                    .partial_cmp(
-                        &a.governance_score
-                    )
-                    .unwrap()
-            }
-        );
+        decisions.sort_by(|a, b| b.governance_score.partial_cmp(&a.governance_score).unwrap());
 
         decisions
     }

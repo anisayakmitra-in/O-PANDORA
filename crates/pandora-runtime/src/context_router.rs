@@ -1,113 +1,51 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContextMemory {
+    pub memory_id: String,
 
-    pub memory_id:
-        String,
+    pub relevance: f64,
 
-    pub relevance:
-        f64,
+    pub token_cost: usize,
 
-    pub token_cost:
-        usize,
-
-    pub content:
-        String,
+    pub content: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoutedContext {
+    pub selected: Vec<ContextMemory>,
 
-    pub selected:
-        Vec<
-            ContextMemory
-        >,
-
-    pub total_tokens:
-        usize,
+    pub total_tokens: usize,
 }
 
 pub struct ContextRoutingEngine;
 
 impl ContextRoutingEngine {
+    pub fn route(memories: &[ContextMemory], max_tokens: usize) -> RoutedContext {
+        let mut sorted = memories.to_vec();
 
-    pub fn route(
+        sorted.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap());
 
-        memories:
-            &[ContextMemory],
+        let mut selected = Vec::new();
 
-        max_tokens:
-            usize,
-    )
-        -> RoutedContext
-    {
+        let mut tokens = 0;
 
-        let mut sorted =
-            memories.to_vec();
-
-        sorted.sort_by(
-
-            |a, b| {
-
-                b.relevance
-                    .partial_cmp(
-                        &a.relevance
-                    )
-                    .unwrap()
-            }
-        );
-
-        let mut selected =
-            Vec::new();
-
-        let mut tokens =
-            0;
-
-        for memory
-            in sorted
-        {
-
-            if tokens
-                + memory.token_cost
-                > max_tokens
-            {
-
+        for memory in sorted {
+            if tokens + memory.token_cost > max_tokens {
                 continue;
             }
 
-            println!(
-                "[CONTEXT] routing {}",
-                memory.memory_id
-            );
+            println!("[CONTEXT] routing {}", memory.memory_id);
 
-            tokens +=
-                memory.token_cost;
+            tokens += memory.token_cost;
 
-            selected.push(
-                memory
-            );
+            selected.push(memory);
         }
 
         RoutedContext {
-
             selected,
 
-            total_tokens:
-                tokens,
+            total_tokens: tokens,
         }
     }
 }

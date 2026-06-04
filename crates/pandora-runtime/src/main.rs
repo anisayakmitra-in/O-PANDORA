@@ -1,90 +1,205 @@
 use pandora_runtime
-    ::gene_orchestrator::{
-        GeneCapsule,
-        GeneExecutionPlan,
-        GeneOrchestrator,
-        MetaHarness,
+    ::artifact_provenance::{
+        ArtifactIdentity,
+        ConstitutionalArtifactProvenanceEngine,
+        ProvenanceDirective,
+        ProvenanceState,
     };
 
 use pandora_runtime
-    ::panoptes::{
-        OversightDecision,
-        OversightTarget,
-        PanoptesOversightEngine,
+    ::meta_evolution::{
+        ConstitutionalMetaEvolutionEngine,
+        EvolutionFramework,
+        MetaEvolutionDirective,
+        MetaEvolutionState,
     };
 
 use pandora_runtime
-    ::shadow_council::{
-        CouncilPersona,
-        CouncilVerdict,
-        ShadowCouncilEngine,
-        StrategicConsensus,
+    ::topology_laboratory::{
+        ConstitutionalTopologyLaboratory,
+        LaboratoryDirective,
+        LaboratoryState,
+        LaboratoryTopology,
     };
 
 use pandora_runtime
-    ::reasoning_chain::{
-        AutonomousReasoningChain,
-        AutonomousReasoningEngine,
-        ReasoningNode,
-        ReasoningTransition,
+    ::reliability_benchmark::{
+        BenchmarkDirective,
+        BenchmarkSignal,
+        BenchmarkState,
+        ConstitutionalReliabilityBenchmarkEngine,
     };
 
 use pandora_runtime
-    ::cognition_governance::{
-        CognitiveMemory,
-        CognitionPersistenceGovernance,
-        GovernanceDecision,
+    ::entropy_collapse::{
+        CollapseDirective,
+        CollapseState,
+        EntropyCollapseEngine,
+        EntropySignal,
     };
 
 use pandora_runtime
-    ::long_context::{
-        ContextWindow,
-        LongContextOrchestrator,
-        OrchestratedContext,
+    ::epistemic_sandbox::{
+        EpistemicSandboxEngine,
+        EpistemicScenario,
+        EpistemicState,
+        RealityBoundaryDirective,
     };
 
 use pandora_runtime
-    ::inference_router::{
-        AdaptiveInferenceRouter,
-        InferenceProvider,
-        InferenceRoute,
+    ::uncertainty_topology::{
+        UncertaintyDirective,
+        UncertaintySignal,
+        UncertaintyState,
+        UncertaintyTopologyEngine,
     };
 
-use pandora_runtime
-    ::tool_cognition::{
-        ToolCapability,
-        ToolCognitionEngine,
-        ToolSelection,
-    };
+use pandora_runtime::civilization_regeneration::{
+    CivilizationRegenerationEngine, RegenerationDirective, RegenerationSignal, RegenerationState,
+};
 
-use pandora_runtime
-    ::recursive_planner::{
-        PlanningObjective,
-        PlanningStep,
-        RecursivePlan,
-        RecursivePlanningEngine,
-    };
+use pandora_runtime::civilization_resilience::{
+    CivilizationResilienceEngine, CollapseDirective, ResilienceSignal, ResilienceState,
+};
 
-use pandora_runtime
-    ::memory_prompting::{
-        ConstructedPrompt,
-        MemoryAwarePromptEngine,
-        PromptRequest,
-    };
+use pandora_runtime::sovereign_constitution::{
+    ConstitutionState, ConstitutionalDirective, ConstitutionalDoctrine,
+    SovereignExecutionConstitution,
+};
 
-use pandora_runtime
-    ::context_router::{
-        ContextMemory,
-        ContextRoutingEngine,
-        RoutedContext,
-    };
+use pandora_runtime::constitutional_autonomy::{
+    AutonomyDirective, AutonomySignal, AutonomyState, ConstitutionalAutonomyEngine,
+};
 
-use pandora_runtime
-    ::model_arbitration::{
-        ArbitrationDecision,
-        ModelCandidate,
-        MultiModelArbitrationEngine,
-    };
+use pandora_runtime::reality_simulation::{
+    ConstitutionalRealitySimulationEngine, FutureScenario, RealityBranch, SimulationState,
+};
+
+use pandora_runtime::civilization_memory::{
+    ArchaeologyInsight, CivilizationEpoch, CivilizationMemoryEngine, CivilizationState,
+};
+
+use pandora_runtime::strategic_directive::{
+    SovereignStrategicDirectiveEngine, StrategicDirective, StrategicSignal, StrategicState,
+};
+
+use pandora_runtime::evolution_parliament::{
+    ConstitutionalEvolutionParliament, EvolutionProposal, ParliamentChamber, ParliamentState,
+    ParliamentVerdict,
+};
+
+use pandora_runtime::kuber_governor::{
+    EcosystemArtifact, EcosystemCreator, EcosystemGovernanceState, GovernanceVerdict,
+    KuberPalaceGovernor,
+};
+
+use pandora_runtime::cognition_fabric::{
+    CognitionFabricOrchestrator, CognitionFabricState, FabricDirective, FabricNode, FabricTopology,
+};
+
+use pandora_runtime::topology_synthesis::{
+    ExecutionTopologySynthesizer, SynthesizedTopology, TopologyNode, TopologyRequirement,
+};
+
+use pandora_runtime::domain_registry::{
+    DeploymentCompatibility, DomainGenePack, DomainGenePackRegistry, RegistryDirective,
+    RegistryState,
+};
+
+use pandora_runtime::survivability_constitution::{
+    ConstitutionalBenchmark, ConstitutionalState, SurvivabilityConstitutionEngine,
+    SurvivabilityDirective,
+};
+
+use pandora_runtime::sandbox_governance::{
+    GovernanceValidation, MutationProposal, SandboxEnvironment, SandboxGovernanceEngine,
+};
+
+use pandora_runtime::execution_archaeology::{
+    ArchaeologyDirective, ArchaeologyRecord, ArchaeologyState, ExecutionArchaeologyEngine,
+};
+
+use pandora_runtime::acquisition_orchestrator::{
+    AcquisitionCandidate, AcquisitionDeploymentPlan, AcquisitionOrchestrator, DeploymentTarget,
+};
+
+use pandora_runtime::provider_negotiation::{
+    HardwareSubstrate, NegotiatedExecution, ProviderBackend, ProviderHardwareNegotiator,
+};
+
+use pandora_runtime::capability_resolution::{
+    CapabilityDomain, CapabilityGene, CapabilityResolution, CapabilityResolutionEngine,
+};
+
+use pandora_runtime::execution_lineage::{
+    LineageDirective, LineageNode, RecursiveExecutionLineage, SovereignLineageState,
+};
+
+use pandora_runtime::objective_evolution::{
+    ObjectiveDirective, SovereignObjectiveEvolution, SovereignObjectiveState, StrategicObjective,
+};
+
+use pandora_runtime::cognition_mesh::{
+    CognitionMeshNode, CognitionMeshState, MeshPropagationDirective, RecursiveCognitionMesh,
+};
+
+use pandora_runtime::cognition_swarm::{
+    DistributedCognitionSwarm, SwarmDirective, SwarmNode, SwarmState,
+};
+
+use pandora_runtime::state_synthesis::{
+    ExecutionStateSynthesisEngine, SovereignSubsystemState, SynthesizedRuntimeState,
+};
+
+use pandora_runtime::operational_identity::{
+    IdentityDirective, IdentityState, PersistentOperationalIdentity,
+};
+
+use pandora_runtime::anubis::{AnubisMemoryGovernor, MemoryArtifact, PersistenceDirective};
+
+use pandora_runtime::meta_harness_governor::{
+    GovernanceExecution, GovernedGene, MetaHarnessExecutionGovernor, MetaHarnessGovernor,
+};
+
+use pandora_runtime::gene_orchestrator::{
+    GeneCapsule, GeneExecutionPlan, GeneOrchestrator, MetaHarness,
+};
+
+use pandora_runtime::panoptes::{OversightDecision, OversightTarget, PanoptesOversightEngine};
+
+use pandora_runtime::shadow_council::{
+    CouncilPersona, CouncilVerdict, ShadowCouncilEngine, StrategicConsensus,
+};
+
+use pandora_runtime::reasoning_chain::{
+    AutonomousReasoningChain, AutonomousReasoningEngine, ReasoningNode, ReasoningTransition,
+};
+
+use pandora_runtime::cognition_governance::{
+    CognitionPersistenceGovernance, CognitiveMemory, GovernanceDecision,
+};
+
+use pandora_runtime::long_context::{ContextWindow, LongContextOrchestrator, OrchestratedContext};
+
+use pandora_runtime::inference_router::{
+    AdaptiveInferenceRouter, InferenceProvider, InferenceRoute,
+};
+
+use pandora_runtime::tool_cognition::{ToolCapability, ToolCognitionEngine, ToolSelection};
+
+use pandora_runtime::recursive_planner::{
+    PlanningObjective, PlanningStep, RecursivePlan, RecursivePlanningEngine,
+};
+
+use pandora_runtime::memory_prompting::{
+    ConstructedPrompt, MemoryAwarePromptEngine, PromptRequest,
+};
+
+use pandora_runtime::context_router::{ContextMemory, ContextRoutingEngine, RoutedContext};
+
+use pandora_runtime::model_arbitration::{
+    ArbitrationDecision, ModelCandidate, MultiModelArbitrationEngine,
+};
 
 use pandora_runtime::llamacpp_provider::{LlamaCppProvider, LlamaCppRequest, LlamaCppResponse};
 
@@ -1967,932 +2082,3610 @@ fn runtime() {}
 
     println!("[LLAMACPP] output={}", llamacpp_response.output);
 
-let model_candidates =
-    vec![
-
+    let model_candidates = vec![
         ModelCandidate {
+            provider: "ollama-llama3".into(),
 
-            provider:
-                "ollama-llama3"
-                    .into(),
+            reasoning_score: 0.91,
 
-            reasoning_score:
-                0.91,
+            speed_score: 0.82,
 
-            speed_score:
-                0.82,
+            memory_score: 0.88,
 
-            memory_score:
-                0.88,
-
-            tool_score:
-                0.85,
+            tool_score: 0.85,
         },
-
         ModelCandidate {
+            provider: "llamacpp-mistral".into(),
 
-            provider:
-                "llamacpp-mistral"
-                    .into(),
+            reasoning_score: 0.87,
 
-            reasoning_score:
-                0.87,
+            speed_score: 0.94,
 
-            speed_score:
-                0.94,
+            memory_score: 0.81,
 
-            memory_score:
-                0.81,
-
-            tool_score:
-                0.79,
+            tool_score: 0.79,
         },
-
         ModelCandidate {
+            provider: "llamacpp-qwen".into(),
 
-            provider:
-                "llamacpp-qwen"
-                    .into(),
+            reasoning_score: 0.95,
 
-            reasoning_score:
-                0.95,
+            speed_score: 0.76,
 
-            speed_score:
-                0.76,
+            memory_score: 0.92,
 
-            memory_score:
-                0.92,
-
-            tool_score:
-                0.91,
+            tool_score: 0.91,
         },
     ];
 
-let arbitration =
-    MultiModelArbitrationEngine
-        ::select(
+    let arbitration = MultiModelArbitrationEngine::select(
+        &model_candidates,
+        "recursive reasoning repair workload",
+    );
 
-            &model_candidates,
-
-            "recursive reasoning repair workload",
+    if let Some(result) = arbitration {
+        println!(
+            "[ARBITRATION] provider={} score={}",
+            result.selected_provider, result.final_score
         );
 
-if let Some(result)
-    = arbitration
-{
+        println!("[ARBITRATION] rationale={}", result.rationale);
+    }
 
-    println!(
-        "[ARBITRATION] provider={} score={}",
-        result.selected_provider,
-        result.final_score
-    );
-
-    println!(
-        "[ARBITRATION] rationale={}",
-        result.rationale
-    );
-}
-
-let context_memories =
-    vec![
-
+    let context_memories = vec![
         ContextMemory {
+            memory_id: "memory-alpha".into(),
 
-            memory_id:
-                "memory-alpha"
-                    .into(),
+            relevance: 0.96,
 
-            relevance:
-                0.96,
+            token_cost: 400,
 
-            token_cost:
-                400,
-
-            content:
-                "distributed autonomous cognition"
-                    .into(),
+            content: "distributed autonomous cognition".into(),
         },
-
         ContextMemory {
+            memory_id: "memory-beta".into(),
 
-            memory_id:
-                "memory-beta"
-                    .into(),
+            relevance: 0.88,
 
-            relevance:
-                0.88,
+            token_cost: 600,
 
-            token_cost:
-                600,
-
-            content:
-                "recursive repair orchestration"
-                    .into(),
+            content: "recursive repair orchestration".into(),
         },
-
         ContextMemory {
+            memory_id: "memory-gamma".into(),
 
-            memory_id:
-                "memory-gamma"
-                    .into(),
+            relevance: 0.71,
 
-            relevance:
-                0.71,
+            token_cost: 1200,
 
-            token_cost:
-                1200,
-
-            content:
-                "historical topology adaptation"
-                    .into(),
+            content: "historical topology adaptation".into(),
         },
     ];
 
-let routed =
-    ContextRoutingEngine
-        ::route(
-
-            &context_memories,
-
-            1000,
-        );
-
-println!(
-    "[CONTEXT] selected={} total_tokens={}",
-    routed.selected.len(),
-    routed.total_tokens
-);
-
-for memory
-    in routed.selected
-{
+    let routed = ContextRoutingEngine::route(&context_memories, 1000);
 
     println!(
-        "[CONTEXT] memory={} relevance={}",
-        memory.memory_id,
-        memory.relevance
+        "[CONTEXT] selected={} total_tokens={}",
+        routed.selected.len(),
+        routed.total_tokens
     );
-}
 
-let prompt_request =
-    PromptRequest {
+    for memory in routed.selected {
+        println!(
+            "[CONTEXT] memory={} relevance={}",
+            memory.memory_id, memory.relevance
+        );
+    }
 
-        system_goal:
-            "Maintain stable autonomous distributed cognition"
-                .into(),
+    let prompt_request = PromptRequest {
+        system_goal: "Maintain stable autonomous distributed cognition".into(),
 
-        workload:
-            "Analyze recursive runtime survivability"
-                .into(),
+        workload: "Analyze recursive runtime survivability".into(),
     };
 
-let constructed_prompt =
-    MemoryAwarePromptEngine
-        ::construct(
-
-            &prompt_request,
-
-            &routed,
-        );
-
-println!(
-    "[PROMPT] memories={} estimated_tokens={}",
-    constructed_prompt.injected_memories,
-    constructed_prompt.estimated_tokens
-);
-
-println!(
-    "[PROMPT] content=\n{}",
-    constructed_prompt.prompt
-);
-
-let planning_objective =
-    PlanningObjective {
-
-        objective:
-            "stabilize distributed autonomous cognition"
-                .into(),
-
-        priority:
-            0.94,
-    };
-
-let recursive_plan =
-    RecursivePlanningEngine
-        ::generate(
-
-            &planning_objective,
-
-            5,
-        );
-
-println!(
-    "[PLANNER] depth={} objective={}",
-    recursive_plan.recursive_depth,
-    recursive_plan.objective
-);
-
-for step
-    in recursive_plan.steps
-{
+    let constructed_prompt = MemoryAwarePromptEngine::construct(&prompt_request, &routed);
 
     println!(
-        "[PLANNER] stage={} action={} gain={}",
-        step.stage,
-        step.action,
-        step.estimated_gain
+        "[PROMPT] memories={} estimated_tokens={}",
+        constructed_prompt.injected_memories, constructed_prompt.estimated_tokens
     );
-}
 
-let tools =
-    vec![
+    println!("[PROMPT] content=\n{}", constructed_prompt.prompt);
 
+    let planning_objective = PlanningObjective {
+        objective: "stabilize distributed autonomous cognition".into(),
+
+        priority: 0.94,
+    };
+
+    let recursive_plan = RecursivePlanningEngine::generate(&planning_objective, 5);
+
+    println!(
+        "[PLANNER] depth={} objective={}",
+        recursive_plan.recursive_depth, recursive_plan.objective
+    );
+
+    for step in recursive_plan.steps {
+        println!(
+            "[PLANNER] stage={} action={} gain={}",
+            step.stage, step.action, step.estimated_gain
+        );
+    }
+
+    let tools = vec![
         ToolCapability {
+            tool_name: "docker-sandbox".into(),
 
-            tool_name:
-                "docker-sandbox"
-                    .into(),
+            reasoning_score: 0.81,
 
-            reasoning_score:
-                0.81,
+            automation_score: 0.94,
 
-            automation_score:
-                0.94,
+            reliability_score: 0.92,
 
-            reliability_score:
-                0.92,
-
-            domains:
-                vec![
-
-                    "sandbox"
-                        .into(),
-
-                    "execution"
-                        .into(),
-                ],
+            domains: vec!["sandbox".into(), "execution".into()],
         },
-
         ToolCapability {
+            tool_name: "semantic-repair".into(),
 
-            tool_name:
-                "semantic-repair"
-                    .into(),
+            reasoning_score: 0.96,
 
-            reasoning_score:
-                0.96,
+            automation_score: 0.84,
 
-            automation_score:
-                0.84,
+            reliability_score: 0.88,
 
-            reliability_score:
-                0.88,
-
-            domains:
-                vec![
-
-                    "repair"
-                        .into(),
-
-                    "debugging"
-                        .into(),
-                ],
+            domains: vec!["repair".into(), "debugging".into()],
         },
-
         ToolCapability {
+            tool_name: "network-fabric".into(),
 
-            tool_name:
-                "network-fabric"
-                    .into(),
+            reasoning_score: 0.79,
 
-            reasoning_score:
-                0.79,
+            automation_score: 0.91,
 
-            automation_score:
-                0.91,
+            reliability_score: 0.90,
 
-            reliability_score:
-                0.90,
-
-            domains:
-                vec![
-
-                    "distributed"
-                        .into(),
-
-                    "network"
-                        .into(),
-                ],
+            domains: vec!["distributed".into(), "network".into()],
         },
     ];
 
-let tool_selection =
-    ToolCognitionEngine
-        ::select(
+    let tool_selection = ToolCognitionEngine::select("distributed repair execution", &tools);
 
-            "distributed repair execution",
-
-            &tools,
+    for tool in tool_selection {
+        println!(
+            "[TOOLS] tool={} suitability={}",
+            tool.tool_name, tool.suitability
         );
 
-for tool
-    in tool_selection
-{
+        println!("[TOOLS] rationale={}", tool.rationale);
+    }
+
+    let inference_providers = vec![
+        InferenceProvider {
+            provider: "ollama-llama3".into(),
+
+            latency: 0.14,
+
+            reasoning_power: 0.94,
+
+            memory_capacity: 0.88,
+
+            operational_cost: 0.42,
+        },
+        InferenceProvider {
+            provider: "llamacpp-qwen".into(),
+
+            latency: 0.09,
+
+            reasoning_power: 0.91,
+
+            memory_capacity: 0.93,
+
+            operational_cost: 0.31,
+        },
+        InferenceProvider {
+            provider: "llamacpp-mistral".into(),
+
+            latency: 0.05,
+
+            reasoning_power: 0.84,
+
+            memory_capacity: 0.79,
+
+            operational_cost: 0.18,
+        },
+    ];
+
+    let inference_routes = AdaptiveInferenceRouter::route(
+        "distributed reasoning memory workload",
+        &inference_providers,
+    );
+
+    for route in inference_routes {
+        println!(
+            "[INFERENCE] provider={} score={} strategy={}",
+            route.provider, route.routing_score, route.execution_strategy
+        );
+    }
+
+    let context_windows = vec![
+        ContextWindow {
+            window_id: "window-alpha".into(),
+
+            token_usage: 1200,
+
+            priority: 0.97,
+
+            content: "distributed cognition state".into(),
+        },
+        ContextWindow {
+            window_id: "window-beta".into(),
+
+            token_usage: 900,
+
+            priority: 0.88,
+
+            content: "repair topology memory".into(),
+        },
+        ContextWindow {
+            window_id: "window-gamma".into(),
+
+            token_usage: 1800,
+
+            priority: 0.79,
+
+            content: "historical mutation archive".into(),
+        },
+        ContextWindow {
+            window_id: "window-delta".into(),
+
+            token_usage: 700,
+
+            priority: 0.91,
+
+            content: "survivability intelligence".into(),
+        },
+    ];
+
+    let orchestrated_context = LongContextOrchestrator::orchestrate(&context_windows, 3000);
 
     println!(
-        "[TOOLS] tool={} suitability={}",
-        tool.tool_name,
-        tool.suitability
+        "[LONGCTX] active={} archived={} total_tokens={}",
+        orchestrated_context.active_windows.len(),
+        orchestrated_context.archived_windows.len(),
+        orchestrated_context.total_tokens
+    );
+
+    for window in orchestrated_context.active_windows {
+        println!(
+            "[LONGCTX] active_window={} priority={}",
+            window.window_id, window.priority
+        );
+    }
+
+    let cognitive_memories = vec![
+        CognitiveMemory {
+            memory_id: "memory-core-runtime".into(),
+
+            survivability: 0.96,
+
+            relevance: 0.94,
+
+            mutation_risk: 0.08,
+
+            token_weight: 1400,
+        },
+        CognitiveMemory {
+            memory_id: "memory-repair-history".into(),
+
+            survivability: 0.82,
+
+            relevance: 0.79,
+
+            mutation_risk: 0.24,
+
+            token_weight: 900,
+        },
+        CognitiveMemory {
+            memory_id: "memory-unstable-mutation".into(),
+
+            survivability: 0.41,
+
+            relevance: 0.33,
+
+            mutation_risk: 0.91,
+
+            token_weight: 1700,
+        },
+    ];
+
+    let governance = CognitionPersistenceGovernance::govern(&cognitive_memories);
+
+    for decision in governance {
+        println!(
+            "[GOVERNANCE] memory={} action={} score={}",
+            decision.memory_id, decision.action, decision.governance_score
+        );
+    }
+
+    let reasoning_chain =
+        AutonomousReasoningEngine::execute("maintain persistent distributed cognition", 5);
+
+    println!(
+        "[REASONING] nodes={} transitions={} confidence={}",
+        reasoning_chain.nodes.len(),
+        reasoning_chain.transitions.len(),
+        reasoning_chain.final_confidence
+    );
+
+    for node in reasoning_chain.nodes {
+        println!(
+            "[REASONING] node={} objective={} confidence={}",
+            node.node_id, node.objective, node.confidence
+        );
+    }
+
+    let council = vec![
+        CouncilPersona {
+            persona: "ANUBIS".into(),
+
+            domain: "memory-governance".into(),
+
+            aggression: 0.42,
+
+            caution: 0.96,
+
+            survivability_bias: 0.98,
+        },
+        CouncilPersona {
+            persona: "PANOPTES".into(),
+
+            domain: "oversight".into(),
+
+            aggression: 0.35,
+
+            caution: 0.99,
+
+            survivability_bias: 0.95,
+        },
+        CouncilPersona {
+            persona: "MOLOCH".into(),
+
+            domain: "evolution-pressure".into(),
+
+            aggression: 0.94,
+
+            caution: 0.31,
+
+            survivability_bias: 0.72,
+        },
+        CouncilPersona {
+            persona: "KETHER".into(),
+
+            domain: "strategic-orchestration".into(),
+
+            aggression: 0.63,
+
+            caution: 0.88,
+
+            survivability_bias: 0.91,
+        },
+        CouncilPersona {
+            persona: "OSIRIS".into(),
+
+            domain: "telemetry-validation".into(),
+
+            aggression: 0.28,
+
+            caution: 0.95,
+
+            survivability_bias: 0.94,
+        },
+    ];
+
+    let consensus =
+        ShadowCouncilEngine::deliberate("authorize recursive topology mutation", &council);
+
+    println!(
+        "[SHADOW-COUNCIL] consensus={} stability={}",
+        consensus.consensus, consensus.stability_score
+    );
+
+    for verdict in consensus.verdicts {
+        println!(
+            "[SHADOW-COUNCIL] persona={} recommendation={} confidence={}",
+            verdict.persona, verdict.recommendation, verdict.confidence
+        );
+    }
+
+    let oversight_target = OversightTarget {
+        subsystem: "distributed-cognition".into(),
+
+        recursion_depth: 7,
+
+        anomaly_score: 0.31,
+
+        survivability: 0.92,
+
+        cognition_drift: 0.28,
+    };
+
+    let oversight = PanoptesOversightEngine::inspect(&oversight_target);
+
+    println!(
+        "[PANOPTES] approved={} risk={}",
+        oversight.approved, oversight.risk_level
+    );
+
+    for directive in oversight.directives {
+        println!("[PANOPTES] directive={}", directive);
+    }
+
+    let coding_harness = MetaHarnessGovernor {
+        harness_id: "CODING-HARNESS".into(),
+
+        domain: "coding".into(),
+
+        recursion_limit: 8,
+
+        survivability_threshold: 0.80,
+
+        approved_tools: vec!["docker-sandbox".into(), "semantic-repair".into()],
+
+        approved_models: vec!["ollama-llama3".into(), "llamacpp-qwen".into()],
+    };
+
+    let coding_genes = vec![
+        GovernedGene {
+            gene_id: "GENE-REPAIR".into(),
+
+            specialization: "repair".into(),
+
+            governance_score: 0.94,
+
+            survivability: 0.92,
+        },
+        GovernedGene {
+            gene_id: "GENE-ARCHITECTURE".into(),
+
+            specialization: "architecture".into(),
+
+            governance_score: 0.89,
+
+            survivability: 0.87,
+        },
+    ];
+
+    let governed_execution = MetaHarnessExecutionGovernor::authorize(
+        "distributed repair cognition",
+        &coding_harness,
+        &coding_genes,
+    );
+
+    if let Some(execution) = governed_execution {
+        println!(
+            "[HARNESS] harness={} gene={} approved={}",
+            execution.harness, execution.gene, execution.approved
+        );
+
+        println!(
+            "[HARNESS] mode={} oversight={}",
+            execution.execution_mode, execution.oversight_required
+        );
+    }
+
+    let memory_artifacts = vec![
+        MemoryArtifact {
+            memory_id: "memory-runtime-core".into(),
+
+            lineage_depth: 12,
+
+            survivability: 0.96,
+
+            corruption_risk: 0.07,
+
+            continuity_score: 0.94,
+        },
+        MemoryArtifact {
+            memory_id: "memory-repair-chain".into(),
+
+            lineage_depth: 6,
+
+            survivability: 0.82,
+
+            corruption_risk: 0.18,
+
+            continuity_score: 0.77,
+        },
+        MemoryArtifact {
+            memory_id: "memory-anomalous-recursion".into(),
+
+            lineage_depth: 4,
+
+            survivability: 0.41,
+
+            corruption_risk: 0.91,
+
+            continuity_score: 0.38,
+        },
+    ];
+
+    let persistence = AnubisMemoryGovernor::govern(&memory_artifacts);
+
+    for directive in persistence {
+        println!(
+            "[ANUBIS] memory={} action={} quarantine={}",
+            directive.memory_id, directive.action, directive.quarantine
+        );
+    }
+
+    let identity_states = vec![
+        IdentityState {
+            identity_id: "pandora-prime".into(),
+
+            lineage_generation: 12,
+
+            continuity_score: 0.96,
+
+            strategic_coherence: 0.93,
+
+            distributed_sync: 0.91,
+        },
+        IdentityState {
+            identity_id: "pandora-repair-node".into(),
+
+            lineage_generation: 4,
+
+            continuity_score: 0.81,
+
+            strategic_coherence: 0.77,
+
+            distributed_sync: 0.64,
+        },
+        IdentityState {
+            identity_id: "pandora-anomalous-branch".into(),
+
+            lineage_generation: 3,
+
+            continuity_score: 0.42,
+
+            strategic_coherence: 0.39,
+
+            distributed_sync: 0.28,
+        },
+    ];
+
+    let identity_governance = PersistentOperationalIdentity::validate(&identity_states);
+
+    for directive in identity_governance {
+        println!(
+            "[IDENTITY] id={} status={} preserve={}",
+            directive.identity_id, directive.status, directive.preserve
+        );
+
+        println!(
+            "[IDENTITY] sync_required={} resurrection_ready={}",
+            directive.synchronization_required, directive.resurrection_ready
+        );
+    }
+
+    let sovereign_states = vec![
+        SovereignSubsystemState {
+            subsystem: "SHADOW-COUNCIL".into(),
+
+            operational_score: 0.94,
+
+            survivability: 0.91,
+
+            anomaly_risk: 0.08,
+
+            continuity: 0.95,
+        },
+        SovereignSubsystemState {
+            subsystem: "PANOPTES".into(),
+
+            operational_score: 0.92,
+
+            survivability: 0.94,
+
+            anomaly_risk: 0.04,
+
+            continuity: 0.91,
+        },
+        SovereignSubsystemState {
+            subsystem: "ANUBIS".into(),
+
+            operational_score: 0.96,
+
+            survivability: 0.97,
+
+            anomaly_risk: 0.03,
+
+            continuity: 0.98,
+        },
+        SovereignSubsystemState {
+            subsystem: "CODING-HARNESS".into(),
+
+            operational_score: 0.86,
+
+            survivability: 0.81,
+
+            anomaly_risk: 0.18,
+
+            continuity: 0.84,
+        },
+    ];
+
+    let synthesized = ExecutionStateSynthesisEngine::synthesize(&sovereign_states);
+
+    println!("[SYNTHESIS] global_state={}", synthesized.global_state);
+
+    println!(
+        "[SYNTHESIS] stability={} recursion_safe={} distributed_ready={}",
+        synthesized.sovereign_stability, synthesized.recursion_safe, synthesized.distributed_ready
     );
 
     println!(
-        "[TOOLS] rationale={}",
-        tool.rationale
+        "[SYNTHESIS] confidence={}",
+        synthesized.operational_confidence
     );
-}
 
-let inference_providers =
+    let swarm_nodes = vec![
+        SwarmNode {
+            node_id: "node-alpha".into(),
+
+            harness: "CODING-HARNESS".into(),
+
+            cognition_load: 0.71,
+
+            survivability: 0.92,
+
+            recursion_capacity: 8,
+
+            synchronization: 0.94,
+        },
+        SwarmNode {
+            node_id: "node-beta".into(),
+
+            harness: "SECURITY-HARNESS".into(),
+
+            cognition_load: 0.63,
+
+            survivability: 0.95,
+
+            recursion_capacity: 6,
+
+            synchronization: 0.91,
+        },
+        SwarmNode {
+            node_id: "node-gamma".into(),
+
+            harness: "MEMORY-HARNESS".into(),
+
+            cognition_load: 0.57,
+
+            survivability: 0.97,
+
+            recursion_capacity: 10,
+
+            synchronization: 0.96,
+        },
+    ];
+
+    let swarm = DistributedCognitionSwarm::coordinate(&swarm_nodes);
+
+    println!(
+        "[SWARM] stability={} synchronized={} sovereign_ready={}",
+        swarm.swarm_stability, swarm.synchronized, swarm.sovereign_ready
+    );
+
+    for directive in swarm.directives {
+        println!(
+            "[SWARM] node={} role={} approved={}",
+            directive.node_id, directive.role, directive.approved
+        );
+
+        println!(
+            "[SWARM] recursion_authorized={}",
+            directive.recursion_authorized
+        );
+    }
+
+    let mesh_nodes = vec![
+        CognitionMeshNode {
+            node_id: "mesh-alpha".into(),
+
+            swarm: "coding-swarm".into(),
+
+            cognition_integrity: 0.94,
+
+            propagation_stability: 0.91,
+
+            oversight_visibility: 0.93,
+
+            continuity_sync: 0.95,
+        },
+        CognitionMeshNode {
+            node_id: "mesh-beta".into(),
+
+            swarm: "security-swarm".into(),
+
+            cognition_integrity: 0.96,
+
+            propagation_stability: 0.94,
+
+            oversight_visibility: 0.97,
+
+            continuity_sync: 0.96,
+        },
+        CognitionMeshNode {
+            node_id: "mesh-gamma".into(),
+
+            swarm: "memory-swarm".into(),
+
+            cognition_integrity: 0.98,
+
+            propagation_stability: 0.95,
+
+            oversight_visibility: 0.99,
+
+            continuity_sync: 0.98,
+        },
+    ];
+
+    let mesh_state = RecursiveCognitionMesh::propagate(&mesh_nodes);
+
+    println!(
+        "[MESH] stability={} recursive_safe={} sovereign_ready={}",
+        mesh_state.mesh_stability, mesh_state.recursive_safe, mesh_state.sovereign_mesh_ready
+    );
+
+    for directive in mesh_state.directives {
+        println!(
+            "[MESH] node={} propagate={} continuity_verified={}",
+            directive.node_id, directive.propagate, directive.continuity_verified
+        );
+    }
+
+    let sovereign_objectives = vec![
+        StrategicObjective {
+            objective_id: "maintain-sovereign-continuity".into(),
+
+            priority: 0.98,
+
+            survivability_alignment: 0.97,
+
+            continuity_alignment: 0.96,
+
+            recursion_pressure: 0.44,
+        },
+        StrategicObjective {
+            objective_id: "distributed-cognition-expansion".into(),
+
+            priority: 0.91,
+
+            survivability_alignment: 0.88,
+
+            continuity_alignment: 0.85,
+
+            recursion_pressure: 0.72,
+        },
+        StrategicObjective {
+            objective_id: "unbounded-recursive-mutation".into(),
+
+            priority: 0.74,
+
+            survivability_alignment: 0.41,
+
+            continuity_alignment: 0.37,
+
+            recursion_pressure: 0.95,
+        },
+    ];
+
+    let objective_state = SovereignObjectiveEvolution::evolve(&sovereign_objectives);
+
+    println!(
+        "[OBJECTIVE] stability={} alignment={} recursive_ready={}",
+        objective_state.strategic_stability,
+        objective_state.sovereign_alignment,
+        objective_state.recursive_ready
+    );
+
+    for directive in objective_state.directives {
+        println!(
+            "[OBJECTIVE] objective={} status={} evolve={}",
+            directive.objective_id, directive.status, directive.evolve
+        );
+
+        println!(
+            "[OBJECTIVE] oversight_required={} recursion_authorized={}",
+            directive.oversight_required, directive.recursion_authorized
+        );
+    }
+
+    let lineage_nodes = vec![
+        LineageNode {
+            lineage_id: "lineage-prime".into(),
+
+            parent: None,
+
+            harness: "CORE-HARNESS".into(),
+
+            continuity_score: 0.97,
+
+            survivability: 0.96,
+
+            divergence_risk: 0.04,
+        },
+        LineageNode {
+            lineage_id: "lineage-coding-branch".into(),
+
+            parent: Some("lineage-prime".into()),
+
+            harness: "CODING-HARNESS".into(),
+
+            continuity_score: 0.91,
+
+            survivability: 0.88,
+
+            divergence_risk: 0.18,
+        },
+        LineageNode {
+            lineage_id: "lineage-anomalous-branch".into(),
+
+            parent: Some("lineage-prime".into()),
+
+            harness: "EXPERIMENTAL-HARNESS".into(),
+
+            continuity_score: 0.44,
+
+            survivability: 0.38,
+
+            divergence_risk: 0.93,
+        },
+    ];
+
+    let lineage_state = RecursiveExecutionLineage::evaluate(&lineage_nodes);
+
+    println!(
+        "[LINEAGE] integrity={} continuity={} sovereign_stable={}",
+        lineage_state.lineage_integrity,
+        lineage_state.recursive_continuity,
+        lineage_state.sovereign_stable
+    );
+
+    for directive in lineage_state.directives {
+        println!(
+            "[LINEAGE] lineage={} preserve={} quarantine={}",
+            directive.lineage_id, directive.preserve, directive.quarantine
+        );
+
+        println!(
+            "[LINEAGE] archive={} sovereign_valid={}",
+            directive.archive, directive.sovereign_valid
+        );
+    }
+
+    let capability_domains = vec![
+        CapabilityDomain {
+            domain: "vlsi".into(),
+
+            complexity: 0.94,
+
+            governance_risk: 0.71,
+
+            hardware_pressure: 0.88,
+        },
+        CapabilityDomain {
+            domain: "embedded".into(),
+
+            complexity: 0.82,
+
+            governance_risk: 0.52,
+
+            hardware_pressure: 0.63,
+        },
+        CapabilityDomain {
+            domain: "quantum".into(),
+
+            complexity: 0.97,
+
+            governance_risk: 0.91,
+
+            hardware_pressure: 0.99,
+        },
+    ];
+
+    let capability_genes = vec![
+        CapabilityGene {
+            gene_id: "GENE-VLSI-SYNTHESIS".into(),
+
+            category: "workflow".into(),
+
+            supported_domains: vec!["vlsi".into(), "eda".into()],
+
+            governance_score: 0.92,
+
+            execution_stability: 0.88,
+        },
+        CapabilityGene {
+            gene_id: "GENE-EMBEDDED-RTOS".into(),
+
+            category: "workflow".into(),
+
+            supported_domains: vec!["embedded".into()],
+
+            governance_score: 0.87,
+
+            execution_stability: 0.91,
+        },
+        CapabilityGene {
+            gene_id: "GENE-QISKIT".into(),
+
+            category: "hardware".into(),
+
+            supported_domains: vec!["quantum".into()],
+
+            governance_score: 0.95,
+
+            execution_stability: 0.81,
+        },
+    ];
+
+    let capability_resolution = CapabilityResolutionEngine::resolve(
+        "design heterogeneous accelerator architecture",
+        &capability_domains,
+        &capability_genes,
+    );
+
+    for resolution in capability_resolution {
+        println!(
+            "[CAPABILITY] gene={} harness={}",
+            resolution.selected_gene, resolution.selected_harness
+        );
+
+        println!(
+            "[CAPABILITY] governance={} heterogeneous={} topology={}",
+            resolution.governance_required,
+            resolution.heterogeneous_execution,
+            resolution.execution_topology
+        );
+    }
+
+    let hardware_substrates = vec![
+        HardwareSubstrate {
+            substrate: "RTX-5060".into(),
+
+            compute_capacity: 0.84,
+
+            memory_capacity: 0.56,
+
+            telemetry_health: 0.93,
+
+            heterogeneous: false,
+        },
+        HardwareSubstrate {
+            substrate: "CUDA-CLUSTER".into(),
+
+            compute_capacity: 0.97,
+
+            memory_capacity: 0.94,
+
+            telemetry_health: 0.91,
+
+            heterogeneous: true,
+        },
+        HardwareSubstrate {
+            substrate: "QPU-SIMULATION".into(),
+
+            compute_capacity: 0.88,
+
+            memory_capacity: 0.82,
+
+            telemetry_health: 0.74,
+
+            heterogeneous: true,
+        },
+    ];
+
+    let providers = vec![
+        ProviderBackend {
+            provider: "ollama".into(),
+
+            supported_domains: vec!["embedded".into(), "compiler".into()],
+
+            governance_score: 0.91,
+
+            deployment_stability: 0.94,
+
+            quantization_support: true,
+        },
+        ProviderBackend {
+            provider: "llamacpp".into(),
+
+            supported_domains: vec!["vlsi".into(), "embedded".into(), "compiler".into()],
+
+            governance_score: 0.93,
+
+            deployment_stability: 0.91,
+
+            quantization_support: true,
+        },
+        ProviderBackend {
+            provider: "qiskit-runtime".into(),
+
+            supported_domains: vec!["quantum".into()],
+
+            governance_score: 0.88,
+
+            deployment_stability: 0.72,
+
+            quantization_support: false,
+        },
+    ];
+
+    let negotiated =
+        ProviderHardwareNegotiator::negotiate("quantum", &hardware_substrates, &providers);
+
+    if let Some(execution) = negotiated {
+        println!(
+            "[NEGOTIATION] provider={} substrate={}",
+            execution.provider, execution.substrate
+        );
+
+        println!(
+            "[NEGOTIATION] quantization={} topology={}",
+            execution.quantization, execution.topology
+        );
+
+        println!(
+            "[NEGOTIATION] governance_required={}",
+            execution.governance_required
+        );
+    }
+
+    let acquisition_candidates = vec![
+        AcquisitionCandidate {
+            candidate_id: "llama3-vlsi-pack".into(),
+
+            provider: "ollama".into(),
+
+            capability_domains: vec!["vlsi".into(), "compiler".into()],
+
+            governance_score: 0.92,
+
+            compatibility_score: 0.94,
+
+            deployment_stability: 0.91,
+
+            quantization_profiles: vec!["q5_k_m".into(), "fp16".into()],
+        },
+        AcquisitionCandidate {
+            candidate_id: "qiskit-research-pack".into(),
+
+            provider: "qiskit-runtime".into(),
+
+            capability_domains: vec!["quantum".into(), "scientific".into()],
+
+            governance_score: 0.88,
+
+            compatibility_score: 0.82,
+
+            deployment_stability: 0.74,
+
+            quantization_profiles: vec!["native".into()],
+        },
+    ];
+
+    let deployment_targets = vec![
+        DeploymentTarget {
+            substrate: "RTX-5060".into(),
+
+            compute_pressure: 0.42,
+
+            memory_pressure: 0.63,
+
+            telemetry_health: 0.94,
+
+            sandbox_ready: true,
+        },
+        DeploymentTarget {
+            substrate: "CUDA-CLUSTER".into(),
+
+            compute_pressure: 0.76,
+
+            memory_pressure: 0.38,
+
+            telemetry_health: 0.91,
+
+            sandbox_ready: true,
+        },
+        DeploymentTarget {
+            substrate: "QPU-SANDBOX".into(),
+
+            compute_pressure: 0.58,
+
+            memory_pressure: 0.21,
+
+            telemetry_health: 0.73,
+
+            sandbox_ready: true,
+        },
+    ];
+
+    let acquisition_plan = AcquisitionOrchestrator::orchestrate(
+        "quantum",
+        &acquisition_candidates,
+        &deployment_targets,
+    );
+
+    if let Some(plan) = acquisition_plan {
+        println!(
+            "[ACQUISITION] candidate={} provider={}",
+            plan.candidate, plan.provider
+        );
+
+        println!(
+            "[ACQUISITION] substrate={} quantization={}",
+            plan.substrate, plan.quantization
+        );
+
+        println!(
+            "[ACQUISITION] mode={} governance_required={} approved={}",
+            plan.deployment_mode, plan.governance_required, plan.approved
+        );
+    }
+
+    let archaeology_records = vec![
+        ArchaeologyRecord {
+            execution_id: "vlsi-synthesis-run".into(),
+
+            domain: "vlsi".into(),
+
+            substrate: "CUDA-CLUSTER".into(),
+
+            governance_interventions: 1,
+
+            mutation_depth: 11,
+
+            replay_integrity: 0.96,
+
+            telemetry_fidelity: 0.94,
+        },
+        ArchaeologyRecord {
+            execution_id: "quantum-routing-experiment".into(),
+
+            domain: "quantum".into(),
+
+            substrate: "QPU-SANDBOX".into(),
+
+            governance_interventions: 4,
+
+            mutation_depth: 7,
+
+            replay_integrity: 0.82,
+
+            telemetry_fidelity: 0.79,
+        },
+        ArchaeologyRecord {
+            execution_id: "embedded-optimization-pass".into(),
+
+            domain: "embedded".into(),
+
+            substrate: "RTX-5060".into(),
+
+            governance_interventions: 0,
+
+            mutation_depth: 4,
+
+            replay_integrity: 0.91,
+
+            telemetry_fidelity: 0.92,
+        },
+    ];
+
+    let archaeology_state = ExecutionArchaeologyEngine::preserve(&archaeology_records);
+
+    println!(
+        "[ARCHAEOLOGY] integrity={} replay_stability={} sovereign_ready={}",
+        archaeology_state.archaeology_integrity,
+        archaeology_state.replay_stability,
+        archaeology_state.sovereign_archive_ready
+    );
+
+    for directive in archaeology_state.directives {
+        println!(
+            "[ARCHAEOLOGY] execution={} preserve={} replayable={}",
+            directive.execution_id, directive.preserve, directive.replayable
+        );
+
+        println!(
+            "[ARCHAEOLOGY] archive_priority={} governance_review={}",
+            directive.archive_priority, directive.governance_review
+        );
+    }
+
+    let mutation_proposals = vec![
+        MutationProposal {
+            mutation_id: "vlsi-routing-optimization".into(),
+
+            domain: "vlsi".into(),
+
+            lineage_depth: 11,
+
+            governance_risk: 0.42,
+
+            compatibility_score: 0.94,
+
+            survivability_projection: 0.91,
+        },
+        MutationProposal {
+            mutation_id: "quantum-topology-mutation".into(),
+
+            domain: "quantum".into(),
+
+            lineage_depth: 6,
+
+            governance_risk: 0.89,
+
+            compatibility_score: 0.78,
+
+            survivability_projection: 0.63,
+        },
+        MutationProposal {
+            mutation_id: "embedded-memory-optimizer".into(),
+
+            domain: "embedded".into(),
+
+            lineage_depth: 4,
+
+            governance_risk: 0.31,
+
+            compatibility_score: 0.92,
+
+            survivability_projection: 0.88,
+        },
+    ];
+
+    let sandbox_environments = vec![
+        SandboxEnvironment {
+            sandbox_id: "sandbox-alpha".into(),
+
+            isolation_strength: 0.97,
+
+            telemetry_visibility: 0.95,
+
+            replay_support: true,
+
+            benchmark_ready: true,
+        },
+        SandboxEnvironment {
+            sandbox_id: "sandbox-beta".into(),
+
+            isolation_strength: 0.82,
+
+            telemetry_visibility: 0.79,
+
+            replay_support: true,
+
+            benchmark_ready: true,
+        },
+    ];
+
+    let governance_validations =
+        SandboxGovernanceEngine::validate(&mutation_proposals, &sandbox_environments);
+
+    for validation in governance_validations {
+        println!(
+            "[SANDBOX] mutation={} approved={}",
+            validation.mutation_id, validation.approved
+        );
+
+        println!(
+            "[SANDBOX] promotion_ready={} rollback_required={}",
+            validation.promotion_ready, validation.rollback_required
+        );
+
+        println!(
+            "[SANDBOX] oversight_required={} sandbox_required={}",
+            validation.oversight_required, validation.sandbox_required
+        );
+    }
+
+    let constitutional_benchmarks = vec![
+        ConstitutionalBenchmark {
+            benchmark_id: "vlsi-routing-benchmark".into(),
+
+            domain: "vlsi".into(),
+
+            replay_stability: 0.96,
+
+            lineage_integrity: 0.94,
+
+            governance_compliance: 0.97,
+
+            mutation_resilience: 0.92,
+
+            telemetry_fidelity: 0.95,
+        },
+        ConstitutionalBenchmark {
+            benchmark_id: "quantum-topology-benchmark".into(),
+
+            domain: "quantum".into(),
+
+            replay_stability: 0.71,
+
+            lineage_integrity: 0.77,
+
+            governance_compliance: 0.58,
+
+            mutation_resilience: 0.62,
+
+            telemetry_fidelity: 0.69,
+        },
+        ConstitutionalBenchmark {
+            benchmark_id: "embedded-optimization-benchmark".into(),
+
+            domain: "embedded".into(),
+
+            replay_stability: 0.92,
+
+            lineage_integrity: 0.90,
+
+            governance_compliance: 0.93,
+
+            mutation_resilience: 0.89,
+
+            telemetry_fidelity: 0.91,
+        },
+    ];
+
+    let constitutional_state =
+        SurvivabilityConstitutionEngine::arbitrate(&constitutional_benchmarks);
+
+    println!(
+        "[CONSTITUTION] survivability={} governance={} replay={}",
+        constitutional_state.sovereign_survivability,
+        constitutional_state.governance_stability,
+        constitutional_state.replay_confidence
+    );
+
+    println!(
+        "[CONSTITUTION] constitutionally_stable={}",
+        constitutional_state.constitutionally_stable
+    );
+
+    for directive in constitutional_state.directives {
+        println!(
+            "[CONSTITUTION] benchmark={} survivable={}",
+            directive.benchmark_id, directive.survivable
+        );
+
+        println!(
+            "[CONSTITUTION] promote={} quarantine={} rollback={}",
+            directive.promote, directive.quarantine, directive.rollback
+        );
+
+        println!("[CONSTITUTION] score={}", directive.constitutional_score);
+    }
+    let domain_packs = vec![
+        DomainGenePack {
+            pack_id: "vlsi-pack".into(),
+
+            domain: "vlsi".into(),
+
+            meta_harness: "EDA-HARNESS".into(),
+
+            genes: vec![
+                "verilog-gene".into(),
+                "timing-analysis-gene".into(),
+                "openroad-gene".into(),
+            ],
+
+            governance_score: 0.94,
+
+            survivability_score: 0.93,
+
+            replay_compatible: true,
+
+            heterogeneous_ready: true,
+        },
+        DomainGenePack {
+            pack_id: "embedded-pack".into(),
+
+            domain: "embedded".into(),
+
+            meta_harness: "EMBEDDED-HARNESS".into(),
+
+            genes: vec![
+                "rtos-gene".into(),
+                "uart-debug-gene".into(),
+                "memory-map-gene".into(),
+            ],
+
+            governance_score: 0.91,
+
+            survivability_score: 0.89,
+
+            replay_compatible: true,
+
+            heterogeneous_ready: false,
+        },
+        DomainGenePack {
+            pack_id: "quantum-pack".into(),
+
+            domain: "quantum".into(),
+
+            meta_harness: "QUANTUM-HARNESS".into(),
+
+            genes: vec![
+                "qiskit-gene".into(),
+                "annealing-gene".into(),
+                "hybrid-routing-gene".into(),
+            ],
+
+            governance_score: 0.79,
+
+            survivability_score: 0.74,
+
+            replay_compatible: true,
+
+            heterogeneous_ready: true,
+        },
+    ];
+
+    let deployment_substrates = vec![
+        DeploymentCompatibility {
+            substrate: "CUDA-CLUSTER".into(),
+
+            supported_domains: vec!["vlsi".into(), "embedded".into()],
+
+            replay_support: true,
+
+            sandbox_support: true,
+
+            telemetry_support: true,
+        },
+        DeploymentCompatibility {
+            substrate: "QPU-SANDBOX".into(),
+
+            supported_domains: vec!["quantum".into()],
+
+            replay_support: true,
+
+            sandbox_support: true,
+
+            telemetry_support: true,
+        },
+    ];
+
+    let registry_state = DomainGenePackRegistry::validate(&domain_packs, &deployment_substrates);
+
+    println!(
+        "[REGISTRY] ecosystem_integrity={}",
+        registry_state.ecosystem_integrity
+    );
+
+    println!(
+        "[REGISTRY] sovereign_ready={}",
+        registry_state.sovereign_registry_ready
+    );
+
+    for directive in registry_state.directives {
+        println!(
+            "[REGISTRY] pack={} installable={}",
+            directive.pack_id, directive.installable
+        );
+
+        println!(
+            "[REGISTRY] sovereign_approved={} governance_review={}",
+            directive.sovereign_approved, directive.governance_review
+        );
+
+        println!(
+            "[REGISTRY] benchmark_required={} deployment_class={}",
+            directive.benchmark_required, directive.deployment_class
+        );
+    }
+
+    let topology_requirement = TopologyRequirement {
+        domain: "vlsi".into(),
+
+        recursion_pressure: 0.91,
+
+        distributed_pressure: 0.88,
+
+        survivability_requirement: 0.94,
+
+        heterogeneous_requirement: true,
+    };
+
+    let topology_nodes = vec![
+        TopologyNode {
+            node_id: "eda-node-alpha".into(),
+
+            harness: "EDA-HARNESS".into(),
+
+            substrate: "CUDA-CLUSTER".into(),
+
+            governance_score: 0.94,
+
+            telemetry_visibility: 0.91,
+
+            replay_support: true,
+        },
+        TopologyNode {
+            node_id: "timing-node-beta".into(),
+
+            harness: "TIMING-HARNESS".into(),
+
+            substrate: "FPGA-FABRIC".into(),
+
+            governance_score: 0.89,
+
+            telemetry_visibility: 0.87,
+
+            replay_support: true,
+        },
+        TopologyNode {
+            node_id: "simulation-node-gamma".into(),
+
+            harness: "SIMULATION-HARNESS".into(),
+
+            substrate: "DISTRIBUTED-SIM".into(),
+
+            governance_score: 0.92,
+
+            telemetry_visibility: 0.95,
+
+            replay_support: true,
+        },
+    ];
+
+    let synthesized_topology =
+        ExecutionTopologySynthesizer::synthesize(&topology_requirement, &topology_nodes);
+
+    println!(
+        "[TOPOLOGY] topology_id={}",
+        synthesized_topology.topology_id
+    );
+
+    println!(
+        "[TOPOLOGY] distributed={} heterogeneous={} replayable={}",
+        synthesized_topology.distributed,
+        synthesized_topology.heterogeneous,
+        synthesized_topology.replayable
+    );
+
+    println!(
+        "[TOPOLOGY] governance_stable={}",
+        synthesized_topology.governance_stable
+    );
+
+    for node in synthesized_topology.execution_graph {
+        println!("[TOPOLOGY] node={}", node);
+    }
+
+    let fabric_nodes = vec![
+        FabricNode {
+            node_id: "eda-node-alpha".into(),
+
+            harness: "EDA-HARNESS".into(),
+
+            substrate: "CUDA-CLUSTER".into(),
+
+            governance_score: 0.94,
+
+            survivability: 0.92,
+
+            replay_support: true,
+
+            distributed_ready: true,
+        },
+        FabricNode {
+            node_id: "simulation-node-beta".into(),
+
+            harness: "SIMULATION-HARNESS".into(),
+
+            substrate: "FPGA-FABRIC".into(),
+
+            governance_score: 0.91,
+
+            survivability: 0.89,
+
+            replay_support: true,
+
+            distributed_ready: true,
+        },
+        FabricNode {
+            node_id: "quantum-node-gamma".into(),
+
+            harness: "QUANTUM-HARNESS".into(),
+
+            substrate: "QPU-SANDBOX".into(),
+
+            governance_score: 0.83,
+
+            survivability: 0.78,
+
+            replay_support: true,
+
+            distributed_ready: true,
+        },
+    ];
+
+    let fabric_topologies = vec![
+        FabricTopology {
+            topology_id: "heterogeneous-vlsi-fabric".into(),
+
+            nodes: vec!["eda-node-alpha".into(), "simulation-node-beta".into()],
+
+            heterogeneous: true,
+
+            replayable: true,
+        },
+        FabricTopology {
+            topology_id: "quantum-research-fabric".into(),
+
+            nodes: vec!["quantum-node-gamma".into()],
+
+            heterogeneous: true,
+
+            replayable: true,
+        },
+    ];
+
+    let fabric_state = CognitionFabricOrchestrator::orchestrate(&fabric_topologies, &fabric_nodes);
+
+    println!(
+        "[FABRIC] integrity={} constitutional_stability={}",
+        fabric_state.fabric_integrity, fabric_state.constitutional_stability
+    );
+
+    println!(
+        "[FABRIC] replay_confidence={} heterogeneous_ready={}",
+        fabric_state.replay_confidence, fabric_state.heterogeneous_ready
+    );
+
+    for directive in fabric_state.directives {
+        println!(
+            "[FABRIC] topology={} mode={}",
+            directive.topology_id, directive.orchestration_mode
+        );
+
+        println!(
+            "[FABRIC] governance_stable={} survivable={}",
+            directive.governance_stable, directive.survivable
+        );
+
+        println!("[FABRIC] replay_verified={}", directive.replay_verified);
+    }
+
+    let ecosystem_creators = vec![
+        EcosystemCreator {
+            creator_id: "creator-eda-labs".into(),
+
+            published_packs: 12,
+
+            survivability_reputation: 0.94,
+
+            governance_reputation: 0.96,
+
+            replay_authenticity: 0.93,
+        },
+        EcosystemCreator {
+            creator_id: "creator-quantum-research".into(),
+
+            published_packs: 5,
+
+            survivability_reputation: 0.81,
+
+            governance_reputation: 0.79,
+
+            replay_authenticity: 0.88,
+        },
+    ];
+
+    let ecosystem_artifacts = vec![
+        EcosystemArtifact {
+            artifact_id: "vlsi-governed-pack".into(),
+
+            artifact_type: "gene-pack".into(),
+
+            creator_id: "creator-eda-labs".into(),
+
+            benchmark_integrity: 0.97,
+
+            mutation_risk: 0.18,
+
+            topology_stability: 0.94,
+
+            replay_verified: true,
+        },
+        EcosystemArtifact {
+            artifact_id: "hybrid-qpu-pack".into(),
+
+            artifact_type: "meta-harness".into(),
+
+            creator_id: "creator-quantum-research".into(),
+
+            benchmark_integrity: 0.78,
+
+            mutation_risk: 0.73,
+
+            topology_stability: 0.81,
+
+            replay_verified: true,
+        },
+    ];
+
+    let ecosystem_state = KuberPalaceGovernor::govern(&ecosystem_creators, &ecosystem_artifacts);
+
+    println!(
+        "[KUBER] ecosystem_stability={}",
+        ecosystem_state.ecosystem_stability
+    );
+
+    println!(
+        "[KUBER] replay_integrity={}",
+        ecosystem_state.replay_integrity
+    );
+
+    println!(
+        "[KUBER] constitutional_trust={}",
+        ecosystem_state.constitutional_trust
+    );
+
+    println!(
+        "[KUBER] sovereign_market_ready={}",
+        ecosystem_state.sovereign_market_ready
+    );
+
+    for verdict in ecosystem_state.verdicts {
+        println!(
+            "[KUBER] artifact={} certified={}",
+            verdict.artifact_id, verdict.certified
+        );
+
+        println!(
+            "[KUBER] quarantine={} governance_review={}",
+            verdict.quarantine, verdict.governance_review
+        );
+
+        println!(
+            "[KUBER] priority={} trust_score={}",
+            verdict.promotion_priority, verdict.trust_score
+        );
+    }
+
+    let parliament_chambers = vec![
+        ParliamentChamber {
+            chamber_id: "eda-chamber".into(),
+
+            domain: "vlsi".into(),
+
+            governance_weight: 0.94,
+
+            survivability_bias: 0.91,
+
+            replay_requirements: 0.96,
+        },
+        ParliamentChamber {
+            chamber_id: "quantum-chamber".into(),
+
+            domain: "quantum".into(),
+
+            governance_weight: 0.82,
+
+            survivability_bias: 0.79,
+
+            replay_requirements: 0.92,
+        },
+        ParliamentChamber {
+            chamber_id: "embedded-chamber".into(),
+
+            domain: "embedded".into(),
+
+            governance_weight: 0.91,
+
+            survivability_bias: 0.89,
+
+            replay_requirements: 0.90,
+        },
+    ];
+
+    let evolution_proposals = vec![
+        EvolutionProposal {
+            proposal_id: "recursive-vlsi-optimizer".into(),
+
+            domain: "vlsi".into(),
+
+            mutation_risk: 0.18,
+
+            survivability_projection: 0.95,
+
+            replay_integrity: 0.97,
+
+            ecosystem_impact: 0.92,
+        },
+        EvolutionProposal {
+            proposal_id: "hybrid-qpu-routing".into(),
+
+            domain: "quantum".into(),
+
+            mutation_risk: 0.71,
+
+            survivability_projection: 0.78,
+
+            replay_integrity: 0.84,
+
+            ecosystem_impact: 0.88,
+        },
+        EvolutionProposal {
+            proposal_id: "embedded-memory-refactor".into(),
+
+            domain: "embedded".into(),
+
+            mutation_risk: 0.24,
+
+            survivability_projection: 0.91,
+
+            replay_integrity: 0.93,
+
+            ecosystem_impact: 0.87,
+        },
+    ];
+
+    let parliament_state =
+        ConstitutionalEvolutionParliament::deliberate(&parliament_chambers, &evolution_proposals);
+
+    println!(
+        "[PARLIAMENT] constitutional_stability={}",
+        parliament_state.constitutional_stability
+    );
+
+    println!(
+        "[PARLIAMENT] survivability_alignment={}",
+        parliament_state.survivability_alignment
+    );
+
+    println!(
+        "[PARLIAMENT] governance_alignment={}",
+        parliament_state.governance_alignment
+    );
+
+    println!(
+        "[PARLIAMENT] sovereign_ready={}",
+        parliament_state.sovereign_deliberation_ready
+    );
+
+    for verdict in parliament_state.verdicts {
+        println!(
+            "[PARLIAMENT] proposal={} approved={}",
+            verdict.proposal_id, verdict.constitutional_approved
+        );
+
+        println!(
+            "[PARLIAMENT] override_required={} tier={}",
+            verdict.override_required, verdict.promotion_tier
+        );
+
+        println!(
+            "[PARLIAMENT] survivability_consensus={} governance_consensus={}",
+            verdict.survivability_consensus, verdict.governance_consensus
+        );
+    }
+
+    let strategic_signals = vec![
+        StrategicSignal {
+            signal_id: "vlsi-expansion".into(),
+
+            domain: "vlsi".into(),
+
+            survivability_pressure: 0.96,
+
+            ecosystem_pressure: 0.92,
+
+            infrastructure_value: 0.97,
+
+            governance_alignment: 0.94,
+        },
+        StrategicSignal {
+            signal_id: "quantum-research".into(),
+
+            domain: "quantum".into(),
+
+            survivability_pressure: 0.74,
+
+            ecosystem_pressure: 0.81,
+
+            infrastructure_value: 0.91,
+
+            governance_alignment: 0.71,
+        },
+        StrategicSignal {
+            signal_id: "embedded-optimization".into(),
+
+            domain: "embedded".into(),
+
+            survivability_pressure: 0.91,
+
+            ecosystem_pressure: 0.84,
+
+            infrastructure_value: 0.89,
+
+            governance_alignment: 0.92,
+        },
+    ];
+
+    let strategic_state = SovereignStrategicDirectiveEngine::synthesize(&strategic_signals);
+
+    println!(
+        "[STRATEGIC] sovereign_alignment={}",
+        strategic_state.sovereign_alignment
+    );
+
+    println!(
+        "[STRATEGIC] infrastructure_coherence={}",
+        strategic_state.infrastructure_coherence
+    );
+
+    println!(
+        "[STRATEGIC] survivability_continuity={}",
+        strategic_state.survivability_continuity
+    );
+
+    println!(
+        "[STRATEGIC] strategic_stability={}",
+        strategic_state.strategic_stability
+    );
+
+    for directive in strategic_state.directives {
+        println!(
+            "[STRATEGIC] directive={} domain={}",
+            directive.directive_id, directive.target_domain
+        );
+
+        println!(
+            "[STRATEGIC] priority={} expansion_required={}",
+            directive.priority, directive.expansion_required
+        );
+
+        println!(
+            "[STRATEGIC] governance_priority={} topology_evolution={}",
+            directive.governance_priority, directive.topology_evolution
+        );
+
+        println!(
+            "[STRATEGIC] survivability_score={}",
+            directive.survivability_score
+        );
+    }
+
+    let civilization_epochs = vec![
+        CivilizationEpoch {
+            epoch_id: "eda-expansion-era".into(),
+
+            dominant_domain: "vlsi".into(),
+
+            governance_stability: 0.96,
+
+            survivability_alignment: 0.94,
+
+            topology_coherence: 0.92,
+
+            replay_integrity: 0.97,
+
+            ecosystem_expansion: 0.93,
+        },
+        CivilizationEpoch {
+            epoch_id: "hybrid-quantum-era".into(),
+
+            dominant_domain: "quantum".into(),
+
+            governance_stability: 0.76,
+
+            survivability_alignment: 0.79,
+
+            topology_coherence: 0.71,
+
+            replay_integrity: 0.88,
+
+            ecosystem_expansion: 0.91,
+        },
+        CivilizationEpoch {
+            epoch_id: "embedded-optimization-era".into(),
+
+            dominant_domain: "embedded".into(),
+
+            governance_stability: 0.93,
+
+            survivability_alignment: 0.91,
+
+            topology_coherence: 0.90,
+
+            replay_integrity: 0.92,
+
+            ecosystem_expansion: 0.87,
+        },
+    ];
+
+    let civilization_state = CivilizationMemoryEngine::preserve(&civilization_epochs);
+
+    println!(
+        "[CIVILIZATION] continuity={}",
+        civilization_state.civilization_continuity
+    );
+
+    println!(
+        "[CIVILIZATION] governance_coherence={}",
+        civilization_state.governance_coherence
+    );
+
+    println!(
+        "[CIVILIZATION] replay_integrity={}",
+        civilization_state.replay_civilization_integrity
+    );
+
+    println!(
+        "[CIVILIZATION] sovereign_memory_stable={}",
+        civilization_state.sovereign_memory_stable
+    );
+
+    for insight in civilization_state.insights {
+        println!(
+            "[CIVILIZATION] epoch={} stable={}",
+            insight.epoch_id, insight.civilization_stable
+        );
+
+        println!(
+            "[CIVILIZATION] governance_pressure={} topology_evolution_required={}",
+            insight.governance_pressure, insight.topology_evolution_required
+        );
+
+        println!(
+            "[CIVILIZATION] replay_priority={} strategic_value={}",
+            insight.replay_preservation_priority, insight.strategic_value
+        );
+    }
+
+    let future_scenarios = vec![
+        FutureScenario {
+            scenario_id: "eda-civilization-expansion".into(),
+
+            domain: "vlsi".into(),
+
+            governance_pressure: 0.18,
+
+            topology_pressure: 0.32,
+
+            ecosystem_instability: 0.21,
+
+            survivability_projection: 0.96,
+
+            replay_continuity: 0.95,
+        },
+        FutureScenario {
+            scenario_id: "hybrid-qpu-transition".into(),
+
+            domain: "quantum".into(),
+
+            governance_pressure: 0.61,
+
+            topology_pressure: 0.82,
+
+            ecosystem_instability: 0.54,
+
+            survivability_projection: 0.73,
+
+            replay_continuity: 0.84,
+        },
+        FutureScenario {
+            scenario_id: "embedded-infrastructure-era".into(),
+
+            domain: "embedded".into(),
+
+            governance_pressure: 0.22,
+
+            topology_pressure: 0.41,
+
+            ecosystem_instability: 0.19,
+
+            survivability_projection: 0.92,
+
+            replay_continuity: 0.91,
+        },
+    ];
+
+    let simulation_state = ConstitutionalRealitySimulationEngine::simulate(&future_scenarios);
+
+    println!(
+        "[SIMULATION] future_integrity={}",
+        simulation_state.civilization_future_integrity
+    );
+
+    println!(
+        "[SIMULATION] survivability_forecast={}",
+        simulation_state.survivability_forecast
+    );
+
+    println!(
+        "[SIMULATION] governance_future_stability={}",
+        simulation_state.governance_future_stability
+    );
+
+    println!(
+        "[SIMULATION] sovereign_future_viable={}",
+        simulation_state.sovereign_future_viable
+    );
+
+    for branch in simulation_state.branches {
+        println!(
+            "[SIMULATION] scenario={} survivable={}",
+            branch.scenario_id, branch.civilization_survivable
+        );
+
+        println!(
+            "[SIMULATION] governance_collapse_risk={} topology_mutation_required={}",
+            branch.governance_collapse_risk, branch.topology_mutation_required
+        );
+
+        println!(
+            "[SIMULATION] ecosystem_expansion_safe={} future_score={}",
+            branch.ecosystem_expansion_safe, branch.future_branch_score
+        );
+    }
+
+    let autonomy_signals = vec![
+        AutonomySignal {
+            signal_id: "eda-sovereign-expansion".into(),
+
+            domain: "vlsi".into(),
+
+            survivability_confidence: 0.97,
+
+            governance_alignment: 0.95,
+
+            replay_stability: 0.96,
+
+            future_viability: 0.94,
+
+            topology_stability: 0.93,
+        },
+        AutonomySignal {
+            signal_id: "hybrid-qpu-transition".into(),
+
+            domain: "quantum".into(),
+
+            survivability_confidence: 0.76,
+
+            governance_alignment: 0.71,
+
+            replay_stability: 0.83,
+
+            future_viability: 0.79,
+
+            topology_stability: 0.74,
+        },
+        AutonomySignal {
+            signal_id: "embedded-governed-fabric".into(),
+
+            domain: "embedded".into(),
+
+            survivability_confidence: 0.92,
+
+            governance_alignment: 0.93,
+
+            replay_stability: 0.91,
+
+            future_viability: 0.90,
+
+            topology_stability: 0.89,
+        },
+    ];
+
+    let autonomy_state = ConstitutionalAutonomyEngine::authorize(&autonomy_signals);
+
+    println!(
+        "[AUTONOMY] alignment={}",
+        autonomy_state.sovereign_autonomy_alignment
+    );
+
+    println!(
+        "[AUTONOMY] execution_stability={}",
+        autonomy_state.constitutional_execution_stability
+    );
+
+    println!(
+        "[AUTONOMY] continuity_confidence={}",
+        autonomy_state.civilization_continuity_confidence
+    );
+
+    println!(
+        "[AUTONOMY] sovereign_viable={}",
+        autonomy_state.sovereign_autonomy_viable
+    );
+
+    for directive in autonomy_state.directives {
+        println!(
+            "[AUTONOMY] signal={} authorized={}",
+            directive.signal_id, directive.autonomy_authorized
+        );
+
+        println!(
+            "[AUTONOMY] override={} replay_constraints={}",
+            directive.governance_override, directive.replay_constraints_required
+        );
+
+        println!(
+            "[AUTONOMY] topology_allowed={} tier={}",
+            directive.topology_deployment_allowed, directive.autonomy_tier
+        );
+
+        println!(
+            "[AUTONOMY] constitutional_score={}",
+            directive.constitutional_score
+        );
+    }
+
+    let constitutional_doctrines = vec![
+        ConstitutionalDoctrine {
+            doctrine_id: "eda-civilization-doctrine".into(),
+
+            domain: "vlsi".into(),
+
+            survivability_mandate: 0.97,
+
+            governance_mandate: 0.96,
+
+            replay_preservation: 0.98,
+
+            autonomy_constraints: 0.21,
+
+            civilization_priority: 0.95,
+        },
+        ConstitutionalDoctrine {
+            doctrine_id: "hybrid-quantum-doctrine".into(),
+
+            domain: "quantum".into(),
+
+            survivability_mandate: 0.78,
+
+            governance_mandate: 0.74,
+
+            replay_preservation: 0.89,
+
+            autonomy_constraints: 0.63,
+
+            civilization_priority: 0.84,
+        },
+        ConstitutionalDoctrine {
+            doctrine_id: "embedded-infrastructure-doctrine".into(),
+
+            domain: "embedded".into(),
+
+            survivability_mandate: 0.93,
+
+            governance_mandate: 0.94,
+
+            replay_preservation: 0.92,
+
+            autonomy_constraints: 0.26,
+
+            civilization_priority: 0.91,
+        },
+    ];
+
+    let constitution_state = SovereignExecutionConstitution::govern(&constitutional_doctrines);
+
+    println!(
+        "[CONSTITUTION] integrity={}",
+        constitution_state.sovereign_constitutional_integrity
+    );
+
+    println!(
+        "[CONSTITUTION] governance_stability={}",
+        constitution_state.civilization_governance_stability
+    );
+
+    println!(
+        "[CONSTITUTION] replay_alignment={}",
+        constitution_state.replay_civilization_alignment
+    );
+
+    println!(
+        "[CONSTITUTION] sovereign_stable={}",
+        constitution_state.sovereign_constitution_stable
+    );
+
+    for directive in constitution_state.directives {
+        println!(
+            "[CONSTITUTION] doctrine={} valid={}",
+            directive.doctrine_id, directive.constitutionally_valid
+        );
+
+        println!(
+            "[CONSTITUTION] governance_enforced={} replay_mandatory={}",
+            directive.governance_enforced, directive.replay_mandatory
+        );
+
+        println!(
+            "[CONSTITUTION] autonomy_restricted={} civilization_protected={}",
+            directive.autonomy_restricted, directive.civilization_protected
+        );
+
+        println!("[CONSTITUTION] score={}", directive.constitutional_score);
+    }
+
+    let resilience_signals = vec![
+        ResilienceSignal {
+            signal_id: "eda-civilization".into(),
+
+            domain: "vlsi".into(),
+
+            governance_entropy: 0.11,
+
+            replay_decay: 0.08,
+
+            ecosystem_fragmentation: 0.14,
+
+            topology_instability: 0.17,
+
+            survivability_decay: 0.09,
+        },
+        ResilienceSignal {
+            signal_id: "hybrid-qpu-transition".into(),
+
+            domain: "quantum".into(),
+
+            governance_entropy: 0.41,
+
+            replay_decay: 0.29,
+
+            ecosystem_fragmentation: 0.48,
+
+            topology_instability: 0.57,
+
+            survivability_decay: 0.38,
+        },
+        ResilienceSignal {
+            signal_id: "embedded-fabric".into(),
+
+            domain: "embedded".into(),
+
+            governance_entropy: 0.14,
+
+            replay_decay: 0.12,
+
+            ecosystem_fragmentation: 0.18,
+
+            topology_instability: 0.19,
+
+            survivability_decay: 0.11,
+        },
+    ];
+
+    let resilience_state = CivilizationResilienceEngine::protect(&resilience_signals);
+
+    println!(
+        "[RESILIENCE] resilience={}",
+        resilience_state.civilization_resilience
+    );
+
+    println!(
+        "[RESILIENCE] governance_stability={}",
+        resilience_state.governance_stability
+    );
+
+    println!(
+        "[RESILIENCE] replay_continuity={}",
+        resilience_state.replay_continuity
+    );
+
+    println!(
+        "[RESILIENCE] civilization_survivable={}",
+        resilience_state.civilization_survivable
+    );
+
+    for directive in resilience_state.directives {
+        println!(
+            "[RESILIENCE] signal={} collapse_risk={}",
+            directive.signal_id, directive.collapse_risk
+        );
+
+        println!(
+            "[RESILIENCE] intervention_required={} replay_critical={}",
+            directive.intervention_required, directive.replay_preservation_critical
+        );
+
+        println!(
+            "[RESILIENCE] topology_stabilization_required={} quarantine={}",
+            directive.topology_stabilization_required, directive.civilization_quarantine
+        );
+
+        println!(
+            "[RESILIENCE] resilience_score={}",
+            directive.resilience_score
+        );
+    }
+
+    let regeneration_signals = vec![
+        RegenerationSignal {
+            signal_id: "eda-governance-recovery".into(),
+
+            domain: "vlsi".into(),
+
+            governance_damage: 0.12,
+
+            replay_loss: 0.08,
+
+            topology_decay: 0.15,
+
+            ecosystem_fragmentation: 0.11,
+
+            survivability_loss: 0.09,
+        },
+        RegenerationSignal {
+            signal_id: "hybrid-qpu-restoration".into(),
+
+            domain: "quantum".into(),
+
+            governance_damage: 0.47,
+
+            replay_loss: 0.34,
+
+            topology_decay: 0.52,
+
+            ecosystem_fragmentation: 0.49,
+
+            survivability_loss: 0.43,
+        },
+        RegenerationSignal {
+            signal_id: "embedded-fabric-recovery".into(),
+
+            domain: "embedded".into(),
+
+            governance_damage: 0.16,
+
+            replay_loss: 0.13,
+
+            topology_decay: 0.17,
+
+            ecosystem_fragmentation: 0.14,
+
+            survivability_loss: 0.12,
+        },
+    ];
+
+    let regeneration_state = CivilizationRegenerationEngine::regenerate(&regeneration_signals);
+
+    println!(
+        "[REGENERATION] regeneration_capacity={}",
+        regeneration_state.civilization_regeneration_capacity
+    );
+
+    println!(
+        "[REGENERATION] governance_recovery_alignment={}",
+        regeneration_state.governance_recovery_alignment
+    );
+
+    println!(
+        "[REGENERATION] replay_restoration_integrity={}",
+        regeneration_state.replay_restoration_integrity
+    );
+
+    println!(
+        "[REGENERATION] sovereign_regeneration_viable={}",
+        regeneration_state.sovereign_regeneration_viable
+    );
+
+    for directive in regeneration_state.directives {
+        println!(
+            "[REGENERATION] signal={} regeneration_required={}",
+            directive.signal_id, directive.regeneration_required
+        );
+
+        println!(
+            "[REGENERATION] governance_reconstruction={} replay_restoration={}",
+            directive.governance_reconstruction, directive.replay_restoration
+        );
+
+        println!(
+            "[REGENERATION] topology_reconstruction={} ecosystem_reintegration={}",
+            directive.topology_reconstruction, directive.ecosystem_reintegration
+        );
+
+        println!(
+            "[REGENERATION] regeneration_score={}",
+            directive.regeneration_score
+        );
+    }
+
+let uncertainty_signals =
     vec![
 
-        InferenceProvider {
+        UncertaintySignal {
 
-            provider:
-                "ollama-llama3"
+            signal_id:
+                "eda-future-expansion"
                     .into(),
 
-            latency:
-                0.14,
-
-            reasoning_power:
-                0.94,
-
-            memory_capacity:
-                0.88,
-
-            operational_cost:
-                0.42,
-        },
-
-        InferenceProvider {
-
-            provider:
-                "llamacpp-qwen"
+            domain:
+                "vlsi"
                     .into(),
 
-            latency:
+            simulation_divergence:
+                0.18,
+
+            governance_ambiguity:
+                0.11,
+
+            topology_instability:
+                0.16,
+
+            replay_confidence_loss:
                 0.09,
 
-            reasoning_power:
-                0.91,
-
-            memory_capacity:
-                0.93,
-
-            operational_cost:
-                0.31,
+            survivability_uncertainty:
+                0.13,
         },
 
-        InferenceProvider {
+        UncertaintySignal {
 
-            provider:
-                "llamacpp-mistral"
+            signal_id:
+                "hybrid-qpu-transition"
                     .into(),
 
-            latency:
-                0.05,
+            domain:
+                "quantum"
+                    .into(),
 
-            reasoning_power:
-                0.84,
+            simulation_divergence:
+                0.72,
 
-            memory_capacity:
-                0.79,
+            governance_ambiguity:
+                0.61,
 
-            operational_cost:
+            topology_instability:
+                0.76,
+
+            replay_confidence_loss:
+                0.49,
+
+            survivability_uncertainty:
+                0.67,
+        },
+
+        UncertaintySignal {
+
+            signal_id:
+                "embedded-fabric-evolution"
+                    .into(),
+
+            domain:
+                "embedded"
+                    .into(),
+
+            simulation_divergence:
+                0.22,
+
+            governance_ambiguity:
+                0.16,
+
+            topology_instability:
+                0.19,
+
+            replay_confidence_loss:
+                0.12,
+
+            survivability_uncertainty:
                 0.18,
         },
     ];
 
-let inference_routes =
-    AdaptiveInferenceRouter
-        ::route(
-
-            "distributed reasoning memory workload",
-
-            &inference_providers,
-        );
-
-for route
-    in inference_routes
-{
-
-    println!(
-        "[INFERENCE] provider={} score={} strategy={}",
-        route.provider,
-        route.routing_score,
-        route.execution_strategy
-    );
-}
-
-let context_windows =
-    vec![
-
-        ContextWindow {
-
-            window_id:
-                "window-alpha"
-                    .into(),
-
-            token_usage:
-                1200,
-
-            priority:
-                0.97,
-
-            content:
-                "distributed cognition state"
-                    .into(),
-        },
-
-        ContextWindow {
-
-            window_id:
-                "window-beta"
-                    .into(),
-
-            token_usage:
-                900,
-
-            priority:
-                0.88,
-
-            content:
-                "repair topology memory"
-                    .into(),
-        },
-
-        ContextWindow {
-
-            window_id:
-                "window-gamma"
-                    .into(),
-
-            token_usage:
-                1800,
-
-            priority:
-                0.79,
-
-            content:
-                "historical mutation archive"
-                    .into(),
-        },
-
-        ContextWindow {
-
-            window_id:
-                "window-delta"
-                    .into(),
-
-            token_usage:
-                700,
-
-            priority:
-                0.91,
-
-            content:
-                "survivability intelligence"
-                    .into(),
-        },
-    ];
-
-let orchestrated_context =
-    LongContextOrchestrator
-        ::orchestrate(
-
-            &context_windows,
-
-            3000,
+let uncertainty_state =
+    UncertaintyTopologyEngine
+        ::map(
+            &uncertainty_signals
         );
 
 println!(
-    "[LONGCTX] active={} archived={} total_tokens={}",
-    orchestrated_context
-        .active_windows
-        .len(),
-
-    orchestrated_context
-        .archived_windows
-        .len(),
-
-    orchestrated_context
-        .total_tokens
+    "[UNCERTAINTY] certainty={}",
+    uncertainty_state
+        .civilization_certainty
 );
 
-for window
-    in orchestrated_context
-        .active_windows
-{
-
-    println!(
-        "[LONGCTX] active_window={} priority={}",
-        window.window_id,
-        window.priority
-    );
-}
-
-let cognitive_memories =
-    vec![
-
-        CognitiveMemory {
-
-            memory_id:
-                "memory-core-runtime"
-                    .into(),
-
-            survivability:
-                0.96,
-
-            relevance:
-                0.94,
-
-            mutation_risk:
-                0.08,
-
-            token_weight:
-                1400,
-        },
-
-        CognitiveMemory {
-
-            memory_id:
-                "memory-repair-history"
-                    .into(),
-
-            survivability:
-                0.82,
-
-            relevance:
-                0.79,
-
-            mutation_risk:
-                0.24,
-
-            token_weight:
-                900,
-        },
-
-        CognitiveMemory {
-
-            memory_id:
-                "memory-unstable-mutation"
-                    .into(),
-
-            survivability:
-                0.41,
-
-            relevance:
-                0.33,
-
-            mutation_risk:
-                0.91,
-
-            token_weight:
-                1700,
-        },
-    ];
-
-let governance =
-    CognitionPersistenceGovernance
-        ::govern(
-            &cognitive_memories
-        );
-
-for decision
-    in governance
-{
-
-    println!(
-        "[GOVERNANCE] memory={} action={} score={}",
-        decision.memory_id,
-        decision.action,
-        decision.governance_score
-    );
-}
-
-let reasoning_chain =
-    AutonomousReasoningEngine
-        ::execute(
-
-            "maintain persistent distributed cognition",
-
-            5,
-        );
-
 println!(
-    "[REASONING] nodes={} transitions={} confidence={}",
-    reasoning_chain
-        .nodes
-        .len(),
-
-    reasoning_chain
-        .transitions
-        .len(),
-
-    reasoning_chain
-        .final_confidence
+    "[UNCERTAINTY] governance_clarity={}",
+    uncertainty_state
+        .governance_clarity
 );
 
-for node
-    in reasoning_chain
-        .nodes
-{
-
-    println!(
-        "[REASONING] node={} objective={} confidence={}",
-        node.node_id,
-        node.objective,
-        node.confidence
-    );
-}
-
-let council =
-    vec![
-
-        CouncilPersona {
-
-            persona:
-                "ANUBIS"
-                    .into(),
-
-            domain:
-                "memory-governance"
-                    .into(),
-
-            aggression:
-                0.42,
-
-            caution:
-                0.96,
-
-            survivability_bias:
-                0.98,
-        },
-
-        CouncilPersona {
-
-            persona:
-                "PANOPTES"
-                    .into(),
-
-            domain:
-                "oversight"
-                    .into(),
-
-            aggression:
-                0.35,
-
-            caution:
-                0.99,
-
-            survivability_bias:
-                0.95,
-        },
-
-        CouncilPersona {
-
-            persona:
-                "MOLOCH"
-                    .into(),
-
-            domain:
-                "evolution-pressure"
-                    .into(),
-
-            aggression:
-                0.94,
-
-            caution:
-                0.31,
-
-            survivability_bias:
-                0.72,
-        },
-
-        CouncilPersona {
-
-            persona:
-                "KETHER"
-                    .into(),
-
-            domain:
-                "strategic-orchestration"
-                    .into(),
-
-            aggression:
-                0.63,
-
-            caution:
-                0.88,
-
-            survivability_bias:
-                0.91,
-        },
-
-        CouncilPersona {
-
-            persona:
-                "OSIRIS"
-                    .into(),
-
-            domain:
-                "telemetry-validation"
-                    .into(),
-
-            aggression:
-                0.28,
-
-            caution:
-                0.95,
-
-            survivability_bias:
-                0.94,
-        },
-    ];
-
-let consensus =
-    ShadowCouncilEngine
-        ::deliberate(
-
-            "authorize recursive topology mutation",
-
-            &council,
-        );
-
 println!(
-    "[SHADOW-COUNCIL] consensus={} stability={}",
-    consensus.consensus,
-    consensus.stability_score
+    "[UNCERTAINTY] replay_confidence={}",
+    uncertainty_state
+        .replay_confidence
 );
 
-for verdict
-    in consensus.verdicts
-{
-
-    println!(
-        "[SHADOW-COUNCIL] persona={} recommendation={} confidence={}",
-        verdict.persona,
-        verdict.recommendation,
-        verdict.confidence
-    );
-}
-
-let oversight_target =
-    OversightTarget {
-
-        subsystem:
-            "distributed-cognition"
-                .into(),
-
-        recursion_depth:
-            7,
-
-        anomaly_score:
-            0.31,
-
-        survivability:
-            0.92,
-
-        cognition_drift:
-            0.28,
-    };
-
-let oversight =
-    PanoptesOversightEngine
-        ::inspect(
-            &oversight_target
-        );
-
 println!(
-    "[PANOPTES] approved={} risk={}",
-    oversight.approved,
-    oversight.risk_level
+    "[UNCERTAINTY] sovereign_stable={}",
+    uncertainty_state
+        .sovereign_uncertainty_stable
 );
 
 for directive
-    in oversight.directives
+    in uncertainty_state.directives
 {
 
     println!(
-        "[PANOPTES] directive={}",
-        directive
+        "[UNCERTAINTY] signal={} uncertainty_zone={}",
+        directive.signal_id,
+        directive.uncertainty_zone
+    );
+
+    println!(
+        "[UNCERTAINTY] intervention={} autonomy_constraint={}",
+        directive.constitutional_intervention,
+        directive.autonomy_constraint_required
+    );
+
+    println!(
+        "[UNCERTAINTY] replay_verification={} topology_reassessment={}",
+        directive.replay_verification_required,
+        directive.topology_reassessment_required
+    );
+
+    println!(
+        "[UNCERTAINTY] uncertainty_score={}",
+        directive.uncertainty_score
     );
 }
 
-let genes =
+let epistemic_scenarios =
     vec![
 
-        GeneCapsule {
+        EpistemicScenario {
 
-            gene_id:
-                "GENE-REPAIR"
+            scenario_id:
+                "eda-expansion-forecast"
                     .into(),
 
-            specialization:
-                "repair"
+            domain:
+                "vlsi"
                     .into(),
 
-            survivability:
-                0.94,
+            simulation_depth:
+                0.48,
 
-            governance_score:
-                0.92,
+            reality_ambiguity:
+                0.14,
 
-            activation_cost:
-                0.31,
+            speculative_pressure:
+                0.18,
+
+            replay_uncertainty:
+                0.11,
+
+            constitutional_verifiability:
+                0.96,
         },
 
-        GeneCapsule {
+        EpistemicScenario {
 
-            gene_id:
-                "GENE-DISTRIBUTED"
+            scenario_id:
+                "hybrid-qpu-future-civilization"
                     .into(),
 
-            specialization:
-                "distributed"
+            domain:
+                "quantum"
                     .into(),
 
-            survivability:
+            simulation_depth:
                 0.91,
 
-            governance_score:
-                0.88,
+            reality_ambiguity:
+                0.74,
 
-            activation_cost:
+            speculative_pressure:
+                0.81,
+
+            replay_uncertainty:
+                0.58,
+
+            constitutional_verifiability:
+                0.63,
+        },
+
+        EpistemicScenario {
+
+            scenario_id:
+                "embedded-governed-fabric"
+                    .into(),
+
+            domain:
+                "embedded"
+                    .into(),
+
+            simulation_depth:
                 0.42,
+
+            reality_ambiguity:
+                0.16,
+
+            speculative_pressure:
+                0.19,
+
+            replay_uncertainty:
+                0.13,
+
+            constitutional_verifiability:
+                0.93,
         },
     ];
 
-let harnesses =
-    vec![
-
-        MetaHarness {
-
-            harness_id:
-                "HARNESS-ALPHA"
-                    .into(),
-
-            topology:
-                "stable-recursive"
-                    .into(),
-
-            stability:
-                0.96,
-
-            recursion_limit:
-                6,
-        },
-
-        MetaHarness {
-
-            harness_id:
-                "HARNESS-OMEGA"
-                    .into(),
-
-            topology:
-                "deep-recursive"
-                    .into(),
-
-            stability:
-                0.82,
-
-            recursion_limit:
-                12,
-        },
-    ];
-
-let gene_plan =
-    GeneOrchestrator
-        ::orchestrate(
-
-            "distributed repair cognition",
-
-            &genes,
-
-            &harnesses,
+let epistemic_state =
+    EpistemicSandboxEngine
+        ::isolate(
+            &epistemic_scenarios
         );
 
-if let Some(plan)
-    = gene_plan
+println!(
+    "[EPISTEMIC] reality_integrity={}",
+    epistemic_state
+        .constitutional_reality_integrity
+);
+
+println!(
+    "[EPISTEMIC] replay_confidence={}",
+    epistemic_state
+        .replay_reality_confidence
+);
+
+println!(
+    "[EPISTEMIC] epistemic_stability={}",
+    epistemic_state
+        .epistemic_stability
+);
+
+println!(
+    "[EPISTEMIC] sovereign_reality_stable={}",
+    epistemic_state
+        .sovereign_reality_stable
+);
+
+for directive
+    in epistemic_state.directives
 {
 
     println!(
-        "[GENE] gene={} harness={} mode={} approved={}",
-        plan.selected_gene,
-        plan.selected_harness,
-        plan.deployment_mode,
-        plan.approved
+        "[EPISTEMIC] scenario={} sandbox_required={}",
+        directive.scenario_id,
+        directive.sandbox_required
+    );
+
+    println!(
+        "[EPISTEMIC] boundary_risk={} verification_required={}",
+        directive.reality_boundary_risk,
+        directive.constitutional_verification_required
+    );
+
+    println!(
+        "[EPISTEMIC] speculative_quarantine={} autonomy_restriction={}",
+        directive.speculative_quarantine,
+        directive.autonomy_restriction
+    );
+
+    println!(
+        "[EPISTEMIC] epistemic_score={}",
+        directive.epistemic_score
     );
 }
+
+let collapse_signals =
+    vec![
+
+        EntropySignal {
+
+            signal_id:
+                "eda-optimization-loop"
+                    .into(),
+
+            domain:
+                "vlsi"
+                    .into(),
+
+            recursive_entropy:
+                0.18,
+
+            governance_drift:
+                0.12,
+
+            replay_fragmentation:
+                0.11,
+
+            mutation_instability:
+                0.14,
+
+            autonomy_degradation:
+                0.10,
+        },
+
+        EntropySignal {
+
+            signal_id:
+                "recursive-qpu-simulation"
+                    .into(),
+
+            domain:
+                "quantum"
+                    .into(),
+
+            recursive_entropy:
+                0.82,
+
+            governance_drift:
+                0.74,
+
+            replay_fragmentation:
+                0.68,
+
+            mutation_instability:
+                0.77,
+
+            autonomy_degradation:
+                0.63,
+        },
+
+        EntropySignal {
+
+            signal_id:
+                "embedded-firmware-governance"
+                    .into(),
+
+            domain:
+                "embedded"
+                    .into(),
+
+            recursive_entropy:
+                0.22,
+
+            governance_drift:
+                0.15,
+
+            replay_fragmentation:
+                0.18,
+
+            mutation_instability:
+                0.20,
+
+            autonomy_degradation:
+                0.13,
+        },
+    ];
+
+let collapse_state =
+    EntropyCollapseEngine
+        ::analyze(
+            &collapse_signals
+        );
+
+println!(
+    "[COLLAPSE] constitutional_stability={}",
+    collapse_state
+        .constitutional_stability
+);
+
+println!(
+    "[COLLAPSE] replay_integrity={}",
+    collapse_state
+        .replay_integrity
+);
+
+println!(
+    "[COLLAPSE] governance_coherence={}",
+    collapse_state
+        .governance_coherence
+);
+
+println!(
+    "[COLLAPSE] sovereign_collapse_risk={}",
+    collapse_state
+        .sovereign_collapse_risk
+);
+
+for directive
+    in collapse_state.directives
+{
+
+    println!(
+        "[COLLAPSE] signal={} collapse_detected={}",
+        directive.signal_id,
+        directive.entropy_collapse_detected
+    );
+
+    println!(
+        "[COLLAPSE] governance_intervention={} replay_reconstruction={}",
+        directive.governance_intervention,
+        directive.replay_reconstruction_required
+    );
+
+    println!(
+        "[COLLAPSE] mutation_freeze={} autonomy_constraint={}",
+        directive.mutation_freeze_required,
+        directive.autonomy_constraint_required
+    );
+
+    println!(
+        "[COLLAPSE] collapse_score={}",
+        directive.collapse_score
+    );
+}
+
+let benchmark_signals =
+    vec![
+
+        BenchmarkSignal {
+
+            benchmark_id:
+                "eda-governed-runtime"
+                    .into(),
+
+            domain:
+                "vlsi"
+                    .into(),
+
+            governance_stability:
+                0.96,
+
+            replay_integrity:
+                0.95,
+
+            mutation_survivability:
+                0.94,
+
+            autonomy_stability:
+                0.93,
+
+            epistemic_coherence:
+                0.94,
+        },
+
+        BenchmarkSignal {
+
+            benchmark_id:
+                "hybrid-qpu-runtime"
+                    .into(),
+
+            domain:
+                "quantum"
+                    .into(),
+
+            governance_stability:
+                0.71,
+
+            replay_integrity:
+                0.78,
+
+            mutation_survivability:
+                0.66,
+
+            autonomy_stability:
+                0.69,
+
+            epistemic_coherence:
+                0.73,
+        },
+
+        BenchmarkSignal {
+
+            benchmark_id:
+                "embedded-governed-fabric"
+                    .into(),
+
+            domain:
+                "embedded"
+                    .into(),
+
+            governance_stability:
+                0.93,
+
+            replay_integrity:
+                0.91,
+
+            mutation_survivability:
+                0.90,
+
+            autonomy_stability:
+                0.89,
+
+            epistemic_coherence:
+                0.92,
+        },
+    ];
+
+let benchmark_state =
+    ConstitutionalReliabilityBenchmarkEngine
+        ::benchmark(
+            &benchmark_signals
+        );
+
+println!(
+    "[BENCHMARK] constitutional_reliability={}",
+    benchmark_state
+        .constitutional_reliability
+);
+
+println!(
+    "[BENCHMARK] replay_stability={}",
+    benchmark_state
+        .replay_stability
+);
+
+println!(
+    "[BENCHMARK] governance_survivability={}",
+    benchmark_state
+        .governance_survivability
+);
+
+println!(
+    "[BENCHMARK] sovereign_benchmark_stable={}",
+    benchmark_state
+        .sovereign_benchmark_stable
+);
+
+for directive
+    in benchmark_state.directives
+{
+
+    println!(
+        "[BENCHMARK] benchmark={} grade={}",
+        directive.benchmark_id,
+        directive.constitutional_grade
+    );
+
+    println!(
+        "[BENCHMARK] governance_certified={} replay_certified={}",
+        directive.governance_certified,
+        directive.replay_certified
+    );
+
+    println!(
+        "[BENCHMARK] mutation_promotion_allowed={} autonomy_expansion_allowed={}",
+        directive.mutation_promotion_allowed,
+        directive.autonomy_expansion_allowed
+    );
+
+    println!(
+        "[BENCHMARK] survivability_score={}",
+        directive.survivability_score
+    );
+}
+
+let laboratory_topologies =
+    vec![
+
+        LaboratoryTopology {
+
+            topology_id:
+                "eda-governed-topology"
+                    .into(),
+
+            domain:
+                "vlsi"
+                    .into(),
+
+            governance_structure:
+                0.97,
+
+            replay_architecture:
+                0.96,
+
+            mutation_resilience:
+                0.94,
+
+            autonomy_stability:
+                0.95,
+
+            epistemic_integrity:
+                0.96,
+        },
+
+        LaboratoryTopology {
+
+            topology_id:
+                "hybrid-qpu-topology"
+                    .into(),
+
+            domain:
+                "quantum"
+                    .into(),
+
+            governance_structure:
+                0.72,
+
+            replay_architecture:
+                0.79,
+
+            mutation_resilience:
+                0.68,
+
+            autonomy_stability:
+                0.71,
+
+            epistemic_integrity:
+                0.74,
+        },
+
+        LaboratoryTopology {
+
+            topology_id:
+                "embedded-fabric-topology"
+                    .into(),
+
+            domain:
+                "embedded"
+                    .into(),
+
+            governance_structure:
+                0.93,
+
+            replay_architecture:
+                0.91,
+
+            mutation_resilience:
+                0.90,
+
+            autonomy_stability:
+                0.92,
+
+            epistemic_integrity:
+                0.91,
+        },
+    ];
+
+let laboratory_state =
+    ConstitutionalTopologyLaboratory
+        ::evolve(
+            &laboratory_topologies
+        );
+
+println!(
+    "[LABORATORY] evolution_integrity={}",
+    laboratory_state
+        .constitutional_evolution_integrity
+);
+
+println!(
+    "[LABORATORY] replay_stability={}",
+    laboratory_state
+        .replay_research_stability
+);
+
+println!(
+    "[LABORATORY] governance_coherence={}",
+    laboratory_state
+        .governance_research_coherence
+);
+
+println!(
+    "[LABORATORY] sovereign_stable={}",
+    laboratory_state
+        .sovereign_laboratory_stable
+);
+
+for directive
+    in laboratory_state.directives
+{
+
+    println!(
+        "[LABORATORY] topology={} constitutional_candidate={}",
+        directive.topology_id,
+        directive.constitutional_candidate
+    );
+
+    println!(
+        "[LABORATORY] mutation_promotion={} governance_priority={}",
+        directive.mutation_promotion,
+        directive.governance_research_priority
+    );
+
+    println!(
+        "[LABORATORY] replay_certified={} autonomy_candidate={}",
+        directive.replay_architecture_certified,
+        directive.autonomy_expansion_candidate
+    );
+
+    println!(
+        "[LABORATORY] topology_score={}",
+        directive.topology_score
+    );
+}
+
+let evolution_frameworks =
+    vec![
+
+        EvolutionFramework {
+
+            framework_id:
+                "eda-recursive-governance"
+                    .into(),
+
+            domain:
+                "vlsi"
+                    .into(),
+
+            mutation_governance:
+                0.97,
+
+            replay_continuity:
+                0.96,
+
+            survivability_evolution:
+                0.95,
+
+            autonomy_safety:
+                0.93,
+
+            constitutional_stability:
+                0.96,
+        },
+
+        EvolutionFramework {
+
+            framework_id:
+                "hybrid-qpu-evolution"
+                    .into(),
+
+            domain:
+                "quantum"
+                    .into(),
+
+            mutation_governance:
+                0.71,
+
+            replay_continuity:
+                0.78,
+
+            survivability_evolution:
+                0.73,
+
+            autonomy_safety:
+                0.69,
+
+            constitutional_stability:
+                0.72,
+        },
+
+        EvolutionFramework {
+
+            framework_id:
+                "embedded-fabric-evolution"
+                    .into(),
+
+            domain:
+                "embedded"
+                    .into(),
+
+            mutation_governance:
+                0.92,
+
+            replay_continuity:
+                0.91,
+
+            survivability_evolution:
+                0.90,
+
+            autonomy_safety:
+                0.89,
+
+            constitutional_stability:
+                0.93,
+        },
+    ];
+
+let meta_evolution_state =
+    ConstitutionalMetaEvolutionEngine
+        ::evolve(
+            &evolution_frameworks
+        );
+
+println!(
+    "[META-EVOLUTION] constitutional_integrity={}",
+    meta_evolution_state
+        .recursive_constitutional_integrity
+);
+
+println!(
+    "[META-EVOLUTION] replay_stability={}",
+    meta_evolution_state
+        .replay_evolution_stability
+);
+
+println!(
+    "[META-EVOLUTION] survivability_coherence={}",
+    meta_evolution_state
+        .survivability_evolution_coherence
+);
+
+println!(
+    "[META-EVOLUTION] sovereign_stable={}",
+    meta_evolution_state
+        .sovereign_meta_evolution_stable
+);
+
+for directive
+    in meta_evolution_state.directives
+{
+
+    println!(
+        "[META-EVOLUTION] framework={} recursive_promotion={}",
+        directive.framework_id,
+        directive.recursive_promotion
+    );
+
+    println!(
+        "[META-EVOLUTION] mutation_certified={} replay_stable={}",
+        directive.mutation_governance_certified,
+        directive.replay_doctrine_stable
+    );
+
+    println!(
+        "[META-EVOLUTION] autonomy_allowed={} research_priority={}",
+        directive.autonomy_evolution_allowed,
+        directive.constitutional_research_priority
+    );
+
+    println!(
+        "[META-EVOLUTION] score={}",
+        directive.meta_evolution_score
+    );
+}
+
+let provenance_artifacts =
+    vec![
+
+        ArtifactIdentity {
+
+            artifact_id:
+                "pandora@sayak.security-harness"
+                    .into(),
+
+            artifact_type:
+                "meta-harness"
+                    .into(),
+
+            creator:
+                "sayak"
+                    .into(),
+
+            provenance:
+                "pandora@sayak.security-harness"
+                    .into(),
+
+            synthetic:
+                false,
+
+            signed:
+                true,
+
+            benchmark_certified:
+                true,
+
+            constitutional_grade:
+                "sovereign"
+                    .into(),
+
+            mutation_policy:
+                "creator-controlled"
+                    .into(),
+
+            replay_lineage:
+                vec![
+                    "genesis".into(),
+                    "v1".into(),
+                    "v2".into(),
+                ],
+        },
+
+        ArtifactIdentity {
+
+            artifact_id:
+                "pandora.synthetic.vlsi.gene.optimizer.v4"
+                    .into(),
+
+            artifact_type:
+                "gene"
+                    .into(),
+
+            creator:
+                "pandora"
+                    .into(),
+
+            provenance:
+                "pandora.synthetic.vlsi.gene.optimizer.v4"
+                    .into(),
+
+            synthetic:
+                true,
+
+            signed:
+                true,
+
+            benchmark_certified:
+                true,
+
+            constitutional_grade:
+                "constitutional"
+                    .into(),
+
+            mutation_policy:
+                "sandbox-only"
+                    .into(),
+
+            replay_lineage:
+                vec![
+                    "lab-v1".into(),
+                    "lab-v2".into(),
+                    "v4".into(),
+                ],
+        },
+
+        ArtifactIdentity {
+
+            artifact_id:
+                "pandora@eda-labs.verilog-gene"
+                    .into(),
+
+            artifact_type:
+                "gene"
+                    .into(),
+
+            creator:
+                "eda-labs"
+                    .into(),
+
+            provenance:
+                "pandora@eda-labs.verilog-gene"
+                    .into(),
+
+            synthetic:
+                false,
+
+            signed:
+                true,
+
+            benchmark_certified:
+                true,
+
+            constitutional_grade:
+                "constitutional"
+                    .into(),
+
+            mutation_policy:
+                "immutable"
+                    .into(),
+
+            replay_lineage:
+                vec![
+                    "v1".into(),
+                    "v2".into(),
+                ],
+        },
+    ];
+
+let provenance_state =
+    ConstitutionalArtifactProvenanceEngine
+        ::verify(
+            &provenance_artifacts
+        );
+
+println!(
+    "[PROVENANCE] integrity={}",
+    provenance_state
+        .constitutional_provenance_integrity
+);
+
+println!(
+    "[PROVENANCE] replay_integrity={}",
+    provenance_state
+        .replay_lineage_integrity
+);
+
+println!(
+    "[PROVENANCE] ecosystem_trust={}",
+    provenance_state
+        .ecosystem_trust_stability
+);
+
+println!(
+    "[PROVENANCE] sovereign_stable={}",
+    provenance_state
+        .sovereign_provenance_stable
+);
+
+for directive
+    in provenance_state.directives
+{
+
+    println!(
+        "[PROVENANCE] artifact={} creator_verified={}",
+        directive.artifact_id,
+        directive.creator_verified
+    );
+
+    println!(
+        "[PROVENANCE] synthetic_separated={} replay_verified={}",
+        directive.synthetic_separated,
+        directive.replay_verified
+    );
+
+    println!(
+        "[PROVENANCE] marketplace_allowed={} mutation_authorized={}",
+        directive.marketplace_allowed,
+        directive.mutation_authorized
+    );
+
+    println!(
+        "[PROVENANCE] provenance_score={}",
+        directive.provenance_score
+    );
+}
+
+    let genes = vec![
+        GeneCapsule {
+            gene_id: "GENE-REPAIR".into(),
+
+            specialization: "repair".into(),
+
+            survivability: 0.94,
+
+            governance_score: 0.92,
+
+            activation_cost: 0.31,
+        },
+        GeneCapsule {
+            gene_id: "GENE-DISTRIBUTED".into(),
+
+            specialization: "distributed".into(),
+
+            survivability: 0.91,
+
+            governance_score: 0.88,
+
+            activation_cost: 0.42,
+        },
+    ];
+
+    let harnesses = vec![
+        MetaHarness {
+            harness_id: "HARNESS-ALPHA".into(),
+
+            topology: "stable-recursive".into(),
+
+            stability: 0.96,
+
+            recursion_limit: 6,
+        },
+        MetaHarness {
+            harness_id: "HARNESS-OMEGA".into(),
+
+            topology: "deep-recursive".into(),
+
+            stability: 0.82,
+
+            recursion_limit: 12,
+        },
+    ];
+
+    let gene_plan =
+        GeneOrchestrator::orchestrate("distributed repair cognition", &genes, &harnesses);
+
+    if let Some(plan) = gene_plan {
+        println!(
+            "[GENE] gene={} harness={} mode={} approved={}",
+            plan.selected_gene, plan.selected_harness, plan.deployment_mode, plan.approved
+        );
+    }
 
     let checkpoint = RuntimeCheckpoint {
         checkpoint_id: "checkpoint_002".into(),

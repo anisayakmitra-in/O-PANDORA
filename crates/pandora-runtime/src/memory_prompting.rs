@@ -1,112 +1,53 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-use crate
-    ::context_router::{
-        RoutedContext,
-    };
+use crate::context_router::RoutedContext;
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PromptRequest {
+    pub system_goal: String,
 
-    pub system_goal:
-        String,
-
-    pub workload:
-        String,
+    pub workload: String,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConstructedPrompt {
+    pub prompt: String,
 
-    pub prompt:
-        String,
+    pub injected_memories: usize,
 
-    pub injected_memories:
-        usize,
-
-    pub estimated_tokens:
-        usize,
+    pub estimated_tokens: usize,
 }
 
 pub struct MemoryAwarePromptEngine;
 
 impl MemoryAwarePromptEngine {
+    pub fn construct(request: &PromptRequest, routed: &RoutedContext) -> ConstructedPrompt {
+        println!("[PROMPT] constructing prompt");
 
-    pub fn construct(
+        let mut prompt = String::new();
 
-        request:
-            &PromptRequest,
+        prompt.push_str("SYSTEM GOAL:\n");
 
-        routed:
-            &RoutedContext,
-    )
-        -> ConstructedPrompt
-    {
+        prompt.push_str(&request.system_goal);
 
-        println!(
-            "[PROMPT] constructing prompt"
-        );
+        prompt.push_str("\n\nWORKLOAD:\n");
 
-        let mut prompt =
-            String::new();
+        prompt.push_str(&request.workload);
 
-        prompt.push_str(
-            "SYSTEM GOAL:\n"
-        );
+        prompt.push_str("\n\nMEMORY CONTEXT:\n");
 
-        prompt.push_str(
-            &request.system_goal
-        );
+        for memory in &routed.selected {
+            prompt.push_str("\n---\n");
 
-        prompt.push_str(
-            "\n\nWORKLOAD:\n"
-        );
-
-        prompt.push_str(
-            &request.workload
-        );
-
-        prompt.push_str(
-            "\n\nMEMORY CONTEXT:\n"
-        );
-
-        for memory
-            in &routed.selected
-        {
-
-            prompt.push_str(
-                "\n---\n"
-            );
-
-            prompt.push_str(
-                &memory.content
-            );
+            prompt.push_str(&memory.content);
         }
 
-        let estimated_tokens =
-            prompt.len() / 4;
+        let estimated_tokens = prompt.len() / 4;
 
         ConstructedPrompt {
-
             prompt,
 
-            injected_memories:
-                routed
-                    .selected
-                    .len(),
+            injected_memories: routed.selected.len(),
 
             estimated_tokens,
         }
