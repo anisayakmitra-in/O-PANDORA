@@ -1,128 +1,130 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CivilizationEpoch {
-    pub epoch_id: String,
+pub struct CivilizationMemoryNode {
+    pub civilization_id: String,
 
-    pub dominant_domain: String,
+    pub replay_continuity: f64,
 
-    pub governance_stability: f64,
+    pub constitutional_ancestry: f64,
 
-    pub survivability_alignment: f64,
+    pub synthetic_lineage_integrity: f64,
 
-    pub topology_coherence: f64,
+    pub fork_inheritance_stability: f64,
 
-    pub replay_integrity: f64,
-
-    pub ecosystem_expansion: f64,
+    pub regeneration_memory_preserved: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ArchaeologyInsight {
-    pub epoch_id: String,
+pub struct MemoryContinuityDirective {
+    pub civilization_id: String,
 
-    pub civilization_stable: bool,
+    pub continuity_verified: bool,
 
-    pub governance_pressure: bool,
+    pub replay_ancestry_verified: bool,
 
-    pub topology_evolution_required: bool,
+    pub fork_inheritance_authorized: bool,
 
-    pub replay_preservation_priority: String,
+    pub regeneration_continuity_preserved: bool,
 
-    pub strategic_value: f64,
+    pub constitutional_fragmentation_detected: bool,
+
+    pub continuity_score: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CivilizationState {
-    pub civilization_continuity: f64,
+pub struct CivilizationMemoryState {
+    pub civilization_memory_integrity: f64,
 
-    pub governance_coherence: f64,
+    pub replay_ancestry_stability: f64,
 
-    pub replay_civilization_integrity: f64,
+    pub constitutional_lineage_coherence: f64,
 
     pub sovereign_memory_stable: bool,
 
-    pub insights: Vec<ArchaeologyInsight>,
+    pub directives: Vec<MemoryContinuityDirective>,
 }
 
-pub struct CivilizationMemoryEngine;
+pub struct ConstitutionalCivilizationMemoryEngine;
 
-impl CivilizationMemoryEngine {
-    pub fn preserve(epochs: &[CivilizationEpoch]) -> CivilizationState {
-        let mut insights = Vec::new();
+impl ConstitutionalCivilizationMemoryEngine {
+    pub fn preserve(civilizations: &[CivilizationMemoryNode]) -> CivilizationMemoryState {
+        let mut directives = Vec::new();
 
-        let mut continuity = 0.0;
-
-        let mut governance = 0.0;
+        let mut integrity = 0.0;
 
         let mut replay = 0.0;
 
-        for epoch in epochs {
-            println!("[CIVILIZATION] epoch={}", epoch.epoch_id);
+        let mut lineage = 0.0;
 
-            let strategic_value = (epoch.governance_stability * 0.25)
-                + (epoch.survivability_alignment * 0.25)
-                + (epoch.topology_coherence * 0.20)
-                + (epoch.replay_integrity * 0.15)
-                + (epoch.ecosystem_expansion * 0.15);
+        for civilization in civilizations {
+            println!("[MEMORY] civilization={}", civilization.civilization_id);
 
-            let civilization_stable = strategic_value > 0.84;
+            let continuity_score = (civilization.replay_continuity * 0.25)
+                + (civilization.constitutional_ancestry * 0.25)
+                + (civilization.synthetic_lineage_integrity * 0.20)
+                + (civilization.fork_inheritance_stability * 0.20)
+                + (if civilization.regeneration_memory_preserved {
+                    1.0
+                } else {
+                    0.0
+                } * 0.10);
 
-            let governance_pressure = epoch.governance_stability < 0.72;
+            let continuity_verified = continuity_score > 0.84;
 
-            let topology_evolution_required = epoch.topology_coherence < 0.78;
+            let replay_ancestry_verified = civilization.replay_continuity > 0.86;
 
-            let replay_preservation_priority = if epoch.replay_integrity > 0.92 {
-                "civilization-critical"
-            } else if epoch.replay_integrity > 0.80 {
-                "strategic"
-            } else {
-                "standard"
-            };
+            let fork_inheritance_authorized = civilization.fork_inheritance_stability > 0.82;
 
-            insights.push(ArchaeologyInsight {
-                epoch_id: epoch.epoch_id.clone(),
+            let regeneration_continuity_preserved = civilization.regeneration_memory_preserved;
 
-                civilization_stable,
+            let constitutional_fragmentation_detected = civilization.constitutional_ancestry < 0.70;
 
-                governance_pressure,
+            directives.push(MemoryContinuityDirective {
+                civilization_id: civilization.civilization_id.clone(),
 
-                topology_evolution_required,
+                continuity_verified,
 
-                replay_preservation_priority: replay_preservation_priority.into(),
+                replay_ancestry_verified,
 
-                strategic_value,
+                fork_inheritance_authorized,
+
+                regeneration_continuity_preserved,
+
+                constitutional_fragmentation_detected,
+
+                continuity_score,
             });
 
-            continuity += strategic_value;
+            integrity += continuity_score;
 
-            governance += epoch.governance_stability;
+            replay += civilization.replay_continuity;
 
-            replay += epoch.replay_integrity;
+            lineage += civilization.constitutional_ancestry;
         }
 
-        let count = epochs.len() as f64;
+        let count = civilizations.len() as f64;
 
-        let civilization_continuity = continuity / count;
+        let civilization_memory_integrity = integrity / count;
 
-        let governance_coherence = governance / count;
+        let replay_ancestry_stability = replay / count;
 
-        let replay_civilization_integrity = replay / count;
+        let constitutional_lineage_coherence = lineage / count;
 
-        let sovereign_memory_stable = civilization_continuity > 0.84
-            && governance_coherence > 0.81
-            && replay_civilization_integrity > 0.82;
+        let sovereign_memory_stable = civilization_memory_integrity > 0.85
+            && replay_ancestry_stability > 0.84
+            && constitutional_lineage_coherence > 0.84;
 
-        CivilizationState {
-            civilization_continuity,
+        CivilizationMemoryState {
+            civilization_memory_integrity,
 
-            governance_coherence,
+            replay_ancestry_stability,
 
-            replay_civilization_integrity,
+            constitutional_lineage_coherence,
 
             sovereign_memory_stable,
 
-            insights,
+            directives,
         }
     }
 }

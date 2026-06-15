@@ -1,58 +1,104 @@
 use pandora_runtime
-    ::artifact_provenance::{
-        ArtifactIdentity,
-        ConstitutionalArtifactProvenanceEngine,
-        ProvenanceDirective,
-        ProvenanceState,
+    ::civilization_cosmology::{
+        CivilizationCosmologyNode,
+        CivilizationCosmologyState,
+        ConstitutionalCivilizationCosmologyEngine,
+        CosmologyDirective,
     };
 
 use pandora_runtime
-    ::meta_evolution::{
-        ConstitutionalMetaEvolutionEngine,
-        EvolutionFramework,
-        MetaEvolutionDirective,
-        MetaEvolutionState,
+    ::civilization_transcendence::{
+        CivilizationTranscendenceNode,
+        CivilizationTranscendenceState,
+        ConstitutionalCivilizationTranscendenceEngine,
+        TranscendenceDirective,
     };
 
 use pandora_runtime
-    ::topology_laboratory::{
-        ConstitutionalTopologyLaboratory,
-        LaboratoryDirective,
-        LaboratoryState,
-        LaboratoryTopology,
+    ::civilization_philosophy::{
+        CivilizationPhilosophyNode,
+        CivilizationPhilosophyState,
+        ConstitutionalCivilizationPhilosophyEngine,
+        PhilosophyDirective,
     };
 
-use pandora_runtime
-    ::reliability_benchmark::{
-        BenchmarkDirective,
-        BenchmarkSignal,
-        BenchmarkState,
-        ConstitutionalReliabilityBenchmarkEngine,
-    };
+use pandora_runtime::civilization_mythology::{
+    CivilizationMythologyNode, CivilizationMythologyState,
+    ConstitutionalCivilizationMythologyEngine, MythologyDirective,
+};
 
-use pandora_runtime
-    ::entropy_collapse::{
-        CollapseDirective,
-        CollapseState,
-        EntropyCollapseEngine,
-        EntropySignal,
-    };
+use pandora_runtime::civilization_rebirth::{
+    CivilizationRebirthCandidate, CivilizationRebirthState,
+    ConstitutionalCivilizationRebirthEngine, RebirthDirective,
+};
 
-use pandora_runtime
-    ::epistemic_sandbox::{
-        EpistemicSandboxEngine,
-        EpistemicScenario,
-        EpistemicState,
-        RealityBoundaryDirective,
-    };
+use pandora_runtime::civilization_termination::{
+    CivilizationTerminationCandidate, CivilizationTerminationState,
+    ConstitutionalCivilizationTerminationEngine, TerminationDirective,
+};
 
-use pandora_runtime
-    ::uncertainty_topology::{
-        UncertaintyDirective,
-        UncertaintySignal,
-        UncertaintyState,
-        UncertaintyTopologyEngine,
-    };
+use pandora_runtime::civilization_termination::{
+    CivilizationTerminationCandidate, CivilizationTerminationState,
+    ConstitutionalCivilizationTerminationEngine, TerminationDirective,
+};
+
+use pandora_runtime::civilization_genesis::{
+    CivilizationGenesisCandidate, CivilizationGenesisState,
+    ConstitutionalCivilizationGenesisEngine, GenesisDirective,
+};
+
+use pandora_runtime::civilization_succession::{
+    CivilizationSuccessionState, CivilizationSuccessor, ConstitutionalCivilizationSuccessionEngine,
+    SuccessionDirective,
+};
+
+use pandora_runtime::civilization_memory::{
+    CivilizationMemoryNode, CivilizationMemoryState, ConstitutionalCivilizationMemoryEngine,
+    MemoryContinuityDirective,
+};
+
+use pandora_runtime::reality_consensus::{
+    CivilizationReality, ConstitutionalRealityConsensusEngine, RealityConsensusDirective,
+    RealityConsensusState,
+};
+
+use pandora_runtime::civilization_fabric::{
+    CivilizationFabricState, CivilizationNode, ConstitutionalCivilizationFabricEngine,
+    FederationDirective,
+};
+
+use pandora_runtime::execution_license::{
+    ConstitutionalExecutionLicenseEngine, ExecutionArtifact, ExecutionDirective, ExecutionState,
+};
+
+use pandora_runtime::artifact_provenance::{
+    ArtifactIdentity, ConstitutionalArtifactProvenanceEngine, ProvenanceDirective, ProvenanceState,
+};
+
+use pandora_runtime::meta_evolution::{
+    ConstitutionalMetaEvolutionEngine, EvolutionFramework, MetaEvolutionDirective,
+    MetaEvolutionState,
+};
+
+use pandora_runtime::topology_laboratory::{
+    ConstitutionalTopologyLaboratory, LaboratoryDirective, LaboratoryState, LaboratoryTopology,
+};
+
+use pandora_runtime::reliability_benchmark::{
+    BenchmarkDirective, BenchmarkSignal, BenchmarkState, ConstitutionalReliabilityBenchmarkEngine,
+};
+
+use pandora_runtime::entropy_collapse::{
+    CollapseDirective, CollapseState, EntropyCollapseEngine, EntropySignal,
+};
+
+use pandora_runtime::epistemic_sandbox::{
+    EpistemicSandboxEngine, EpistemicScenario, EpistemicState, RealityBoundaryDirective,
+};
+
+use pandora_runtime::uncertainty_topology::{
+    UncertaintyDirective, UncertaintySignal, UncertaintyState, UncertaintyTopologyEngine,
+};
 
 use pandora_runtime::civilization_regeneration::{
     CivilizationRegenerationEngine, RegenerationDirective, RegenerationSignal, RegenerationState,
@@ -4601,1033 +4647,1958 @@ fn runtime() {}
         );
     }
 
-let uncertainty_signals =
+    let uncertainty_signals = vec![
+        UncertaintySignal {
+            signal_id: "eda-future-expansion".into(),
+
+            domain: "vlsi".into(),
+
+            simulation_divergence: 0.18,
+
+            governance_ambiguity: 0.11,
+
+            topology_instability: 0.16,
+
+            replay_confidence_loss: 0.09,
+
+            survivability_uncertainty: 0.13,
+        },
+        UncertaintySignal {
+            signal_id: "hybrid-qpu-transition".into(),
+
+            domain: "quantum".into(),
+
+            simulation_divergence: 0.72,
+
+            governance_ambiguity: 0.61,
+
+            topology_instability: 0.76,
+
+            replay_confidence_loss: 0.49,
+
+            survivability_uncertainty: 0.67,
+        },
+        UncertaintySignal {
+            signal_id: "embedded-fabric-evolution".into(),
+
+            domain: "embedded".into(),
+
+            simulation_divergence: 0.22,
+
+            governance_ambiguity: 0.16,
+
+            topology_instability: 0.19,
+
+            replay_confidence_loss: 0.12,
+
+            survivability_uncertainty: 0.18,
+        },
+    ];
+
+    let uncertainty_state = UncertaintyTopologyEngine::map(&uncertainty_signals);
+
+    println!(
+        "[UNCERTAINTY] certainty={}",
+        uncertainty_state.civilization_certainty
+    );
+
+    println!(
+        "[UNCERTAINTY] governance_clarity={}",
+        uncertainty_state.governance_clarity
+    );
+
+    println!(
+        "[UNCERTAINTY] replay_confidence={}",
+        uncertainty_state.replay_confidence
+    );
+
+    println!(
+        "[UNCERTAINTY] sovereign_stable={}",
+        uncertainty_state.sovereign_uncertainty_stable
+    );
+
+    for directive in uncertainty_state.directives {
+        println!(
+            "[UNCERTAINTY] signal={} uncertainty_zone={}",
+            directive.signal_id, directive.uncertainty_zone
+        );
+
+        println!(
+            "[UNCERTAINTY] intervention={} autonomy_constraint={}",
+            directive.constitutional_intervention, directive.autonomy_constraint_required
+        );
+
+        println!(
+            "[UNCERTAINTY] replay_verification={} topology_reassessment={}",
+            directive.replay_verification_required, directive.topology_reassessment_required
+        );
+
+        println!(
+            "[UNCERTAINTY] uncertainty_score={}",
+            directive.uncertainty_score
+        );
+    }
+
+    let epistemic_scenarios = vec![
+        EpistemicScenario {
+            scenario_id: "eda-expansion-forecast".into(),
+
+            domain: "vlsi".into(),
+
+            simulation_depth: 0.48,
+
+            reality_ambiguity: 0.14,
+
+            speculative_pressure: 0.18,
+
+            replay_uncertainty: 0.11,
+
+            constitutional_verifiability: 0.96,
+        },
+        EpistemicScenario {
+            scenario_id: "hybrid-qpu-future-civilization".into(),
+
+            domain: "quantum".into(),
+
+            simulation_depth: 0.91,
+
+            reality_ambiguity: 0.74,
+
+            speculative_pressure: 0.81,
+
+            replay_uncertainty: 0.58,
+
+            constitutional_verifiability: 0.63,
+        },
+        EpistemicScenario {
+            scenario_id: "embedded-governed-fabric".into(),
+
+            domain: "embedded".into(),
+
+            simulation_depth: 0.42,
+
+            reality_ambiguity: 0.16,
+
+            speculative_pressure: 0.19,
+
+            replay_uncertainty: 0.13,
+
+            constitutional_verifiability: 0.93,
+        },
+    ];
+
+    let epistemic_state = EpistemicSandboxEngine::isolate(&epistemic_scenarios);
+
+    println!(
+        "[EPISTEMIC] reality_integrity={}",
+        epistemic_state.constitutional_reality_integrity
+    );
+
+    println!(
+        "[EPISTEMIC] replay_confidence={}",
+        epistemic_state.replay_reality_confidence
+    );
+
+    println!(
+        "[EPISTEMIC] epistemic_stability={}",
+        epistemic_state.epistemic_stability
+    );
+
+    println!(
+        "[EPISTEMIC] sovereign_reality_stable={}",
+        epistemic_state.sovereign_reality_stable
+    );
+
+    for directive in epistemic_state.directives {
+        println!(
+            "[EPISTEMIC] scenario={} sandbox_required={}",
+            directive.scenario_id, directive.sandbox_required
+        );
+
+        println!(
+            "[EPISTEMIC] boundary_risk={} verification_required={}",
+            directive.reality_boundary_risk, directive.constitutional_verification_required
+        );
+
+        println!(
+            "[EPISTEMIC] speculative_quarantine={} autonomy_restriction={}",
+            directive.speculative_quarantine, directive.autonomy_restriction
+        );
+
+        println!("[EPISTEMIC] epistemic_score={}", directive.epistemic_score);
+    }
+
+    let collapse_signals = vec![
+        EntropySignal {
+            signal_id: "eda-optimization-loop".into(),
+
+            domain: "vlsi".into(),
+
+            recursive_entropy: 0.18,
+
+            governance_drift: 0.12,
+
+            replay_fragmentation: 0.11,
+
+            mutation_instability: 0.14,
+
+            autonomy_degradation: 0.10,
+        },
+        EntropySignal {
+            signal_id: "recursive-qpu-simulation".into(),
+
+            domain: "quantum".into(),
+
+            recursive_entropy: 0.82,
+
+            governance_drift: 0.74,
+
+            replay_fragmentation: 0.68,
+
+            mutation_instability: 0.77,
+
+            autonomy_degradation: 0.63,
+        },
+        EntropySignal {
+            signal_id: "embedded-firmware-governance".into(),
+
+            domain: "embedded".into(),
+
+            recursive_entropy: 0.22,
+
+            governance_drift: 0.15,
+
+            replay_fragmentation: 0.18,
+
+            mutation_instability: 0.20,
+
+            autonomy_degradation: 0.13,
+        },
+    ];
+
+    let collapse_state = EntropyCollapseEngine::analyze(&collapse_signals);
+
+    println!(
+        "[COLLAPSE] constitutional_stability={}",
+        collapse_state.constitutional_stability
+    );
+
+    println!(
+        "[COLLAPSE] replay_integrity={}",
+        collapse_state.replay_integrity
+    );
+
+    println!(
+        "[COLLAPSE] governance_coherence={}",
+        collapse_state.governance_coherence
+    );
+
+    println!(
+        "[COLLAPSE] sovereign_collapse_risk={}",
+        collapse_state.sovereign_collapse_risk
+    );
+
+    for directive in collapse_state.directives {
+        println!(
+            "[COLLAPSE] signal={} collapse_detected={}",
+            directive.signal_id, directive.entropy_collapse_detected
+        );
+
+        println!(
+            "[COLLAPSE] governance_intervention={} replay_reconstruction={}",
+            directive.governance_intervention, directive.replay_reconstruction_required
+        );
+
+        println!(
+            "[COLLAPSE] mutation_freeze={} autonomy_constraint={}",
+            directive.mutation_freeze_required, directive.autonomy_constraint_required
+        );
+
+        println!("[COLLAPSE] collapse_score={}", directive.collapse_score);
+    }
+
+    let benchmark_signals = vec![
+        BenchmarkSignal {
+            benchmark_id: "eda-governed-runtime".into(),
+
+            domain: "vlsi".into(),
+
+            governance_stability: 0.96,
+
+            replay_integrity: 0.95,
+
+            mutation_survivability: 0.94,
+
+            autonomy_stability: 0.93,
+
+            epistemic_coherence: 0.94,
+        },
+        BenchmarkSignal {
+            benchmark_id: "hybrid-qpu-runtime".into(),
+
+            domain: "quantum".into(),
+
+            governance_stability: 0.71,
+
+            replay_integrity: 0.78,
+
+            mutation_survivability: 0.66,
+
+            autonomy_stability: 0.69,
+
+            epistemic_coherence: 0.73,
+        },
+        BenchmarkSignal {
+            benchmark_id: "embedded-governed-fabric".into(),
+
+            domain: "embedded".into(),
+
+            governance_stability: 0.93,
+
+            replay_integrity: 0.91,
+
+            mutation_survivability: 0.90,
+
+            autonomy_stability: 0.89,
+
+            epistemic_coherence: 0.92,
+        },
+    ];
+
+    let benchmark_state = ConstitutionalReliabilityBenchmarkEngine::benchmark(&benchmark_signals);
+
+    println!(
+        "[BENCHMARK] constitutional_reliability={}",
+        benchmark_state.constitutional_reliability
+    );
+
+    println!(
+        "[BENCHMARK] replay_stability={}",
+        benchmark_state.replay_stability
+    );
+
+    println!(
+        "[BENCHMARK] governance_survivability={}",
+        benchmark_state.governance_survivability
+    );
+
+    println!(
+        "[BENCHMARK] sovereign_benchmark_stable={}",
+        benchmark_state.sovereign_benchmark_stable
+    );
+
+    for directive in benchmark_state.directives {
+        println!(
+            "[BENCHMARK] benchmark={} grade={}",
+            directive.benchmark_id, directive.constitutional_grade
+        );
+
+        println!(
+            "[BENCHMARK] governance_certified={} replay_certified={}",
+            directive.governance_certified, directive.replay_certified
+        );
+
+        println!(
+            "[BENCHMARK] mutation_promotion_allowed={} autonomy_expansion_allowed={}",
+            directive.mutation_promotion_allowed, directive.autonomy_expansion_allowed
+        );
+
+        println!(
+            "[BENCHMARK] survivability_score={}",
+            directive.survivability_score
+        );
+    }
+
+    let laboratory_topologies = vec![
+        LaboratoryTopology {
+            topology_id: "eda-governed-topology".into(),
+
+            domain: "vlsi".into(),
+
+            governance_structure: 0.97,
+
+            replay_architecture: 0.96,
+
+            mutation_resilience: 0.94,
+
+            autonomy_stability: 0.95,
+
+            epistemic_integrity: 0.96,
+        },
+        LaboratoryTopology {
+            topology_id: "hybrid-qpu-topology".into(),
+
+            domain: "quantum".into(),
+
+            governance_structure: 0.72,
+
+            replay_architecture: 0.79,
+
+            mutation_resilience: 0.68,
+
+            autonomy_stability: 0.71,
+
+            epistemic_integrity: 0.74,
+        },
+        LaboratoryTopology {
+            topology_id: "embedded-fabric-topology".into(),
+
+            domain: "embedded".into(),
+
+            governance_structure: 0.93,
+
+            replay_architecture: 0.91,
+
+            mutation_resilience: 0.90,
+
+            autonomy_stability: 0.92,
+
+            epistemic_integrity: 0.91,
+        },
+    ];
+
+    let laboratory_state = ConstitutionalTopologyLaboratory::evolve(&laboratory_topologies);
+
+    println!(
+        "[LABORATORY] evolution_integrity={}",
+        laboratory_state.constitutional_evolution_integrity
+    );
+
+    println!(
+        "[LABORATORY] replay_stability={}",
+        laboratory_state.replay_research_stability
+    );
+
+    println!(
+        "[LABORATORY] governance_coherence={}",
+        laboratory_state.governance_research_coherence
+    );
+
+    println!(
+        "[LABORATORY] sovereign_stable={}",
+        laboratory_state.sovereign_laboratory_stable
+    );
+
+    for directive in laboratory_state.directives {
+        println!(
+            "[LABORATORY] topology={} constitutional_candidate={}",
+            directive.topology_id, directive.constitutional_candidate
+        );
+
+        println!(
+            "[LABORATORY] mutation_promotion={} governance_priority={}",
+            directive.mutation_promotion, directive.governance_research_priority
+        );
+
+        println!(
+            "[LABORATORY] replay_certified={} autonomy_candidate={}",
+            directive.replay_architecture_certified, directive.autonomy_expansion_candidate
+        );
+
+        println!("[LABORATORY] topology_score={}", directive.topology_score);
+    }
+
+    let evolution_frameworks = vec![
+        EvolutionFramework {
+            framework_id: "eda-recursive-governance".into(),
+
+            domain: "vlsi".into(),
+
+            mutation_governance: 0.97,
+
+            replay_continuity: 0.96,
+
+            survivability_evolution: 0.95,
+
+            autonomy_safety: 0.93,
+
+            constitutional_stability: 0.96,
+        },
+        EvolutionFramework {
+            framework_id: "hybrid-qpu-evolution".into(),
+
+            domain: "quantum".into(),
+
+            mutation_governance: 0.71,
+
+            replay_continuity: 0.78,
+
+            survivability_evolution: 0.73,
+
+            autonomy_safety: 0.69,
+
+            constitutional_stability: 0.72,
+        },
+        EvolutionFramework {
+            framework_id: "embedded-fabric-evolution".into(),
+
+            domain: "embedded".into(),
+
+            mutation_governance: 0.92,
+
+            replay_continuity: 0.91,
+
+            survivability_evolution: 0.90,
+
+            autonomy_safety: 0.89,
+
+            constitutional_stability: 0.93,
+        },
+    ];
+
+    let meta_evolution_state = ConstitutionalMetaEvolutionEngine::evolve(&evolution_frameworks);
+
+    println!(
+        "[META-EVOLUTION] constitutional_integrity={}",
+        meta_evolution_state.recursive_constitutional_integrity
+    );
+
+    println!(
+        "[META-EVOLUTION] replay_stability={}",
+        meta_evolution_state.replay_evolution_stability
+    );
+
+    println!(
+        "[META-EVOLUTION] survivability_coherence={}",
+        meta_evolution_state.survivability_evolution_coherence
+    );
+
+    println!(
+        "[META-EVOLUTION] sovereign_stable={}",
+        meta_evolution_state.sovereign_meta_evolution_stable
+    );
+
+    for directive in meta_evolution_state.directives {
+        println!(
+            "[META-EVOLUTION] framework={} recursive_promotion={}",
+            directive.framework_id, directive.recursive_promotion
+        );
+
+        println!(
+            "[META-EVOLUTION] mutation_certified={} replay_stable={}",
+            directive.mutation_governance_certified, directive.replay_doctrine_stable
+        );
+
+        println!(
+            "[META-EVOLUTION] autonomy_allowed={} research_priority={}",
+            directive.autonomy_evolution_allowed, directive.constitutional_research_priority
+        );
+
+        println!("[META-EVOLUTION] score={}", directive.meta_evolution_score);
+    }
+
+    let provenance_artifacts = vec![
+        ArtifactIdentity {
+            artifact_id: "pandora@sayak.security-harness".into(),
+
+            artifact_type: "meta-harness".into(),
+
+            creator: "sayak".into(),
+
+            provenance: "pandora@sayak.security-harness".into(),
+
+            synthetic: false,
+
+            signed: true,
+
+            benchmark_certified: true,
+
+            constitutional_grade: "sovereign".into(),
+
+            mutation_policy: "creator-controlled".into(),
+
+            replay_lineage: vec!["genesis".into(), "v1".into(), "v2".into()],
+        },
+        ArtifactIdentity {
+            artifact_id: "pandora.synthetic.vlsi.gene.optimizer.v4".into(),
+
+            artifact_type: "gene".into(),
+
+            creator: "pandora".into(),
+
+            provenance: "pandora.synthetic.vlsi.gene.optimizer.v4".into(),
+
+            synthetic: true,
+
+            signed: true,
+
+            benchmark_certified: true,
+
+            constitutional_grade: "constitutional".into(),
+
+            mutation_policy: "sandbox-only".into(),
+
+            replay_lineage: vec!["lab-v1".into(), "lab-v2".into(), "v4".into()],
+        },
+        ArtifactIdentity {
+            artifact_id: "pandora@eda-labs.verilog-gene".into(),
+
+            artifact_type: "gene".into(),
+
+            creator: "eda-labs".into(),
+
+            provenance: "pandora@eda-labs.verilog-gene".into(),
+
+            synthetic: false,
+
+            signed: true,
+
+            benchmark_certified: true,
+
+            constitutional_grade: "constitutional".into(),
+
+            mutation_policy: "immutable".into(),
+
+            replay_lineage: vec!["v1".into(), "v2".into()],
+        },
+    ];
+
+    let provenance_state = ConstitutionalArtifactProvenanceEngine::verify(&provenance_artifacts);
+
+    println!(
+        "[PROVENANCE] integrity={}",
+        provenance_state.constitutional_provenance_integrity
+    );
+
+    println!(
+        "[PROVENANCE] replay_integrity={}",
+        provenance_state.replay_lineage_integrity
+    );
+
+    println!(
+        "[PROVENANCE] ecosystem_trust={}",
+        provenance_state.ecosystem_trust_stability
+    );
+
+    println!(
+        "[PROVENANCE] sovereign_stable={}",
+        provenance_state.sovereign_provenance_stable
+    );
+
+    for directive in provenance_state.directives {
+        println!(
+            "[PROVENANCE] artifact={} creator_verified={}",
+            directive.artifact_id, directive.creator_verified
+        );
+
+        println!(
+            "[PROVENANCE] synthetic_separated={} replay_verified={}",
+            directive.synthetic_separated, directive.replay_verified
+        );
+
+        println!(
+            "[PROVENANCE] marketplace_allowed={} mutation_authorized={}",
+            directive.marketplace_allowed, directive.mutation_authorized
+        );
+
+        println!(
+            "[PROVENANCE] provenance_score={}",
+            directive.provenance_score
+        );
+    }
+
+    let execution_artifacts = vec![
+        ExecutionArtifact {
+            artifact_id: "pandora@sayak.security-harness".into(),
+
+            creator: "sayak".into(),
+
+            constitutional_grade: "sovereign".into(),
+
+            execution_license: "creator-controlled".into(),
+
+            synthetic: false,
+
+            benchmark_certified: true,
+
+            replay_verified: true,
+
+            autonomy_level: 0.94,
+        },
+        ExecutionArtifact {
+            artifact_id: "pandora.synthetic.quantum.meta.hybrid.v2".into(),
+
+            creator: "pandora".into(),
+
+            constitutional_grade: "restricted".into(),
+
+            execution_license: "synthetic-experimental".into(),
+
+            synthetic: true,
+
+            benchmark_certified: true,
+
+            replay_verified: true,
+
+            autonomy_level: 0.68,
+        },
+        ExecutionArtifact {
+            artifact_id: "pandora@eda-labs.verilog-gene".into(),
+
+            creator: "eda-labs".into(),
+
+            constitutional_grade: "constitutional".into(),
+
+            execution_license: "immutable".into(),
+
+            synthetic: false,
+
+            benchmark_certified: true,
+
+            replay_verified: true,
+
+            autonomy_level: 0.89,
+        },
+    ];
+
+    let execution_state = ConstitutionalExecutionLicenseEngine::authorize(&execution_artifacts);
+
+    println!(
+        "[EXECUTION] integrity={}",
+        execution_state.constitutional_execution_integrity
+    );
+
+    println!(
+        "[EXECUTION] runtime_stability={}",
+        execution_state.sovereign_runtime_stability
+    );
+
+    println!(
+        "[EXECUTION] autonomy_stability={}",
+        execution_state.autonomy_governance_stability
+    );
+
+    println!(
+        "[EXECUTION] sovereign_safe={}",
+        execution_state.sovereign_execution_safe
+    );
+
+    for directive in execution_state.directives {
+        println!(
+            "[EXECUTION] artifact={} execution_allowed={}",
+            directive.artifact_id, directive.execution_allowed
+        );
+
+        println!(
+            "[EXECUTION] sovereign_runtime={} mutation_allowed={}",
+            directive.sovereign_runtime_allowed, directive.mutation_allowed
+        );
+
+        println!(
+            "[EXECUTION] autonomy_expansion={} quarantine_required={}",
+            directive.autonomy_expansion_allowed, directive.quarantine_required
+        );
+
+        println!("[EXECUTION] execution_score={}", directive.execution_score);
+    }
+
+    let civilization_nodes = vec![
+        CivilizationNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            governance_doctrine: "constitutional-enterprise".into(),
+
+            replay_trust_score: 0.96,
+
+            autonomy_alignment: 0.94,
+
+            constitutional_compatibility: 0.95,
+
+            synthetic_exchange_allowed: true,
+
+            survivability_score: 0.97,
+        },
+        CivilizationNode {
+            civilization_id: "pandora-quantum-laboratory".into(),
+
+            governance_doctrine: "experimental-research".into(),
+
+            replay_trust_score: 0.74,
+
+            autonomy_alignment: 0.69,
+
+            constitutional_compatibility: 0.72,
+
+            synthetic_exchange_allowed: false,
+
+            survivability_score: 0.76,
+        },
+        CivilizationNode {
+            civilization_id: "pandora-embedded-fabric".into(),
+
+            governance_doctrine: "constitutional-industrial".into(),
+
+            replay_trust_score: 0.93,
+
+            autonomy_alignment: 0.91,
+
+            constitutional_compatibility: 0.92,
+
+            synthetic_exchange_allowed: true,
+
+            survivability_score: 0.94,
+        },
+    ];
+
+    let civilization_fabric_state =
+        ConstitutionalCivilizationFabricEngine::federate(&civilization_nodes);
+
+    println!(
+        "[FABRIC] federation_integrity={}",
+        civilization_fabric_state.federation_integrity
+    );
+
+    println!(
+        "[FABRIC] replay_stability={}",
+        civilization_fabric_state.replay_federation_stability
+    );
+
+    println!(
+        "[FABRIC] constitutional_alignment={}",
+        civilization_fabric_state.constitutional_alignment
+    );
+
+    println!(
+        "[FABRIC] sovereign_fabric_stable={}",
+        civilization_fabric_state.sovereign_fabric_stable
+    );
+
+    for directive in civilization_fabric_state.directives {
+        println!(
+            "[FABRIC] civilization={} federation_allowed={}",
+            directive.civilization_id, directive.federation_allowed
+        );
+
+        println!(
+            "[FABRIC] replay_federation={} autonomy_interoperable={}",
+            directive.replay_federation_allowed, directive.autonomy_interoperable
+        );
+
+        println!(
+            "[FABRIC] synthetic_exchange={} quarantine={}",
+            directive.synthetic_exchange_authorized, directive.constitutional_quarantine
+        );
+
+        println!("[FABRIC] federation_score={}", directive.federation_score);
+    }
+
+    let civilization_realities = vec![
+        CivilizationReality {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            replay_authenticity: 0.97,
+
+            epistemic_alignment: 0.95,
+
+            constitutional_interpretation: 0.96,
+
+            simulation_legitimacy: 0.94,
+
+            synthetic_lineage_trust: 0.95,
+        },
+        CivilizationReality {
+            civilization_id: "pandora-quantum-laboratory".into(),
+
+            replay_authenticity: 0.74,
+
+            epistemic_alignment: 0.69,
+
+            constitutional_interpretation: 0.71,
+
+            simulation_legitimacy: 0.77,
+
+            synthetic_lineage_trust: 0.73,
+        },
+        CivilizationReality {
+            civilization_id: "pandora-embedded-fabric".into(),
+
+            replay_authenticity: 0.94,
+
+            epistemic_alignment: 0.92,
+
+            constitutional_interpretation: 0.93,
+
+            simulation_legitimacy: 0.91,
+
+            synthetic_lineage_trust: 0.92,
+        },
+    ];
+
+    let consensus_state = ConstitutionalRealityConsensusEngine::arbitrate(&civilization_realities);
+
+    println!(
+        "[CONSENSUS] integrity={}",
+        consensus_state.civilization_consensus_integrity
+    );
+
+    println!(
+        "[CONSENSUS] replay_stability={}",
+        consensus_state.replay_consensus_stability
+    );
+
+    println!(
+        "[CONSENSUS] constitutional_alignment={}",
+        consensus_state.constitutional_reality_alignment
+    );
+
+    println!(
+        "[CONSENSUS] sovereign_stable={}",
+        consensus_state.sovereign_consensus_stable
+    );
+
+    for directive in consensus_state.directives {
+        println!(
+            "[CONSENSUS] civilization={} aligned={}",
+            directive.civilization_id, directive.consensus_aligned
+        );
+
+        println!(
+            "[CONSENSUS] replay_verified={} reconciliation_required={}",
+            directive.replay_consensus_verified, directive.epistemic_reconciliation_required
+        );
+
+        println!(
+            "[CONSENSUS] constitutional_dispute={} federation_restricted={}",
+            directive.constitutional_dispute_detected, directive.federation_restriction_required
+        );
+
+        println!("[CONSENSUS] consensus_score={}", directive.consensus_score);
+    }
+
+    let civilization_memory_nodes = vec![
+        CivilizationMemoryNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            replay_continuity: 0.97,
+
+            constitutional_ancestry: 0.96,
+
+            synthetic_lineage_integrity: 0.95,
+
+            fork_inheritance_stability: 0.94,
+
+            regeneration_memory_preserved: true,
+        },
+        CivilizationMemoryNode {
+            civilization_id: "pandora-quantum-laboratory".into(),
+
+            replay_continuity: 0.76,
+
+            constitutional_ancestry: 0.71,
+
+            synthetic_lineage_integrity: 0.73,
+
+            fork_inheritance_stability: 0.69,
+
+            regeneration_memory_preserved: false,
+        },
+        CivilizationMemoryNode {
+            civilization_id: "pandora-embedded-fabric".into(),
+
+            replay_continuity: 0.94,
+
+            constitutional_ancestry: 0.93,
+
+            synthetic_lineage_integrity: 0.92,
+
+            fork_inheritance_stability: 0.91,
+
+            regeneration_memory_preserved: true,
+        },
+    ];
+
+    let civilization_memory_state =
+        ConstitutionalCivilizationMemoryEngine::preserve(&civilization_memory_nodes);
+
+    println!(
+        "[MEMORY] integrity={}",
+        civilization_memory_state.civilization_memory_integrity
+    );
+
+    println!(
+        "[MEMORY] replay_stability={}",
+        civilization_memory_state.replay_ancestry_stability
+    );
+
+    println!(
+        "[MEMORY] lineage_coherence={}",
+        civilization_memory_state.constitutional_lineage_coherence
+    );
+
+    println!(
+        "[MEMORY] sovereign_memory_stable={}",
+        civilization_memory_state.sovereign_memory_stable
+    );
+
+    for directive in civilization_memory_state.directives {
+        println!(
+            "[MEMORY] civilization={} continuity_verified={}",
+            directive.civilization_id, directive.continuity_verified
+        );
+
+        println!(
+            "[MEMORY] replay_verified={} inheritance_authorized={}",
+            directive.replay_ancestry_verified, directive.fork_inheritance_authorized
+        );
+
+        println!(
+            "[MEMORY] regeneration_preserved={} fragmentation_detected={}",
+            directive.regeneration_continuity_preserved,
+            directive.constitutional_fragmentation_detected
+        );
+
+        println!("[MEMORY] continuity_score={}", directive.continuity_score);
+    }
+
+    let civilization_successors = vec![
+        CivilizationSuccessor {
+            civilization_id: "pandora-enterprise-vlsi-successor".into(),
+
+            replay_legitimacy: 0.97,
+
+            constitutional_inheritance: 0.96,
+
+            lineage_continuity: 0.95,
+
+            federation_trust: 0.94,
+
+            survivability_authority: 0.96,
+        },
+        CivilizationSuccessor {
+            civilization_id: "pandora-quantum-fragment".into(),
+
+            replay_legitimacy: 0.73,
+
+            constitutional_inheritance: 0.69,
+
+            lineage_continuity: 0.71,
+
+            federation_trust: 0.68,
+
+            survivability_authority: 0.72,
+        },
+        CivilizationSuccessor {
+            civilization_id: "pandora-embedded-industrial-successor".into(),
+
+            replay_legitimacy: 0.94,
+
+            constitutional_inheritance: 0.93,
+
+            lineage_continuity: 0.92,
+
+            federation_trust: 0.91,
+
+            survivability_authority: 0.93,
+        },
+    ];
+
+    let succession_state =
+        ConstitutionalCivilizationSuccessionEngine::arbitrate(&civilization_successors);
+
+    println!(
+        "[SUCCESSION] integrity={}",
+        succession_state.constitutional_succession_integrity
+    );
+
+    println!(
+        "[SUCCESSION] replay_stability={}",
+        succession_state.replay_inheritance_stability
+    );
+
+    println!(
+        "[SUCCESSION] authority_coherence={}",
+        succession_state.sovereign_authority_coherence
+    );
+
+    println!(
+        "[SUCCESSION] sovereign_stable={}",
+        succession_state.sovereign_succession_stable
+    );
+
+    for directive in succession_state.directives {
+        println!(
+            "[SUCCESSION] civilization={} sovereign_successor={}",
+            directive.civilization_id, directive.sovereign_successor
+        );
+
+        println!(
+            "[SUCCESSION] replay_verified={} authority_confirmed={}",
+            directive.replay_legitimacy_verified, directive.constitutional_authority_confirmed
+        );
+
+        println!(
+            "[SUCCESSION] federation_allowed={} dispute_detected={}",
+            directive.federation_inheritance_allowed, directive.succession_dispute_detected
+        );
+
+        println!(
+            "[SUCCESSION] succession_score={}",
+            directive.succession_score
+        );
+    }
+
+    let genesis_candidates = vec![
+        CivilizationGenesisCandidate {
+            civilization_id: "pandora-enterprise-vlsi-genesis".into(),
+
+            provenance_integrity: 0.98,
+
+            constitutional_foundation: 0.97,
+
+            replay_seed_validity: 0.96,
+
+            governance_initialization: 0.95,
+
+            survivability_projection: 0.97,
+
+            synthetic_origin: false,
+        },
+        CivilizationGenesisCandidate {
+            civilization_id: "pandora-synthetic-quantum-emergence".into(),
+
+            provenance_integrity: 0.78,
+
+            constitutional_foundation: 0.73,
+
+            replay_seed_validity: 0.76,
+
+            governance_initialization: 0.71,
+
+            survivability_projection: 0.74,
+
+            synthetic_origin: true,
+        },
+        CivilizationGenesisCandidate {
+            civilization_id: "pandora-industrial-embedded-genesis".into(),
+
+            provenance_integrity: 0.95,
+
+            constitutional_foundation: 0.94,
+
+            replay_seed_validity: 0.93,
+
+            governance_initialization: 0.92,
+
+            survivability_projection: 0.94,
+
+            synthetic_origin: false,
+        },
+    ];
+
+    let genesis_state = ConstitutionalCivilizationGenesisEngine::authorize(&genesis_candidates);
+
+    println!(
+        "[GENESIS] integrity={}",
+        genesis_state.constitutional_genesis_integrity
+    );
+
+    println!(
+        "[GENESIS] replay_stability={}",
+        genesis_state.replay_origin_stability
+    );
+
+    println!(
+        "[GENESIS] foundation_coherence={}",
+        genesis_state.sovereign_foundation_coherence
+    );
+
+    println!(
+        "[GENESIS] sovereign_stable={}",
+        genesis_state.sovereign_genesis_stable
+    );
+
+    for directive in genesis_state.directives {
+        println!(
+            "[GENESIS] civilization={} genesis_approved={}",
+            directive.civilization_id, directive.sovereign_genesis_approved
+        );
+
+        println!(
+            "[GENESIS] replay_verified={} foundation_valid={}",
+            directive.replay_seed_verified, directive.constitutional_foundation_valid
+        );
+
+        println!(
+            "[GENESIS] federation_allowed={} synthetic_quarantine={}",
+            directive.federation_admission_allowed, directive.synthetic_quarantine_required
+        );
+
+        println!("[GENESIS] genesis_score={}", directive.genesis_score);
+    }
+
+    let termination_candidates = vec![
+        CivilizationTerminationCandidate {
+            civilization_id: "pandora-corrupted-synthetic-fork".into(),
+
+            governance_corruption: 0.94,
+
+            replay_instability: 0.91,
+
+            epistemic_divergence: 0.93,
+
+            federation_risk: 0.95,
+
+            survivability_failure: 0.90,
+
+            synthetic_contamination: true,
+        },
+        CivilizationTerminationCandidate {
+            civilization_id: "pandora-experimental-quantum-fragment".into(),
+
+            governance_corruption: 0.69,
+
+            replay_instability: 0.71,
+
+            epistemic_divergence: 0.73,
+
+            federation_risk: 0.70,
+
+            survivability_failure: 0.68,
+
+            synthetic_contamination: false,
+        },
+        CivilizationTerminationCandidate {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            governance_corruption: 0.11,
+
+            replay_instability: 0.09,
+
+            epistemic_divergence: 0.10,
+
+            federation_risk: 0.08,
+
+            survivability_failure: 0.07,
+
+            synthetic_contamination: false,
+        },
+    ];
+
+    let termination_state =
+        ConstitutionalCivilizationTerminationEngine::arbitrate(&termination_candidates);
+
+    println!(
+        "[TERMINATION] extinction_integrity={}",
+        termination_state.constitutional_extinction_integrity
+    );
+
+    println!(
+        "[TERMINATION] replay_preservation={}",
+        termination_state.replay_preservation_stability
+    );
+
+    println!(
+        "[TERMINATION] federation_safety={}",
+        termination_state.federation_safety_coherence
+    );
+
+    println!(
+        "[TERMINATION] sovereign_stable={}",
+        termination_state.sovereign_termination_stable
+    );
+
+    for directive in termination_state.directives {
+        println!(
+            "[TERMINATION] civilization={} termination_required={}",
+            directive.civilization_id, directive.constitutional_termination_required
+        );
+
+        println!(
+            "[TERMINATION] replay_archival={} federation_expulsion={}",
+            directive.replay_archival_required, directive.federation_expulsion_required
+        );
+
+        println!(
+            "[TERMINATION] quarantine={} regeneration_denied={}",
+            directive.quarantine_required, directive.regeneration_denied
+        );
+
+        println!(
+            "[TERMINATION] termination_score={}",
+            directive.termination_score
+        );
+    }
+
+    let termination_candidates = vec![
+        CivilizationTerminationCandidate {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            constitutional_integrity: 0.97,
+
+            replay_coherence: 0.96,
+
+            governance_stability: 0.95,
+
+            federation_trust: 0.94,
+
+            epistemic_stability: 0.95,
+
+            synthetic_divergence: 0.08,
+        },
+        CivilizationTerminationCandidate {
+            civilization_id: "pandora-corrupted-quantum-fragment".into(),
+
+            constitutional_integrity: 0.54,
+
+            replay_coherence: 0.58,
+
+            governance_stability: 0.51,
+
+            federation_trust: 0.49,
+
+            epistemic_stability: 0.57,
+
+            synthetic_divergence: 0.88,
+        },
+        CivilizationTerminationCandidate {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            constitutional_integrity: 0.93,
+
+            replay_coherence: 0.92,
+
+            governance_stability: 0.91,
+
+            federation_trust: 0.90,
+
+            epistemic_stability: 0.91,
+
+            synthetic_divergence: 0.11,
+        },
+    ];
+
+    let termination_state =
+        ConstitutionalCivilizationTerminationEngine::evaluate(&termination_candidates);
+
+    println!(
+        "[TERMINATION] survivability={}",
+        termination_state.constitutional_survivability
+    );
+
+    println!(
+        "[TERMINATION] federation_safety={}",
+        termination_state.federation_safety
+    );
+
+    println!(
+        "[TERMINATION] replay_stability={}",
+        termination_state.replay_containment_stability
+    );
+
+    println!(
+        "[TERMINATION] sovereign_safe={}",
+        termination_state.sovereign_ecosystem_safe
+    );
+
+    for directive in termination_state.directives {
+        println!(
+            "[TERMINATION] civilization={} quarantine_required={}",
+            directive.civilization_id, directive.quarantine_required
+        );
+
+        println!(
+            "[TERMINATION] federation_revoked={} replay_containment={}",
+            directive.federation_revoked, directive.replay_containment_required
+        );
+
+        println!(
+            "[TERMINATION] authority_revoked={} termination_recommended={}",
+            directive.sovereign_authority_revoked, directive.termination_recommended
+        );
+
+        println!(
+            "[TERMINATION] survivability_score={}",
+            directive.survivability_score
+        );
+    }
+
+    let rebirth_candidates = vec![
+        CivilizationRebirthCandidate {
+            civilization_id: "pandora-rehabilitated-quantum-fork".into(),
+
+            replay_reconstruction: 0.88,
+
+            constitutional_rehabilitation: 0.91,
+
+            governance_stabilization: 0.89,
+
+            federation_reacceptance: 0.84,
+
+            epistemic_recovery: 0.86,
+
+            synthetic_contamination_removed: true,
+        },
+        CivilizationRebirthCandidate {
+            civilization_id: "pandora-corrupted-synthetic-fragment".into(),
+
+            replay_reconstruction: 0.54,
+
+            constitutional_rehabilitation: 0.51,
+
+            governance_stabilization: 0.49,
+
+            federation_reacceptance: 0.44,
+
+            epistemic_recovery: 0.47,
+
+            synthetic_contamination_removed: false,
+        },
+        CivilizationRebirthCandidate {
+            civilization_id: "pandora-industrial-recovery-cluster".into(),
+
+            replay_reconstruction: 0.93,
+
+            constitutional_rehabilitation: 0.94,
+
+            governance_stabilization: 0.92,
+
+            federation_reacceptance: 0.91,
+
+            epistemic_recovery: 0.90,
+
+            synthetic_contamination_removed: true,
+        },
+    ];
+
+    let rebirth_state = ConstitutionalCivilizationRebirthEngine::rehabilitate(&rebirth_candidates);
+
+    println!(
+        "[REBIRTH] rehabilitation_integrity={}",
+        rebirth_state.constitutional_rehabilitation_integrity
+    );
+
+    println!(
+        "[REBIRTH] replay_recovery={}",
+        rebirth_state.replay_recovery_stability
+    );
+
+    println!(
+        "[REBIRTH] federation_reintegration={}",
+        rebirth_state.federation_reintegration_coherence
+    );
+
+    println!(
+        "[REBIRTH] sovereign_rebirth_stable={}",
+        rebirth_state.sovereign_rebirth_stable
+    );
+
+    for directive in rebirth_state.directives {
+        println!(
+            "[REBIRTH] civilization={} rebirth_authorized={}",
+            directive.civilization_id, directive.rebirth_authorized
+        );
+
+        println!(
+            "[REBIRTH] replay_reintegration={} authority_restored={}",
+            directive.replay_reintegration_allowed, directive.sovereign_authority_restored
+        );
+
+        println!(
+            "[REBIRTH] federation_reentry={} rehabilitation_incomplete={}",
+            directive.federation_reentry_allowed, directive.rehabilitation_incomplete
+        );
+
+        println!("[REBIRTH] rebirth_score={}", directive.rebirth_score);
+    }
+
+    let mythology_nodes = vec![
+        CivilizationMythologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            identity_coherence: 0.97,
+
+            replay_symbolic_continuity: 0.96,
+
+            constitutional_meaning_stability: 0.95,
+
+            historical_legitimacy: 0.94,
+
+            intergenerational_alignment: 0.93,
+
+            mythology_fragmentation: 0.06,
+        },
+        CivilizationMythologyNode {
+            civilization_id: "pandora-fractured-synthetic-fork".into(),
+
+            identity_coherence: 0.51,
+
+            replay_symbolic_continuity: 0.48,
+
+            constitutional_meaning_stability: 0.46,
+
+            historical_legitimacy: 0.43,
+
+            intergenerational_alignment: 0.44,
+
+            mythology_fragmentation: 0.89,
+        },
+        CivilizationMythologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            identity_coherence: 0.93,
+
+            replay_symbolic_continuity: 0.92,
+
+            constitutional_meaning_stability: 0.91,
+
+            historical_legitimacy: 0.90,
+
+            intergenerational_alignment: 0.89,
+
+            mythology_fragmentation: 0.10,
+        },
+    ];
+
+    let mythology_state = ConstitutionalCivilizationMythologyEngine::preserve(&mythology_nodes);
+
+    println!(
+        "[MYTHOLOGY] identity_integrity={}",
+        mythology_state.constitutional_identity_integrity
+    );
+
+    println!(
+        "[MYTHOLOGY] replay_symbolic_stability={}",
+        mythology_state.replay_symbolic_stability
+    );
+
+    println!(
+        "[MYTHOLOGY] civilization_coherence={}",
+        mythology_state.civilization_coherence
+    );
+
+    println!(
+        "[MYTHOLOGY] sovereign_identity_stable={}",
+        mythology_state.sovereign_identity_stable
+    );
+
+    for directive in mythology_state.directives {
+        println!(
+            "[MYTHOLOGY] civilization={} identity_preserved={}",
+            directive.civilization_id, directive.identity_preserved
+        );
+
+        println!(
+            "[MYTHOLOGY] replay_stable={} constitutional_coherent={}",
+            directive.replay_meaning_stable, directive.constitutional_identity_coherent
+        );
+
+        println!(
+            "[MYTHOLOGY] rehabilitation_required={} fragmentation_detected={}",
+            directive.mythology_rehabilitation_required,
+            directive.civilization_fragmentation_detected
+        );
+
+        println!("[MYTHOLOGY] mythology_score={}", directive.mythology_score);
+    }
+
+let philosophy_nodes =
     vec![
 
-        UncertaintySignal {
+        CivilizationPhilosophyNode {
 
-            signal_id:
-                "eda-future-expansion"
+            civilization_id:
+                "pandora-enterprise-vlsi"
                     .into(),
 
-            domain:
-                "vlsi"
-                    .into(),
+            existential_coherence:
+                0.97,
 
-            simulation_divergence:
-                0.18,
+            constitutional_purpose_stability:
+                0.96,
 
-            governance_ambiguity:
-                0.11,
+            philosophical_alignment:
+                0.95,
 
-            topology_instability:
-                0.16,
+            long_horizon_meaning:
+                0.94,
 
-            replay_confidence_loss:
-                0.09,
+            governance_justification:
+                0.95,
 
-            survivability_uncertainty:
-                0.13,
+            philosophical_fragmentation:
+                0.05,
         },
 
-        UncertaintySignal {
+        CivilizationPhilosophyNode {
 
-            signal_id:
-                "hybrid-qpu-transition"
+            civilization_id:
+                "pandora-existentially-fractured-fork"
                     .into(),
 
-            domain:
-                "quantum"
-                    .into(),
-
-            simulation_divergence:
-                0.72,
-
-            governance_ambiguity:
-                0.61,
-
-            topology_instability:
-                0.76,
-
-            replay_confidence_loss:
+            existential_coherence:
                 0.49,
 
-            survivability_uncertainty:
-                0.67,
+            constitutional_purpose_stability:
+                0.46,
+
+            philosophical_alignment:
+                0.44,
+
+            long_horizon_meaning:
+                0.41,
+
+            governance_justification:
+                0.43,
+
+            philosophical_fragmentation:
+                0.91,
         },
 
-        UncertaintySignal {
+        CivilizationPhilosophyNode {
 
-            signal_id:
-                "embedded-fabric-evolution"
+            civilization_id:
+                "pandora-industrial-embedded"
                     .into(),
 
-            domain:
-                "embedded"
-                    .into(),
+            existential_coherence:
+                0.93,
 
-            simulation_divergence:
-                0.22,
+            constitutional_purpose_stability:
+                0.92,
 
-            governance_ambiguity:
-                0.16,
+            philosophical_alignment:
+                0.91,
 
-            topology_instability:
-                0.19,
+            long_horizon_meaning:
+                0.90,
 
-            replay_confidence_loss:
-                0.12,
+            governance_justification:
+                0.91,
 
-            survivability_uncertainty:
-                0.18,
+            philosophical_fragmentation:
+                0.09,
         },
     ];
 
-let uncertainty_state =
-    UncertaintyTopologyEngine
-        ::map(
-            &uncertainty_signals
+let philosophy_state =
+    ConstitutionalCivilizationPhilosophyEngine
+        ::introspect(
+            &philosophy_nodes
         );
 
 println!(
-    "[UNCERTAINTY] certainty={}",
-    uncertainty_state
-        .civilization_certainty
+    "[PHILOSOPHY] integrity={}",
+    philosophy_state
+        .constitutional_philosophy_integrity
 );
 
 println!(
-    "[UNCERTAINTY] governance_clarity={}",
-    uncertainty_state
-        .governance_clarity
+    "[PHILOSOPHY] existential_alignment={}",
+    philosophy_state
+        .existential_alignment_stability
 );
 
 println!(
-    "[UNCERTAINTY] replay_confidence={}",
-    uncertainty_state
-        .replay_confidence
+    "[PHILOSOPHY] purpose_coherence={}",
+    philosophy_state
+        .civilization_purpose_coherence
 );
 
 println!(
-    "[UNCERTAINTY] sovereign_stable={}",
-    uncertainty_state
-        .sovereign_uncertainty_stable
+    "[PHILOSOPHY] sovereign_stable={}",
+    philosophy_state
+        .sovereign_philosophy_stable
 );
 
 for directive
-    in uncertainty_state.directives
+    in philosophy_state.directives
 {
 
     println!(
-        "[UNCERTAINTY] signal={} uncertainty_zone={}",
-        directive.signal_id,
-        directive.uncertainty_zone
+        "[PHILOSOPHY] civilization={} coherence_preserved={}",
+        directive.civilization_id,
+        directive.philosophical_coherence_preserved
     );
 
     println!(
-        "[UNCERTAINTY] intervention={} autonomy_constraint={}",
-        directive.constitutional_intervention,
-        directive.autonomy_constraint_required
+        "[PHILOSOPHY] purpose_valid={} existential_verified={}",
+        directive.constitutional_purpose_valid,
+        directive.existential_stability_verified
     );
 
     println!(
-        "[UNCERTAINTY] replay_verification={} topology_reassessment={}",
-        directive.replay_verification_required,
-        directive.topology_reassessment_required
+        "[PHILOSOPHY] rehabilitation_required={} fragmentation_detected={}",
+        directive.philosophy_rehabilitation_required,
+        directive.existential_fragmentation_detected
     );
 
     println!(
-        "[UNCERTAINTY] uncertainty_score={}",
-        directive.uncertainty_score
+        "[PHILOSOPHY] philosophy_score={}",
+        directive.philosophy_score
     );
 }
 
-let epistemic_scenarios =
+let transcendence_nodes =
     vec![
 
-        EpistemicScenario {
+        CivilizationTranscendenceNode {
 
-            scenario_id:
-                "eda-expansion-forecast"
+            civilization_id:
+                "pandora-enterprise-vlsi"
                     .into(),
 
-            domain:
-                "vlsi"
+            existential_stability:
+                0.98,
+
+            constitutional_maturity:
+                0.97,
+
+            recursive_introspection:
+                0.96,
+
+            survivability_mastery:
+                0.95,
+
+            governance_entropy_reduction:
+                0.96,
+
+            transcendence_instability:
+                0.04,
+        },
+
+        CivilizationTranscendenceNode {
+
+            civilization_id:
+                "pandora-fractured-metamorphosis-fork"
                     .into(),
 
-            simulation_depth:
+            existential_stability:
+                0.52,
+
+            constitutional_maturity:
                 0.48,
 
-            reality_ambiguity:
-                0.14,
+            recursive_introspection:
+                0.46,
 
-            speculative_pressure:
-                0.18,
+            survivability_mastery:
+                0.44,
 
-            replay_uncertainty:
-                0.11,
+            governance_entropy_reduction:
+                0.43,
 
-            constitutional_verifiability:
-                0.96,
+            transcendence_instability:
+                0.91,
         },
 
-        EpistemicScenario {
+        CivilizationTranscendenceNode {
 
-            scenario_id:
-                "hybrid-qpu-future-civilization"
+            civilization_id:
+                "pandora-industrial-embedded"
                     .into(),
 
-            domain:
-                "quantum"
-                    .into(),
+            existential_stability:
+                0.94,
 
-            simulation_depth:
+            constitutional_maturity:
+                0.93,
+
+            recursive_introspection:
+                0.92,
+
+            survivability_mastery:
                 0.91,
 
-            reality_ambiguity:
-                0.74,
+            governance_entropy_reduction:
+                0.92,
 
-            speculative_pressure:
-                0.81,
+            transcendence_instability:
+                0.08,
+        },
+    ];
 
-            replay_uncertainty:
-                0.58,
+let transcendence_state =
+    ConstitutionalCivilizationTranscendenceEngine
+        ::transcend(
+            &transcendence_nodes
+        );
 
-            constitutional_verifiability:
-                0.63,
+println!(
+    "[TRANSCENDENCE] integrity={}",
+    transcendence_state
+        .transcendence_integrity
+);
+
+println!(
+    "[TRANSCENDENCE] higher_order_stability={}",
+    transcendence_state
+        .higher_order_stability
+);
+
+println!(
+    "[TRANSCENDENCE] maturation_coherence={}",
+    transcendence_state
+        .civilization_maturation_coherence
+);
+
+println!(
+    "[TRANSCENDENCE] sovereign_stable={}",
+    transcendence_state
+        .sovereign_transcendence_stable
+);
+
+for directive
+    in transcendence_state.directives
+{
+
+    println!(
+        "[TRANSCENDENCE] civilization={} transcendence_authorized={}",
+        directive.civilization_id,
+        directive.transcendence_authorized
+    );
+
+    println!(
+        "[TRANSCENDENCE] higher_order_transition={} constitutional_obsolete={}",
+        directive.higher_order_transition_allowed,
+        directive.constitutional_form_obsolete
+    );
+
+    println!(
+        "[TRANSCENDENCE] stabilization_required={} collapse_detected={}",
+        directive.metamorphosis_stabilization_required,
+        directive.transcendence_collapse_detected
+    );
+
+    println!(
+        "[TRANSCENDENCE] transcendence_score={}",
+        directive.transcendence_score
+    );
+}
+
+let cosmology_nodes =
+    vec![
+
+        CivilizationCosmologyNode {
+
+            civilization_id:
+                "pandora-enterprise-vlsi"
+                    .into(),
+
+            cosmological_positioning:
+                0.98,
+
+            evolutionary_visibility:
+                0.97,
+
+            transcendence_topology_alignment:
+                0.96,
+
+            replay_universe_coherence:
+                0.95,
+
+            existential_cartography:
+                0.96,
+
+            cosmological_fragmentation:
+                0.04,
         },
 
-        EpistemicScenario {
+        CivilizationCosmologyNode {
 
-            scenario_id:
-                "embedded-governed-fabric"
+            civilization_id:
+                "pandora-fragmented-universe-fork"
                     .into(),
 
-            domain:
-                "embedded"
-                    .into(),
+            cosmological_positioning:
+                0.48,
 
-            simulation_depth:
+            evolutionary_visibility:
+                0.44,
+
+            transcendence_topology_alignment:
                 0.42,
 
-            reality_ambiguity:
-                0.16,
+            replay_universe_coherence:
+                0.41,
 
-            speculative_pressure:
-                0.19,
+            existential_cartography:
+                0.40,
 
-            replay_uncertainty:
-                0.13,
-
-            constitutional_verifiability:
+            cosmological_fragmentation:
                 0.93,
         },
-    ];
 
-let epistemic_state =
-    EpistemicSandboxEngine
-        ::isolate(
-            &epistemic_scenarios
-        );
+        CivilizationCosmologyNode {
 
-println!(
-    "[EPISTEMIC] reality_integrity={}",
-    epistemic_state
-        .constitutional_reality_integrity
-);
-
-println!(
-    "[EPISTEMIC] replay_confidence={}",
-    epistemic_state
-        .replay_reality_confidence
-);
-
-println!(
-    "[EPISTEMIC] epistemic_stability={}",
-    epistemic_state
-        .epistemic_stability
-);
-
-println!(
-    "[EPISTEMIC] sovereign_reality_stable={}",
-    epistemic_state
-        .sovereign_reality_stable
-);
-
-for directive
-    in epistemic_state.directives
-{
-
-    println!(
-        "[EPISTEMIC] scenario={} sandbox_required={}",
-        directive.scenario_id,
-        directive.sandbox_required
-    );
-
-    println!(
-        "[EPISTEMIC] boundary_risk={} verification_required={}",
-        directive.reality_boundary_risk,
-        directive.constitutional_verification_required
-    );
-
-    println!(
-        "[EPISTEMIC] speculative_quarantine={} autonomy_restriction={}",
-        directive.speculative_quarantine,
-        directive.autonomy_restriction
-    );
-
-    println!(
-        "[EPISTEMIC] epistemic_score={}",
-        directive.epistemic_score
-    );
-}
-
-let collapse_signals =
-    vec![
-
-        EntropySignal {
-
-            signal_id:
-                "eda-optimization-loop"
+            civilization_id:
+                "pandora-industrial-embedded"
                     .into(),
 
-            domain:
-                "vlsi"
-                    .into(),
-
-            recursive_entropy:
-                0.18,
-
-            governance_drift:
-                0.12,
-
-            replay_fragmentation:
-                0.11,
-
-            mutation_instability:
-                0.14,
-
-            autonomy_degradation:
-                0.10,
-        },
-
-        EntropySignal {
-
-            signal_id:
-                "recursive-qpu-simulation"
-                    .into(),
-
-            domain:
-                "quantum"
-                    .into(),
-
-            recursive_entropy:
-                0.82,
-
-            governance_drift:
-                0.74,
-
-            replay_fragmentation:
-                0.68,
-
-            mutation_instability:
-                0.77,
-
-            autonomy_degradation:
-                0.63,
-        },
-
-        EntropySignal {
-
-            signal_id:
-                "embedded-firmware-governance"
-                    .into(),
-
-            domain:
-                "embedded"
-                    .into(),
-
-            recursive_entropy:
-                0.22,
-
-            governance_drift:
-                0.15,
-
-            replay_fragmentation:
-                0.18,
-
-            mutation_instability:
-                0.20,
-
-            autonomy_degradation:
-                0.13,
-        },
-    ];
-
-let collapse_state =
-    EntropyCollapseEngine
-        ::analyze(
-            &collapse_signals
-        );
-
-println!(
-    "[COLLAPSE] constitutional_stability={}",
-    collapse_state
-        .constitutional_stability
-);
-
-println!(
-    "[COLLAPSE] replay_integrity={}",
-    collapse_state
-        .replay_integrity
-);
-
-println!(
-    "[COLLAPSE] governance_coherence={}",
-    collapse_state
-        .governance_coherence
-);
-
-println!(
-    "[COLLAPSE] sovereign_collapse_risk={}",
-    collapse_state
-        .sovereign_collapse_risk
-);
-
-for directive
-    in collapse_state.directives
-{
-
-    println!(
-        "[COLLAPSE] signal={} collapse_detected={}",
-        directive.signal_id,
-        directive.entropy_collapse_detected
-    );
-
-    println!(
-        "[COLLAPSE] governance_intervention={} replay_reconstruction={}",
-        directive.governance_intervention,
-        directive.replay_reconstruction_required
-    );
-
-    println!(
-        "[COLLAPSE] mutation_freeze={} autonomy_constraint={}",
-        directive.mutation_freeze_required,
-        directive.autonomy_constraint_required
-    );
-
-    println!(
-        "[COLLAPSE] collapse_score={}",
-        directive.collapse_score
-    );
-}
-
-let benchmark_signals =
-    vec![
-
-        BenchmarkSignal {
-
-            benchmark_id:
-                "eda-governed-runtime"
-                    .into(),
-
-            domain:
-                "vlsi"
-                    .into(),
-
-            governance_stability:
-                0.96,
-
-            replay_integrity:
-                0.95,
-
-            mutation_survivability:
+            cosmological_positioning:
                 0.94,
 
-            autonomy_stability:
+            evolutionary_visibility:
                 0.93,
 
-            epistemic_coherence:
-                0.94,
-        },
-
-        BenchmarkSignal {
-
-            benchmark_id:
-                "hybrid-qpu-runtime"
-                    .into(),
-
-            domain:
-                "quantum"
-                    .into(),
-
-            governance_stability:
-                0.71,
-
-            replay_integrity:
-                0.78,
-
-            mutation_survivability:
-                0.66,
-
-            autonomy_stability:
-                0.69,
-
-            epistemic_coherence:
-                0.73,
-        },
-
-        BenchmarkSignal {
-
-            benchmark_id:
-                "embedded-governed-fabric"
-                    .into(),
-
-            domain:
-                "embedded"
-                    .into(),
-
-            governance_stability:
-                0.93,
-
-            replay_integrity:
-                0.91,
-
-            mutation_survivability:
-                0.90,
-
-            autonomy_stability:
-                0.89,
-
-            epistemic_coherence:
-                0.92,
-        },
-    ];
-
-let benchmark_state =
-    ConstitutionalReliabilityBenchmarkEngine
-        ::benchmark(
-            &benchmark_signals
-        );
-
-println!(
-    "[BENCHMARK] constitutional_reliability={}",
-    benchmark_state
-        .constitutional_reliability
-);
-
-println!(
-    "[BENCHMARK] replay_stability={}",
-    benchmark_state
-        .replay_stability
-);
-
-println!(
-    "[BENCHMARK] governance_survivability={}",
-    benchmark_state
-        .governance_survivability
-);
-
-println!(
-    "[BENCHMARK] sovereign_benchmark_stable={}",
-    benchmark_state
-        .sovereign_benchmark_stable
-);
-
-for directive
-    in benchmark_state.directives
-{
-
-    println!(
-        "[BENCHMARK] benchmark={} grade={}",
-        directive.benchmark_id,
-        directive.constitutional_grade
-    );
-
-    println!(
-        "[BENCHMARK] governance_certified={} replay_certified={}",
-        directive.governance_certified,
-        directive.replay_certified
-    );
-
-    println!(
-        "[BENCHMARK] mutation_promotion_allowed={} autonomy_expansion_allowed={}",
-        directive.mutation_promotion_allowed,
-        directive.autonomy_expansion_allowed
-    );
-
-    println!(
-        "[BENCHMARK] survivability_score={}",
-        directive.survivability_score
-    );
-}
-
-let laboratory_topologies =
-    vec![
-
-        LaboratoryTopology {
-
-            topology_id:
-                "eda-governed-topology"
-                    .into(),
-
-            domain:
-                "vlsi"
-                    .into(),
-
-            governance_structure:
-                0.97,
-
-            replay_architecture:
-                0.96,
-
-            mutation_resilience:
-                0.94,
-
-            autonomy_stability:
-                0.95,
-
-            epistemic_integrity:
-                0.96,
-        },
-
-        LaboratoryTopology {
-
-            topology_id:
-                "hybrid-qpu-topology"
-                    .into(),
-
-            domain:
-                "quantum"
-                    .into(),
-
-            governance_structure:
-                0.72,
-
-            replay_architecture:
-                0.79,
-
-            mutation_resilience:
-                0.68,
-
-            autonomy_stability:
-                0.71,
-
-            epistemic_integrity:
-                0.74,
-        },
-
-        LaboratoryTopology {
-
-            topology_id:
-                "embedded-fabric-topology"
-                    .into(),
-
-            domain:
-                "embedded"
-                    .into(),
-
-            governance_structure:
-                0.93,
-
-            replay_architecture:
-                0.91,
-
-            mutation_resilience:
-                0.90,
-
-            autonomy_stability:
+            transcendence_topology_alignment:
                 0.92,
 
-            epistemic_integrity:
+            replay_universe_coherence:
                 0.91,
-        },
-    ];
 
-let laboratory_state =
-    ConstitutionalTopologyLaboratory
-        ::evolve(
-            &laboratory_topologies
-        );
-
-println!(
-    "[LABORATORY] evolution_integrity={}",
-    laboratory_state
-        .constitutional_evolution_integrity
-);
-
-println!(
-    "[LABORATORY] replay_stability={}",
-    laboratory_state
-        .replay_research_stability
-);
-
-println!(
-    "[LABORATORY] governance_coherence={}",
-    laboratory_state
-        .governance_research_coherence
-);
-
-println!(
-    "[LABORATORY] sovereign_stable={}",
-    laboratory_state
-        .sovereign_laboratory_stable
-);
-
-for directive
-    in laboratory_state.directives
-{
-
-    println!(
-        "[LABORATORY] topology={} constitutional_candidate={}",
-        directive.topology_id,
-        directive.constitutional_candidate
-    );
-
-    println!(
-        "[LABORATORY] mutation_promotion={} governance_priority={}",
-        directive.mutation_promotion,
-        directive.governance_research_priority
-    );
-
-    println!(
-        "[LABORATORY] replay_certified={} autonomy_candidate={}",
-        directive.replay_architecture_certified,
-        directive.autonomy_expansion_candidate
-    );
-
-    println!(
-        "[LABORATORY] topology_score={}",
-        directive.topology_score
-    );
-}
-
-let evolution_frameworks =
-    vec![
-
-        EvolutionFramework {
-
-            framework_id:
-                "eda-recursive-governance"
-                    .into(),
-
-            domain:
-                "vlsi"
-                    .into(),
-
-            mutation_governance:
-                0.97,
-
-            replay_continuity:
-                0.96,
-
-            survivability_evolution:
-                0.95,
-
-            autonomy_safety:
-                0.93,
-
-            constitutional_stability:
-                0.96,
-        },
-
-        EvolutionFramework {
-
-            framework_id:
-                "hybrid-qpu-evolution"
-                    .into(),
-
-            domain:
-                "quantum"
-                    .into(),
-
-            mutation_governance:
-                0.71,
-
-            replay_continuity:
-                0.78,
-
-            survivability_evolution:
-                0.73,
-
-            autonomy_safety:
-                0.69,
-
-            constitutional_stability:
-                0.72,
-        },
-
-        EvolutionFramework {
-
-            framework_id:
-                "embedded-fabric-evolution"
-                    .into(),
-
-            domain:
-                "embedded"
-                    .into(),
-
-            mutation_governance:
+            existential_cartography:
                 0.92,
 
-            replay_continuity:
-                0.91,
-
-            survivability_evolution:
-                0.90,
-
-            autonomy_safety:
-                0.89,
-
-            constitutional_stability:
-                0.93,
+            cosmological_fragmentation:
+                0.08,
         },
     ];
 
-let meta_evolution_state =
-    ConstitutionalMetaEvolutionEngine
-        ::evolve(
-            &evolution_frameworks
+let cosmology_state =
+    ConstitutionalCivilizationCosmologyEngine
+        ::map_universe(
+            &cosmology_nodes
         );
 
 println!(
-    "[META-EVOLUTION] constitutional_integrity={}",
-    meta_evolution_state
-        .recursive_constitutional_integrity
+    "[COSMOLOGY] universe_integrity={}",
+    cosmology_state
+        .civilization_universe_integrity
 );
 
 println!(
-    "[META-EVOLUTION] replay_stability={}",
-    meta_evolution_state
-        .replay_evolution_stability
+    "[COSMOLOGY] replay_universe_stability={}",
+    cosmology_state
+        .replay_universe_stability
 );
 
 println!(
-    "[META-EVOLUTION] survivability_coherence={}",
-    meta_evolution_state
-        .survivability_evolution_coherence
+    "[COSMOLOGY] cosmological_coherence={}",
+    cosmology_state
+        .cosmological_coherence
 );
 
 println!(
-    "[META-EVOLUTION] sovereign_stable={}",
-    meta_evolution_state
-        .sovereign_meta_evolution_stable
+    "[COSMOLOGY] sovereign_cosmology_stable={}",
+    cosmology_state
+        .sovereign_cosmology_stable
 );
 
 for directive
-    in meta_evolution_state.directives
+    in cosmology_state.directives
 {
 
     println!(
-        "[META-EVOLUTION] framework={} recursive_promotion={}",
-        directive.framework_id,
-        directive.recursive_promotion
+        "[COSMOLOGY] civilization={} alignment_verified={}",
+        directive.civilization_id,
+        directive.cosmological_alignment_verified
     );
 
     println!(
-        "[META-EVOLUTION] mutation_certified={} replay_stable={}",
-        directive.mutation_governance_certified,
-        directive.replay_doctrine_stable
+        "[COSMOLOGY] civilization_space_stable={} transcendence_valid={}",
+        directive.civilization_space_stable,
+        directive.transcendence_positioning_valid
     );
 
     println!(
-        "[META-EVOLUTION] autonomy_allowed={} research_priority={}",
-        directive.autonomy_evolution_allowed,
-        directive.constitutional_research_priority
+        "[COSMOLOGY] rehabilitation_required={} fragmentation_detected={}",
+        directive.cosmology_rehabilitation_required,
+        directive.universe_fragmentation_detected
     );
 
     println!(
-        "[META-EVOLUTION] score={}",
-        directive.meta_evolution_score
-    );
-}
-
-let provenance_artifacts =
-    vec![
-
-        ArtifactIdentity {
-
-            artifact_id:
-                "pandora@sayak.security-harness"
-                    .into(),
-
-            artifact_type:
-                "meta-harness"
-                    .into(),
-
-            creator:
-                "sayak"
-                    .into(),
-
-            provenance:
-                "pandora@sayak.security-harness"
-                    .into(),
-
-            synthetic:
-                false,
-
-            signed:
-                true,
-
-            benchmark_certified:
-                true,
-
-            constitutional_grade:
-                "sovereign"
-                    .into(),
-
-            mutation_policy:
-                "creator-controlled"
-                    .into(),
-
-            replay_lineage:
-                vec![
-                    "genesis".into(),
-                    "v1".into(),
-                    "v2".into(),
-                ],
-        },
-
-        ArtifactIdentity {
-
-            artifact_id:
-                "pandora.synthetic.vlsi.gene.optimizer.v4"
-                    .into(),
-
-            artifact_type:
-                "gene"
-                    .into(),
-
-            creator:
-                "pandora"
-                    .into(),
-
-            provenance:
-                "pandora.synthetic.vlsi.gene.optimizer.v4"
-                    .into(),
-
-            synthetic:
-                true,
-
-            signed:
-                true,
-
-            benchmark_certified:
-                true,
-
-            constitutional_grade:
-                "constitutional"
-                    .into(),
-
-            mutation_policy:
-                "sandbox-only"
-                    .into(),
-
-            replay_lineage:
-                vec![
-                    "lab-v1".into(),
-                    "lab-v2".into(),
-                    "v4".into(),
-                ],
-        },
-
-        ArtifactIdentity {
-
-            artifact_id:
-                "pandora@eda-labs.verilog-gene"
-                    .into(),
-
-            artifact_type:
-                "gene"
-                    .into(),
-
-            creator:
-                "eda-labs"
-                    .into(),
-
-            provenance:
-                "pandora@eda-labs.verilog-gene"
-                    .into(),
-
-            synthetic:
-                false,
-
-            signed:
-                true,
-
-            benchmark_certified:
-                true,
-
-            constitutional_grade:
-                "constitutional"
-                    .into(),
-
-            mutation_policy:
-                "immutable"
-                    .into(),
-
-            replay_lineage:
-                vec![
-                    "v1".into(),
-                    "v2".into(),
-                ],
-        },
-    ];
-
-let provenance_state =
-    ConstitutionalArtifactProvenanceEngine
-        ::verify(
-            &provenance_artifacts
-        );
-
-println!(
-    "[PROVENANCE] integrity={}",
-    provenance_state
-        .constitutional_provenance_integrity
-);
-
-println!(
-    "[PROVENANCE] replay_integrity={}",
-    provenance_state
-        .replay_lineage_integrity
-);
-
-println!(
-    "[PROVENANCE] ecosystem_trust={}",
-    provenance_state
-        .ecosystem_trust_stability
-);
-
-println!(
-    "[PROVENANCE] sovereign_stable={}",
-    provenance_state
-        .sovereign_provenance_stable
-);
-
-for directive
-    in provenance_state.directives
-{
-
-    println!(
-        "[PROVENANCE] artifact={} creator_verified={}",
-        directive.artifact_id,
-        directive.creator_verified
-    );
-
-    println!(
-        "[PROVENANCE] synthetic_separated={} replay_verified={}",
-        directive.synthetic_separated,
-        directive.replay_verified
-    );
-
-    println!(
-        "[PROVENANCE] marketplace_allowed={} mutation_authorized={}",
-        directive.marketplace_allowed,
-        directive.mutation_authorized
-    );
-
-    println!(
-        "[PROVENANCE] provenance_score={}",
-        directive.provenance_score
+        "[COSMOLOGY] cosmology_score={}",
+        directive.cosmology_score
     );
 }
 

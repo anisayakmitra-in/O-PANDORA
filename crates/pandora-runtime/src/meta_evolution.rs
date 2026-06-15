@@ -1,237 +1,119 @@
-use serde::{
-    Serialize,
-    Deserialize,
-};
+use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvolutionFramework {
+    pub framework_id: String,
 
-    pub framework_id:
-        String,
+    pub domain: String,
 
-    pub domain:
-        String,
+    pub mutation_governance: f64,
 
-    pub mutation_governance:
-        f64,
+    pub replay_continuity: f64,
 
-    pub replay_continuity:
-        f64,
+    pub survivability_evolution: f64,
 
-    pub survivability_evolution:
-        f64,
+    pub autonomy_safety: f64,
 
-    pub autonomy_safety:
-        f64,
-
-    pub constitutional_stability:
-        f64,
+    pub constitutional_stability: f64,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetaEvolutionDirective {
+    pub framework_id: String,
 
-    pub framework_id:
-        String,
+    pub recursive_promotion: bool,
 
-    pub recursive_promotion:
-        bool,
+    pub mutation_governance_certified: bool,
 
-    pub mutation_governance_certified:
-        bool,
+    pub replay_doctrine_stable: bool,
 
-    pub replay_doctrine_stable:
-        bool,
+    pub autonomy_evolution_allowed: bool,
 
-    pub autonomy_evolution_allowed:
-        bool,
+    pub constitutional_research_priority: bool,
 
-    pub constitutional_research_priority:
-        bool,
-
-    pub meta_evolution_score:
-        f64,
+    pub meta_evolution_score: f64,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetaEvolutionState {
+    pub recursive_constitutional_integrity: f64,
 
-    pub recursive_constitutional_integrity:
-        f64,
+    pub replay_evolution_stability: f64,
 
-    pub replay_evolution_stability:
-        f64,
+    pub survivability_evolution_coherence: f64,
 
-    pub survivability_evolution_coherence:
-        f64,
+    pub sovereign_meta_evolution_stable: bool,
 
-    pub sovereign_meta_evolution_stable:
-        bool,
-
-    pub directives:
-        Vec<
-            MetaEvolutionDirective
-        >,
+    pub directives: Vec<MetaEvolutionDirective>,
 }
 
 pub struct ConstitutionalMetaEvolutionEngine;
 
 impl ConstitutionalMetaEvolutionEngine {
+    pub fn evolve(frameworks: &[EvolutionFramework]) -> MetaEvolutionState {
+        let mut directives = Vec::new();
 
-    pub fn evolve(
+        let mut integrity = 0.0;
 
-        frameworks:
-            &[EvolutionFramework],
-    )
-        -> MetaEvolutionState
-    {
+        let mut replay = 0.0;
 
-        let mut directives =
-            Vec::new();
+        let mut survivability = 0.0;
 
-        let mut integrity =
-            0.0;
+        for framework in frameworks {
+            println!("[META-EVOLUTION] framework={}", framework.framework_id);
 
-        let mut replay =
-            0.0;
+            let meta_evolution_score = (framework.mutation_governance * 0.25)
+                + (framework.replay_continuity * 0.20)
+                + (framework.survivability_evolution * 0.20)
+                + (framework.autonomy_safety * 0.15)
+                + (framework.constitutional_stability * 0.20);
 
-        let mut survivability =
-            0.0;
+            let recursive_promotion = meta_evolution_score > 0.91;
 
-        for framework
-            in frameworks
-        {
+            let mutation_governance_certified = framework.mutation_governance > 0.88;
 
-            println!(
-                "[META-EVOLUTION] framework={}",
-                framework.framework_id
-            );
+            let replay_doctrine_stable = framework.replay_continuity > 0.86;
 
-            let meta_evolution_score =
-                (
-                    framework
-                        .mutation_governance
-                        * 0.25
-                )
-                + (
-                    framework
-                        .replay_continuity
-                        * 0.20
-                )
-                + (
-                    framework
-                        .survivability_evolution
-                        * 0.20
-                )
-                + (
-                    framework
-                        .autonomy_safety
-                        * 0.15
-                )
-                + (
-                    framework
-                        .constitutional_stability
-                        * 0.20
-                );
+            let autonomy_evolution_allowed = framework.autonomy_safety > 0.84;
 
-            let recursive_promotion =
-                meta_evolution_score
-                    > 0.91;
+            let constitutional_research_priority = framework.constitutional_stability < 0.76;
 
-            let mutation_governance_certified =
-                framework
-                    .mutation_governance
-                        > 0.88;
+            directives.push(MetaEvolutionDirective {
+                framework_id: framework.framework_id.clone(),
 
-            let replay_doctrine_stable =
-                framework
-                    .replay_continuity
-                        > 0.86;
+                recursive_promotion,
 
-            let autonomy_evolution_allowed =
-                framework
-                    .autonomy_safety
-                        > 0.84;
+                mutation_governance_certified,
 
-            let constitutional_research_priority =
-                framework
-                    .constitutional_stability
-                        < 0.76;
+                replay_doctrine_stable,
 
-            directives.push(
+                autonomy_evolution_allowed,
 
-                MetaEvolutionDirective {
+                constitutional_research_priority,
 
-                    framework_id:
-                        framework
-                            .framework_id
-                            .clone(),
+                meta_evolution_score,
+            });
 
-                    recursive_promotion,
+            integrity += meta_evolution_score;
 
-                    mutation_governance_certified,
+            replay += framework.replay_continuity;
 
-                    replay_doctrine_stable,
-
-                    autonomy_evolution_allowed,
-
-                    constitutional_research_priority,
-
-                    meta_evolution_score,
-                }
-            );
-
-            integrity +=
-                meta_evolution_score;
-
-            replay +=
-                framework
-                    .replay_continuity;
-
-            survivability +=
-                framework
-                    .survivability_evolution;
+            survivability += framework.survivability_evolution;
         }
 
-        let count =
-            frameworks.len() as f64;
+        let count = frameworks.len() as f64;
 
-        let recursive_constitutional_integrity =
-            integrity / count;
+        let recursive_constitutional_integrity = integrity / count;
 
-        let replay_evolution_stability =
-            replay / count;
+        let replay_evolution_stability = replay / count;
 
-        let survivability_evolution_coherence =
-            survivability / count;
+        let survivability_evolution_coherence = survivability / count;
 
-        let sovereign_meta_evolution_stable =
-            recursive_constitutional_integrity
-                > 0.85
-            &&
-            replay_evolution_stability
-                > 0.84
-            &&
-            survivability_evolution_coherence
-                > 0.83;
+        let sovereign_meta_evolution_stable = recursive_constitutional_integrity > 0.85
+            && replay_evolution_stability > 0.84
+            && survivability_evolution_coherence > 0.83;
 
         MetaEvolutionState {
-
             recursive_constitutional_integrity,
 
             replay_evolution_stability,
