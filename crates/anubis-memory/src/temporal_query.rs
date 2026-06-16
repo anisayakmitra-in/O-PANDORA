@@ -3,7 +3,7 @@ use crate::graph::{MemoryGraph, MemoryNode};
 pub struct TemporalQueryEngine;
 
 impl TemporalQueryEngine {
-    pub fn nodes_after<'a>(graph: &'a MemoryGraph, timestamp: String) -> Vec<&'a MemoryNode> {
+    pub fn nodes_after(graph: &MemoryGraph, timestamp: String) -> Vec<&MemoryNode> {
         graph
             .nodes
             .iter()
@@ -11,7 +11,7 @@ impl TemporalQueryEngine {
             .collect()
     }
 
-    pub fn chronological<'a>(graph: &'a MemoryGraph) -> Vec<&'a MemoryNode> {
+    pub fn chronological(graph: &MemoryGraph) -> Vec<&MemoryNode> {
         let mut nodes = graph.nodes.iter().collect::<Vec<_>>();
 
         nodes.sort_by_key(|node| node.temporal.timestamp.clone());

@@ -12,6 +12,12 @@ pub struct ProviderRegistry {
     providers: Arc<RwLock<HashMap<String, Arc<dyn Provider>>>>,
 }
 
+impl Default for ProviderRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProviderRegistry {
     pub fn new() -> Self {
         Self {

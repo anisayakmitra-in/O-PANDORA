@@ -25,6 +25,12 @@ pub struct EventBus {
     pub receiver: Receiver<RuntimeEvent>,
 }
 
+impl Default for EventBus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventBus {
     pub fn new() -> Self {
         let (sender, receiver) = channel();

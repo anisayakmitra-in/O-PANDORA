@@ -89,6 +89,8 @@ impl AcquisitionOrchestrator {
                 score_a.partial_cmp(&score_b).unwrap()
             })?;
 
+        let default_quantization = String::from("fp16");
+
         let quantization = if target.memory_pressure > 0.75 {
             "q4_k_m"
         } else if target.memory_pressure > 0.50 {
@@ -97,7 +99,7 @@ impl AcquisitionOrchestrator {
             candidate
                 .quantization_profiles
                 .first()
-                .unwrap_or(&"fp16".into())
+                .unwrap_or(&default_quantization)
         };
 
         let deployment_mode = if target.compute_pressure > 0.80 {

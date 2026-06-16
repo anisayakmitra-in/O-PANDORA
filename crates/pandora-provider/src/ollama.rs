@@ -23,6 +23,12 @@ pub struct OllamaProvider {
     base_url: String,
 }
 
+impl Default for OllamaProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OllamaProvider {
     pub fn new() -> Self {
         Self {

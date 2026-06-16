@@ -3,11 +3,11 @@ use crate::graph::{MemoryEdge, MemoryGraph, RelationshipType};
 pub struct GraphQueryEngine;
 
 impl GraphQueryEngine {
-    pub fn edges_by_relationship<'a>(
-        graph: &'a MemoryGraph,
+    pub fn edges_by_relationship(
+        graph: &MemoryGraph,
 
         relationship: RelationshipType,
-    ) -> Vec<&'a MemoryEdge> {
+    ) -> Vec<&MemoryEdge> {
         graph
             .edges
             .iter()

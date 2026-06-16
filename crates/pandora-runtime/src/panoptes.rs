@@ -24,6 +24,15 @@ pub struct OversightDecision {
     pub directives: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CognitionScore {
+    pub score_id: String,
+    pub subsystem: String,
+    pub score: f64,
+    pub anomaly_score: f64,
+    pub timestamp: u64,
+}
+
 pub struct PanoptesOversightEngine;
 
 impl PanoptesOversightEngine {

@@ -7,6 +7,12 @@ pub struct HarnessPerformance {
     max_history: usize,
 }
 
+impl Default for HarnessPerformance {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HarnessPerformance {
     pub fn new() -> Self {
         Self {

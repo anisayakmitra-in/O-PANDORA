@@ -16,7 +16,7 @@ pub struct BranchScore {
 pub struct EvolutionarySelector;
 
 impl EvolutionarySelector {
-    pub fn select_best<'a>(scores: &'a [BranchScore]) -> Option<&'a BranchScore> {
+    pub fn select_best(scores: &[BranchScore]) -> Option<&BranchScore> {
         scores.iter().max_by(|a, b| {
             let score_a = a.fitness * a.confidence - a.governance_penalty;
 
@@ -26,7 +26,7 @@ impl EvolutionarySelector {
         })
     }
 
-    pub fn top_k<'a>(scores: &'a [BranchScore], k: usize) -> Vec<&'a BranchScore> {
+    pub fn top_k(scores: &[BranchScore], k: usize) -> Vec<&BranchScore> {
         let mut ranked = scores.iter().collect::<Vec<_>>();
 
         ranked.sort_by(|a, b| {

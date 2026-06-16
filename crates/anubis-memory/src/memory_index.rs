@@ -5,6 +5,12 @@ pub struct MemoryIndex {
     pub entries: Vec<MemoryEntry>,
 }
 
+impl Default for MemoryIndex {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryIndex {
     pub fn new() -> Self {
         Self {

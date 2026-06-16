@@ -68,6 +68,6 @@ impl MutationValidator {
 
 impl MutationValidator {
     pub fn validate_all(scores: &[BranchScore]) -> Vec<GovernanceDecision> {
-        scores.iter().map(|score| Self::validate(score)).collect()
+        scores.iter().map(Self::validate).collect()
     }
 }

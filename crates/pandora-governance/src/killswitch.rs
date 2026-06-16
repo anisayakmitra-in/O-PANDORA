@@ -11,6 +11,12 @@ pub struct RuntimeKillSwitch {
     triggered: Arc<AtomicBool>,
 }
 
+impl Default for RuntimeKillSwitch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RuntimeKillSwitch {
     pub fn new() -> Self {
         Self {

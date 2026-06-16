@@ -137,28 +137,24 @@ impl ActiveSandbox {
                 .await
                 .map_err(|error| SandboxError::ExecutionFailed(error.to_string()))?;
 
-            match result {
-                StartExecResults::Attached { mut output, .. } => {
-                    while let Some(message) = output.next().await {
-                        match message {
-                            Ok(LogOutput::StdOut { message }) => {
-                                let line = String::from_utf8_lossy(&message).to_string();
+            if let StartExecResults::Attached { mut output, .. } = result {
+                while let Some(message) = output.next().await {
+                    match message {
+                        Ok(LogOutput::StdOut { message }) => {
+                            let line = String::from_utf8_lossy(&message).to_string();
 
-                                let _ = stdout_tx.send(line).await;
-                            }
-
-                            Ok(LogOutput::StdErr { message }) => {
-                                let line = String::from_utf8_lossy(&message).to_string();
-
-                                let _ = stderr_tx.send(line).await;
-                            }
-
-                            _ => {}
+                            let _ = stdout_tx.send(line).await;
                         }
+
+                        Ok(LogOutput::StdErr { message }) => {
+                            let line = String::from_utf8_lossy(&message).to_string();
+
+                            let _ = stderr_tx.send(line).await;
+                        }
+
+                        _ => {}
                     }
                 }
-
-                _ => {}
             }
 
             let inspect = docker

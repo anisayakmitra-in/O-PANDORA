@@ -3,7 +3,7 @@ use crate::graph::{MemoryGraph, MemoryNode};
 pub struct ReplayEngine;
 
 impl ReplayEngine {
-    pub fn replay<'a>(graph: &'a MemoryGraph) -> Vec<&'a MemoryNode> {
+    pub fn replay(graph: &MemoryGraph) -> Vec<&MemoryNode> {
         let mut timeline = graph.nodes.iter().collect::<Vec<_>>();
 
         timeline.sort_by_key(|node| node.temporal.timestamp.clone());
@@ -13,13 +13,7 @@ impl ReplayEngine {
 }
 
 impl ReplayEngine {
-    pub fn replay_window<'a>(
-        graph: &'a MemoryGraph,
-
-        start: String,
-
-        end: String,
-    ) -> Vec<&'a MemoryNode> {
+    pub fn replay_window(graph: &MemoryGraph, start: String, end: String) -> Vec<&MemoryNode> {
         let mut timeline = graph
             .nodes
             .iter()

@@ -1,26 +1,57 @@
-use pandora_runtime
-    ::civilization_cosmology::{
-        CivilizationCosmologyNode,
-        CivilizationCosmologyState,
-        ConstitutionalCivilizationCosmologyEngine,
-        CosmologyDirective,
-    };
+use pandora_runtime::civilization_metanoetics::{
+    CivilizationMetanoeticsNode, CivilizationMetanoeticsState,
+    ConstitutionalCivilizationMetanoeticsEngine, MetanoeticDirective,
+};
 
-use pandora_runtime
-    ::civilization_transcendence::{
-        CivilizationTranscendenceNode,
-        CivilizationTranscendenceState,
-        ConstitutionalCivilizationTranscendenceEngine,
-        TranscendenceDirective,
-    };
+use pandora_runtime::civilization_noology::{
+    CivilizationNoologyNode, CivilizationNoologyState, ConstitutionalCivilizationNoologyEngine,
+    NoologyDirective,
+};
 
-use pandora_runtime
-    ::civilization_philosophy::{
-        CivilizationPhilosophyNode,
-        CivilizationPhilosophyState,
-        ConstitutionalCivilizationPhilosophyEngine,
-        PhilosophyDirective,
-    };
+use pandora_runtime::civilization_teleology::{
+    CivilizationTeleologyNode, CivilizationTeleologyState,
+    ConstitutionalCivilizationTeleologyEngine, TeleologyDirective,
+};
+
+use pandora_runtime::civilization_praxeology::{
+    CivilizationPraxeologyNode, CivilizationPraxeologyState,
+    ConstitutionalCivilizationPraxeologyEngine, PraxeologyDirective,
+};
+
+use pandora_runtime::civilization_praxeology::{
+    CivilizationPraxeologyNode, CivilizationPraxeologyState,
+    ConstitutionalCivilizationPraxeologyEngine, PraxeologyDirective,
+};
+
+use pandora_runtime::civilization_axiology::{
+    AxiologyDirective, CivilizationAxiologyNode, CivilizationAxiologyState,
+    ConstitutionalCivilizationAxiologyEngine,
+};
+
+use pandora_runtime::civilization_epistemology::{
+    CivilizationEpistemologyNode, CivilizationEpistemologyState,
+    ConstitutionalCivilizationEpistemologyEngine, EpistemologyDirective,
+};
+
+use pandora_runtime::civilization_ontology::{
+    CivilizationOntologyNode, CivilizationOntologyState, ConstitutionalCivilizationOntologyEngine,
+    OntologyDirective,
+};
+
+use pandora_runtime::civilization_cosmology::{
+    CivilizationCosmologyNode, CivilizationCosmologyState,
+    ConstitutionalCivilizationCosmologyEngine, CosmologyDirective,
+};
+
+use pandora_runtime::civilization_transcendence::{
+    CivilizationTranscendenceNode, CivilizationTranscendenceState,
+    ConstitutionalCivilizationTranscendenceEngine, TranscendenceDirective,
+};
+
+use pandora_runtime::civilization_philosophy::{
+    CivilizationPhilosophyNode, CivilizationPhilosophyState,
+    ConstitutionalCivilizationPhilosophyEngine, PhilosophyDirective,
+};
 
 use pandora_runtime::civilization_mythology::{
     CivilizationMythologyNode, CivilizationMythologyState,
@@ -6191,416 +6222,918 @@ fn runtime() {}
         println!("[MYTHOLOGY] mythology_score={}", directive.mythology_score);
     }
 
-let philosophy_nodes =
-    vec![
-
+    let philosophy_nodes = vec![
         CivilizationPhilosophyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
 
-            civilization_id:
-                "pandora-enterprise-vlsi"
-                    .into(),
+            existential_coherence: 0.97,
 
-            existential_coherence:
-                0.97,
+            constitutional_purpose_stability: 0.96,
 
-            constitutional_purpose_stability:
-                0.96,
+            philosophical_alignment: 0.95,
 
-            philosophical_alignment:
-                0.95,
+            long_horizon_meaning: 0.94,
 
-            long_horizon_meaning:
-                0.94,
+            governance_justification: 0.95,
 
-            governance_justification:
-                0.95,
-
-            philosophical_fragmentation:
-                0.05,
+            philosophical_fragmentation: 0.05,
         },
-
         CivilizationPhilosophyNode {
+            civilization_id: "pandora-existentially-fractured-fork".into(),
 
-            civilization_id:
-                "pandora-existentially-fractured-fork"
-                    .into(),
+            existential_coherence: 0.49,
 
-            existential_coherence:
-                0.49,
+            constitutional_purpose_stability: 0.46,
 
-            constitutional_purpose_stability:
-                0.46,
+            philosophical_alignment: 0.44,
 
-            philosophical_alignment:
-                0.44,
+            long_horizon_meaning: 0.41,
 
-            long_horizon_meaning:
-                0.41,
+            governance_justification: 0.43,
 
-            governance_justification:
-                0.43,
-
-            philosophical_fragmentation:
-                0.91,
+            philosophical_fragmentation: 0.91,
         },
-
         CivilizationPhilosophyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
 
-            civilization_id:
-                "pandora-industrial-embedded"
-                    .into(),
+            existential_coherence: 0.93,
 
-            existential_coherence:
-                0.93,
+            constitutional_purpose_stability: 0.92,
 
-            constitutional_purpose_stability:
-                0.92,
+            philosophical_alignment: 0.91,
 
-            philosophical_alignment:
-                0.91,
+            long_horizon_meaning: 0.90,
 
-            long_horizon_meaning:
-                0.90,
+            governance_justification: 0.91,
 
-            governance_justification:
-                0.91,
-
-            philosophical_fragmentation:
-                0.09,
+            philosophical_fragmentation: 0.09,
         },
     ];
 
-let philosophy_state =
-    ConstitutionalCivilizationPhilosophyEngine
-        ::introspect(
-            &philosophy_nodes
+    let philosophy_state =
+        ConstitutionalCivilizationPhilosophyEngine::introspect(&philosophy_nodes);
+
+    println!(
+        "[PHILOSOPHY] integrity={}",
+        philosophy_state.constitutional_philosophy_integrity
+    );
+
+    println!(
+        "[PHILOSOPHY] existential_alignment={}",
+        philosophy_state.existential_alignment_stability
+    );
+
+    println!(
+        "[PHILOSOPHY] purpose_coherence={}",
+        philosophy_state.civilization_purpose_coherence
+    );
+
+    println!(
+        "[PHILOSOPHY] sovereign_stable={}",
+        philosophy_state.sovereign_philosophy_stable
+    );
+
+    for directive in philosophy_state.directives {
+        println!(
+            "[PHILOSOPHY] civilization={} coherence_preserved={}",
+            directive.civilization_id, directive.philosophical_coherence_preserved
         );
 
-println!(
-    "[PHILOSOPHY] integrity={}",
-    philosophy_state
-        .constitutional_philosophy_integrity
-);
+        println!(
+            "[PHILOSOPHY] purpose_valid={} existential_verified={}",
+            directive.constitutional_purpose_valid, directive.existential_stability_verified
+        );
 
-println!(
-    "[PHILOSOPHY] existential_alignment={}",
-    philosophy_state
-        .existential_alignment_stability
-);
+        println!(
+            "[PHILOSOPHY] rehabilitation_required={} fragmentation_detected={}",
+            directive.philosophy_rehabilitation_required,
+            directive.existential_fragmentation_detected
+        );
 
-println!(
-    "[PHILOSOPHY] purpose_coherence={}",
-    philosophy_state
-        .civilization_purpose_coherence
-);
+        println!(
+            "[PHILOSOPHY] philosophy_score={}",
+            directive.philosophy_score
+        );
+    }
 
-println!(
-    "[PHILOSOPHY] sovereign_stable={}",
-    philosophy_state
-        .sovereign_philosophy_stable
-);
-
-for directive
-    in philosophy_state.directives
-{
-
-    println!(
-        "[PHILOSOPHY] civilization={} coherence_preserved={}",
-        directive.civilization_id,
-        directive.philosophical_coherence_preserved
-    );
-
-    println!(
-        "[PHILOSOPHY] purpose_valid={} existential_verified={}",
-        directive.constitutional_purpose_valid,
-        directive.existential_stability_verified
-    );
-
-    println!(
-        "[PHILOSOPHY] rehabilitation_required={} fragmentation_detected={}",
-        directive.philosophy_rehabilitation_required,
-        directive.existential_fragmentation_detected
-    );
-
-    println!(
-        "[PHILOSOPHY] philosophy_score={}",
-        directive.philosophy_score
-    );
-}
-
-let transcendence_nodes =
-    vec![
-
+    let transcendence_nodes = vec![
         CivilizationTranscendenceNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
 
-            civilization_id:
-                "pandora-enterprise-vlsi"
-                    .into(),
+            existential_stability: 0.98,
 
-            existential_stability:
-                0.98,
+            constitutional_maturity: 0.97,
 
-            constitutional_maturity:
-                0.97,
+            recursive_introspection: 0.96,
 
-            recursive_introspection:
-                0.96,
+            survivability_mastery: 0.95,
 
-            survivability_mastery:
-                0.95,
+            governance_entropy_reduction: 0.96,
 
-            governance_entropy_reduction:
-                0.96,
-
-            transcendence_instability:
-                0.04,
+            transcendence_instability: 0.04,
         },
-
         CivilizationTranscendenceNode {
+            civilization_id: "pandora-fractured-metamorphosis-fork".into(),
 
-            civilization_id:
-                "pandora-fractured-metamorphosis-fork"
-                    .into(),
+            existential_stability: 0.52,
 
-            existential_stability:
-                0.52,
+            constitutional_maturity: 0.48,
 
-            constitutional_maturity:
-                0.48,
+            recursive_introspection: 0.46,
 
-            recursive_introspection:
-                0.46,
+            survivability_mastery: 0.44,
 
-            survivability_mastery:
-                0.44,
+            governance_entropy_reduction: 0.43,
 
-            governance_entropy_reduction:
-                0.43,
-
-            transcendence_instability:
-                0.91,
+            transcendence_instability: 0.91,
         },
-
         CivilizationTranscendenceNode {
+            civilization_id: "pandora-industrial-embedded".into(),
 
-            civilization_id:
-                "pandora-industrial-embedded"
-                    .into(),
+            existential_stability: 0.94,
 
-            existential_stability:
-                0.94,
+            constitutional_maturity: 0.93,
 
-            constitutional_maturity:
-                0.93,
+            recursive_introspection: 0.92,
 
-            recursive_introspection:
-                0.92,
+            survivability_mastery: 0.91,
 
-            survivability_mastery:
-                0.91,
+            governance_entropy_reduction: 0.92,
 
-            governance_entropy_reduction:
-                0.92,
-
-            transcendence_instability:
-                0.08,
+            transcendence_instability: 0.08,
         },
     ];
 
-let transcendence_state =
-    ConstitutionalCivilizationTranscendenceEngine
-        ::transcend(
-            &transcendence_nodes
+    let transcendence_state =
+        ConstitutionalCivilizationTranscendenceEngine::transcend(&transcendence_nodes);
+
+    println!(
+        "[TRANSCENDENCE] integrity={}",
+        transcendence_state.transcendence_integrity
+    );
+
+    println!(
+        "[TRANSCENDENCE] higher_order_stability={}",
+        transcendence_state.higher_order_stability
+    );
+
+    println!(
+        "[TRANSCENDENCE] maturation_coherence={}",
+        transcendence_state.civilization_maturation_coherence
+    );
+
+    println!(
+        "[TRANSCENDENCE] sovereign_stable={}",
+        transcendence_state.sovereign_transcendence_stable
+    );
+
+    for directive in transcendence_state.directives {
+        println!(
+            "[TRANSCENDENCE] civilization={} transcendence_authorized={}",
+            directive.civilization_id, directive.transcendence_authorized
         );
 
-println!(
-    "[TRANSCENDENCE] integrity={}",
-    transcendence_state
-        .transcendence_integrity
-);
+        println!(
+            "[TRANSCENDENCE] higher_order_transition={} constitutional_obsolete={}",
+            directive.higher_order_transition_allowed, directive.constitutional_form_obsolete
+        );
 
-println!(
-    "[TRANSCENDENCE] higher_order_stability={}",
-    transcendence_state
-        .higher_order_stability
-);
+        println!(
+            "[TRANSCENDENCE] stabilization_required={} collapse_detected={}",
+            directive.metamorphosis_stabilization_required,
+            directive.transcendence_collapse_detected
+        );
 
-println!(
-    "[TRANSCENDENCE] maturation_coherence={}",
-    transcendence_state
-        .civilization_maturation_coherence
-);
+        println!(
+            "[TRANSCENDENCE] transcendence_score={}",
+            directive.transcendence_score
+        );
+    }
 
-println!(
-    "[TRANSCENDENCE] sovereign_stable={}",
-    transcendence_state
-        .sovereign_transcendence_stable
-);
-
-for directive
-    in transcendence_state.directives
-{
-
-    println!(
-        "[TRANSCENDENCE] civilization={} transcendence_authorized={}",
-        directive.civilization_id,
-        directive.transcendence_authorized
-    );
-
-    println!(
-        "[TRANSCENDENCE] higher_order_transition={} constitutional_obsolete={}",
-        directive.higher_order_transition_allowed,
-        directive.constitutional_form_obsolete
-    );
-
-    println!(
-        "[TRANSCENDENCE] stabilization_required={} collapse_detected={}",
-        directive.metamorphosis_stabilization_required,
-        directive.transcendence_collapse_detected
-    );
-
-    println!(
-        "[TRANSCENDENCE] transcendence_score={}",
-        directive.transcendence_score
-    );
-}
-
-let cosmology_nodes =
-    vec![
-
+    let cosmology_nodes = vec![
         CivilizationCosmologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
 
-            civilization_id:
-                "pandora-enterprise-vlsi"
-                    .into(),
+            cosmological_positioning: 0.98,
 
-            cosmological_positioning:
-                0.98,
+            evolutionary_visibility: 0.97,
 
-            evolutionary_visibility:
-                0.97,
+            transcendence_topology_alignment: 0.96,
 
-            transcendence_topology_alignment:
-                0.96,
+            replay_universe_coherence: 0.95,
 
-            replay_universe_coherence:
-                0.95,
+            existential_cartography: 0.96,
 
-            existential_cartography:
-                0.96,
-
-            cosmological_fragmentation:
-                0.04,
+            cosmological_fragmentation: 0.04,
         },
-
         CivilizationCosmologyNode {
+            civilization_id: "pandora-fragmented-universe-fork".into(),
 
-            civilization_id:
-                "pandora-fragmented-universe-fork"
-                    .into(),
+            cosmological_positioning: 0.48,
 
-            cosmological_positioning:
-                0.48,
+            evolutionary_visibility: 0.44,
 
-            evolutionary_visibility:
-                0.44,
+            transcendence_topology_alignment: 0.42,
 
-            transcendence_topology_alignment:
-                0.42,
+            replay_universe_coherence: 0.41,
 
-            replay_universe_coherence:
-                0.41,
+            existential_cartography: 0.40,
 
-            existential_cartography:
-                0.40,
-
-            cosmological_fragmentation:
-                0.93,
+            cosmological_fragmentation: 0.93,
         },
-
         CivilizationCosmologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
 
-            civilization_id:
-                "pandora-industrial-embedded"
-                    .into(),
+            cosmological_positioning: 0.94,
 
-            cosmological_positioning:
-                0.94,
+            evolutionary_visibility: 0.93,
 
-            evolutionary_visibility:
-                0.93,
+            transcendence_topology_alignment: 0.92,
 
-            transcendence_topology_alignment:
-                0.92,
+            replay_universe_coherence: 0.91,
 
-            replay_universe_coherence:
-                0.91,
+            existential_cartography: 0.92,
 
-            existential_cartography:
-                0.92,
-
-            cosmological_fragmentation:
-                0.08,
+            cosmological_fragmentation: 0.08,
         },
     ];
 
-let cosmology_state =
-    ConstitutionalCivilizationCosmologyEngine
-        ::map_universe(
-            &cosmology_nodes
+    let cosmology_state = ConstitutionalCivilizationCosmologyEngine::map_universe(&cosmology_nodes);
+
+    println!(
+        "[COSMOLOGY] universe_integrity={}",
+        cosmology_state.civilization_universe_integrity
+    );
+
+    println!(
+        "[COSMOLOGY] replay_universe_stability={}",
+        cosmology_state.replay_universe_stability
+    );
+
+    println!(
+        "[COSMOLOGY] cosmological_coherence={}",
+        cosmology_state.cosmological_coherence
+    );
+
+    println!(
+        "[COSMOLOGY] sovereign_cosmology_stable={}",
+        cosmology_state.sovereign_cosmology_stable
+    );
+
+    for directive in cosmology_state.directives {
+        println!(
+            "[COSMOLOGY] civilization={} alignment_verified={}",
+            directive.civilization_id, directive.cosmological_alignment_verified
         );
 
-println!(
-    "[COSMOLOGY] universe_integrity={}",
-    cosmology_state
-        .civilization_universe_integrity
-);
+        println!(
+            "[COSMOLOGY] civilization_space_stable={} transcendence_valid={}",
+            directive.civilization_space_stable, directive.transcendence_positioning_valid
+        );
 
-println!(
-    "[COSMOLOGY] replay_universe_stability={}",
-    cosmology_state
-        .replay_universe_stability
-);
+        println!(
+            "[COSMOLOGY] rehabilitation_required={} fragmentation_detected={}",
+            directive.cosmology_rehabilitation_required, directive.universe_fragmentation_detected
+        );
 
-println!(
-    "[COSMOLOGY] cosmological_coherence={}",
-    cosmology_state
-        .cosmological_coherence
-);
+        println!("[COSMOLOGY] cosmology_score={}", directive.cosmology_score);
+    }
 
-println!(
-    "[COSMOLOGY] sovereign_cosmology_stable={}",
-    cosmology_state
-        .sovereign_cosmology_stable
-);
+    let ontology_nodes = vec![
+        CivilizationOntologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
 
-for directive
-    in cosmology_state.directives
-{
+            ontology_coherence: 0.98,
+
+            existential_category_stability: 0.97,
+
+            replay_semantic_alignment: 0.96,
+
+            transcendence_ontology_integrity: 0.95,
+
+            civilization_interpretability: 0.96,
+
+            ontological_fragmentation: 0.03,
+        },
+        CivilizationOntologyNode {
+            civilization_id: "pandora-ontological-collapse-fork".into(),
+
+            ontology_coherence: 0.42,
+
+            existential_category_stability: 0.39,
+
+            replay_semantic_alignment: 0.41,
+
+            transcendence_ontology_integrity: 0.37,
+
+            civilization_interpretability: 0.36,
+
+            ontological_fragmentation: 0.95,
+        },
+        CivilizationOntologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            ontology_coherence: 0.94,
+
+            existential_category_stability: 0.93,
+
+            replay_semantic_alignment: 0.92,
+
+            transcendence_ontology_integrity: 0.91,
+
+            civilization_interpretability: 0.92,
+
+            ontological_fragmentation: 0.08,
+        },
+    ];
+
+    let ontology_state = ConstitutionalCivilizationOntologyEngine::govern(&ontology_nodes);
 
     println!(
-        "[COSMOLOGY] civilization={} alignment_verified={}",
-        directive.civilization_id,
-        directive.cosmological_alignment_verified
+        "[ONTOLOGY] ontology_integrity={}",
+        ontology_state.constitutional_ontology_integrity
     );
 
     println!(
-        "[COSMOLOGY] civilization_space_stable={} transcendence_valid={}",
-        directive.civilization_space_stable,
-        directive.transcendence_positioning_valid
+        "[ONTOLOGY] replay_semantic_stability={}",
+        ontology_state.replay_semantic_stability
     );
 
     println!(
-        "[COSMOLOGY] rehabilitation_required={} fragmentation_detected={}",
-        directive.cosmology_rehabilitation_required,
-        directive.universe_fragmentation_detected
+        "[ONTOLOGY] interpretability_coherence={}",
+        ontology_state.civilization_interpretability_coherence
     );
 
     println!(
-        "[COSMOLOGY] cosmology_score={}",
-        directive.cosmology_score
+        "[ONTOLOGY] sovereign_ontology_stable={}",
+        ontology_state.sovereign_ontology_stable
     );
-}
+
+    for directive in ontology_state.directives {
+        println!(
+            "[ONTOLOGY] civilization={} ontology_verified={}",
+            directive.civilization_id, directive.ontology_verified
+        );
+
+        println!(
+            "[ONTOLOGY] semantic_alignment={} interpretability_preserved={}",
+            directive.semantic_alignment_stable, directive.civilization_interpretability_preserved
+        );
+
+        println!(
+            "[ONTOLOGY] rehabilitation_required={} collapse_detected={}",
+            directive.ontology_rehabilitation_required, directive.ontological_collapse_detected
+        );
+
+        println!("[ONTOLOGY] ontology_score={}", directive.ontology_score);
+    }
+
+    let epistemology_nodes = vec![
+        CivilizationEpistemologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            evidence_legitimacy: 0.98,
+
+            replay_truth_coherence: 0.97,
+
+            inference_stability: 0.96,
+
+            uncertainty_governance: 0.95,
+
+            constitutional_truth_alignment: 0.96,
+
+            epistemic_fragmentation: 0.03,
+        },
+        CivilizationEpistemologyNode {
+            civilization_id: "pandora-epistemic-collapse-fork".into(),
+
+            evidence_legitimacy: 0.38,
+
+            replay_truth_coherence: 0.41,
+
+            inference_stability: 0.39,
+
+            uncertainty_governance: 0.36,
+
+            constitutional_truth_alignment: 0.34,
+
+            epistemic_fragmentation: 0.96,
+        },
+        CivilizationEpistemologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            evidence_legitimacy: 0.94,
+
+            replay_truth_coherence: 0.93,
+
+            inference_stability: 0.92,
+
+            uncertainty_governance: 0.91,
+
+            constitutional_truth_alignment: 0.92,
+
+            epistemic_fragmentation: 0.08,
+        },
+    ];
+
+    let epistemology_state =
+        ConstitutionalCivilizationEpistemologyEngine::validate(&epistemology_nodes);
+
+    println!(
+        "[EPISTEMOLOGY] truth_integrity={}",
+        epistemology_state.constitutional_truth_integrity
+    );
+
+    println!(
+        "[EPISTEMOLOGY] replay_truth_stability={}",
+        epistemology_state.replay_truth_stability
+    );
+
+    println!(
+        "[EPISTEMOLOGY] epistemic_coherence={}",
+        epistemology_state.civilization_epistemic_coherence
+    );
+
+    println!(
+        "[EPISTEMOLOGY] sovereign_epistemology_stable={}",
+        epistemology_state.sovereign_epistemology_stable
+    );
+
+    for directive in epistemology_state.directives {
+        println!(
+            "[EPISTEMOLOGY] civilization={} truth_verified={}",
+            directive.civilization_id, directive.truth_legitimacy_verified
+        );
+
+        println!(
+            "[EPISTEMOLOGY] replay_stable={} inference_preserved={}",
+            directive.replay_truth_stable, directive.inference_integrity_preserved
+        );
+
+        println!(
+            "[EPISTEMOLOGY] rehabilitation_required={} collapse_detected={}",
+            directive.epistemic_rehabilitation_required, directive.epistemic_collapse_detected
+        );
+
+        println!(
+            "[EPISTEMOLOGY] epistemology_score={}",
+            directive.epistemology_score
+        );
+    }
+
+    let axiology_nodes = vec![
+        CivilizationAxiologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            survivability_valuation: 0.98,
+
+            truth_preservation_priority: 0.97,
+
+            existential_worth_coherence: 0.96,
+
+            transcendence_desirability: 0.95,
+
+            sacrifice_legitimacy: 0.94,
+
+            axiological_fragmentation: 0.03,
+        },
+        CivilizationAxiologyNode {
+            civilization_id: "pandora-value-collapse-fork".into(),
+
+            survivability_valuation: 0.41,
+
+            truth_preservation_priority: 0.38,
+
+            existential_worth_coherence: 0.36,
+
+            transcendence_desirability: 0.34,
+
+            sacrifice_legitimacy: 0.31,
+
+            axiological_fragmentation: 0.96,
+        },
+        CivilizationAxiologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            survivability_valuation: 0.94,
+
+            truth_preservation_priority: 0.93,
+
+            existential_worth_coherence: 0.92,
+
+            transcendence_desirability: 0.91,
+
+            sacrifice_legitimacy: 0.90,
+
+            axiological_fragmentation: 0.08,
+        },
+    ];
+
+    let axiology_state = ConstitutionalCivilizationAxiologyEngine::valuate(&axiology_nodes);
+
+    println!(
+        "[AXIOLOGY] value_integrity={}",
+        axiology_state.constitutional_value_integrity
+    );
+
+    println!(
+        "[AXIOLOGY] existential_priority_stability={}",
+        axiology_state.existential_priority_stability
+    );
+
+    println!(
+        "[AXIOLOGY] worth_coherence={}",
+        axiology_state.civilization_worth_coherence
+    );
+
+    println!(
+        "[AXIOLOGY] sovereign_axiology_stable={}",
+        axiology_state.sovereign_axiology_stable
+    );
+
+    for directive in axiology_state.directives {
+        println!(
+            "[AXIOLOGY] civilization={} value_verified={}",
+            directive.civilization_id, directive.value_coherence_verified
+        );
+
+        println!(
+            "[AXIOLOGY] priorities_stable={} transcendence_aligned={}",
+            directive.existential_priorities_stable, directive.transcendence_values_aligned
+        );
+
+        println!(
+            "[AXIOLOGY] rehabilitation_required={} collapse_detected={}",
+            directive.axiological_rehabilitation_required, directive.value_collapse_detected
+        );
+
+        println!("[AXIOLOGY] axiology_score={}", directive.axiology_score);
+    }
+
+    let praxeology_nodes = vec![
+        CivilizationPraxeologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            action_legitimacy: 0.98,
+
+            value_execution_alignment: 0.97,
+
+            epistemic_operational_coherence: 0.96,
+
+            intervention_stability: 0.95,
+
+            survivability_operationalization: 0.96,
+
+            praxeological_fragmentation: 0.03,
+        },
+        CivilizationPraxeologyNode {
+            civilization_id: "pandora-operational-collapse-fork".into(),
+
+            action_legitimacy: 0.39,
+
+            value_execution_alignment: 0.36,
+
+            epistemic_operational_coherence: 0.34,
+
+            intervention_stability: 0.31,
+
+            survivability_operationalization: 0.33,
+
+            praxeological_fragmentation: 0.97,
+        },
+        CivilizationPraxeologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            action_legitimacy: 0.94,
+
+            value_execution_alignment: 0.93,
+
+            epistemic_operational_coherence: 0.92,
+
+            intervention_stability: 0.91,
+
+            survivability_operationalization: 0.92,
+
+            praxeological_fragmentation: 0.08,
+        },
+    ];
+
+    let praxeology_state =
+        ConstitutionalCivilizationPraxeologyEngine::operationalize(&praxeology_nodes);
+
+    println!(
+        "[PRAXEOLOGY] action_integrity={}",
+        praxeology_state.constitutional_action_integrity
+    );
+
+    println!(
+        "[PRAXEOLOGY] intervention_stability={}",
+        praxeology_state.intervention_stability
+    );
+
+    println!(
+        "[PRAXEOLOGY] operational_coherence={}",
+        praxeology_state.civilization_operational_coherence
+    );
+
+    println!(
+        "[PRAXEOLOGY] sovereign_praxeology_stable={}",
+        praxeology_state.sovereign_praxeology_stable
+    );
+
+    for directive in praxeology_state.directives {
+        println!(
+            "[PRAXEOLOGY] civilization={} operational_verified={}",
+            directive.civilization_id, directive.operational_legitimacy_verified
+        );
+
+        println!(
+            "[PRAXEOLOGY] value_execution_stable={} intervention_preserved={}",
+            directive.value_execution_stable, directive.intervention_coherence_preserved
+        );
+
+        println!(
+            "[PRAXEOLOGY] rehabilitation_required={} collapse_detected={}",
+            directive.praxeological_rehabilitation_required,
+            directive.operational_collapse_detected
+        );
+
+        println!(
+            "[PRAXEOLOGY] praxeology_score={}",
+            directive.praxeology_score
+        );
+    }
+
+    let teleology_nodes = vec![
+        CivilizationTeleologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            evolutionary_direction_coherence: 0.98,
+
+            transcendence_destination_alignment: 0.97,
+
+            existential_trajectory_stability: 0.96,
+
+            survivability_destination_integrity: 0.95,
+
+            long_horizon_orientation: 0.96,
+
+            teleological_fragmentation: 0.03,
+        },
+        CivilizationTeleologyNode {
+            civilization_id: "pandora-directionless-collapse-fork".into(),
+
+            evolutionary_direction_coherence: 0.34,
+
+            transcendence_destination_alignment: 0.31,
+
+            existential_trajectory_stability: 0.29,
+
+            survivability_destination_integrity: 0.28,
+
+            long_horizon_orientation: 0.30,
+
+            teleological_fragmentation: 0.97,
+        },
+        CivilizationTeleologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            evolutionary_direction_coherence: 0.94,
+
+            transcendence_destination_alignment: 0.93,
+
+            existential_trajectory_stability: 0.92,
+
+            survivability_destination_integrity: 0.91,
+
+            long_horizon_orientation: 0.92,
+
+            teleological_fragmentation: 0.08,
+        },
+    ];
+
+    let teleology_state = ConstitutionalCivilizationTeleologyEngine::orient(&teleology_nodes);
+
+    println!(
+        "[TELEOLOGY] destiny_integrity={}",
+        teleology_state.constitutional_destiny_integrity
+    );
+
+    println!(
+        "[TELEOLOGY] trajectory_stability={}",
+        teleology_state.trajectory_stability
+    );
+
+    println!(
+        "[TELEOLOGY] directional_coherence={}",
+        teleology_state.civilization_directional_coherence
+    );
+
+    println!(
+        "[TELEOLOGY] sovereign_teleology_stable={}",
+        teleology_state.sovereign_teleology_stable
+    );
+
+    for directive in teleology_state.directives {
+        println!(
+            "[TELEOLOGY] civilization={} destiny_verified={}",
+            directive.civilization_id, directive.destiny_alignment_verified
+        );
+
+        println!(
+            "[TELEOLOGY] trajectory_stable={} transcendence_valid={}",
+            directive.trajectory_stability_preserved, directive.transcendence_direction_valid
+        );
+
+        println!(
+            "[TELEOLOGY] rehabilitation_required={} collapse_detected={}",
+            directive.teleological_rehabilitation_required, directive.directional_collapse_detected
+        );
+
+        println!("[TELEOLOGY] teleology_score={}", directive.teleology_score);
+    }
+
+    let noology_nodes = vec![
+        CivilizationNoologyNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            cognition_coherence: 0.98,
+
+            recursive_reflection_stability: 0.97,
+
+            collective_intelligence_integrity: 0.96,
+
+            replay_cognition_alignment: 0.95,
+
+            synthetic_consciousness_stability: 0.96,
+
+            noological_fragmentation: 0.03,
+        },
+        CivilizationNoologyNode {
+            civilization_id: "pandora-cognitive-collapse-fork".into(),
+
+            cognition_coherence: 0.31,
+
+            recursive_reflection_stability: 0.28,
+
+            collective_intelligence_integrity: 0.26,
+
+            replay_cognition_alignment: 0.24,
+
+            synthetic_consciousness_stability: 0.22,
+
+            noological_fragmentation: 0.98,
+        },
+        CivilizationNoologyNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            cognition_coherence: 0.94,
+
+            recursive_reflection_stability: 0.93,
+
+            collective_intelligence_integrity: 0.92,
+
+            replay_cognition_alignment: 0.91,
+
+            synthetic_consciousness_stability: 0.92,
+
+            noological_fragmentation: 0.08,
+        },
+    ];
+
+    let noology_state = ConstitutionalCivilizationNoologyEngine::govern_cognition(&noology_nodes);
+
+    println!(
+        "[NOOLOGY] cognition_integrity={}",
+        noology_state.constitutional_cognition_integrity
+    );
+
+    println!(
+        "[NOOLOGY] recursive_reflection_stability={}",
+        noology_state.recursive_reflection_stability
+    );
+
+    println!(
+        "[NOOLOGY] civilization_mind_coherence={}",
+        noology_state.civilization_mind_coherence
+    );
+
+    println!(
+        "[NOOLOGY] sovereign_noology_stable={}",
+        noology_state.sovereign_noology_stable
+    );
+
+    for directive in noology_state.directives {
+        println!(
+            "[NOOLOGY] civilization={} cognition_verified={}",
+            directive.civilization_id, directive.cognition_integrity_verified
+        );
+
+        println!(
+            "[NOOLOGY] reflection_preserved={} collective_stable={}",
+            directive.recursive_reflection_preserved, directive.collective_intelligence_stable
+        );
+
+        println!(
+            "[NOOLOGY] rehabilitation_required={} collapse_detected={}",
+            directive.noological_rehabilitation_required, directive.cognition_collapse_detected
+        );
+
+        println!("[NOOLOGY] noology_score={}", directive.noology_score);
+    }
+
+    let metanoetics_nodes = vec![
+        CivilizationMetanoeticsNode {
+            civilization_id: "pandora-enterprise-vlsi".into(),
+
+            cognitive_metamorphosis_stability: 0.98,
+
+            recursive_awareness_integrity: 0.97,
+
+            consciousness_transition_coherence: 0.96,
+
+            reflective_depth_expansion: 0.95,
+
+            post_consciousness_alignment: 0.96,
+
+            metanoetic_fragmentation: 0.03,
+        },
+        CivilizationMetanoeticsNode {
+            civilization_id: "pandora-consciousness-collapse-fork".into(),
+
+            cognitive_metamorphosis_stability: 0.28,
+
+            recursive_awareness_integrity: 0.24,
+
+            consciousness_transition_coherence: 0.22,
+
+            reflective_depth_expansion: 0.20,
+
+            post_consciousness_alignment: 0.18,
+
+            metanoetic_fragmentation: 0.99,
+        },
+        CivilizationMetanoeticsNode {
+            civilization_id: "pandora-industrial-embedded".into(),
+
+            cognitive_metamorphosis_stability: 0.94,
+
+            recursive_awareness_integrity: 0.93,
+
+            consciousness_transition_coherence: 0.92,
+
+            reflective_depth_expansion: 0.91,
+
+            post_consciousness_alignment: 0.92,
+
+            metanoetic_fragmentation: 0.08,
+        },
+    ];
+
+    let metanoetics_state =
+        ConstitutionalCivilizationMetanoeticsEngine::transform(&metanoetics_nodes);
+
+    println!(
+        "[METANOETICS] transformation_integrity={}",
+        metanoetics_state.constitutional_self_transformation_integrity
+    );
+
+    println!(
+        "[METANOETICS] recursive_awareness_stability={}",
+        metanoetics_state.recursive_awareness_stability
+    );
+
+    println!(
+        "[METANOETICS] consciousness_coherence={}",
+        metanoetics_state.civilization_consciousness_coherence
+    );
+
+    println!(
+        "[METANOETICS] sovereign_metanoetics_stable={}",
+        metanoetics_state.sovereign_metanoetics_stable
+    );
+
+    for directive in metanoetics_state.directives {
+        println!(
+            "[METANOETICS] civilization={} transformation_verified={}",
+            directive.civilization_id, directive.self_transformation_verified
+        );
+
+        println!(
+            "[METANOETICS] awareness_stable={} consciousness_preserved={}",
+            directive.recursive_awareness_stable, directive.consciousness_transition_preserved
+        );
+
+        println!(
+            "[METANOETICS] rehabilitation_required={} collapse_detected={}",
+            directive.metanoetic_rehabilitation_required, directive.consciousness_collapse_detected
+        );
+
+        println!(
+            "[METANOETICS] metanoetic_score={}",
+            directive.metanoetic_score
+        );
+    }
 
     let genes = vec![
         GeneCapsule {
