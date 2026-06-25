@@ -1,0 +1,14 @@
+[package]
+name = "pandora-gene"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+pandora-memory = { path = "../pandora-memory" }
