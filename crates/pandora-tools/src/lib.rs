@@ -1,51 +1,54 @@
-pub trait Tool {
-    fn name(&self) -> &str;
+//! # pandora-tools
+//!
+//! Canonical owner of Pandora's tool system.
+//!
+//! This crate defines the **contracts** that any tool — native Rust,
+//! WASM, MCP, local, remote, sandboxed, or future — must satisfy.
+//! It does NOT implement tools, route tools to harnesses, or
+//! evaluate permissions. Those concerns live in higher layers
+//! (governance, harnesses, KUBER Palace).
+//!
+//! ## Crate layout
+//!
+//! | Module          | Responsibility                                |
+//! |-----------------|-----------------------------------------------|
+//! | [`traits`]      | The async `Tool` trait                        |
+//! | [`types`]       | `ToolInput`, `ToolOutput`, `ToolVersion`      |
+//! | [`manifest`]    | `ToolManifest`, `ToolMode`                    |
+//! | [`capability`]  | `ToolCapability`, `ToolCapabilitySet`         |
+//! | [`permission`]  | `ToolPermission`, `ToolPermissionSet`         |
+//! | [`registry`]    | `ToolRegistry` — thread-safe store of tools   |
+//! | [`error`]       | `ToolError` and `Result` alias                |
+//! | [`builtin`]     | Real built-in tool implementations            |
+//!
+//! ## Future compatibility
+//!
+//! The contracts are designed so that the following systems can be
+//! layered on top **without changes to this crate**:
+//!
+//! - Capability Leasing
+//! - Source / Meta / Extension Harnesses
+//! - KUBER Palace
+//! - WASM, native, MCP, local, and remote tools
+//!
+//! This crate deliberately exposes no plugin loader, no
+//! capability-leasing engine, and no sandbox runtime. Those are
+//! built on top of the stable abstractions here.
 
-    fn execute(&self, input: &str) -> String;
-}
+pub mod builtin;
+pub mod capability;
+pub mod error;
+pub mod manifest;
+pub mod permission;
+pub mod registry;
+pub mod traits;
+pub mod types;
 
-pub struct ReadFileTool;
-
-impl Tool for ReadFileTool {
-    fn name(&self) -> &str {
-        "read_file"
-    }
-
-    fn execute(&self, input: &str) -> String {
-        format!("READ FILE TOOL:\n{}", input)
-    }
-}
-
-pub mod filesystem;
-
-pub struct WebScrapeTool;
-
-impl Tool for WebScrapeTool {
-    fn name(&self) -> &str {
-        "web_scrape"
-    }
-
-    fn execute(&self, input: &str) -> String {
-        format!("SCRAPLING RESEARCH TOOL:\nScraped data from {}", input)
-    }
-}
-
-pub struct ShellTool;
-
-impl Tool for ShellTool {
-    fn name(&self) -> &str {
-        "shell"
-    }
-
-    fn execute(&self, input: &str) -> String {
-        format!("SHELL TOOL EXECUTED:\n{}", input)
-    }
-}
-
-pub fn tool_registry() -> Vec<Box<dyn Tool>> {
-    vec![
-        Box::new(ReadFileTool),
-        Box::new(WebScrapeTool),
-        Box::new(ShellTool),
-    ]
-}
+// Re-export the core types for ergonomic use at call sites.
+pub use capability::{ToolCapability, ToolCapabilitySet};
+pub use error::{Result, ToolError};
+pub use manifest::{ToolManifest, ToolMode};
+pub use permission::{ToolPermission, ToolPermissionSet};
+pub use registry::ToolRegistry;
+pub use traits::Tool;
+pub use types::{ToolId, ToolInput, ToolMetadata, ToolOutput, ToolVersion};

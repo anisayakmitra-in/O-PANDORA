@@ -6,3 +6,14 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
+# `rt` enables the async runtime, `sync` enables the registry's RwLock.
+tokio = { version = "1", features = ["rt", "sync"] }
+# Required for the async Tool trait signature and for the built-in
+# tools to honor cancellation.
+tokio-util = "0.7"
+# Required for the async Tool trait.
+async-trait = "0.1"
+# Used by the manifest, capability, permission, and tool types.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
