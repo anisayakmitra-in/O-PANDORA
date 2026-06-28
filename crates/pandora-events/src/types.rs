@@ -33,12 +33,7 @@ pub struct SerializableEvent<E>(pub E);
 
 impl<E> SerializableEvent<E>
 where
-    E: Event
-        + Serialize
-        + for<'de> Deserialize<'de>
-        + Send
-        + Sync
-        + 'static,
+    E: Event + Serialize + for<'de> Deserialize<'de> + Send + Sync + 'static,
 {
     /// Wrap a concrete event in a serializable envelope.
     pub fn new(event: E) -> Self {

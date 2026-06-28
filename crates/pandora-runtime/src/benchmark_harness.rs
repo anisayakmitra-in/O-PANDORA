@@ -47,3 +47,11 @@ impl BenchmarkHarness {
         }
     }
 }
+
+impl BenchmarkHarness {
+    pub fn evaluate(name: &str, task: &BenchmarkTask) -> BenchmarkResult {
+        let mut result = Self::execute(task);
+        result.name = name.into();
+        result
+    }
+}

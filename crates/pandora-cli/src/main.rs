@@ -5,6 +5,8 @@ mod gene;
 
 use gene::load_genes;
 
+mod pipeline;
+
 #[derive(Parser)]
 #[command(author = "Pandora Systems", version = "0.1.0", about = "Pandora CLI")]
 struct Cli {
@@ -26,9 +28,20 @@ enum Commands {
 
     Lineage,
 
-    Install { gene: String },
+    Install {
+        gene: String,
+    },
 
-    Remove { gene: String },
+    Remove {
+        gene: String,
+    },
+
+    /// Submit a user request to NARAD. The output is a
+    /// structured PlanningContext that downstream stages
+    /// (MOIRA, RAHU, the source harnesses) consume.
+    Ask {
+        input: String,
+    },
 }
 
 fn main() {
@@ -123,6 +136,17 @@ fn main() {
                     println!("REMOVE FAILED: {}", error);
                 }
             }
+        }
+
+        Commands::Ask { input } => {
+            // NARAD -> LoopRegistry: end-to-end pipeline.
+            // NARAD extracts the intent, the registry
+            // resolves a loop and runs it, and the
+            // combined result is emitted as JSON.
+            let result = futures::executor::block_on(pipeline::run_pipeline(&input));
+            let json =
+                serde_json::to_string_pretty(&result).expect("PipelineResult is serializable");
+            println!("{}", json);
         }
     }
 }

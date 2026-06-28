@@ -4,7 +4,6 @@ use crate::roles::HarnessRole;
 ///
 /// Constitutional Harnesses and Meta Harnesses both implement this trait.
 pub trait Harness {
-
     /// Unique identifier.
     fn id(&self) -> &str;
 

@@ -68,3 +68,13 @@ impl RecursivePlanningEngine {
         }
     }
 }
+
+// Compatibility aliases for main.rs.
+pub type RecursivePlanner = RecursivePlanningEngine;
+pub type RecursiveTask = PlanningStep;
+
+impl RecursivePlanningEngine {
+    pub fn recurse(_task: PlanningStep) {
+        println!("[PLANNER] recurse called");
+    }
+}

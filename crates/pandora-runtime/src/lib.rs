@@ -33,6 +33,7 @@ pub mod civilization_transcendence;
 pub mod coding_engine;
 pub mod cognition_fabric;
 pub mod cognition_governance;
+pub mod cognition_mesh;
 pub mod cognition_swarm;
 pub mod compiler_feedback;
 pub mod config;

@@ -45,3 +45,35 @@ impl ExecutionStateMachine {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+pub enum ExecutionStateKind {
+    Pending,
+    Scheduled,
+    Running,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+impl ExecutionStateMachine {
+    pub fn transition_kind(
+        task_id: &str,
+        previous: ExecutionStateKind,
+        current: ExecutionStateKind,
+    ) -> StateTransitionKind {
+        println!("[STATE] {} {:?} -> {:?}", task_id, previous, current);
+        StateTransitionKind {
+            task_id: task_id.into(),
+            previous,
+            current,
+        }
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StateTransitionKind {
+    pub task_id: String,
+    pub previous: ExecutionStateKind,
+    pub current: ExecutionStateKind,
+}

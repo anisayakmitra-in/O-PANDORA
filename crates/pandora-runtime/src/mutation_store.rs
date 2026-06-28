@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::mutation::MutationProposal;
+use crate::sandbox_governance::MutationProposal;
 
 pub fn persist_mutation(mutation: &MutationProposal) {
     fs::create_dir_all("mutations").unwrap();

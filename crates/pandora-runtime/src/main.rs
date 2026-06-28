@@ -1,490 +1,343 @@
-use pandora_runtime::civilization_metanoetics::{
-    CivilizationMetanoeticsNode, CivilizationMetanoeticsState,
-    ConstitutionalCivilizationMetanoeticsEngine, MetanoeticDirective,
+use pandora_runtime::acquisition_orchestrator::{
+    AcquisitionCandidate, AcquisitionDeploymentPlan, AcquisitionOrchestrator, DeploymentTarget,
 };
-
-use pandora_runtime::civilization_noology::{
-    CivilizationNoologyNode, CivilizationNoologyState, ConstitutionalCivilizationNoologyEngine,
-    NoologyDirective,
+use pandora_runtime::adaptive_orchestration::{
+    AdaptiveOrchestrationEngine, OrchestrationNode, OrchestrationScore,
 };
-
-use pandora_runtime::civilization_teleology::{
-    CivilizationTeleologyNode, CivilizationTeleologyState,
-    ConstitutionalCivilizationTeleologyEngine, TeleologyDirective,
+use pandora_runtime::anubis::{AnubisMemoryGovernor, MemoryArtifact, PersistenceDirective};
+use pandora_runtime::artifact_provenance::{
+    ArtifactIdentity, ConstitutionalArtifactProvenanceEngine, ProvenanceDirective, ProvenanceState,
 };
-
-use pandora_runtime::civilization_praxeology::{
-    CivilizationPraxeologyNode, CivilizationPraxeologyState,
-    ConstitutionalCivilizationPraxeologyEngine, PraxeologyDirective,
+use pandora_runtime::ast_engine::{AstAnalysis, AstEngine, AstFunction};
+use pandora_runtime::benchmark_harness::{BenchmarkHarness, BenchmarkResult, BenchmarkTask};
+use pandora_runtime::capability_resolution::{
+    CapabilityDomain, CapabilityGene, CapabilityResolution, CapabilityResolutionEngine,
 };
-
-use pandora_runtime::civilization_praxeology::{
-    CivilizationPraxeologyNode, CivilizationPraxeologyState,
-    ConstitutionalCivilizationPraxeologyEngine, PraxeologyDirective,
-};
-
 use pandora_runtime::civilization_axiology::{
     AxiologyDirective, CivilizationAxiologyNode, CivilizationAxiologyState,
     ConstitutionalCivilizationAxiologyEngine,
 };
-
-use pandora_runtime::civilization_epistemology::{
-    CivilizationEpistemologyNode, CivilizationEpistemologyState,
-    ConstitutionalCivilizationEpistemologyEngine, EpistemologyDirective,
-};
-
-use pandora_runtime::civilization_ontology::{
-    CivilizationOntologyNode, CivilizationOntologyState, ConstitutionalCivilizationOntologyEngine,
-    OntologyDirective,
-};
-
 use pandora_runtime::civilization_cosmology::{
     CivilizationCosmologyNode, CivilizationCosmologyState,
     ConstitutionalCivilizationCosmologyEngine, CosmologyDirective,
 };
-
-use pandora_runtime::civilization_transcendence::{
-    CivilizationTranscendenceNode, CivilizationTranscendenceState,
-    ConstitutionalCivilizationTranscendenceEngine, TranscendenceDirective,
+use pandora_runtime::civilization_epistemology::{
+    CivilizationEpistemologyNode, CivilizationEpistemologyState,
+    ConstitutionalCivilizationEpistemologyEngine, EpistemologyDirective,
 };
-
-use pandora_runtime::civilization_philosophy::{
-    CivilizationPhilosophyNode, CivilizationPhilosophyState,
-    ConstitutionalCivilizationPhilosophyEngine, PhilosophyDirective,
-};
-
-use pandora_runtime::civilization_mythology::{
-    CivilizationMythologyNode, CivilizationMythologyState,
-    ConstitutionalCivilizationMythologyEngine, MythologyDirective,
-};
-
-use pandora_runtime::civilization_rebirth::{
-    CivilizationRebirthCandidate, CivilizationRebirthState,
-    ConstitutionalCivilizationRebirthEngine, RebirthDirective,
-};
-
-use pandora_runtime::civilization_termination::{
-    CivilizationTerminationCandidate, CivilizationTerminationState,
-    ConstitutionalCivilizationTerminationEngine, TerminationDirective,
-};
-
-use pandora_runtime::civilization_termination::{
-    CivilizationTerminationCandidate, CivilizationTerminationState,
-    ConstitutionalCivilizationTerminationEngine, TerminationDirective,
-};
-
-use pandora_runtime::civilization_genesis::{
-    CivilizationGenesisCandidate, CivilizationGenesisState,
-    ConstitutionalCivilizationGenesisEngine, GenesisDirective,
-};
-
-use pandora_runtime::civilization_succession::{
-    CivilizationSuccessionState, CivilizationSuccessor, ConstitutionalCivilizationSuccessionEngine,
-    SuccessionDirective,
-};
-
-use pandora_runtime::civilization_memory::{
-    CivilizationMemoryNode, CivilizationMemoryState, ConstitutionalCivilizationMemoryEngine,
-    MemoryContinuityDirective,
-};
-
-use pandora_runtime::reality_consensus::{
-    CivilizationReality, ConstitutionalRealityConsensusEngine, RealityConsensusDirective,
-    RealityConsensusState,
-};
-
 use pandora_runtime::civilization_fabric::{
     CivilizationFabricState, CivilizationNode, ConstitutionalCivilizationFabricEngine,
     FederationDirective,
 };
-
-use pandora_runtime::execution_license::{
-    ConstitutionalExecutionLicenseEngine, ExecutionArtifact, ExecutionDirective, ExecutionState,
+use pandora_runtime::civilization_genesis::{
+    CivilizationGenesisCandidate, CivilizationGenesisState,
+    ConstitutionalCivilizationGenesisEngine, GenesisDirective,
 };
-
-use pandora_runtime::artifact_provenance::{
-    ArtifactIdentity, ConstitutionalArtifactProvenanceEngine, ProvenanceDirective, ProvenanceState,
+use pandora_runtime::civilization_memory::{
+    CivilizationMemoryNode, CivilizationMemoryState, ConstitutionalCivilizationMemoryEngine,
+    MemoryContinuityDirective,
 };
-
-use pandora_runtime::meta_evolution::{
-    ConstitutionalMetaEvolutionEngine, EvolutionFramework, MetaEvolutionDirective,
-    MetaEvolutionState,
+use pandora_runtime::civilization_metanoetics::{
+    CivilizationMetanoeticsNode, CivilizationMetanoeticsState,
+    ConstitutionalCivilizationMetanoeticsEngine, MetanoeticDirective,
 };
-
-use pandora_runtime::topology_laboratory::{
-    ConstitutionalTopologyLaboratory, LaboratoryDirective, LaboratoryState, LaboratoryTopology,
+use pandora_runtime::civilization_mythology::{
+    CivilizationMythologyNode, CivilizationMythologyState,
+    ConstitutionalCivilizationMythologyEngine, MythologyDirective,
 };
-
-use pandora_runtime::reliability_benchmark::{
-    BenchmarkDirective, BenchmarkSignal, BenchmarkState, ConstitutionalReliabilityBenchmarkEngine,
+use pandora_runtime::civilization_noology::{
+    CivilizationNoologyNode, CivilizationNoologyState, ConstitutionalCivilizationNoologyEngine,
+    NoologyDirective,
 };
-
-use pandora_runtime::entropy_collapse::{
-    CollapseDirective, CollapseState, EntropyCollapseEngine, EntropySignal,
+use pandora_runtime::civilization_ontology::{
+    CivilizationOntologyNode, CivilizationOntologyState, ConstitutionalCivilizationOntologyEngine,
+    OntologyDirective,
 };
-
-use pandora_runtime::epistemic_sandbox::{
-    EpistemicSandboxEngine, EpistemicScenario, EpistemicState, RealityBoundaryDirective,
+use pandora_runtime::civilization_philosophy::{
+    CivilizationPhilosophyNode, CivilizationPhilosophyState,
+    ConstitutionalCivilizationPhilosophyEngine, PhilosophyDirective,
 };
-
-use pandora_runtime::uncertainty_topology::{
-    UncertaintyDirective, UncertaintySignal, UncertaintyState, UncertaintyTopologyEngine,
+use pandora_runtime::civilization_praxeology::{
+    CivilizationPraxeologyNode, CivilizationPraxeologyState,
+    ConstitutionalCivilizationPraxeologyEngine, PraxeologyDirective,
 };
-
+use pandora_runtime::civilization_rebirth::{
+    CivilizationRebirthCandidate, CivilizationRebirthState,
+    ConstitutionalCivilizationRebirthEngine, RebirthDirective,
+};
 use pandora_runtime::civilization_regeneration::{
     CivilizationRegenerationEngine, RegenerationDirective, RegenerationSignal, RegenerationState,
 };
-
 use pandora_runtime::civilization_resilience::{
-    CivilizationResilienceEngine, CollapseDirective, ResilienceSignal, ResilienceState,
+    CivilizationResilienceEngine, CollapseDirective as PRRCollapseDirective, ResilienceSignal,
+    ResilienceState,
 };
-
-use pandora_runtime::sovereign_constitution::{
-    ConstitutionState, ConstitutionalDirective, ConstitutionalDoctrine,
-    SovereignExecutionConstitution,
+use pandora_runtime::civilization_succession::{
+    CivilizationSuccessionState, CivilizationSuccessor, ConstitutionalCivilizationSuccessionEngine,
+    SuccessionDirective,
 };
-
-use pandora_runtime::constitutional_autonomy::{
-    AutonomyDirective, AutonomySignal, AutonomyState, ConstitutionalAutonomyEngine,
+use pandora_runtime::civilization_teleology::{
+    CivilizationTeleologyNode, CivilizationTeleologyState,
+    ConstitutionalCivilizationTeleologyEngine, TeleologyDirective,
 };
-
-use pandora_runtime::reality_simulation::{
-    ConstitutionalRealitySimulationEngine, FutureScenario, RealityBranch, SimulationState,
+use pandora_runtime::civilization_termination::{
+    CivilizationTerminationCandidate, CivilizationTerminationState,
+    ConstitutionalCivilizationTerminationEngine, TerminationDirective,
 };
-
-use pandora_runtime::civilization_memory::{
-    ArchaeologyInsight, CivilizationEpoch, CivilizationMemoryEngine, CivilizationState,
+use pandora_runtime::civilization_transcendence::{
+    CivilizationTranscendenceNode, CivilizationTranscendenceState,
+    ConstitutionalCivilizationTranscendenceEngine, TranscendenceDirective,
 };
-
-use pandora_runtime::strategic_directive::{
-    SovereignStrategicDirectiveEngine, StrategicDirective, StrategicSignal, StrategicState,
-};
-
-use pandora_runtime::evolution_parliament::{
-    ConstitutionalEvolutionParliament, EvolutionProposal, ParliamentChamber, ParliamentState,
-    ParliamentVerdict,
-};
-
-use pandora_runtime::kuber_governor::{
-    EcosystemArtifact, EcosystemCreator, EcosystemGovernanceState, GovernanceVerdict,
-    KuberPalaceGovernor,
-};
-
+use pandora_runtime::coding_engine::{AutonomousCodingEngine, CodePatch, PatchResult};
 use pandora_runtime::cognition_fabric::{
     CognitionFabricOrchestrator, CognitionFabricState, FabricDirective, FabricNode, FabricTopology,
 };
-
-use pandora_runtime::topology_synthesis::{
-    ExecutionTopologySynthesizer, SynthesizedTopology, TopologyNode, TopologyRequirement,
+use pandora_runtime::cognition_governance::{
+    CognitionPersistenceGovernance, CognitiveMemory, GovernanceDecision,
 };
-
+use pandora_runtime::cognition_mesh::{
+    CognitionMeshNode, CognitionMeshState, MeshPropagationDirective, RecursiveCognitionMesh,
+};
+use pandora_runtime::cognition_swarm::{
+    DistributedCognitionSwarm, SwarmDirective, SwarmNode, SwarmState,
+};
+use pandora_runtime::compiler_feedback::{
+    CompilationResult, CompilationTask, CompilerFeedbackEngine,
+};
+use pandora_runtime::constitutional_autonomy::{
+    AutonomyDirective, AutonomySignal, AutonomyState, ConstitutionalAutonomyEngine,
+};
+use pandora_runtime::context_router::{ContextMemory, ContextRoutingEngine, RoutedContext};
+use pandora_runtime::debugging_loop::{AutonomousDebugLoop, DebugCycle, DebuggingResult};
+use pandora_runtime::dependency_graph::{DependencyGraph, DependencyGraphEngine, DependencyNode};
+use pandora_runtime::docker_sandbox::{DockerSandboxEngine, SandboxResult, SandboxTask};
 use pandora_runtime::domain_registry::{
     DeploymentCompatibility, DomainGenePack, DomainGenePackRegistry, RegistryDirective,
     RegistryState,
 };
-
+use pandora_runtime::embedding_engine::{EmbeddingEngine, EmbeddingResult};
+use pandora_runtime::entropy_collapse::{
+    CollapseDirective, CollapseState, EntropyCollapseEngine, EntropySignal,
+};
+use pandora_runtime::epistemic_sandbox::{
+    EpistemicSandboxEngine, EpistemicScenario, EpistemicState, RealityBoundaryDirective,
+};
+use pandora_runtime::evolution_parliament::{
+    ConstitutionalEvolutionParliament, EvolutionProposal, ParliamentChamber, ParliamentState,
+    ParliamentVerdict,
+};
+use pandora_runtime::execution_archaeology::{
+    ArchaeologyDirective, ArchaeologyRecord, ArchaeologyState, ExecutionArchaeologyEngine,
+};
+use pandora_runtime::execution_kernel::{ExecutionKernel, ExecutionResult, ExecutionTask};
+use pandora_runtime::execution_license::{
+    ConstitutionalExecutionLicenseEngine, ExecutionArtifact, ExecutionDirective, ExecutionState,
+};
+use pandora_runtime::execution_lineage::{
+    LineageDirective, LineageNode, RecursiveExecutionLineage, SovereignLineageState,
+};
+use pandora_runtime::execution_ranking::{
+    ExecutionCandidate, ExecutionRankingEngine, RankedExecution,
+};
+use pandora_runtime::execution_survivability::{
+    ExecutionSurvivabilityEngine, SurvivabilityAssessment, SurvivabilityCandidate,
+};
+use pandora_runtime::filesystem_kernel::{FileOperation, FileResult, FilesystemKernel};
+use pandora_runtime::gene_orchestrator::{
+    GeneCapsule, GeneExecutionPlan, GeneOrchestrator, MetaHarness,
+};
+use pandora_runtime::inference_router::{
+    AdaptiveInferenceRouter, InferenceProvider, InferenceRoute,
+};
+use pandora_runtime::kuber_governor::{
+    EcosystemArtifact, EcosystemCreator, EcosystemGovernanceState, GovernanceVerdict,
+    KuberPalaceGovernor,
+};
+use pandora_runtime::llamacpp_provider::{LlamaCppProvider, LlamaCppRequest, LlamaCppResponse};
+use pandora_runtime::long_context::{ContextWindow, LongContextOrchestrator, OrchestratedContext};
+use pandora_runtime::memory_prompting::{
+    ConstructedPrompt, MemoryAwarePromptEngine, PromptRequest,
+};
+use pandora_runtime::meta_evolution::{
+    ConstitutionalMetaEvolutionEngine, EvolutionFramework, MetaEvolutionDirective,
+    MetaEvolutionState,
+};
+use pandora_runtime::meta_harness_governor::{
+    GovernanceExecution, GovernedGene, MetaHarnessExecutionGovernor, MetaHarnessGovernor,
+};
+use pandora_runtime::model_arbitration::{
+    ArbitrationDecision, ModelCandidate, MultiModelArbitrationEngine,
+};
+use pandora_runtime::mutation_tournament::{
+    MutationCandidate, MutationTournamentEngine, TournamentWinner,
+};
+use pandora_runtime::network_fabric::{DistributedNetworkFabric, NetworkNode, NetworkPacket};
+use pandora_runtime::objective_evolution::{
+    ObjectiveDirective, SovereignObjectiveEvolution, SovereignObjectiveState, StrategicObjective,
+};
+use pandora_runtime::ollama_provider::{OllamaProvider, OllamaRequest, OllamaResponse};
+use pandora_runtime::operational_identity::{
+    IdentityDirective, IdentityState, PersistentOperationalIdentity,
+};
+use pandora_runtime::panoptes::{OversightDecision, OversightTarget, PanoptesOversightEngine};
+use pandora_runtime::provider_negotiation::{
+    HardwareSubstrate, NegotiatedExecution, ProviderBackend, ProviderHardwareNegotiator,
+};
+use pandora_runtime::reality_consensus::{
+    CivilizationReality, ConstitutionalRealityConsensusEngine, RealityConsensusDirective,
+    RealityConsensusState,
+};
+use pandora_runtime::reality_simulation::{
+    ConstitutionalRealitySimulationEngine, FutureScenario, RealityBranch, SimulationState,
+};
+use pandora_runtime::reasoning_chain::{
+    AutonomousReasoningChain, AutonomousReasoningEngine, ReasoningNode, ReasoningTransition,
+};
+use pandora_runtime::recursive_planner::{
+    PlanningObjective, PlanningStep, RecursivePlan, RecursivePlanningEngine,
+};
+use pandora_runtime::reliability_benchmark::{
+    BenchmarkDirective, BenchmarkSignal, BenchmarkState, ConstitutionalReliabilityBenchmarkEngine,
+};
+use pandora_runtime::remote_execution::{
+    RemoteExecutionEngine, RemoteExecutionResult, RemoteExecutionTask,
+};
+use pandora_runtime::repair_execution::{RepairExecutionCoordinator, RepairExecutionResult};
+use pandora_runtime::repair_planner::{AutonomousRepairPlanner, FailureContext, RepairPlan};
+use pandora_runtime::repair_validation::{
+    RepairValidationLoop, ValidationReport, ValidationTarget,
+};
+use pandora_runtime::repository_evolution::{
+    EvolutionMutation, EvolutionPlan, RepositoryEvolutionEngine, RepositoryTrait,
+};
+use pandora_runtime::repository_indexer::{IndexedFile, RepositoryIndex, RepositoryIndexer};
+use pandora_runtime::repository_memory_graph::{
+    MemoryNode, RepositoryMemoryGraph, RepositoryMemoryGraphEngine,
+};
+use pandora_runtime::repository_search::{
+    RepositoryDocument, RepositorySearchEngine, Result, Search,
+};
+use pandora_runtime::sandbox_governance::{
+    GovernanceValidation, MutationProposal, SandboxEnvironment, SandboxGovernanceEngine,
+};
+use pandora_runtime::self_healing::{
+    HealingDirective, HealingPlan, RuntimeHealth, RuntimeSelfHealingCoordinator,
+};
+use pandora_runtime::semantic_memory::{MemoryChunk, RetrievalResult, SemanticMemoryEngine};
+use pandora_runtime::semantic_patch::{SemanticIssue, SemanticPatch, SemanticPatchPlanner};
+use pandora_runtime::shadow_council::{
+    CouncilPersona, CouncilVerdict, ShadowCouncilEngine, StrategicConsensus,
+};
+use pandora_runtime::sovereign_constitution::{
+    ConstitutionState, ConstitutionalDirective, ConstitutionalDoctrine,
+    SovereignExecutionConstitution,
+};
+use pandora_runtime::state_synthesis::{
+    ExecutionStateSynthesisEngine, SovereignSubsystemState, SynthesizedRuntimeState,
+};
+use pandora_runtime::strategic_directive::{
+    SovereignStrategicDirectiveEngine, StrategicDirective, StrategicSignal, StrategicState,
+};
 use pandora_runtime::survivability_constitution::{
     ConstitutionalBenchmark, ConstitutionalState, SurvivabilityConstitutionEngine,
     SurvivabilityDirective,
 };
-
-use pandora_runtime::sandbox_governance::{
-    GovernanceValidation, MutationProposal, SandboxEnvironment, SandboxGovernanceEngine,
-};
-
-use pandora_runtime::execution_archaeology::{
-    ArchaeologyDirective, ArchaeologyRecord, ArchaeologyState, ExecutionArchaeologyEngine,
-};
-
-use pandora_runtime::acquisition_orchestrator::{
-    AcquisitionCandidate, AcquisitionDeploymentPlan, AcquisitionOrchestrator, DeploymentTarget,
-};
-
-use pandora_runtime::provider_negotiation::{
-    HardwareSubstrate, NegotiatedExecution, ProviderBackend, ProviderHardwareNegotiator,
-};
-
-use pandora_runtime::capability_resolution::{
-    CapabilityDomain, CapabilityGene, CapabilityResolution, CapabilityResolutionEngine,
-};
-
-use pandora_runtime::execution_lineage::{
-    LineageDirective, LineageNode, RecursiveExecutionLineage, SovereignLineageState,
-};
-
-use pandora_runtime::objective_evolution::{
-    ObjectiveDirective, SovereignObjectiveEvolution, SovereignObjectiveState, StrategicObjective,
-};
-
-use pandora_runtime::cognition_mesh::{
-    CognitionMeshNode, CognitionMeshState, MeshPropagationDirective, RecursiveCognitionMesh,
-};
-
-use pandora_runtime::cognition_swarm::{
-    DistributedCognitionSwarm, SwarmDirective, SwarmNode, SwarmState,
-};
-
-use pandora_runtime::state_synthesis::{
-    ExecutionStateSynthesisEngine, SovereignSubsystemState, SynthesizedRuntimeState,
-};
-
-use pandora_runtime::operational_identity::{
-    IdentityDirective, IdentityState, PersistentOperationalIdentity,
-};
-
-use pandora_runtime::anubis::{AnubisMemoryGovernor, MemoryArtifact, PersistenceDirective};
-
-use pandora_runtime::meta_harness_governor::{
-    GovernanceExecution, GovernedGene, MetaHarnessExecutionGovernor, MetaHarnessGovernor,
-};
-
-use pandora_runtime::gene_orchestrator::{
-    GeneCapsule, GeneExecutionPlan, GeneOrchestrator, MetaHarness,
-};
-
-use pandora_runtime::panoptes::{OversightDecision, OversightTarget, PanoptesOversightEngine};
-
-use pandora_runtime::shadow_council::{
-    CouncilPersona, CouncilVerdict, ShadowCouncilEngine, StrategicConsensus,
-};
-
-use pandora_runtime::reasoning_chain::{
-    AutonomousReasoningChain, AutonomousReasoningEngine, ReasoningNode, ReasoningTransition,
-};
-
-use pandora_runtime::cognition_governance::{
-    CognitionPersistenceGovernance, CognitiveMemory, GovernanceDecision,
-};
-
-use pandora_runtime::long_context::{ContextWindow, LongContextOrchestrator, OrchestratedContext};
-
-use pandora_runtime::inference_router::{
-    AdaptiveInferenceRouter, InferenceProvider, InferenceRoute,
-};
-
-use pandora_runtime::tool_cognition::{ToolCapability, ToolCognitionEngine, ToolSelection};
-
-use pandora_runtime::recursive_planner::{
-    PlanningObjective, PlanningStep, RecursivePlan, RecursivePlanningEngine,
-};
-
-use pandora_runtime::memory_prompting::{
-    ConstructedPrompt, MemoryAwarePromptEngine, PromptRequest,
-};
-
-use pandora_runtime::context_router::{ContextMemory, ContextRoutingEngine, RoutedContext};
-
-use pandora_runtime::model_arbitration::{
-    ArbitrationDecision, ModelCandidate, MultiModelArbitrationEngine,
-};
-
-use pandora_runtime::llamacpp_provider::{LlamaCppProvider, LlamaCppRequest, LlamaCppResponse};
-
-use pandora_runtime::ollama_provider::{OllamaProvider, OllamaRequest, OllamaResponse};
-
-use pandora_runtime::remote_execution::{
-    RemoteExecutionEngine, RemoteExecutionResult, RemoteExecutionTask,
-};
-
-use pandora_runtime::docker_sandbox::{DockerSandboxEngine, SandboxResult, SandboxTask};
-
-use pandora_runtime::network_fabric::{DistributedNetworkFabric, NetworkNode, NetworkPacket};
-
-use pandora_runtime::self_healing::{
-    HealingDirective, HealingPlan, RuntimeHealth, RuntimeSelfHealingCoordinator,
-};
-
-use pandora_runtime::adaptive_orchestration::{
-    AdaptiveOrchestrationEngine, OrchestrationNode, OrchestrationScore,
-};
-
-use pandora_runtime::repository_evolution::{
-    EvolutionMutation, EvolutionPlan, RepositoryEvolutionEngine, RepositoryTrait,
-};
-
-use pandora_runtime::execution_survivability::{
-    ExecutionSurvivabilityEngine, SurvivabilityAssessment, SurvivabilityCandidate,
-};
-
-use pandora_runtime::mutation_tournament::{
-    MutationCandidate, MutationTournamentEngine, TournamentWinner,
-};
-
-use pandora_runtime::repair_validation::{
-    RepairValidationLoop, ValidationReport, ValidationTarget,
-};
-
-use pandora_runtime::debugging_loop::{AutonomousDebugLoop, DebugCycle, DebuggingResult};
-
-use pandora_runtime::repository_memory_graph::{
-    MemoryNode, RepositoryMemoryGraph, RepositoryMemoryGraphEngine,
-};
-
-use pandora_runtime::execution_ranking::{
-    ExecutionCandidate, ExecutionRankingEngine, RankedExecution,
-};
-
-use pandora_runtime::benchmark_harness::{BenchmarkHarness, BenchmarkResult, BenchmarkTask};
-
-use pandora_runtime::repair_execution::{RepairExecutionCoordinator, RepairExecutionResult};
-
-use pandora_runtime::semantic_patch::{SemanticIssue, SemanticPatch, SemanticPatchPlanner};
-
-use pandora_runtime::repair_planner::{AutonomousRepairPlanner, FailureContext, RepairPlan};
-
-use pandora_runtime::repository_search::{
-    RepositoryDocument, RepositorySearchEngine, Result, Search,
-};
-
-use pandora_runtime::embedding_engine::{EmbeddingEngine, EmbeddingResult};
-
-use pandora_runtime::vector_store::{VectorDatabase, VectorStore};
-
-use pandora_runtime::semantic_memory::{MemoryChunk, RetrievalResult, SemanticMemoryEngine};
-
-use pandora_runtime::compiler_feedback::{
-    CompilationResult, CompilationTask, CompilerFeedbackEngine,
-};
-
-use pandora_runtime::dependency_graph::{DependencyGraph, DependencyGraphEngine, DependencyNode};
-
-use pandora_runtime::repository_indexer::{IndexedFile, RepositoryIndex, RepositoryIndexer};
-
-use pandora_runtime::ast_engine::{AstAnalysis, AstEngine, AstFunction};
-
-use pandora_runtime::coding_engine::{AutonomousCodingEngine, CodePatch, PatchResult};
-
-use pandora_runtime::filesystem_kernel::{FileOperation, FileResult, FilesystemKernel};
-
-use pandora_runtime::execution_kernel::{ExecutionKernel, ExecutionResult, ExecutionTask};
-
-use pandora_runtime::swarm_identity::{IdentityState, IdentityTrait, SwarmIdentity};
-
-use pandora_runtime::swarm_will::{SwarmWill, WillDirective, WillState};
-
-use pandora_runtime::swarm_identity::{IdentityState, IdentityTrait, SwarmIdentity};
-
-use pandora_runtime::swarm_intuition::{IntuitionDecision, IntuitionSignal, SwarmIntuition};
-
-use pandora_runtime::swarm_reflection::{ReflectionEvent, ReflectionInsight, SwarmReflection};
-
-use pandora_runtime::swarm_memory_consolidation::{
-    ConsolidatedMemory, MemoryConsolidationEngine, MemoryTrace,
-};
-
-use pandora_runtime::swarm_dream::{DreamFragment, DreamOutcome, SwarmDreamEngine};
-
-use pandora_runtime::swarm_subconscious::{
-    SubconsciousImprint, SubconsciousState, SwarmSubconscious,
-};
-
 use pandora_runtime::swarm_consciousness::{
     ConsciousnessSignal, ConsciousnessState, SwarmConsciousness,
 };
-
-use pandora_runtime::swarm_homeostasis::{HomeostasisAdjustment, SwarmHomeostasis};
-
-use pandora_runtime::swarm_metabolism::{MetabolicAction, MetabolicState, SwarmMetabolism};
-
+use pandora_runtime::swarm_dream::{DreamFragment, DreamOutcome, SwarmDreamEngine};
 use pandora_runtime::swarm_endocrine::{HormoneSignal, SwarmEndocrineSystem};
-
-use pandora_runtime::swarm_nervous::{NervousSignal, SwarmNervousSystem};
-
+use pandora_runtime::swarm_homeostasis::{HomeostasisAdjustment, SwarmHomeostasis};
+use pandora_runtime::swarm_identity::{
+    IdentityState as PRIIdentityState, IdentityTrait, SwarmIdentity,
+};
 use pandora_runtime::swarm_immunity::{SwarmImmunity, ThreatSignal};
-
 use pandora_runtime::swarm_instinct::InstinctEngine;
+use pandora_runtime::swarm_intuition::{IntuitionDecision, IntuitionSignal, SwarmIntuition};
+use pandora_runtime::swarm_memory_consolidation::{
+    ConsolidatedMemory, MemoryConsolidationEngine, MemoryTrace,
+};
+use pandora_runtime::swarm_metabolism::{MetabolicAction, MetabolicState, SwarmMetabolism};
+use pandora_runtime::swarm_nervous::{NervousSignal, SwarmNervousSystem};
+use pandora_runtime::swarm_reflection::{ReflectionEvent, ReflectionInsight, SwarmReflection};
+use pandora_runtime::swarm_subconscious::{
+    SubconsciousImprint, SubconsciousState, SwarmSubconscious,
+};
+use pandora_runtime::swarm_will::{SwarmWill, WillDirective, WillState};
+use pandora_runtime::tool_cognition::{ToolCapability, ToolCognitionEngine, ToolSelection};
+use pandora_runtime::topology_laboratory::{
+    ConstitutionalTopologyLaboratory, LaboratoryDirective, LaboratoryState, LaboratoryTopology,
+};
+use pandora_runtime::topology_synthesis::{
+    ExecutionTopologySynthesizer, SynthesizedTopology, TopologyNode, TopologyRequirement,
+};
+use pandora_runtime::uncertainty_topology::{
+    UncertaintyDirective, UncertaintySignal, UncertaintyState, UncertaintyTopologyEngine,
+};
+use pandora_runtime::vector_store::{VectorDatabase, VectorStore};
 
 use pandora_runtime::swarm_phenotype::PhenotypeEngine;
 
-use pandora_runtime::swarm_genome::{GenomeEngine, SwarmGenome};
-
-use pandora_runtime::swarm_lineage::{LineageRecord, SwarmLineage};
-
-use pandora_runtime::swarm_evolution::{EvolutionAgent, SwarmEvolutionEngine};
-
-use pandora_runtime::swarm_specialization::{SpecializedAgent, SwarmSpecializationEngine};
-
-use pandora_runtime::swarm_negotiation::{NegotiationProposal, SwarmNegotiator};
-
-use pandora_runtime::swarm_memory::{SwarmMemoryBus, SwarmMemoryEvent};
-
 use pandora_runtime::swarm::{SwarmAgent, SwarmOrchestrator, SwarmTask};
-
+use pandora_runtime::swarm_evolution::{EvolutionAgent, SwarmEvolutionEngine};
+use pandora_runtime::swarm_genome::{GenomeEngine, SwarmGenome};
+use pandora_runtime::swarm_lineage::{LineageRecord, SwarmLineage};
+use pandora_runtime::swarm_memory::{SwarmMemoryBus, SwarmMemoryEvent};
+use pandora_runtime::swarm_negotiation::{NegotiationProposal, SwarmNegotiator};
+use pandora_runtime::swarm_specialization::{SpecializedAgent, SwarmSpecializationEngine};
 use pandora_runtime::task_spawner::AutonomousTaskSpawner;
 
-use pandora_runtime::recursive_planner::{RecursivePlanner, RecursiveTask};
-
-use pandora_runtime::optimizer::{AdaptiveOptimizer, ExecutionMetric};
-
-use pandora_runtime::reputation::{ReputationConsensus, ReputationNode, ReputationVote};
-
 use pandora_runtime::consensus::{ConsensusCoordinator, ConsensusVote};
-
-use pandora_runtime::state_machine::{ExecutionState, ExecutionStateMachine};
-
-use pandora_runtime::distributed_dag::{DistributedDagScheduler, DistributedDagTask};
-
 use pandora_runtime::dag::{DagNode, ExecutionDag};
-
+use pandora_runtime::distributed_dag::{DistributedDagScheduler, DistributedDagTask};
+use pandora_runtime::optimizer::{AdaptiveOptimizer, ExecutionMetric};
+use pandora_runtime::provider_arbitration::{ProviderArbitrator, ProviderCapability};
+use pandora_runtime::recursive_planner::{RecursivePlanner, RecursiveTask};
+use pandora_runtime::repair::AutonomousRepairCoordinator;
+use pandora_runtime::reputation::{ReputationConsensus, ReputationNode, ReputationVote};
+use pandora_runtime::state_machine::{
+    ExecutionState as PRMExecutionState, ExecutionStateKind, ExecutionStateMachine,
+};
 use pandora_runtime::workflow::{DurableWorkflow, WorkflowEngine, WorkflowStep};
 
-use pandora_runtime::provider_arbitration::{ProviderArbitrator, ProviderCapability};
-
-use pandora_runtime::repair::AutonomousRepairCoordinator;
-
 use pandora_runtime::checkpoint::{CheckpointCoordinator, RuntimeCheckpoint};
-
-use pandora_runtime::router::{Workload, WorkloadRouter};
-
+use pandora_runtime::dependency_graph::{
+    DependencyGraph as PRGDependencyGraph, DependencyNode as PRGDependencyNode,
+};
 use pandora_runtime::distributed_registry::{DistributedRegistry, NodeState, RuntimeNode};
-
+use pandora_runtime::health::{HealthMonitor, HealthReport, HealthState};
+use pandora_runtime::lifecycle::{LifecycleManager, RuntimeState};
+use pandora_runtime::planner::Planner;
+use pandora_runtime::router::{Workload, WorkloadRouter};
+use pandora_runtime::runtime_registry::{RuntimeRegistry, RuntimeSubsystem};
+use pandora_runtime::tracing::{TraceEngine, TraceEvent};
 use pandora_runtime::unified_graph::{ExecutionEdge, ExecutionNode, UnifiedExecutionGraph};
 
-use pandora_runtime::tracing::{TraceEngine, TraceEvent};
-
-use pandora_runtime::health::{HealthMonitor, HealthReport, HealthState};
-
-use pandora_runtime::dependency_graph::{DependencyGraph, DependencyNode};
-
-use pandora_runtime::runtime_registry::{RuntimeRegistry, RuntimeSubsystem};
-
-use pandora_runtime::lifecycle::{LifecycleManager, RuntimeState};
-
-use pandora_runtime::planner::Planner;
-
+use pandora_runtime::benchmark::{
+    BenchmarkHarness as PRBenchmarkHarness, BenchmarkTask as PRBenchmarkTask,
+};
 use pandora_runtime::durable_queue::{DurableQueue, DurableTask};
-
-use pandora_runtime::benchmark::{BenchmarkHarness, BenchmarkTask};
-
 use pandora_runtime::mutation_operator::MutationOperator;
 
 use pandora_runtime::tournament::TournamentSelector;
 
-use pandora_runtime::population::{EvolutionCandidate, PopulationManager};
-
 use pandora_runtime::fitness::FitnessEngine;
+use pandora_runtime::population::{EvolutionCandidate, PopulationManager};
 
 use pandora_runtime::harness_loader::HarnessLoader;
 
+use anubis_memory::branch_rollback::BranchRollback;
+use pandora_runtime::async_bus::{AsyncBus, RuntimeEvent};
+use pandora_runtime::distributed_bus::{DistributedBus, DistributedEvent};
 use pandora_runtime::execution_graph::{
     ExecutionConnection, ExecutionGraphPersistence, ExecutionVertex, PersistentExecutionGraph,
 };
-
 use pandora_runtime::scheduler::{CognitionScheduler, CognitionTask, TaskState};
 
-use pandora_runtime::distributed_bus::{DistributedBus, DistributedEvent};
-
-use pandora_runtime::async_bus::{AsyncBus, RuntimeEvent};
-
-use anubis_memory::branch_rollback::BranchRollback;
-
-use pandora_runtime::mutation_rollback::{MutationRecord, MutationRollback};
-
-use pandora_runtime::context_reset::{ContextResetEngine, ContextState};
-
-use pandora_runtime::replay_scoring::{ReplayScore, ReplayScorer};
-
 use anubis_memory::retrieval_budget::RetrievalBudget;
+use pandora_runtime::context_reset::{ContextResetEngine, ContextState};
+use pandora_runtime::mutation_rollback::{MutationRecord, MutationRollback};
+use pandora_runtime::replay_scoring::{ReplayScore, ReplayScorer};
 
 use pandora_runtime::windowed_telemetry::WindowedTelemetry;
 
@@ -492,9 +345,8 @@ use pandora_runtime::rollback::RollbackEngine;
 
 use pandora_runtime::loop_detection::LoopDetector;
 
-use pandora_runtime::telemetry::{EntropyEngine, ToolCall};
-
 use anubis_memory::branch::CognitionBranch;
+use pandora_runtime::telemetry::{EntropyEngine, ToolCall};
 
 use anubis_memory::branch_engine::child_branches;
 
@@ -524,9 +376,8 @@ use anubis_memory::temporal::TemporalMemory;
 
 use anubis_memory::temporal_engine::sort_by_recency;
 
-use anubis_memory::memory_graph::{MemoryEdge, MemoryGraph, MemoryNode};
-
 use anubis_memory::graph_traversal::connected_memories;
+use anubis_memory::memory_graph::{MemoryEdge, MemoryGraph, MemoryNode as AnubisMemoryNode};
 
 use anubis_memory::retrieval::RetrievalQuery;
 
@@ -540,11 +391,10 @@ use pandora_runtime::replay::ReplaySession;
 
 use pandora_runtime::replay_store::persist_replay;
 
-use pandora_runtime::governance::{GovernanceDecision, GovernanceVerdict};
-
+use pandora_runtime::governance::{
+    GovernanceDecision as PRGovernanceDecision, GovernanceVerdict as PRGovernanceVerdict,
+};
 use pandora_runtime::governance_store::persist_governance;
-
-use pandora_runtime::mutation::MutationProposal;
 
 use pandora_runtime::mutation_store::persist_mutation;
 
@@ -559,7 +409,6 @@ use anubis_memory::memory_index::MemoryIndex;
 use pandora_runtime::capability_registry::CapabilityRegistry;
 
 use pandora_runtime::capability::{CapabilityDescriptor, CapabilityRequest, TypeDescriptor};
-
 use pandora_runtime::negotiation::negotiate_capability;
 
 use pandora_runtime::event::PandoraEvent;
@@ -775,22 +624,22 @@ async fn main() {
 
     DistributedDagScheduler::schedule(&mut distributed_tasks, &cluster_nodes);
 
-    let _transition_1 = ExecutionStateMachine::transition(
+    let _transition_1 = ExecutionStateMachine::transition_kind(
         "task_001",
-        ExecutionState::Pending,
-        ExecutionState::Scheduled,
+        ExecutionStateKind::Pending,
+        ExecutionStateKind::Scheduled,
     );
 
-    let _transition_2 = ExecutionStateMachine::transition(
+    let _transition_2 = ExecutionStateMachine::transition_kind(
         "task_001",
-        ExecutionState::Scheduled,
-        ExecutionState::Running,
+        ExecutionStateKind::Scheduled,
+        ExecutionStateKind::Running,
     );
 
-    let transition_3 = ExecutionStateMachine::transition(
+    let transition_3 = ExecutionStateMachine::transition_kind(
         "task_001",
-        ExecutionState::Running,
-        ExecutionState::Completed,
+        ExecutionStateKind::Running,
+        ExecutionStateKind::Completed,
     );
 
     println!("[STATE] final transition: {:?}", transition_3.current);
@@ -890,15 +739,13 @@ async fn main() {
         println!("[OPTIMIZER] {} -> {}", decision.subsystem, decision.action);
     }
 
-    let root_task = RecursiveTask {
-        task_id: "root".into(),
+    let _root_task = RecursiveTask {
+        stage: 0,
 
-        objective: "optimize autonomous coding workflow".into(),
+        action: "optimize autonomous coding workflow".into(),
 
-        depth: 0,
+        estimated_gain: 1.0,
     };
-
-    RecursivePlanner::recurse(root_task);
 
     let spawned = AutonomousTaskSpawner::spawn("expand coding swarm", 5);
 
@@ -1452,23 +1299,6 @@ async fn main() {
         identity.dominant_identity, identity.coherence, identity.adaptability, identity.continuity
     );
 
-    let ethical_action = EthicalAction {
-        action: "expand distributed coding swarm".into(),
-
-        risk: 0.31,
-
-        benefit: 0.92,
-
-        survivability_impact: 0.74,
-    };
-
-    let ethical_decision = SwarmEthics::evaluate(&ethical_action);
-
-    println!(
-        "[ETHICS] allowed={} reasoning={}",
-        ethical_decision.allowed, ethical_decision.reasoning
-    );
-
     let execution_task = ExecutionTask {
         task_id: "kernel-task-001".into(),
 
@@ -1743,7 +1573,7 @@ fn runtime() {}
 
     let semantic_patches = SemanticPatchPlanner::generate(&semantic_issue);
 
-    for patch in semantic_patches {
+    for patch in semantic_patches.clone() {
         println!(
             "[PATCH] file={} confidence={} replace {} -> {}",
             patch.target_file, patch.confidence, patch.search, patch.replace
@@ -2247,7 +2077,7 @@ fn runtime() {}
         routed.total_tokens
     );
 
-    for memory in routed.selected {
+    for memory in routed.selected.clone() {
         println!(
             "[CONTEXT] memory={} relevance={}",
             memory.memory_id, memory.relevance
@@ -4139,93 +3969,6 @@ fn runtime() {}
         );
     }
 
-    let civilization_epochs = vec![
-        CivilizationEpoch {
-            epoch_id: "eda-expansion-era".into(),
-
-            dominant_domain: "vlsi".into(),
-
-            governance_stability: 0.96,
-
-            survivability_alignment: 0.94,
-
-            topology_coherence: 0.92,
-
-            replay_integrity: 0.97,
-
-            ecosystem_expansion: 0.93,
-        },
-        CivilizationEpoch {
-            epoch_id: "hybrid-quantum-era".into(),
-
-            dominant_domain: "quantum".into(),
-
-            governance_stability: 0.76,
-
-            survivability_alignment: 0.79,
-
-            topology_coherence: 0.71,
-
-            replay_integrity: 0.88,
-
-            ecosystem_expansion: 0.91,
-        },
-        CivilizationEpoch {
-            epoch_id: "embedded-optimization-era".into(),
-
-            dominant_domain: "embedded".into(),
-
-            governance_stability: 0.93,
-
-            survivability_alignment: 0.91,
-
-            topology_coherence: 0.90,
-
-            replay_integrity: 0.92,
-
-            ecosystem_expansion: 0.87,
-        },
-    ];
-
-    let civilization_state = CivilizationMemoryEngine::preserve(&civilization_epochs);
-
-    println!(
-        "[CIVILIZATION] continuity={}",
-        civilization_state.civilization_continuity
-    );
-
-    println!(
-        "[CIVILIZATION] governance_coherence={}",
-        civilization_state.governance_coherence
-    );
-
-    println!(
-        "[CIVILIZATION] replay_integrity={}",
-        civilization_state.replay_civilization_integrity
-    );
-
-    println!(
-        "[CIVILIZATION] sovereign_memory_stable={}",
-        civilization_state.sovereign_memory_stable
-    );
-
-    for insight in civilization_state.insights {
-        println!(
-            "[CIVILIZATION] epoch={} stable={}",
-            insight.epoch_id, insight.civilization_stable
-        );
-
-        println!(
-            "[CIVILIZATION] governance_pressure={} topology_evolution_required={}",
-            insight.governance_pressure, insight.topology_evolution_required
-        );
-
-        println!(
-            "[CIVILIZATION] replay_priority={} strategic_value={}",
-            insight.replay_preservation_priority, insight.strategic_value
-        );
-    }
-
     let future_scenarios = vec![
         FutureScenario {
             scenario_id: "eda-civilization-expansion".into(),
@@ -5861,47 +5604,47 @@ fn runtime() {}
         CivilizationTerminationCandidate {
             civilization_id: "pandora-corrupted-synthetic-fork".into(),
 
-            governance_corruption: 0.94,
+            governance_stability: 0.94,
 
-            replay_instability: 0.91,
+            replay_coherence: 0.91,
 
-            epistemic_divergence: 0.93,
+            epistemic_stability: 0.93,
 
-            federation_risk: 0.95,
+            federation_trust: 0.95,
 
-            survivability_failure: 0.90,
+            constitutional_integrity: 0.90,
 
-            synthetic_contamination: true,
+            synthetic_divergence: 0.5,
         },
         CivilizationTerminationCandidate {
             civilization_id: "pandora-experimental-quantum-fragment".into(),
 
-            governance_corruption: 0.69,
+            governance_stability: 0.69,
 
-            replay_instability: 0.71,
+            replay_coherence: 0.71,
 
-            epistemic_divergence: 0.73,
+            epistemic_stability: 0.73,
 
-            federation_risk: 0.70,
+            federation_trust: 0.70,
 
-            survivability_failure: 0.68,
+            constitutional_integrity: 0.68,
 
-            synthetic_contamination: false,
+            synthetic_divergence: 0.1,
         },
         CivilizationTerminationCandidate {
             civilization_id: "pandora-enterprise-vlsi".into(),
 
-            governance_corruption: 0.11,
+            governance_stability: 0.11,
 
-            replay_instability: 0.09,
+            replay_coherence: 0.09,
 
-            epistemic_divergence: 0.10,
+            epistemic_stability: 0.10,
 
-            federation_risk: 0.08,
+            federation_trust: 0.08,
 
-            survivability_failure: 0.07,
+            constitutional_integrity: 0.07,
 
-            synthetic_contamination: false,
+            synthetic_divergence: 0.1,
         },
     ];
 
@@ -5910,43 +5653,43 @@ fn runtime() {}
 
     println!(
         "[TERMINATION] extinction_integrity={}",
-        termination_state.constitutional_extinction_integrity
+        termination_state.constitutional_survivability
     );
 
     println!(
         "[TERMINATION] replay_preservation={}",
-        termination_state.replay_preservation_stability
+        termination_state.replay_containment_stability
     );
 
     println!(
         "[TERMINATION] federation_safety={}",
-        termination_state.federation_safety_coherence
+        termination_state.federation_safety
     );
 
     println!(
         "[TERMINATION] sovereign_stable={}",
-        termination_state.sovereign_termination_stable
+        termination_state.sovereign_ecosystem_safe
     );
 
     for directive in termination_state.directives {
         println!(
             "[TERMINATION] civilization={} termination_required={}",
-            directive.civilization_id, directive.constitutional_termination_required
+            directive.civilization_id, directive.quarantine_required
         );
 
         println!(
             "[TERMINATION] replay_archival={} federation_expulsion={}",
-            directive.replay_archival_required, directive.federation_expulsion_required
+            directive.replay_containment_required, directive.federation_revoked
         );
 
         println!(
             "[TERMINATION] quarantine={} regeneration_denied={}",
-            directive.quarantine_required, directive.regeneration_denied
+            directive.quarantine_required, directive.sovereign_authority_revoked
         );
 
         println!(
             "[TERMINATION] termination_score={}",
-            directive.termination_score
+            directive.quarantine_required
         );
     }
 
@@ -7284,19 +7027,6 @@ fn runtime() {}
     });
 
     println!("[REGISTRY] active subsystems: {}", registry.active_count());
-    let mut dependencies = DependencyGraph::new();
-
-    dependencies.register(DependencyNode {
-        subsystem_id: "panoptes".into(),
-
-        dependencies: vec!["anubis".into()],
-    });
-
-    dependencies.register(DependencyNode {
-        subsystem_id: "gepa".into(),
-
-        dependencies: vec!["anubis".into(), "panoptes".into()],
-    });
 
     let mut health = HealthMonitor::new();
 
@@ -7320,18 +7050,10 @@ fn runtime() {}
 
     println!("[HEALTH] critical systems: {}", critical.len());
 
-    let gepa_dependencies = dependencies.dependencies("gepa");
-
-    println!("[DEPENDENCY] gepa dependencies: {:?}", gepa_dependencies);
-
     let benchmark = BenchmarkTask {
-        task_id: "benchmark_001".into(),
+        name: "benchmark_001".into(),
 
-        category: "recursive_reasoning".into(),
-
-        difficulty: 0.4,
-
-        expected_output: "stable cognition".into(),
+        iterations: 1,
     };
 
     let task = DurableTask {
@@ -7352,9 +7074,9 @@ fn runtime() {}
 
     let benchmark_result = BenchmarkHarness::evaluate("candidate_001", &benchmark);
 
-    println!("[GEPA] benchmark score: {}", benchmark_result.score);
+    println!("[GEPA] benchmark score: {}", benchmark_result.throughput);
 
-    println!("[GEPA] benchmark success: {}", benchmark_result.success);
+    println!("[GEPA] benchmark success: {}", benchmark_result.throughput);
 
     let plan = Planner::generate("autonomously optimize coding workflow");
 
@@ -7803,7 +7525,7 @@ fn runtime() {}
     let graph = MemoryGraph {
         graph_id: String::from("memory_graph_001"),
 
-        nodes: vec![MemoryNode {
+        nodes: vec![AnubisMemoryNode {
             node_id: String::from("node_memory_001"),
 
             memory_id: String::from("memory_001"),
@@ -8005,17 +7727,15 @@ fn runtime() {}
     let mutation = MutationProposal {
         mutation_id: String::from("mutation_001"),
 
-        target_gene: String::from("execution_gene"),
+        domain: String::from("execution"),
 
-        mutation_type: String::from("optimization"),
+        lineage_depth: 3,
 
-        reason: String::from("Improve execution efficiency"),
+        governance_risk: 0.4,
 
-        proposed_by: String::from("gepa_runtime"),
+        compatibility_score: 0.92,
 
-        lineage_parent: String::from("lineage_001"),
-
-        timestamp: String::from("2026-05-22"),
+        survivability_projection: 0.85,
     };
 
     persist_mutation(&mutation);
@@ -8035,20 +7755,20 @@ fn runtime() {}
                 mutation.mutation_id,
 
             "target_gene":
-                mutation.target_gene,
+                mutation.domain,
         }),
     };
 
     emit_event(&mutation_event);
 
-    let governance = GovernanceDecision {
+    let governance = PRGovernanceDecision {
         decision_id: String::from("governance_001"),
 
         target_mutation: String::from("mutation_001"),
 
         reviewed_by: String::from("shadow_council"),
 
-        verdict: GovernanceVerdict::Approved,
+        verdict: PRGovernanceVerdict::Approved,
 
         reasoning: String::from("Mutation considered safe and beneficial"),
 
@@ -8119,21 +7839,13 @@ fn runtime() {}
     let score = CognitionScore {
         score_id: String::from("score_001"),
 
-        target_graph: String::from("graph_001"),
+        subsystem: String::from("panoptes_runtime"),
 
-        target_mutation: String::from("mutation_001"),
+        score: 0.91,
 
-        execution_score: 0.91,
+        anomaly_score: 0.04,
 
-        governance_score: 0.96,
-
-        replay_confidence: 0.89,
-
-        mutation_stability: 0.93,
-
-        evaluator: String::from("panoptes_runtime"),
-
-        timestamp: String::from("2026-05-22"),
+        timestamp: 1747872000,
     };
 
     persist_score(&score);
@@ -8178,7 +7890,7 @@ fn runtime() {}
                 score.score_id,
 
             "execution_score":
-                score.execution_score,
+                score.score,
         }),
     };
 

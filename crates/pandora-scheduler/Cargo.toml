@@ -17,7 +17,7 @@ async-trait = "0.1"
 
 pandora-sandbox = { path = "../pandora-sandbox" }
 
-pandora-governance = { path = "../pandora-governance" }
+pandora-governance = { path = "../pandora-governance", features = ["compat-runtime"] }
 
 # Assume workspace dependencies
-# pandora-governance = { path = "../pandora-governance" }
+# pandora-governance = { path = "../pandora-governance", features = ["compat-runtime"] }

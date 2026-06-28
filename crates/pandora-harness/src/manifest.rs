@@ -4,7 +4,6 @@ use crate::roles::HarnessRole;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HarnessManifest {
-
     pub id: String,
 
     pub name: String,

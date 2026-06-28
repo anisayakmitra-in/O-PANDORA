@@ -4,15 +4,13 @@ use serde::{Deserialize, Serialize};
 pub struct MutationProposal {
     pub mutation_id: String,
 
-    pub target_gene: String,
+    pub domain: String,
 
-    pub mutation_type: String,
+    pub lineage_depth: usize,
 
-    pub reason: String,
+    pub governance_risk: f64,
 
-    pub proposed_by: String,
+    pub compatibility_score: f64,
 
-    pub lineage_parent: String,
-
-    pub timestamp: String,
+    pub survivability_projection: f64,
 }

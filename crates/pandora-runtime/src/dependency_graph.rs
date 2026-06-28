@@ -46,3 +46,22 @@ impl DependencyGraphEngine {
         DependencyGraph { nodes }
     }
 }
+
+impl DependencyGraph {
+    pub fn new() -> Self {
+        Self {
+            nodes: HashMap::new(),
+        }
+    }
+
+    pub fn register(&mut self, node: DependencyNode) {
+        self.nodes.insert(node.file.clone(), node);
+    }
+
+    pub fn dependencies(&self, key: &str) -> Vec<String> {
+        self.nodes
+            .get(key)
+            .map(|n| n.imports.clone())
+            .unwrap_or_default()
+    }
+}

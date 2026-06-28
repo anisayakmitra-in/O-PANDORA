@@ -15,9 +15,21 @@ pub struct CognitiveMemory {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GovernanceDecision {
+    pub decision_id: String,
+
     pub memory_id: String,
 
     pub action: String,
+
+    pub target_mutation: String,
+
+    pub reviewed_by: String,
+
+    pub verdict: String,
+
+    pub reasoning: String,
+
+    pub timestamp: String,
 
     pub governance_score: f64,
 }
@@ -45,9 +57,21 @@ impl CognitionPersistenceGovernance {
             };
 
             decisions.push(GovernanceDecision {
+                decision_id: format!("gov-{}-{:x}", memory.memory_id, 0u64),
+
                 memory_id: memory.memory_id.clone(),
 
                 action: action.into(),
+
+                target_mutation: String::new(),
+
+                reviewed_by: String::new(),
+
+                verdict: action.into(),
+
+                reasoning: String::new(),
+
+                timestamp: String::new(),
 
                 governance_score: score,
             });

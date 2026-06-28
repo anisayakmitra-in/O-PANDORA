@@ -1,0 +1,14 @@
+[package]
+name = "pandora-narad"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Pandora cognitive ingress stage"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+thiserror = "1"
+
+[dev-dependencies]
+serde_json = "1"

@@ -52,3 +52,7 @@ impl RepositorySearchEngine {
         results
     }
 }
+
+// Compatibility aliases for old import names used in main.rs.
+pub type Result = SearchResult;
+pub type Search = SearchResult;

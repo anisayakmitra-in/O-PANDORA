@@ -132,3 +132,11 @@ impl ConstitutionalCivilizationTerminationEngine {
         }
     }
 }
+
+impl ConstitutionalCivilizationTerminationEngine {
+    pub fn arbitrate(
+        civilizations: &[CivilizationTerminationCandidate],
+    ) -> CivilizationTerminationState {
+        Self::evaluate(civilizations)
+    }
+}

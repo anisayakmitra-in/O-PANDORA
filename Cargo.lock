@@ -1197,18 +1197,31 @@ name = "pandora-cli"
 version = "0.1.0"
 dependencies = [
  "anubis-memory",
+ "async-trait",
  "clap",
+ "futures",
  "pandora-events",
  "pandora-governance",
+ "pandora-loops",
+ "pandora-narad",
  "pandora-provider",
+ "pandora-rahu",
  "pandora-tools",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
 name = "pandora-events"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
 
 [[package]]
 name = "pandora-gene"
@@ -1251,6 +1264,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-identity"
+version = "0.1.0"
+dependencies = [
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "pandora-loops"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "pandora-narad",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "pandora-memory"
 version = "0.1.0"
 dependencies = [
@@ -1268,6 +1303,15 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "pandora-narad"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -1290,6 +1334,17 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "pandora-rahu"
+version = "0.1.0"
+dependencies = [
+ "pandora-loops",
+ "pandora-narad",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -1344,6 +1399,14 @@ version = "0.1.0"
 [[package]]
 name = "pandora-tools"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+]
 
 [[package]]
 name = "pandora-tui"

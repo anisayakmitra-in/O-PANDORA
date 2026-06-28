@@ -25,7 +25,11 @@ impl Registry {
     /// Registers a harness with its manifest.
     ///
     /// Returns an error if a harness with the same ID already exists.
-    pub fn register(&self, harness: Arc<dyn Harness + Send + Sync>, manifest: HarnessManifest) -> Result<()> {
+    pub fn register(
+        &self,
+        harness: Arc<dyn Harness + Send + Sync>,
+        manifest: HarnessManifest,
+    ) -> Result<()> {
         let id = manifest.id.clone();
 
         // Check for duplicate
@@ -174,7 +178,9 @@ mod tests {
             dependencies: vec![],
         };
 
-        registry.register(harness.clone(), manifest.clone()).unwrap();
+        registry
+            .register(harness.clone(), manifest.clone())
+            .unwrap();
         let result = registry.register(harness, manifest);
         assert!(matches!(result, Err(HarnessError::AlreadyRegistered(_))));
     }
@@ -183,12 +189,34 @@ mod tests {
     fn test_registry_filter_by_role() {
         let registry = Registry::new();
 
-        let h1 = Arc::new(TestHarness { id: "h1".into(), role: HarnessRole::Planning });
-        let m1 = HarnessManifest { id: "h1".into(), name: "H1".into(), version: "0.1.0".into(), author: "a".into(), role: HarnessRole::Planning, description: "".into(), dependencies: vec![] };
+        let h1 = Arc::new(TestHarness {
+            id: "h1".into(),
+            role: HarnessRole::Planning,
+        });
+        let m1 = HarnessManifest {
+            id: "h1".into(),
+            name: "H1".into(),
+            version: "0.1.0".into(),
+            author: "a".into(),
+            role: HarnessRole::Planning,
+            description: "".into(),
+            dependencies: vec![],
+        };
         registry.register(h1, m1).unwrap();
 
-        let h2 = Arc::new(TestHarness { id: "h2".into(), role: HarnessRole::Validation });
-        let m2 = HarnessManifest { id: "h2".into(), name: "H2".into(), version: "0.1.0".into(), author: "a".into(), role: HarnessRole::Validation, description: "".into(), dependencies: vec![] };
+        let h2 = Arc::new(TestHarness {
+            id: "h2".into(),
+            role: HarnessRole::Validation,
+        });
+        let m2 = HarnessManifest {
+            id: "h2".into(),
+            name: "H2".into(),
+            version: "0.1.0".into(),
+            author: "a".into(),
+            role: HarnessRole::Validation,
+            description: "".into(),
+            dependencies: vec![],
+        };
         registry.register(h2, m2).unwrap();
 
         let planning = registry.filter_by_role(HarnessRole::Planning);

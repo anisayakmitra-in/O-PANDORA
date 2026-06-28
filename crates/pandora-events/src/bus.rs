@@ -4,12 +4,12 @@ use std::sync::Arc;
 
 use tokio::sync::{mpsc, RwLock};
 
-use async_trait::async_trait;
 use crate::error::{EventError, Result};
 use crate::filter::EventFilter;
 use crate::publisher::Publisher;
 use crate::subscriber::{Subscriber, Subscription};
 use crate::types::{DynEvent, EventEnvelope, SubscriptionId};
+use async_trait::async_trait;
 
 /// Default channel size for each subscriber.
 pub const DEFAULT_SUBSCRIBER_BUFFER: usize = 256;

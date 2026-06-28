@@ -27,9 +27,13 @@ pub struct OversightDecision {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CognitionScore {
     pub score_id: String,
+
     pub subsystem: String,
+
     pub score: f64,
+
     pub anomaly_score: f64,
+
     pub timestamp: u64,
 }
 

@@ -25,7 +25,10 @@ pub enum HarnessError {
 
     /// Role mismatch for operation.
     #[error("role mismatch: expected {expected:?}, found {found:?}")]
-    RoleMismatch { expected: crate::roles::HarnessRole, found: crate::roles::HarnessRole },
+    RoleMismatch {
+        expected: crate::roles::HarnessRole,
+        found: crate::roles::HarnessRole,
+    },
 
     /// Dependency resolution failed.
     #[error("dependency resolution failed: {0}")]
