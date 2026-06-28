@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use pandora_provider::ollama::OllamaProvider;
-
+use pandora_provider::legacy::ollama::OllamaProvider;
 use pandora_provider::registry::ProviderRegistry;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let registry = ProviderRegistry::new();
 
     registry
-        .register("ollama", Arc::new(OllamaProvider::new()))
+        .register_with_name("ollama", Arc::new(OllamaProvider::new()))
         .await;
 
     let providers = registry.list().await;

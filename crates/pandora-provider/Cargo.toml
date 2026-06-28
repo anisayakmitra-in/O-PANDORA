@@ -5,29 +5,46 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 
+[features]
+# Default features: none. The crate compiles as a pure contract crate.
+default = []
+# TEMPORARY: enables the legacy Ollama HTTP client.
+# Will be removed when the plugin architecture lands.
+legacy-ollama = [
+    "dep:reqwest",
+    "dep:serde_json",
+    "dep:futures-util",
+    "tokio/full",
+]
+
 [dependencies]
-
 async-trait = "0.1"
-
-tokio = {
-    version = "1",
-    features = ["full"]
-}
-
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+# `rt` enables the async runtime, `sync` enables RwLock/Mutex/oneshot/mpsc.
+# These are needed for the Provider trait itself (not just the legacy impl).
+tokio = { version = "1", features = ["rt", "sync"] }
+# CancellationToken is part of the Provider trait signature, so it is
+# always required.
 tokio-util = "0.7"
 
-serde = {
-    version = "1",
-    features = ["derive"]
-}
+# Optional dependencies, only used by the legacy Ollama implementation.
+reqwest = { version = "0.12", features = ["json", "stream"], optional = true }
+serde_json = { version = "1", optional = true }
+futures-util = { version = "0.3", optional = true }
 
-thiserror = "2"
+[dev-dependencies]
+# `macros` enables the #[tokio::main] attribute used in the examples.
+tokio = { version = "1", features = ["macros", "rt", "sync"] }
 
-reqwest = {
-    version = "0.12",
-    features = ["json", "stream"]
-}
+[[example]]
+name = "test_ollama"
+required-features = ["legacy-ollama"]
 
-serde_json = "1"
+[[example]]
+name = "test_streaming"
+required-features = ["legacy-ollama"]
 
-futures-util = "0.3"
+[[example]]
+name = "test_registry"
+required-features = ["legacy-ollama"]

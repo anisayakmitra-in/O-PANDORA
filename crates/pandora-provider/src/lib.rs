@@ -1,73 +1,22 @@
+//! Provider contract crate.
+//!
+//! This crate defines the core traits and types for model providers.
+//! Provider implementations (Ollama, OpenRouter, Anthropic, etc.) live in separate crates.
+
+pub mod capability;
+pub mod error;
+pub mod manifest;
 pub mod registry;
-
-pub mod ollama;
-
-pub mod provider;
-
+pub mod traits;
 pub mod types;
 
-pub trait Provider {
-    fn name(&self) -> &str;
+#[cfg(feature = "legacy-ollama")]
+pub mod legacy;
 
-    fn infer(&self, model: &str, prompt: &str) -> String;
-}
-
-pub struct OllamaProvider;
-
-impl Provider for OllamaProvider {
-    fn name(&self) -> &str {
-        "ollama"
-    }
-
-    fn infer(&self, model: &str, prompt: &str) -> String {
-        format!(
-            "\
-OLLAMA PROVIDER
-
-MODEL: {}
-
-PROMPT:
-{}
-
-RESPONSE:
-Simulated Ollama inference response.",
-            model, prompt
-        )
-    }
-}
-
-pub struct OpenAIProvider;
-
-impl Provider for OpenAIProvider {
-    fn name(&self) -> &str {
-        "openai-compatible"
-    }
-
-    fn infer(&self, model: &str, prompt: &str) -> String {
-        format!(
-            "\
-OPENAI-COMPATIBLE PROVIDER
-
-MODEL: {}
-
-PROMPT:
-{}
-
-RESPONSE:
-Simulated cloud inference response.",
-            model, prompt
-        )
-    }
-}
-
-pub fn model_for_harness(harness: &str) -> String {
-    match harness {
-        "coding" => "qwen2.5-coder:7b".to_string(),
-
-        "research" => "mistral".to_string(),
-
-        "writing" => "llama3".to_string(),
-
-        _ => "qwen2.5-coder:7b".to_string(),
-    }
-}
+// Re-export core types for convenience
+pub use capability::{LanguageSupport, ModelCapabilities};
+pub use error::ProviderError;
+pub use manifest::ProviderManifest;
+pub use registry::ProviderRegistry;
+pub use traits::Provider;
+pub use types::{GenerationRequest, GenerationResponse, TokenChunk};
