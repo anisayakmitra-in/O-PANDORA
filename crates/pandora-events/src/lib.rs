@@ -57,6 +57,7 @@
 pub mod bus;
 pub mod category;
 pub mod compat;
+pub mod constitutional;
 pub mod error;
 pub mod filter;
 pub mod metadata;

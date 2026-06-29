@@ -37,6 +37,8 @@
 
 pub mod builtin;
 pub mod capability;
+pub mod compat;
+pub mod constitutional;
 pub mod error;
 pub mod manifest;
 pub mod permission;

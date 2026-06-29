@@ -33,7 +33,7 @@
 //! - KETU never executes. KETU never plans. KETU only
 //!   validates the output of the Core phase.
 //! - The lifecycle composes with the existing RAHU
-//!    and produces a .
+//!   and produces a .
 
 use std::any::Any;
 use std::fmt;
@@ -354,7 +354,7 @@ impl MetaHarnessLifecycle {
     pub fn validate(&mut self) -> &KetuPhase {
         // Placeholder: real KETU logic is implemented
         // in subsequent milestones.
-        &self.rahu; // suppress unused warning
+        let _ = &self.rahu; // suppress unused warning
         &self.ketu
     }
 
@@ -414,7 +414,8 @@ mod tests {
                 GeneKind::Execution,
                 "exec-default",
             ),
-            lease: CapabilityLeaseRequest::new("lease-1", vec![], 60_000),
+            capability_lease: CapabilityLeaseRequest::new("lease-1", vec![], 60_000),
+            primary: "phoenix".to_string(),
         };
         ExecutionPlan::new("req-1", route)
     }

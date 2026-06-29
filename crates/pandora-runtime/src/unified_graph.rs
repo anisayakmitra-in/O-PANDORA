@@ -26,6 +26,12 @@ pub struct UnifiedExecutionGraph {
     pub edges: Vec<ExecutionEdge>,
 }
 
+impl Default for UnifiedExecutionGraph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UnifiedExecutionGraph {
     pub fn new() -> Self {
         Self {

@@ -21,7 +21,7 @@ pub struct SwarmTask {
 pub struct SwarmOrchestrator;
 
 impl SwarmOrchestrator {
-    pub fn coordinate(agents: &[SwarmAgent], tasks: &mut Vec<SwarmTask>) {
+    pub fn coordinate(agents: &[SwarmAgent], tasks: &mut [SwarmTask]) {
         for task in tasks.iter_mut() {
             if task.assigned_agent.is_some() {
                 continue;

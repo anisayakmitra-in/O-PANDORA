@@ -48,6 +48,7 @@
 
 #![forbid(unsafe_code)]
 
+mod constitutional;
 mod error;
 pub mod loops;
 mod outcome;

@@ -1217,6 +1217,7 @@ name = "pandora-events"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "pandora-types",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1267,6 +1268,7 @@ dependencies = [
 name = "pandora-identity"
 version = "0.1.0"
 dependencies = [
+ "pandora-types",
  "semver",
  "serde",
  "serde_json",
@@ -1279,6 +1281,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "pandora-narad",
+ "pandora-types",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1328,6 +1331,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures-util",
+ "pandora-types",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -1342,6 +1346,7 @@ version = "0.1.0"
 dependencies = [
  "pandora-loops",
  "pandora-narad",
+ "pandora-types",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1367,6 +1372,9 @@ dependencies = [
  "bollard",
  "bytes",
  "futures-util",
+ "pandora-types",
+ "serde",
+ "serde_json",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
@@ -1383,6 +1391,7 @@ dependencies = [
  "futures",
  "pandora-governance",
  "pandora-sandbox",
+ "pandora-types",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1401,6 +1410,7 @@ name = "pandora-tools"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "pandora-types",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -1424,6 +1434,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

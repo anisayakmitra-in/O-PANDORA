@@ -38,6 +38,12 @@ pub struct CognitionScheduler {
     pub queue: VecDeque<CognitionTask>,
 }
 
+impl Default for CognitionScheduler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CognitionScheduler {
     pub fn new() -> Self {
         Self {

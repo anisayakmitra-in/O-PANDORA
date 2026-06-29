@@ -1,10 +1,10 @@
 use pandora_narad::PlanningContext;
 use serde::{Deserialize, Serialize};
 
-/// A request context wraps a  with
+/// A request context wraps a `PlanningContext` with
 /// orchestrator-specific metadata. It is the value RAHU
-/// consumes; downstream stages consume the
-///  RAHU produces.
+/// consumes; downstream stages consume the execution
+/// route RAHU produces.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RequestContext {
     pub request_id: String,
@@ -13,46 +13,26 @@ pub struct RequestContext {
 }
 
 impl RequestContext {
-    pub fn from_planning(planning: PlanningContext) -> Self {
+    /// Construct a new request context from a raw user input
+    /// and a planning context produced by NARAD.
+    pub fn new(request_id: &str, raw_input: &str, planning: PlanningContext) -> Self {
         RequestContext {
-            request_id: planning.request_id.clone(),
-            raw_input: planning.raw_input.clone(),
+            request_id: request_id.to_string(),
+            raw_input: raw_input.to_string(),
             planning,
         }
-    }
-
-    pub fn intent_kind(&self) -> pandora_narad::IntentKind {
-        self.planning.intent.kind
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pandora_narad::{Intent, IntentConfidence};
-
-    fn planning() -> PlanningContext {
-        let intent = Intent::new(
-            pandora_narad::IntentKind::Create,
-            "x".to_string(),
-            "build x".to_string(),
-            IntentConfidence::new(0.9),
-        );
-        let reqs = pandora_narad::estimate_capabilities(&intent);
-        pandora_narad::produce_context(&intent, &reqs, "build x")
-    }
 
     #[test]
-    fn from_planning_extracts_request_id() {
-        let p = planning();
-        let ctx = RequestContext::from_planning(p.clone());
-        assert_eq!(ctx.request_id, p.request_id);
-        assert_eq!(ctx.raw_input, p.raw_input);
-    }
-
-    #[test]
-    fn intent_kind_passthrough() {
-        let ctx = RequestContext::from_planning(planning());
-        assert_eq!(ctx.intent_kind(), pandora_narad::IntentKind::Create);
+    fn request_context_new() {
+        let pc = PlanningContext::default();
+        let rc = RequestContext::new("req-1", "hello", pc);
+        assert_eq!(rc.request_id, "req-1");
+        assert_eq!(rc.raw_input, "hello");
     }
 }

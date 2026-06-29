@@ -11,6 +11,12 @@ pub struct SwarmMemoryBus {
     pub events: Vec<SwarmMemoryEvent>,
 }
 
+impl Default for SwarmMemoryBus {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SwarmMemoryBus {
     pub fn new() -> Self {
         Self { events: Vec::new() }

@@ -11,6 +11,11 @@ pub struct RuntimePlugin {
 pub struct PluginRuntime;
 
 impl PluginRuntime {
+    /// Load a plugin from a shared library.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the path points to a valid shared library.
     pub unsafe fn load(plugin_path: impl AsRef<Path>) -> Result<RuntimePlugin, String> {
         let path = plugin_path.as_ref();
 

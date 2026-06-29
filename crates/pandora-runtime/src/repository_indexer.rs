@@ -34,10 +34,8 @@ impl RepositoryIndexer {
     fn walk(path: &Path, indexed: &mut Vec<IndexedFile>) {
         if path.is_dir() {
             if let Ok(entries) = fs::read_dir(path) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        Self::walk(&entry.path(), indexed);
-                    }
+                for entry in entries.flatten() {
+                    Self::walk(&entry.path(), indexed);
                 }
             }
         } else {

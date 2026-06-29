@@ -17,6 +17,12 @@ pub struct PopulationManager {
     pub population: Vec<EvolutionCandidate>,
 }
 
+impl Default for PopulationManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PopulationManager {
     pub fn new() -> Self {
         Self {

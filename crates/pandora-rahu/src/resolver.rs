@@ -1,5 +1,6 @@
 use pandora_narad::PlanningContext;
 
+#[allow(unused_imports)]
 use crate::capability::{CapabilityKind, CapabilityLeaseRequest, CapabilityRequest};
 use crate::harness::{GeneKind, MetaHarnessKind, SourceHarnessKind};
 use crate::plan::{ExecutionMode, ExecutionPlan, ExecutionRoute};
@@ -50,7 +51,8 @@ pub fn resolve(
         source: source_selection,
         meta: meta_selection,
         gene: gene_selection,
-        lease,
+        capability_lease: lease,
+        primary: String::new(),
     };
 
     let plan = ExecutionPlan::new(context.request_id.clone(), route)
@@ -261,7 +263,13 @@ mod tests {
     fn lease_carries_requested_capabilities() {
         let (s, m, g) = populated_registries();
         let p = resolve(&s, &m, &g, &planning(pandora_narad::IntentKind::Create)).unwrap();
-        let caps: Vec<CapabilityKind> = p.route.lease.capabilities.iter().map(|c| c.kind).collect();
+        let caps: Vec<CapabilityKind> = p
+            .route
+            .capability_lease
+            .capabilities
+            .iter()
+            .map(|c| c.kind)
+            .collect();
         assert!(caps.contains(&CapabilityKind::Filesystem));
         assert!(caps.contains(&CapabilityKind::Execution));
         assert!(caps.contains(&CapabilityKind::Budget));

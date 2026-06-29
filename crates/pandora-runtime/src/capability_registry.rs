@@ -5,6 +5,12 @@ pub struct CapabilityRegistry {
     pub capabilities: Vec<CapabilityDescriptor>,
 }
 
+impl Default for CapabilityRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CapabilityRegistry {
     pub fn new() -> Self {
         Self {

@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::harness::{
-    Gene, GeneKind, MetaHarness, MetaHarnessKind, SourceHarness, SourceHarnessKind,
-};
-
+use crate::harness::{Gene, GeneKind, MetaHarness, SourceHarness, SourceHarnessKind};
 /// A resolved source harness. RAHU produces this when
 /// it has decided which source harness should handle
 /// the request.

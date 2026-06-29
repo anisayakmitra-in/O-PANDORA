@@ -76,7 +76,7 @@ impl ConstitutionalArtifactProvenanceEngine {
                 artifact.provenance.starts_with("pandora@")
             };
 
-            let replay_verified = artifact.replay_lineage.len() > 0;
+            let replay_verified = !artifact.replay_lineage.is_empty();
 
             let marketplace_allowed = artifact.benchmark_certified && creator_verified;
 

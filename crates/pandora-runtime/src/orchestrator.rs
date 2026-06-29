@@ -5,6 +5,12 @@ pub struct PandoraRuntime {
     pub harnesses: Vec<Box<dyn MetaHarness>>,
 }
 
+impl Default for PandoraRuntime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PandoraRuntime {
     pub fn new() -> Self {
         Self {

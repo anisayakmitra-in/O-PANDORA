@@ -26,6 +26,12 @@ pub struct DistributedRegistry {
     pub nodes: HashMap<String, RuntimeNode>,
 }
 
+impl Default for DistributedRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DistributedRegistry {
     pub fn new() -> Self {
         Self {

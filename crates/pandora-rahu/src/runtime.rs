@@ -16,10 +16,10 @@
 //! -  (the runtime's health)
 //! -  (counters and activity)
 //! -  (semver-like version with compat
-//!   range)
+//!    range)
 //! -  list (other harnesses required)
 //! -  list (what the harness
-//!   provides)
+//!    provides)
 //! -  (typed config schema)
 //! -  (lineage, generation, signing)
 //!
@@ -38,7 +38,7 @@ use serde::{Deserialize, Serialize};
 use crate::harness::SourceHarnessKind;
 
 /// Health status of a Source Harness runtime.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum HealthStatus {
     /// The harness is fully operational.
     Healthy,
@@ -49,6 +49,7 @@ pub enum HealthStatus {
     /// removed from the dispatch path.
     Unhealthy,
     /// The harness has not yet reported health.
+    #[default]
     Unknown,
 }
 
@@ -64,12 +65,6 @@ impl HealthStatus {
             HealthStatus::Unhealthy => "UNHEALTHY",
             HealthStatus::Unknown => "UNKNOWN",
         }
-    }
-}
-
-impl Default for HealthStatus {
-    fn default() -> Self {
-        HealthStatus::Unknown
     }
 }
 
@@ -541,7 +536,7 @@ impl SourceHarnessLifecycle {
     }
 
     pub fn state(&self) -> LifecycleState {
-        self.state.lock().expect("lifecycle poisoned").clone()
+        *self.state.lock().expect("lifecycle poisoned")
     }
 
     /// Move to . Returns the previous state.
@@ -571,7 +566,7 @@ impl SourceHarnessLifecycle {
 
     fn set(&self, new: LifecycleState) -> LifecycleState {
         let mut guard = self.state.lock().expect("lifecycle poisoned");
-        let prev = guard.clone();
+        let prev = *guard;
         *guard = new;
         prev
     }
@@ -599,6 +594,7 @@ impl InMemoryLoader {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, d: SourceHarnessDescriptor) -> Self {
         self.descriptors.push(d);
         self

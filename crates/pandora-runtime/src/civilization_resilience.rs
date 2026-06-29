@@ -96,9 +96,9 @@ impl CivilizationResilienceEngine {
 
             resilience += resilience_score;
 
-            governance += (1.0 - signal.governance_entropy);
+            governance += 1.0 - signal.governance_entropy;
 
-            replay += (1.0 - signal.replay_decay);
+            replay += 1.0 - signal.replay_decay;
         }
 
         let count = signals.len() as f64;

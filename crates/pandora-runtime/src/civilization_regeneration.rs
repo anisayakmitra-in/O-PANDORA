@@ -96,9 +96,9 @@ impl CivilizationRegenerationEngine {
 
             regeneration += regeneration_score;
 
-            governance += (1.0 - signal.governance_damage);
+            governance += 1.0 - signal.governance_damage;
 
-            replay += (1.0 - signal.replay_loss);
+            replay += 1.0 - signal.replay_loss;
         }
 
         let count = signals.len() as f64;

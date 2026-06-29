@@ -8,6 +8,7 @@ description = "Pandora orchestration / source harness resolution"
 
 [dependencies]
 pandora-narad = { path = "../pandora-narad" }
+pandora-types = { path = "../pandora-types" }
 pandora-loops = { path = "../pandora-loops" }
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"

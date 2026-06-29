@@ -26,6 +26,12 @@ pub struct HealthMonitor {
     pub reports: HashMap<String, HealthReport>,
 }
 
+impl Default for HealthMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HealthMonitor {
     pub fn new() -> Self {
         Self {

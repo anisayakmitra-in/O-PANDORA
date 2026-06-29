@@ -4,8 +4,7 @@ use pandora_loops::loops::NoopLoop;
 use pandora_loops::{run, LoopKind, LoopOutcome, LoopRegistry};
 use pandora_narad::PlanningContext;
 use pandora_rahu::{
-    plan as rahu_plan, populated_registries, run_lifecycle, ExecutionPlan, LifecycleOutcome,
-    RahuError,
+    populated_registries, rahu_plan, run_lifecycle, ExecutionPlan, LifecycleOutcome,
 };
 use serde::Serialize;
 
@@ -82,6 +81,7 @@ fn dummy_route() -> pandora_rahu::ExecutionRoute {
         source: SourceHarnessSelection::new(SourceHarnessKind::Phoenix, "unresolved"),
         meta: MetaHarnessSelection::new(SourceHarnessKind::Phoenix, "unresolved"),
         gene: GeneSelection::new(SourceHarnessKind::Phoenix, GeneKind::Read, "unresolved"),
-        lease: CapabilityLeaseRequest::new("unresolved", vec![], 0),
+        capability_lease: CapabilityLeaseRequest::new("unresolved", vec![], 0),
+        primary: "unresolved".to_string(),
     }
 }

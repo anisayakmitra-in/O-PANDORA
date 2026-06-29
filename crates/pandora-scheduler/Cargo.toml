@@ -21,3 +21,4 @@ pandora-governance = { path = "../pandora-governance", features = ["compat-runti
 
 # Assume workspace dependencies
 # pandora-governance = { path = "../pandora-governance", features = ["compat-runtime"] }
+pandora-types = { path = "../pandora-types" }

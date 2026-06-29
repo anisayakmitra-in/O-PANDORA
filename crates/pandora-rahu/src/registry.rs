@@ -53,7 +53,7 @@ impl SourceHarnessRegistry {
         let kind = harness.kind();
         let name = harness.name().to_string();
         let mut guard = self.inner.write().expect("registry poisoned");
-        let entry = guard.entry(kind).or_insert_with(Vec::new);
+        let entry = guard.entry(kind).or_default();
         if entry.iter().any(|h| h.name() == name) {
             return Err(RahuError::DuplicateSource { kind, name });
         }
@@ -116,7 +116,7 @@ impl MetaHarnessRegistry {
         let parent = meta.parent();
         let name = meta.name().to_string();
         let mut guard = self.inner.write().expect("registry poisoned");
-        let entry = guard.entry(parent).or_insert_with(Vec::new);
+        let entry = guard.entry(parent).or_default();
         if entry.iter().any(|h| h.name() == name) {
             return Err(RahuError::DuplicateMeta { parent, name });
         }
@@ -179,7 +179,7 @@ impl GeneRegistry {
         let parent = gene.parent();
         let name = gene.name().to_string();
         let mut guard = self.inner.write().expect("registry poisoned");
-        let entry = guard.entry(parent).or_insert_with(Vec::new);
+        let entry = guard.entry(parent).or_default();
         if entry.iter().any(|g| g.name() == name) {
             return Err(RahuError::DuplicateGene { parent, name });
         }

@@ -95,9 +95,9 @@ impl EpistemicSandboxEngine {
 
             integrity += epistemic_score;
 
-            replay += (1.0 - scenario.replay_uncertainty);
+            replay += 1.0 - scenario.replay_uncertainty;
 
-            stability += (1.0 - scenario.reality_ambiguity);
+            stability += 1.0 - scenario.reality_ambiguity;
         }
 
         let count = scenarios.len() as f64;

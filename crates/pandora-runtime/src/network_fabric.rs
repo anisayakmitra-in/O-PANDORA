@@ -24,6 +24,12 @@ pub struct DistributedNetworkFabric {
     pub nodes: HashMap<String, NetworkNode>,
 }
 
+impl Default for DistributedNetworkFabric {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DistributedNetworkFabric {
     pub fn new() -> Self {
         Self {

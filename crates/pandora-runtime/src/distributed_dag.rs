@@ -16,7 +16,7 @@ pub struct DistributedDagTask {
 pub struct DistributedDagScheduler;
 
 impl DistributedDagScheduler {
-    pub fn schedule(tasks: &mut Vec<DistributedDagTask>, nodes: &[RuntimeNode]) {
+    pub fn schedule(tasks: &mut [DistributedDagTask], nodes: &[RuntimeNode]) {
         for task in tasks.iter_mut() {
             if task.completed {
                 continue;

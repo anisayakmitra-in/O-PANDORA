@@ -4,6 +4,8 @@
 //! Provider implementations (Ollama, OpenRouter, Anthropic, etc.) live in separate crates.
 
 pub mod capability;
+pub mod compat;
+pub mod constitutional;
 pub mod error;
 pub mod manifest;
 pub mod registry;

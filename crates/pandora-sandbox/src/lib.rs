@@ -1,6 +1,8 @@
+pub mod compat;
 pub mod config;
 pub mod engine;
 pub mod error;
+pub mod framework;
 pub mod governance;
 pub mod reaper;
 pub mod sandbox;

@@ -80,18 +80,13 @@ impl IdentitySignature {
 }
 
 /// Health status.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum IdentityHealth {
     Healthy,
     Degraded,
     Unhealthy,
+    #[default]
     Unknown,
-}
-
-impl Default for IdentityHealth {
-    fn default() -> Self {
-        IdentityHealth::Unknown
-    }
 }
 
 impl IdentityHealth {
@@ -167,20 +162,15 @@ impl IdentityTrust {
 }
 
 /// Lifecycle metadata.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum IdentityLifecycleStage {
+    #[default]
     Declared,
     Installing,
     Installed,
     Upgrading,
     Uninstalling,
     Uninstalled,
-}
-
-impl Default for IdentityLifecycleStage {
-    fn default() -> Self {
-        IdentityLifecycleStage::Declared
-    }
 }
 
 /// Telemetry hook counts.

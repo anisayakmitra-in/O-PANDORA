@@ -77,7 +77,7 @@ impl LoopRegistry {
         let kind = loop_impl.kind();
         let name = loop_impl.name().to_string();
         let mut guard = self.loops.write().expect("registry lock poisoned");
-        let entry = guard.entry(kind).or_insert_with(Vec::new);
+        let entry = guard.entry(kind).or_default();
         if entry.iter().any(|l| l.name() == name) {
             return Err(RegistryError::DuplicateName { kind, name });
         }

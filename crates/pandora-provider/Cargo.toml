@@ -19,6 +19,7 @@ legacy-ollama = [
 
 [dependencies]
 async-trait = "0.1"
+pandora-types = { path = "../pandora-types" }
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 # `rt` enables the async runtime, `sync` enables RwLock/Mutex/oneshot/mpsc.

@@ -9,6 +9,7 @@ description = "Pandora constitutional identity framework"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"
+pandora-types = { path = "../pandora-types" }
 semver = "1"
 
 [dev-dependencies]

@@ -12,7 +12,7 @@ pub struct SpecializedAgent {
 pub struct SwarmSpecializationEngine;
 
 impl SwarmSpecializationEngine {
-    pub fn evolve(agents: &mut Vec<SpecializedAgent>) {
+    pub fn evolve(agents: &mut [SpecializedAgent]) {
         for agent in agents.iter_mut() {
             if agent.performance > 0.90 {
                 agent.specialization = format!("elite-{}", agent.specialization);

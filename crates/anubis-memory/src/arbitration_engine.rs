@@ -1,6 +1,6 @@
 use crate::arbitration::ArbitrationScore;
 
-pub fn rank_memories(memories: &mut Vec<ArbitrationScore>) {
+pub fn rank_memories(memories: &mut [ArbitrationScore]) {
     for memory in memories.iter_mut() {
         memory.final_score = (memory.semantic_score * 0.5)
             + (memory.temporal_score * 0.3)

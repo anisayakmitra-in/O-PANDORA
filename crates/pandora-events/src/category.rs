@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 /// without breaking the contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum EventCategory {
     /// Runtime lifecycle events (boot, shutdown, restart).
     Runtime,
@@ -45,11 +46,6 @@ pub enum EventCategory {
     Gene,
 
     /// Catch-all for events that do not fit any other category.
+    #[default]
     Other,
-}
-
-impl Default for EventCategory {
-    fn default() -> Self {
-        EventCategory::Other
-    }
 }

@@ -94,11 +94,11 @@ impl EntropyCollapseEngine {
                 collapse_score,
             });
 
-            stability += (1.0 - collapse_score);
+            stability += 1.0 - collapse_score;
 
-            replay += (1.0 - signal.replay_fragmentation);
+            replay += 1.0 - signal.replay_fragmentation;
 
-            governance += (1.0 - signal.governance_drift);
+            governance += 1.0 - signal.governance_drift;
         }
 
         let count = signals.len() as f64;

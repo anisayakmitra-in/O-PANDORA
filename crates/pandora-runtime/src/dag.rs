@@ -17,6 +17,12 @@ pub struct ExecutionDag {
     pub nodes: HashMap<String, DagNode>,
 }
 
+impl Default for ExecutionDag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExecutionDag {
     pub fn new() -> Self {
         Self {

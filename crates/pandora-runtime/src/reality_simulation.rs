@@ -92,7 +92,7 @@ impl ConstitutionalRealitySimulationEngine {
 
             survivability += scenario.survivability_projection;
 
-            governance += (1.0 - scenario.governance_pressure);
+            governance += 1.0 - scenario.governance_pressure;
         }
 
         let count = scenarios.len() as f64;

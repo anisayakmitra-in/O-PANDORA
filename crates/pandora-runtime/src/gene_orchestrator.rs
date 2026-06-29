@@ -57,12 +57,10 @@ impl GeneOrchestrator {
             let score = (gene.survivability * 0.45) + (gene.governance_score * 0.40)
                 - (gene.activation_cost * 0.15);
 
-            if workload.contains(&gene.specialization) {
-                if score > best_score {
-                    best_score = score;
+            if workload.contains(&gene.specialization) && score > best_score {
+                best_score = score;
 
-                    best_gene = Some(gene.clone());
-                }
+                best_gene = Some(gene.clone());
             }
         }
 

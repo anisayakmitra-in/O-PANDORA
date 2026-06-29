@@ -94,11 +94,11 @@ impl UncertaintyTopologyEngine {
                 uncertainty_score,
             });
 
-            certainty += (1.0 - uncertainty_score);
+            certainty += 1.0 - uncertainty_score;
 
-            governance += (1.0 - signal.governance_ambiguity);
+            governance += 1.0 - signal.governance_ambiguity;
 
-            replay += (1.0 - signal.replay_confidence_loss);
+            replay += 1.0 - signal.replay_confidence_loss;
         }
 
         let count = signals.len() as f64;

@@ -49,6 +49,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod compat;
 mod kind;
 mod manifest;
 mod registry;

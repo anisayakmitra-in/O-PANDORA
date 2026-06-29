@@ -26,6 +26,12 @@ use crate::task::{Task, TaskPayload};
 
 pub struct GovernedExecutionAdapter;
 
+impl Default for GovernedExecutionAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GovernedExecutionAdapter {
     pub fn new() -> Self {
         Self

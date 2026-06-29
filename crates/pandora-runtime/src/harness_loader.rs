@@ -40,6 +40,9 @@ impl HarnessLoader {
         }]
     }
 
+    /// # Safety
+    ///
+    /// The caller must ensure the path points to a valid shared library.
     pub unsafe fn load(path: impl AsRef<Path>) -> Option<LoadedHarness> {
         let library = Library::new(path.as_ref()).ok()?;
 
@@ -48,6 +51,11 @@ impl HarnessLoader {
         Some(LoadedHarness { library })
     }
 
+    /// Execute a loaded harness.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the harness is valid and the library has not been unloaded.
     pub unsafe fn execute(harness: &LoadedHarness) {
         type ExecuteFn = unsafe fn();
 
