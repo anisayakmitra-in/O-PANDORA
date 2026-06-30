@@ -170,197 +170,6 @@ const ENGINES: &[EngineEntry] = &[
             true,
         )
     }),
-    // --- SHANI: Civilization engines ---
-    ("ConstitutionalCivilizationAxiologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationCosmologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationEpistemologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationFabricEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationGenesisEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationMemoryEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &["memory"],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationMetanoeticsEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationMythologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationNoologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationOntologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationPhilosophyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationPraxeologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationRebirthEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("CivilizationRegenerationEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("CivilizationResilienceEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationSuccessionEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationTeleologyEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationTerminationEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
-    ("ConstitutionalCivilizationTranscendenceEngine", || {
-        em(
-            "shani",
-            "civilization",
-            &[],
-            ExecutionProfile::Stateless,
-            true,
-            true,
-        )
-    }),
     // --- SHANI: Swarm engines ---
     ("SwarmDreamEngine", || {
         em(
@@ -781,7 +590,7 @@ mod tests {
 
     #[test]
     fn engine_count_check() {
-        assert_eq!(engine_count(), 72);
+        assert_eq!(engine_count(), 53);
     }
 
     #[test]
@@ -798,13 +607,6 @@ mod tests {
         let e = lookup_engine("SemanticMemoryEngine").unwrap();
         assert_eq!(e.owning_source_harness, "anubis");
         assert!(e.required_capabilities.contains(&"memory".to_string()));
-    }
-
-    #[test]
-    fn shani_civilization_lookup() {
-        let e = lookup_engine("ConstitutionalCivilizationAxiologyEngine").unwrap();
-        assert_eq!(e.owning_source_harness, "shani");
-        assert_eq!(e.owning_meta_harness, "civilization");
     }
 
     #[test]
@@ -837,7 +639,7 @@ mod tests {
     #[test]
     fn all_names_list() {
         let names = all_engine_names();
-        assert_eq!(names.len(), 72);
+        assert_eq!(names.len(), 53);
         assert!(!names.contains(&"PhoenixHarness")); // not a harness
         assert!(names.contains(&"ExecutionArchaeologyEngine"));
     }
