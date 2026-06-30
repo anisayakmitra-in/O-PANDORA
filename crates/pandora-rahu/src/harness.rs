@@ -67,6 +67,65 @@ impl SourceHarnessManifest {
             description: description.into(),
         }
     }
+
+    pub fn builder(kind: SourceHarnessKind) -> SourceHarnessManifestBuilder {
+        SourceHarnessManifestBuilder::new(kind)
+    }
+}
+
+#[derive(Debug)]
+pub struct SourceHarnessManifestBuilder {
+    kind: SourceHarnessKind,
+    name: Option<String>,
+    version: Option<String>,
+    description: Option<String>,
+}
+
+impl SourceHarnessManifestBuilder {
+    pub fn new(kind: SourceHarnessKind) -> Self {
+        Self {
+            kind,
+            name: None,
+            version: None,
+            description: None,
+        }
+    }
+
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn version(mut self, version: impl Into<String>) -> Self {
+        self.version = Some(version.into());
+        self
+    }
+
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+
+    pub fn build(self) -> Result<SourceHarnessManifest, SourceHarnessManifestBuilderError> {
+        Ok(SourceHarnessManifest {
+            kind: self.kind,
+            name: self
+                .name
+                .ok_or(SourceHarnessManifestBuilderError::MissingField("name"))?,
+            version: self
+                .version
+                .ok_or(SourceHarnessManifestBuilderError::MissingField("version"))?,
+            description: self.description.ok_or(
+                SourceHarnessManifestBuilderError::MissingField("description"),
+            )?,
+        })
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SourceHarnessManifestBuilderError {
+    #[error("Missing required field: {0}")]
+    MissingField(&'static str),
 }
 
 /// A trait every source harness implements. RAHU
@@ -137,6 +196,58 @@ impl MetaHarnessManifest {
             version: version.into(),
         }
     }
+
+    pub fn builder(parent: SourceHarnessKind, kind: MetaHarnessKind) -> MetaHarnessManifestBuilder {
+        MetaHarnessManifestBuilder::new(parent, kind)
+    }
+}
+
+#[derive(Debug)]
+pub struct MetaHarnessManifestBuilder {
+    parent: SourceHarnessKind,
+    kind: MetaHarnessKind,
+    name: Option<String>,
+    version: Option<String>,
+}
+
+impl MetaHarnessManifestBuilder {
+    pub fn new(parent: SourceHarnessKind, kind: MetaHarnessKind) -> Self {
+        Self {
+            parent,
+            kind,
+            name: None,
+            version: None,
+        }
+    }
+
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn version(mut self, version: impl Into<String>) -> Self {
+        self.version = Some(version.into());
+        self
+    }
+
+    pub fn build(self) -> Result<MetaHarnessManifest, MetaHarnessManifestBuilderError> {
+        Ok(MetaHarnessManifest {
+            parent: self.parent,
+            kind: self.kind,
+            name: self
+                .name
+                .ok_or(MetaHarnessManifestBuilderError::MissingField("name"))?,
+            version: self
+                .version
+                .ok_or(MetaHarnessManifestBuilderError::MissingField("version"))?,
+        })
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum MetaHarnessManifestBuilderError {
+    #[error("Missing required field: {0}")]
+    MissingField(&'static str),
 }
 
 pub trait MetaHarness: Send + Sync {
@@ -203,6 +314,68 @@ impl GeneManifest {
             description: description.into(),
         }
     }
+
+    pub fn builder(parent: SourceHarnessKind, kind: GeneKind) -> GeneManifestBuilder {
+        GeneManifestBuilder::new(parent, kind)
+    }
+}
+
+#[derive(Debug)]
+pub struct GeneManifestBuilder {
+    parent: SourceHarnessKind,
+    kind: GeneKind,
+    name: Option<String>,
+    version: Option<String>,
+    description: Option<String>,
+}
+
+impl GeneManifestBuilder {
+    pub fn new(parent: SourceHarnessKind, kind: GeneKind) -> Self {
+        Self {
+            parent,
+            kind,
+            name: None,
+            version: None,
+            description: None,
+        }
+    }
+
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn version(mut self, version: impl Into<String>) -> Self {
+        self.version = Some(version.into());
+        self
+    }
+
+    pub fn description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+
+    pub fn build(self) -> Result<GeneManifest, GeneManifestBuilderError> {
+        Ok(GeneManifest {
+            parent: self.parent,
+            kind: self.kind,
+            name: self
+                .name
+                .ok_or(GeneManifestBuilderError::MissingField("name"))?,
+            version: self
+                .version
+                .ok_or(GeneManifestBuilderError::MissingField("version"))?,
+            description: self
+                .description
+                .ok_or(GeneManifestBuilderError::MissingField("description"))?,
+        })
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GeneManifestBuilderError {
+    #[error("Missing required field: {0}")]
+    MissingField(&'static str),
 }
 
 pub trait Gene: Send + Sync {
@@ -246,5 +419,48 @@ mod tests {
     fn gene_kind_names() {
         assert_eq!(GeneKind::Execution.name(), "execution");
         assert_eq!(GeneKind::Reflection.name(), "reflection");
+    }
+
+    #[test]
+    fn source_harness_manifest_builder() {
+        let manifest = SourceHarnessManifest::builder(SourceHarnessKind::Phoenix)
+            .name("phoenix-main")
+            .version("1.0.0")
+            .description("Main Phoenix harness")
+            .build()
+            .unwrap();
+        assert_eq!(manifest.kind, SourceHarnessKind::Phoenix);
+        assert_eq!(manifest.name, "phoenix-main");
+        assert_eq!(manifest.version, "1.0.0");
+        assert_eq!(manifest.description, "Main Phoenix harness");
+    }
+
+    #[test]
+    fn meta_harness_manifest_builder() {
+        let manifest =
+            MetaHarnessManifest::builder(SourceHarnessKind::Phoenix, MetaHarnessKind::Shell)
+                .name("phoenix-shell")
+                .version("1.0.0")
+                .build()
+                .unwrap();
+        assert_eq!(manifest.parent, SourceHarnessKind::Phoenix);
+        assert_eq!(manifest.kind, MetaHarnessKind::Shell);
+        assert_eq!(manifest.name, "phoenix-shell");
+        assert_eq!(manifest.version, "1.0.0");
+    }
+
+    #[test]
+    fn gene_manifest_builder() {
+        let manifest = GeneManifest::builder(SourceHarnessKind::Phoenix, GeneKind::Execution)
+            .name("exec-default")
+            .version("1.0.0")
+            .description("Default execution gene")
+            .build()
+            .unwrap();
+        assert_eq!(manifest.parent, SourceHarnessKind::Phoenix);
+        assert_eq!(manifest.kind, GeneKind::Execution);
+        assert_eq!(manifest.name, "exec-default");
+        assert_eq!(manifest.version, "1.0.0");
+        assert_eq!(manifest.description, "Default execution gene");
     }
 }
