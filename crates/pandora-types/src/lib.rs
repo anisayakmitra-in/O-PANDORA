@@ -1,11 +1,26 @@
 //! # pandora-types
 //!
-//! Shared types for the Pandora OS.
+//! Canonical shared types for the Pandora OS.
 //!
-//! This crate hosts the constitutional metadata
-//! foundation (see  module), the harness
-//! spec, and the gene spec. Concrete runtime crates
-//! depend on these types.
+//! This crate is the canonical owner of:
+//! - constitutional contracts
+//! - universal contracts
+//! - identity contracts
+//! - execution contracts
+//! - capability contracts
+//! - manifest contracts
+//! - lifecycle
+//! - telemetry
+//! - health
+//! - trust
+//! - versioning
+//!
+//! Every constitutional object composes a
+//! ConstitutionalManifest (defined in constitutional.rs).
+//! Its identity field is the canonical identity.
+//!
+//! The pandora-identity crate provides concrete identity
+//! registries that compose these canonical types.
 
 pub mod harness;
 pub use harness::HarnessSpec;
