@@ -6,7 +6,7 @@
 //! supporting metadata types, and the validation/registry
 //! framework that all constitutional objects use.
 //!
-//! ## Architecture
+//! ##[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]Architecture
 //!
 //! ConstitutionalManifest
 //!     |
@@ -31,6 +31,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+use crate::universal::GeneManifest;
+use crate::gene_context::{GeneExecutionContext, GeneExecutionResult};
 use serde::{Deserialize, Serialize};
 
 /// The kind of constitutional object a manifest
@@ -112,6 +114,159 @@ impl fmt::Display for ManifestKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.name())
     }
+}
+
+// ============================================================
+// Source Harness Contracts (6 required roles per freeze)
+// ============================================================
+/// The role of a Source Harness in the constitutional architecture.
+/// These are the 6 required roles that MUST be implemented by the runtime.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum SourceHarnessRole {
+    /// NARAD — Cognition Ingress (all external cognition enters here)
+    Cognition,
+    /// RAHU — Planning & Orchestration
+    Planning,
+    /// KETU — Verification
+    Verification,
+    /// PANOPTES — Governance
+    Governance,
+    /// SHANI — Evolution
+    Evolution,
+    /// PHOENIX — Execution Lifecycle
+    Execution,
+}
+
+impl SourceHarnessRole {
+    pub fn name(&self) -> &'static str {
+        match self {
+            SourceHarnessRole::Cognition => "Cognition",
+            SourceHarnessRole::Planning => "Planning",
+            SourceHarnessRole::Verification => "Verification",
+            SourceHarnessRole::Governance => "Governance",
+            SourceHarnessRole::Evolution => "Evolution",
+            SourceHarnessRole::Execution => "Execution",
+        }
+    }
+}
+
+/// The canonical Source Harness trait. Every Source Harness implementation
+/// MUST satisfy this contract. Implementations are replaceable.
+pub trait SourceHarness: Send + Sync + std::fmt::Debug {
+    /// The role this Source Harness fulfills.
+    fn role(&self) -> SourceHarnessRole;
+    /// The manifest describing this Source Harness.
+    fn manifest(&self) -> &SourceHarnessManifest;
+    /// Current health status.
+    fn health(&self) -> &ManifestHealth;
+    /// Current lifecycle state.
+    fn lifecycle(&self) -> &ManifestLifecycle;
+    /// Telemetry report.
+    fn telemetry(&self) -> &ManifestTelemetry;
+    /// Capabilities provided by this Source Harness.
+    fn capabilities(&self) -> &[ManifestCapability];
+    /// Dependencies on other Source Harnesses.
+    fn dependencies(&self) -> &[SourceHarnessRole];
+}
+
+/// Source Harness manifest - the identity and metadata of a Source Harness.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SourceHarnessManifest {
+    pub role: SourceHarnessRole,
+    pub name: String,
+    pub version: ManifestVersion,
+    pub description: String,
+    pub capabilities: Vec<ManifestCapability>,
+    pub dependencies: Vec<SourceHarnessRole>,
+}
+
+impl SourceHarnessManifest {
+    pub fn new(
+        role: SourceHarnessRole,
+        name: impl Into<String>,
+        version: ManifestVersion,
+        description: impl Into<String>,
+    ) -> Self {
+        SourceHarnessManifest {
+            role,
+            name: name.into(),
+            version,
+            description: description.into(),
+            capabilities: Vec::new(),
+            dependencies: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MetaHarnessKind {
+    /// Security domain
+    Security,
+    /// VLSI / Hardware design
+    VLSI,
+    /// Robotics domain
+    Robotics,
+    /// Research / Experimental
+    Research,
+    /// General purpose
+    General,
+    /// Custom domain
+    Custom(String),
+}
+
+impl MetaHarnessKind {
+    pub fn name(&self) -> String {
+        match self {
+            MetaHarnessKind::Security => String::from("Security"),
+            MetaHarnessKind::VLSI => String::from("VLSI"),
+            MetaHarnessKind::Robotics => String::from("Robotics"),
+            MetaHarnessKind::Research => String::from("Research"),
+            MetaHarnessKind::General => String::from("General"),
+            MetaHarnessKind::Custom(s) => s.clone(),
+        }
+    }
+}
+
+/// The canonical Meta Harness trait. Meta Harnesses are domain extensions
+/// that extend Source Harness behavior.
+pub trait MetaHarness: Send + Sync + std::fmt::Debug {
+    fn kind(&self) -> MetaHarnessKind;
+    fn manifest(&self) -> &MetaHarnessManifest;
+    fn health(&self) -> &ManifestHealth;
+    fn lifecycle(&self) -> &ManifestLifecycle;
+    fn telemetry(&self) -> &ManifestTelemetry;
+    fn capabilities(&self) -> &[ManifestCapability];
+    fn parent_source_harness(&self) -> SourceHarnessRole;
+}
+
+/// Meta Harness manifest
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MetaHarnessManifest {
+    pub kind: MetaHarnessKind,
+    pub name: String,
+    pub version: ManifestVersion,
+    pub description: String,
+    pub parent: SourceHarnessRole,
+    pub capabilities: Vec<ManifestCapability>,
+    pub dependencies: Vec<SourceHarnessRole>,
+}
+
+/// The canonical Gene trait. Genes are the atomic units of execution.
+/// Agents, SubAgents, and Swarms are all Gene implementations.
+pub trait Gene: Send + Sync + std::fmt::Debug {
+    fn manifest(&self) -> &GeneManifest;
+    fn execute(&self, ctx: &GeneExecutionContext) -> GeneExecutionResult;
+}
+
+/// The canonical Agent trait. Agents are Gene implementations with identity.
+pub trait Agent: Gene + Send + Sync + std::fmt::Debug {
+    fn agent_id(&self) -> &str;
+    fn sub_agents(&self) -> &[Box<dyn Agent>];
+}
+
+/// The canonical SubAgent trait. SubAgents are nested Agents.
+pub trait SubAgent: Agent + Send + Sync + std::fmt::Debug {
+    fn parent_agent(&self) -> &dyn Agent;
 }
 
 /// A version. Wraps semver-like semantics: major,
@@ -549,42 +704,61 @@ impl ManifestMetadata {
     }
 }
 
-/// The identity portion of a .
-/// This is the part the registry indexes by.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+/// The identity portion of a ConstitutionalManifest.
+/// This wraps a ConstitutionalManifest, making it the canonical identity.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IdentityManifest {
-    pub name: String,
-    pub kind: ManifestKind,
-    pub version: ManifestVersion,
+    pub manifest: Box<ConstitutionalManifest>,
 }
 
 impl IdentityManifest {
-    pub fn new(name: impl Into<String>, kind: ManifestKind, version: ManifestVersion) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        kind: ManifestKind,
+        version: ManifestVersion,
+        description: impl Into<String>,
+    ) -> Self {
         IdentityManifest {
-            name: name.into(),
-            kind,
-            version,
+            manifest: Box::new(ConstitutionalManifest::new(name, kind, version, description)),
         }
     }
 
     /// Returns a string id suitable for registry
     /// indexing. Format: "<name>@<version>".
     pub fn id(&self) -> String {
-        format!("{}@{}", self.name, self.version)
+        self.manifest.id()
+    }
+
+    /// Access the inner manifest's identity fields
+    pub fn name(&self) -> &str {
+        &self.manifest.identity.name
+    }
+
+    pub fn kind(&self) -> ManifestKind {
+        self.manifest.identity.kind
+    }
+
+    pub fn version(&self) -> ManifestVersion {
+        self.manifest.identity.version
     }
 }
 
-/// The constitutional manifest. Every installable,
-/// governance-aware object in Pandora composes or
-/// derives from this struct. The framework is the
-/// canonical metadata foundation.
-///
-/// New constitutional objects extend the
-///  enum or use  and
-/// compose this struct into their own descriptor.
+impl std::ops::Deref for IdentityManifest {
+    type Target = ConstitutionalManifest;
+
+    fn deref(&self) -> &Self::Target {
+        &self.manifest
+    }
+}
+
+impl AsRef<ConstitutionalManifest> for IdentityManifest {
+    fn as_ref(&self) -> &ConstitutionalManifest {
+        &self.manifest
+    }
+}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConstitutionalManifest {
-    pub identity: IdentityManifest,
+    pub identity: Box<IdentityManifest>,
     pub schema_version: ManifestSchemaVersion,
     pub description: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -638,13 +812,12 @@ impl ConstitutionalManifest {
         description: impl Into<String>,
     ) -> Self {
         ConstitutionalManifest {
-            identity: IdentityManifest::new(name, kind, version),
+            identity: Box::new(IdentityManifest::new(name, kind, version, description)),
             schema_version: ManifestSchemaVersion::default(),
             description: description.into(),
             author: None,
             license: None,
-            repository: None,
-            homepage: None,
+            repository: None,            homepage: None,
             documentation: None,
             examples: Vec::new(),
             capabilities: Vec::new(),
