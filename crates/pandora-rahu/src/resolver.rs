@@ -101,25 +101,35 @@ fn classify_mode(intent: pandora_narad::IntentKind) -> ExecutionMode {
 }
 
 pub fn populated_registries() -> (SourceHarnessRegistry, MetaHarnessRegistry, GeneRegistry) {
-    use crate::harness::{
-        Gene, GeneManifest, MetaHarness, MetaHarnessManifest, SourceHarness, SourceHarnessManifest,
-    };
+    use crate::harness::{Gene, GeneManifest, MetaHarness, SourceHarness};
+    use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
     use std::sync::Arc;
 
     struct StubSource {
-        manifest: SourceHarnessManifest,
+        kind: SourceHarnessKind,
+        manifest: ConstitutionalManifest,
     }
     impl SourceHarness for StubSource {
-        fn manifest(&self) -> &SourceHarnessManifest {
+        fn kind(&self) -> SourceHarnessKind {
+            self.kind
+        }
+        fn manifest(&self) -> &ConstitutionalManifest {
             &self.manifest
         }
     }
 
     struct StubMeta {
-        manifest: MetaHarnessManifest,
+        parent: SourceHarnessKind,
+        manifest: ConstitutionalManifest,
     }
     impl MetaHarness for StubMeta {
-        fn manifest(&self) -> &MetaHarnessManifest {
+        fn meta_kind(&self) -> MetaHarnessKind {
+            MetaHarnessKind::General
+        }
+        fn parent(&self) -> SourceHarnessKind {
+            self.parent
+        }
+        fn manifest(&self) -> &ConstitutionalManifest {
             &self.manifest
         }
     }
@@ -149,19 +159,21 @@ pub fn populated_registries() -> (SourceHarnessRegistry, MetaHarnessRegistry, Ge
     for kind in SourceHarnessKind::all() {
         let k = *kind;
         let _ = sources.register(Arc::new(StubSource {
-            manifest: SourceHarnessManifest::new(
-                k,
+            kind: k,
+            manifest: ConstitutionalManifest::new(
                 format!("{}-default", k.name().to_lowercase()),
-                "0.1.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(0, 1, 0),
                 format!("Default {} source harness", k.name()),
             ),
         }));
         let _ = metas.register(Arc::new(StubMeta {
-            manifest: MetaHarnessManifest::new(
-                k,
-                default_meta_kind(k),
+            parent: k,
+            manifest: ConstitutionalManifest::new(
                 format!("{}-default", k.name().to_lowercase()),
-                "0.1.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(0, 1, 0),
+                format!("Default meta for {}", k.name()),
             ),
         }));
         for gk in gene_kinds.iter() {

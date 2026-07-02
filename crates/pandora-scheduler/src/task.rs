@@ -1,4 +1,4 @@
-use pandora_governance::tier::ExecutionTier;
+pub use pandora_governance::tier::ExecutionTier;
 
 use chrono::{DateTime, Utc};
 

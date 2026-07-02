@@ -80,18 +80,22 @@ impl GeneSelection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pandora_types::constitutional::ConstitutionalManifest;
 
     struct DummySource;
     impl SourceHarness for DummySource {
-        fn manifest(&self) -> &crate::harness::SourceHarnessManifest {
-            use crate::harness::SourceHarnessManifest;
+        fn kind(&self) -> SourceHarnessKind {
+            SourceHarnessKind::Phoenix
+        }
+        fn manifest(&self) -> &ConstitutionalManifest {
+            use pandora_types::constitutional::{ManifestKind, ManifestVersion};
             use std::sync::OnceLock;
-            static M: OnceLock<SourceHarnessManifest> = OnceLock::new();
+            static M: OnceLock<ConstitutionalManifest> = OnceLock::new();
             M.get_or_init(|| {
-                SourceHarnessManifest::new(
-                    SourceHarnessKind::Phoenix,
+                ConstitutionalManifest::new(
                     "phoenix",
-                    "0.1.0",
+                    ManifestKind::SourceHarness,
+                    ManifestVersion::new(0, 1, 0),
                     "Execution source harness",
                 )
             })

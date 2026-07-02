@@ -137,7 +137,7 @@ impl MetaHarnessRegistry {
         let guard = self.inner.read().expect("registry poisoned");
         guard
             .get(&parent)
-            .and_then(|v| v.iter().find(|m| m.manifest().kind == kind).cloned())
+            .and_then(|v| v.iter().find(|m| m.meta_kind() == kind).cloned())
     }
 }
 
@@ -213,22 +213,35 @@ impl Default for GeneRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::harness::{GeneManifest, MetaHarnessManifest, SourceHarnessManifest};
+    use crate::harness::GeneManifest;
+    use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 
     struct DummySource {
-        manifest: SourceHarnessManifest,
+        kind: SourceHarnessKind,
+        manifest: ConstitutionalManifest,
     }
     impl SourceHarness for DummySource {
-        fn manifest(&self) -> &SourceHarnessManifest {
+        fn kind(&self) -> SourceHarnessKind {
+            self.kind
+        }
+        fn manifest(&self) -> &ConstitutionalManifest {
             &self.manifest
         }
     }
 
+    #[allow(dead_code)]
     struct DummyMeta {
-        manifest: MetaHarnessManifest,
+        parent: SourceHarnessKind,
+        manifest: ConstitutionalManifest,
     }
     impl MetaHarness for DummyMeta {
-        fn manifest(&self) -> &MetaHarnessManifest {
+        fn meta_kind(&self) -> MetaHarnessKind {
+            MetaHarnessKind::General
+        }
+        fn parent(&self) -> SourceHarnessKind {
+            SourceHarnessKind::Phoenix
+        }
+        fn manifest(&self) -> &ConstitutionalManifest {
             &self.manifest
         }
     }
@@ -246,10 +259,11 @@ mod tests {
     fn source_registry_register_and_get() {
         let r = SourceHarnessRegistry::new();
         let h = Arc::new(DummySource {
-            manifest: SourceHarnessManifest::new(
-                SourceHarnessKind::Phoenix,
+            kind: SourceHarnessKind::Phoenix,
+            manifest: ConstitutionalManifest::new(
                 "phoenix",
-                "0.1.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(0, 1, 0),
                 "x",
             ),
         });
@@ -261,10 +275,27 @@ mod tests {
     #[test]
     fn source_registry_duplicate_rejected() {
         let r = SourceHarnessRegistry::new();
-        let m1 = SourceHarnessManifest::new(SourceHarnessKind::Phoenix, "p", "0.1.0", "x");
-        let m2 = SourceHarnessManifest::new(SourceHarnessKind::Phoenix, "p", "0.1.0", "x");
-        r.register(Arc::new(DummySource { manifest: m1 })).unwrap();
-        let result = r.register(Arc::new(DummySource { manifest: m2 }));
+        let m1 = ConstitutionalManifest::new(
+            "p",
+            ManifestKind::SourceHarness,
+            ManifestVersion::new(0, 1, 0),
+            "x",
+        );
+        let m2 = ConstitutionalManifest::new(
+            "p",
+            ManifestKind::SourceHarness,
+            ManifestVersion::new(0, 1, 0),
+            "x",
+        );
+        r.register(Arc::new(DummySource {
+            kind: SourceHarnessKind::Phoenix,
+            manifest: m1,
+        }))
+        .unwrap();
+        let result = r.register(Arc::new(DummySource {
+            kind: SourceHarnessKind::Phoenix,
+            manifest: m2,
+        }));
         assert!(result.is_err());
     }
 
@@ -272,11 +303,23 @@ mod tests {
     fn source_registry_resolve_for_intent() {
         let r = SourceHarnessRegistry::new();
         r.register(Arc::new(DummySource {
-            manifest: SourceHarnessManifest::new(SourceHarnessKind::Phoenix, "p", "0.1.0", "x"),
+            kind: SourceHarnessKind::Phoenix,
+            manifest: ConstitutionalManifest::new(
+                "p",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(0, 1, 0),
+                "x",
+            ),
         }))
         .unwrap();
         r.register(Arc::new(DummySource {
-            manifest: SourceHarnessManifest::new(SourceHarnessKind::Anubis, "a", "0.1.0", "x"),
+            kind: SourceHarnessKind::Anubis,
+            manifest: ConstitutionalManifest::new(
+                "a",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(0, 1, 0),
+                "x",
+            ),
         }))
         .unwrap();
         assert_eq!(
@@ -293,16 +336,17 @@ mod tests {
     fn meta_registry_register_and_lookup() {
         let r = MetaHarnessRegistry::new();
         r.register(Arc::new(DummyMeta {
-            manifest: MetaHarnessManifest::new(
-                SourceHarnessKind::Phoenix,
-                MetaHarnessKind::Shell,
+            parent: SourceHarnessKind::Phoenix,
+            manifest: ConstitutionalManifest::new(
                 "phoenix-shell",
-                "0.1.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(0, 1, 0),
+                "Phoenix shell meta harness",
             ),
         }))
         .unwrap();
         let m = r
-            .first_of_kind(SourceHarnessKind::Phoenix, MetaHarnessKind::Shell)
+            .first_of_kind(SourceHarnessKind::Phoenix, MetaHarnessKind::General)
             .unwrap();
         assert_eq!(m.name(), "phoenix-shell");
     }

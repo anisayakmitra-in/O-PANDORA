@@ -359,28 +359,36 @@ pub fn run(harness: &dyn ConstitutionalHarness) -> LifecycleResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::harness::{MetaHarnessKind, MetaHarnessManifest, SourceHarnessKind};
+
+    use crate::harness::{MetaHarnessKind, SourceHarnessKind};
+    use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
     use std::sync::OnceLock;
 
     struct StubMeta {
-        manifest: MetaHarnessManifest,
+        manifest: ConstitutionalManifest,
     }
     impl MetaHarness for StubMeta {
-        fn manifest(&self) -> &MetaHarnessManifest {
+        fn meta_kind(&self) -> MetaHarnessKind {
+            MetaHarnessKind::General
+        }
+        fn parent(&self) -> SourceHarnessKind {
+            SourceHarnessKind::Phoenix
+        }
+        fn manifest(&self) -> &ConstitutionalManifest {
             // Use OnceLock to satisfy 'static requirement
             // without making the manifest mutable.
-            static M: OnceLock<MetaHarnessManifest> = OnceLock::new();
+            static M: OnceLock<ConstitutionalManifest> = OnceLock::new();
             M.get_or_init(|| self.manifest.clone())
         }
     }
 
     fn stub() -> StubMeta {
         StubMeta {
-            manifest: MetaHarnessManifest::new(
-                SourceHarnessKind::Phoenix,
-                MetaHarnessKind::General,
+            manifest: ConstitutionalManifest::new(
                 "phoenix-default",
-                "0.1.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(0, 1, 0),
+                "Phoenix default meta harness",
             ),
         }
     }
@@ -461,14 +469,20 @@ mod tests {
         // pattern for community Meta Harnesses.
         struct AnubisHarness;
         impl MetaHarness for AnubisHarness {
-            fn manifest(&self) -> &MetaHarnessManifest {
-                static M: OnceLock<MetaHarnessManifest> = OnceLock::new();
+            fn meta_kind(&self) -> MetaHarnessKind {
+                MetaHarnessKind::Memory
+            }
+            fn parent(&self) -> SourceHarnessKind {
+                SourceHarnessKind::Anubis
+            }
+            fn manifest(&self) -> &ConstitutionalManifest {
+                static M: OnceLock<ConstitutionalManifest> = OnceLock::new();
                 M.get_or_init(|| {
-                    MetaHarnessManifest::new(
-                        SourceHarnessKind::Anubis,
-                        MetaHarnessKind::Memory,
+                    ConstitutionalManifest::new(
                         "anubis-default",
-                        "0.1.0",
+                        ManifestKind::MetaHarness,
+                        ManifestVersion::new(0, 1, 0),
+                        "Anubis default meta harness",
                     )
                 })
             }

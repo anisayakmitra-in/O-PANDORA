@@ -1,17 +1,18 @@
 //! Concrete Panoptes Harness.
-use crate::harness::{MetaHarness, MetaHarnessKind, MetaHarnessManifest, SourceHarnessKind};
+use crate::harness::{MetaHarness, MetaHarnessKind, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct PanoptesHarness {
-    manifest: MetaHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl PanoptesHarness {
     pub fn new() -> Self {
         PanoptesHarness {
-            manifest: MetaHarnessManifest::new(
-                SourceHarnessKind::Phoenix,
-                MetaHarnessKind::General,
+            manifest: ConstitutionalManifest::new(
                 "panoptes",
-                "1.0.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(1, 0, 0),
+                "Pandora Governance Meta Harness",
             ),
         }
     }
@@ -88,7 +89,13 @@ impl Default for PanoptesHarness {
     }
 }
 impl MetaHarness for PanoptesHarness {
-    fn manifest(&self) -> &MetaHarnessManifest {
+    fn meta_kind(&self) -> MetaHarnessKind {
+        MetaHarnessKind::General
+    }
+    fn parent(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Phoenix
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -97,7 +104,7 @@ mod tests {
     use super::*;
     #[test]
     fn panoptes_manifest() {
-        assert_eq!(PanoptesHarness::new().manifest().name, "panoptes");
+        assert_eq!(PanoptesHarness::new().manifest().identity.name, "panoptes");
     }
     #[test]
     fn panoptes_health() {

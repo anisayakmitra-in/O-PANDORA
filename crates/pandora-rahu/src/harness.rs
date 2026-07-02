@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestVersion};
+
 /// The kind of source harness. Each source harness
 /// owns its own meta harnesses and genes. RAHU only
 /// knows the *kind*, not the implementation.
@@ -43,101 +45,17 @@ impl SourceHarnessKind {
     }
 }
 
-/// A source-harness manifest. Describes a registered
-/// source harness without revealing its implementation.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SourceHarnessManifest {
-    pub kind: SourceHarnessKind,
-    pub name: String,
-    pub version: String,
-    pub description: String,
-}
-
-impl SourceHarnessManifest {
-    pub fn new(
-        kind: SourceHarnessKind,
-        name: impl Into<String>,
-        version: impl Into<String>,
-        description: impl Into<String>,
-    ) -> Self {
-        SourceHarnessManifest {
-            kind,
-            name: name.into(),
-            version: version.into(),
-            description: description.into(),
-        }
-    }
-
-    pub fn builder(kind: SourceHarnessKind) -> SourceHarnessManifestBuilder {
-        SourceHarnessManifestBuilder::new(kind)
-    }
-}
-
-#[derive(Debug)]
-pub struct SourceHarnessManifestBuilder {
-    kind: SourceHarnessKind,
-    name: Option<String>,
-    version: Option<String>,
-    description: Option<String>,
-}
-
-impl SourceHarnessManifestBuilder {
-    pub fn new(kind: SourceHarnessKind) -> Self {
-        Self {
-            kind,
-            name: None,
-            version: None,
-            description: None,
-        }
-    }
-
-    pub fn name(mut self, name: impl Into<String>) -> Self {
-        self.name = Some(name.into());
-        self
-    }
-
-    pub fn version(mut self, version: impl Into<String>) -> Self {
-        self.version = Some(version.into());
-        self
-    }
-
-    pub fn description(mut self, description: impl Into<String>) -> Self {
-        self.description = Some(description.into());
-        self
-    }
-
-    pub fn build(self) -> Result<SourceHarnessManifest, SourceHarnessManifestBuilderError> {
-        Ok(SourceHarnessManifest {
-            kind: self.kind,
-            name: self
-                .name
-                .ok_or(SourceHarnessManifestBuilderError::MissingField("name"))?,
-            version: self
-                .version
-                .ok_or(SourceHarnessManifestBuilderError::MissingField("version"))?,
-            description: self.description.ok_or(
-                SourceHarnessManifestBuilderError::MissingField("description"),
-            )?,
-        })
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum SourceHarnessManifestBuilderError {
-    #[error("Missing required field: {0}")]
-    MissingField(&'static str),
-}
-
 /// A trait every source harness implements. RAHU
 /// interacts with source harnesses only through this
 /// trait, so it never hardcodes concrete types.
 pub trait SourceHarness: Send + Sync {
-    fn manifest(&self) -> &SourceHarnessManifest;
-    fn kind(&self) -> SourceHarnessKind {
-        self.manifest().kind
-    }
+    fn manifest(&self) -> &ConstitutionalManifest;
+    fn kind(&self) -> SourceHarnessKind;
     fn name(&self) -> &str {
-        &self.manifest().name
+        &self.manifest().identity.name
+    }
+    fn version(&self) -> ManifestVersion {
+        self.manifest().identity.version.clone()
     }
 }
 
@@ -172,92 +90,13 @@ impl MetaHarnessKind {
     }
 }
 
-/// A meta-harness manifest. Meta harnesses are
-/// subsystems of a source harness.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MetaHarnessManifest {
-    pub parent: SourceHarnessKind,
-    pub kind: MetaHarnessKind,
-    pub name: String,
-    pub version: String,
-}
-
-impl MetaHarnessManifest {
-    pub fn new(
-        parent: SourceHarnessKind,
-        kind: MetaHarnessKind,
-        name: impl Into<String>,
-        version: impl Into<String>,
-    ) -> Self {
-        MetaHarnessManifest {
-            parent,
-            kind,
-            name: name.into(),
-            version: version.into(),
-        }
-    }
-
-    pub fn builder(parent: SourceHarnessKind, kind: MetaHarnessKind) -> MetaHarnessManifestBuilder {
-        MetaHarnessManifestBuilder::new(parent, kind)
-    }
-}
-
-#[derive(Debug)]
-pub struct MetaHarnessManifestBuilder {
-    parent: SourceHarnessKind,
-    kind: MetaHarnessKind,
-    name: Option<String>,
-    version: Option<String>,
-}
-
-impl MetaHarnessManifestBuilder {
-    pub fn new(parent: SourceHarnessKind, kind: MetaHarnessKind) -> Self {
-        Self {
-            parent,
-            kind,
-            name: None,
-            version: None,
-        }
-    }
-
-    pub fn name(mut self, name: impl Into<String>) -> Self {
-        self.name = Some(name.into());
-        self
-    }
-
-    pub fn version(mut self, version: impl Into<String>) -> Self {
-        self.version = Some(version.into());
-        self
-    }
-
-    pub fn build(self) -> Result<MetaHarnessManifest, MetaHarnessManifestBuilderError> {
-        Ok(MetaHarnessManifest {
-            parent: self.parent,
-            kind: self.kind,
-            name: self
-                .name
-                .ok_or(MetaHarnessManifestBuilderError::MissingField("name"))?,
-            version: self
-                .version
-                .ok_or(MetaHarnessManifestBuilderError::MissingField("version"))?,
-        })
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum MetaHarnessManifestBuilderError {
-    #[error("Missing required field: {0}")]
-    MissingField(&'static str),
-}
-
 pub trait MetaHarness: Send + Sync {
-    fn manifest(&self) -> &MetaHarnessManifest;
+    fn manifest(&self) -> &ConstitutionalManifest;
+    fn meta_kind(&self) -> MetaHarnessKind;
     fn name(&self) -> &str {
-        &self.manifest().name
+        &self.manifest().identity.name
     }
-    fn parent(&self) -> SourceHarnessKind {
-        self.manifest().parent
-    }
+    fn parent(&self) -> SourceHarnessKind;
 }
 
 /// The kind of gene. Genes are the smallest unit of
@@ -275,6 +114,12 @@ pub enum GeneKind {
     Reflection,
     /// Evolution / mutation generation.
     Evolution,
+    /// Agent - a Gene with identity
+    Agent,
+    /// SubAgent - nested Agent
+    SubAgent,
+    /// Swarm - coordinated Agents
+    Swarm,
 }
 
 impl GeneKind {
@@ -285,6 +130,9 @@ impl GeneKind {
             GeneKind::Execution => "execution",
             GeneKind::Reflection => "reflection",
             GeneKind::Evolution => "evolution",
+            GeneKind::Agent => "agent",
+            GeneKind::SubAgent => "subagent",
+            GeneKind::Swarm => "swarm",
         }
     }
 }
@@ -419,34 +267,6 @@ mod tests {
     fn gene_kind_names() {
         assert_eq!(GeneKind::Execution.name(), "execution");
         assert_eq!(GeneKind::Reflection.name(), "reflection");
-    }
-
-    #[test]
-    fn source_harness_manifest_builder() {
-        let manifest = SourceHarnessManifest::builder(SourceHarnessKind::Phoenix)
-            .name("phoenix-main")
-            .version("1.0.0")
-            .description("Main Phoenix harness")
-            .build()
-            .unwrap();
-        assert_eq!(manifest.kind, SourceHarnessKind::Phoenix);
-        assert_eq!(manifest.name, "phoenix-main");
-        assert_eq!(manifest.version, "1.0.0");
-        assert_eq!(manifest.description, "Main Phoenix harness");
-    }
-
-    #[test]
-    fn meta_harness_manifest_builder() {
-        let manifest =
-            MetaHarnessManifest::builder(SourceHarnessKind::Phoenix, MetaHarnessKind::Shell)
-                .name("phoenix-shell")
-                .version("1.0.0")
-                .build()
-                .unwrap();
-        assert_eq!(manifest.parent, SourceHarnessKind::Phoenix);
-        assert_eq!(manifest.kind, MetaHarnessKind::Shell);
-        assert_eq!(manifest.name, "phoenix-shell");
-        assert_eq!(manifest.version, "1.0.0");
     }
 
     #[test]

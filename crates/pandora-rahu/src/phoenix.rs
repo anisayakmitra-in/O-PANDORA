@@ -3,21 +3,22 @@
 //! Phoenix owns execution. It is the canonical
 //! Execution Source Harness.
 
-use crate::harness::{SourceHarness, SourceHarnessKind, SourceHarnessManifest};
+use crate::harness::{SourceHarness, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 
 /// The canonical Phoenix Source Harness.
 pub struct PhoenixHarness {
-    manifest: SourceHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 
 impl PhoenixHarness {
     pub fn new() -> Self {
         PhoenixHarness {
-            manifest: SourceHarnessManifest::new(
-                SourceHarnessKind::Phoenix,
+            manifest: ConstitutionalManifest::new(
                 "phoenix",
-                "1.0.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(1, 0, 0),
                 "Pandora Execution Source Harness",
             ),
         }
@@ -119,7 +120,10 @@ impl Default for PhoenixHarness {
 }
 
 impl SourceHarness for PhoenixHarness {
-    fn manifest(&self) -> &SourceHarnessManifest {
+    fn kind(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Phoenix
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -130,7 +134,7 @@ mod tests {
     #[test]
     fn phoenix_manifest() {
         let h = PhoenixHarness::new();
-        assert_eq!(h.manifest().name, "phoenix");
+        assert_eq!(h.manifest().identity.name, "phoenix");
         assert_eq!(h.kind(), SourceHarnessKind::Phoenix);
     }
     #[test]

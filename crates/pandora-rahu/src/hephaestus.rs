@@ -1,17 +1,18 @@
 //! Concrete Hephaestus Harness.
-use crate::harness::{MetaHarness, MetaHarnessKind, MetaHarnessManifest, SourceHarnessKind};
+use crate::harness::{MetaHarness, MetaHarnessKind, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct HephaestusHarness {
-    manifest: MetaHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl HephaestusHarness {
     pub fn new() -> Self {
         HephaestusHarness {
-            manifest: MetaHarnessManifest::new(
-                SourceHarnessKind::Phoenix,
-                MetaHarnessKind::General,
+            manifest: ConstitutionalManifest::new(
                 "hephaestus",
-                "1.0.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(1, 0, 0),
+                "Hephaestus Meta Harness",
             ),
         }
     }
@@ -83,7 +84,13 @@ impl Default for HephaestusHarness {
     }
 }
 impl MetaHarness for HephaestusHarness {
-    fn manifest(&self) -> &MetaHarnessManifest {
+    fn meta_kind(&self) -> MetaHarnessKind {
+        MetaHarnessKind::General
+    }
+    fn parent(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Phoenix
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -92,7 +99,10 @@ mod tests {
     use super::*;
     #[test]
     fn hephaestus_manifest() {
-        assert_eq!(HephaestusHarness::new().manifest().name, "hephaestus");
+        assert_eq!(
+            HephaestusHarness::new().manifest().identity.name,
+            "hephaestus"
+        );
     }
     #[test]
     fn hephaestus_health() {

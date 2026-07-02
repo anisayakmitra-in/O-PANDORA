@@ -1,43 +1,32 @@
-use anubis_memory::branch::{BranchEngine, BranchStatus, CognitionBranch};
+use anubis_memory::branch::CognitionBranch;
+use anubis_memory::branch_engine::child_branches;
 
 fn main() {
     let branches = vec![
         CognitionBranch {
             branch_id: String::from("root"),
-
             parent_branch: None,
-
-            origin_node: String::from("reasoning-1"),
-
-            status: BranchStatus::Accepted,
-
-            description: String::from("Primary reasoning path"),
+            originating_memory: String::from("reasoning-1"),
+            branch_reason: String::from("Primary reasoning path"),
+            speculative: false,
         },
         CognitionBranch {
             branch_id: String::from("speculative-1"),
-
             parent_branch: Some(String::from("root")),
-
-            origin_node: String::from("reasoning-2"),
-
-            status: BranchStatus::Active,
-
-            description: String::from("Alternative mutation strategy"),
+            originating_memory: String::from("reasoning-2"),
+            branch_reason: String::from("Alternative mutation strategy"),
+            speculative: true,
         },
         CognitionBranch {
             branch_id: String::from("failed-1"),
-
             parent_branch: Some(String::from("root")),
-
-            origin_node: String::from("reasoning-3"),
-
-            status: BranchStatus::Rejected,
-
-            description: String::from("Unsafe evolution branch"),
+            originating_memory: String::from("reasoning-3"),
+            branch_reason: String::from("Unsafe evolution branch"),
+            speculative: false,
         },
     ];
 
-    let active = BranchEngine::active(&branches);
+    let active = child_branches(&branches, "root");
 
     println!("{:#?}", active);
 }

@@ -1,17 +1,18 @@
 //! Concrete Dsr Harness.
-use crate::harness::{MetaHarness, MetaHarnessKind, MetaHarnessManifest, SourceHarnessKind};
+use crate::harness::{MetaHarness, MetaHarnessKind, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct DsrHarness {
-    manifest: MetaHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl DsrHarness {
     pub fn new() -> Self {
         DsrHarness {
-            manifest: MetaHarnessManifest::new(
-                SourceHarnessKind::Shani,
-                MetaHarnessKind::General,
+            manifest: ConstitutionalManifest::new(
                 "dsr",
-                "1.0.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(1, 0, 0),
+                "Decision Search and Retrieval Meta Harness",
             ),
         }
     }
@@ -85,7 +86,13 @@ impl Default for DsrHarness {
     }
 }
 impl MetaHarness for DsrHarness {
-    fn manifest(&self) -> &MetaHarnessManifest {
+    fn meta_kind(&self) -> MetaHarnessKind {
+        MetaHarnessKind::General
+    }
+    fn parent(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Shani
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -94,7 +101,7 @@ mod tests {
     use super::*;
     #[test]
     fn dsr_manifest() {
-        assert_eq!(DsrHarness::new().manifest().name, "dsr");
+        assert_eq!(DsrHarness::new().manifest().identity.name, "dsr");
     }
     #[test]
     fn dsr_health() {

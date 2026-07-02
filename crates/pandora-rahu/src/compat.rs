@@ -103,8 +103,8 @@ impl From<&TelemetryReport> for pandora_types::universal::Telemetry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::harness::SourceHarnessManifest;
     use crate::runtime::LifecycleState;
+    use pandora_types::constitutional::ConstitutionalManifest;
 
     #[test]
     fn version_spec_to_manifest_version() {
@@ -172,14 +172,15 @@ mod tests {
 
     #[test]
     fn source_harness_manifest_serde() {
-        let m = SourceHarnessManifest::new(
-            crate::harness::SourceHarnessKind::Phoenix,
+        use pandora_types::constitutional::{ManifestKind, ManifestVersion};
+        let m = ConstitutionalManifest::new(
             "phoenix",
-            "1.0.0",
+            ManifestKind::SourceHarness,
+            ManifestVersion::new(1, 0, 0),
             "test",
         );
         let json = serde_json::to_string(&m).unwrap();
         assert!(json.contains("phoenix"));
-        assert!(json.contains("1.0.0"));
+        assert!(json.contains("major")); // ManifestVersion serializes as {major,minor,patch}
     }
 }

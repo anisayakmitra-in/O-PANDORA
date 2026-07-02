@@ -1,16 +1,17 @@
 //! Concrete Shani Harness.
-use crate::harness::{SourceHarness, SourceHarnessKind, SourceHarnessManifest};
+use crate::harness::{SourceHarness, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct ShaniHarness {
-    manifest: SourceHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl ShaniHarness {
     pub fn new() -> Self {
         ShaniHarness {
-            manifest: SourceHarnessManifest::new(
-                SourceHarnessKind::Shani,
+            manifest: ConstitutionalManifest::new(
                 "shani",
-                "1.0.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(1, 0, 0),
                 "Pandora Evolution Harness",
             ),
         }
@@ -118,7 +119,10 @@ impl Default for ShaniHarness {
     }
 }
 impl SourceHarness for ShaniHarness {
-    fn manifest(&self) -> &SourceHarnessManifest {
+    fn kind(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Shani
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -127,7 +131,7 @@ mod tests {
     use super::*;
     #[test]
     fn shani_manifest() {
-        assert_eq!(ShaniHarness::new().manifest().name, "shani");
+        assert_eq!(ShaniHarness::new().manifest().identity.name, "shani");
     }
     #[test]
     fn shani_health() {

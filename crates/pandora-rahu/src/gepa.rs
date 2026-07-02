@@ -1,17 +1,18 @@
 //! Concrete Gepa Harness.
-use crate::harness::{MetaHarness, MetaHarnessKind, MetaHarnessManifest, SourceHarnessKind};
+use crate::harness::{MetaHarness, MetaHarnessKind, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct GepaHarness {
-    manifest: MetaHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl GepaHarness {
     pub fn new() -> Self {
         GepaHarness {
-            manifest: MetaHarnessManifest::new(
-                SourceHarnessKind::Shani,
-                MetaHarnessKind::General,
+            manifest: ConstitutionalManifest::new(
                 "gepa",
-                "1.0.0",
+                ManifestKind::MetaHarness,
+                ManifestVersion::new(1, 0, 0),
+                "GEPA Meta Harness",
             ),
         }
     }
@@ -91,7 +92,13 @@ impl Default for GepaHarness {
     }
 }
 impl MetaHarness for GepaHarness {
-    fn manifest(&self) -> &MetaHarnessManifest {
+    fn meta_kind(&self) -> MetaHarnessKind {
+        MetaHarnessKind::General
+    }
+    fn parent(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Shani
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -100,7 +107,7 @@ mod tests {
     use super::*;
     #[test]
     fn gepa_manifest() {
-        assert_eq!(GepaHarness::new().manifest().name, "gepa");
+        assert_eq!(GepaHarness::new().manifest().identity.name, "gepa");
     }
     #[test]
     fn gepa_health() {

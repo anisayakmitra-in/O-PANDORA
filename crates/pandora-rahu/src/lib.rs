@@ -129,10 +129,7 @@ pub mod workflow_executor;
 pub use capability::{CapabilityKind, CapabilityLeaseRequest, CapabilityRequest};
 pub use context::RequestContext;
 pub use harness::{Gene, GeneKind};
-pub use harness::{
-    MetaHarness, MetaHarnessKind, MetaHarnessManifest, SourceHarness, SourceHarnessKind,
-    SourceHarnessManifest,
-};
+pub use harness::{MetaHarness, MetaHarnessKind, SourceHarness, SourceHarnessKind};
 pub use lifecycle::{run_lifecycle, LifecycleOutcome};
 pub use plan::{rahu_plan, ExecutionMode, ExecutionPlan, ExecutionRoute};
 pub use registry::{GeneRegistry, MetaHarnessRegistry, RahuError, SourceHarnessRegistry};

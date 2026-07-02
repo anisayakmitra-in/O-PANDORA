@@ -16,6 +16,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    Tui {
+        #[arg(short, long, default_value = "dashboard")]
+        view: String,
+        #[arg(short = 'C', long)]
+        no_cat: bool,
+    },
+
     Reflect,
 
     Export,
@@ -48,6 +55,30 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Tui { view, no_cat } => {
+            let self_path = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|d| d.join("pandora-tui")))
+                .and_then(|p| if p.exists() { Some(p) } else { None });
+            match self_path {
+                Some(binary) => {
+                    let mut cmd = std::process::Command::new(binary);
+                    cmd.arg("--view").arg(view);
+                    if no_cat {
+                        cmd.arg("--no-cat");
+                    }
+                    let status = cmd.status().expect("failed to launch pandora-tui");
+                    std::process::exit(status.code().unwrap_or(0));
+                }
+                None => {
+                    eprintln!(
+                        "pandora-tui binary not found. Build it with: cargo build -p pandora-tui"
+                    );
+                    std::process::exit(1);
+                }
+            }
+        }
+
         Commands::Reflect => {
             println!("ANUBIS SYNTHESIS\n");
         }

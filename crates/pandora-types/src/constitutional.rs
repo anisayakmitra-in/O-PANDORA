@@ -21,12 +21,12 @@
 //!     +-- ManifestSignature / ManifestChecksum
 //!     +-- Tags / Category / Metadata
 //!
-//! Every concrete manifest (SourceHarnessManifest,
-//! MetaHarnessManifest, GeneManifest, ...) embeds (or
-//! composes) a . Future
-//! manifests (Providers, Tools, Loops, MCPs, Plugins,
-//! Packages, Workflows, Agents) follow the same
-//! pattern without any change to this base.
+//! Every constitutional object uses ConstitutionalManifest
+//! with its appropriate ManifestKind. No separate per-kind
+//! manifest types exist. Future manifests (Providers, Tools,
+//! Loops, MCPs, Plugins, Packages, Workflows, Agents)
+//! follow the same pattern by choosing their ManifestKind
+//! without any change to this base type.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -156,7 +156,7 @@ pub trait SourceHarness: Send + Sync + std::fmt::Debug {
     /// The role this Source Harness fulfills.
     fn role(&self) -> SourceHarnessRole;
     /// The manifest describing this Source Harness.
-    fn manifest(&self) -> &SourceHarnessManifest;
+    fn manifest(&self) -> &ConstitutionalManifest;
     /// Current health status.
     fn health(&self) -> &ManifestHealth;
     /// Current lifecycle state.
@@ -167,35 +167,6 @@ pub trait SourceHarness: Send + Sync + std::fmt::Debug {
     fn capabilities(&self) -> &[ManifestCapability];
     /// Dependencies on other Source Harnesses.
     fn dependencies(&self) -> &[SourceHarnessRole];
-}
-
-/// Source Harness manifest - the identity and metadata of a Source Harness.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SourceHarnessManifest {
-    pub role: SourceHarnessRole,
-    pub name: String,
-    pub version: ManifestVersion,
-    pub description: String,
-    pub capabilities: Vec<ManifestCapability>,
-    pub dependencies: Vec<SourceHarnessRole>,
-}
-
-impl SourceHarnessManifest {
-    pub fn new(
-        role: SourceHarnessRole,
-        name: impl Into<String>,
-        version: ManifestVersion,
-        description: impl Into<String>,
-    ) -> Self {
-        SourceHarnessManifest {
-            role,
-            name: name.into(),
-            version,
-            description: description.into(),
-            capabilities: Vec::new(),
-            dependencies: Vec::new(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -231,7 +202,7 @@ impl MetaHarnessKind {
 /// that extend Source Harness behavior.
 pub trait MetaHarness: Send + Sync + std::fmt::Debug {
     fn kind(&self) -> MetaHarnessKind;
-    fn manifest(&self) -> &MetaHarnessManifest;
+    fn manifest(&self) -> &ConstitutionalManifest;
     fn health(&self) -> &ManifestHealth;
     fn lifecycle(&self) -> &ManifestLifecycle;
     fn telemetry(&self) -> &ManifestTelemetry;
@@ -239,34 +210,11 @@ pub trait MetaHarness: Send + Sync + std::fmt::Debug {
     fn parent_source_harness(&self) -> SourceHarnessRole;
 }
 
-/// Meta Harness manifest
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MetaHarnessManifest {
-    pub kind: MetaHarnessKind,
-    pub name: String,
-    pub version: ManifestVersion,
-    pub description: String,
-    pub parent: SourceHarnessRole,
-    pub capabilities: Vec<ManifestCapability>,
-    pub dependencies: Vec<SourceHarnessRole>,
-}
-
 /// The canonical Gene trait. Genes are the atomic units of execution.
 /// Agents, SubAgents, and Swarms are all Gene implementations.
 pub trait Gene: Send + Sync + std::fmt::Debug {
     fn manifest(&self) -> &GeneManifest;
     fn execute(&self, ctx: &GeneExecutionContext) -> GeneExecutionResult;
-}
-
-/// The canonical Agent trait. Agents are Gene implementations with identity.
-pub trait Agent: Gene + Send + Sync + std::fmt::Debug {
-    fn agent_id(&self) -> &str;
-    fn sub_agents(&self) -> &[Box<dyn Agent>];
-}
-
-/// The canonical SubAgent trait. SubAgents are nested Agents.
-pub trait SubAgent: Agent + Send + Sync + std::fmt::Debug {
-    fn parent_agent(&self) -> &dyn Agent;
 }
 
 /// A version. Wraps semver-like semantics: major,

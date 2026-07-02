@@ -1,16 +1,17 @@
 //! Concrete Hades Harness.
-use crate::harness::{SourceHarness, SourceHarnessKind, SourceHarnessManifest};
+use crate::harness::{SourceHarness, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct HadesHarness {
-    manifest: SourceHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl HadesHarness {
     pub fn new() -> Self {
         HadesHarness {
-            manifest: SourceHarnessManifest::new(
-                SourceHarnessKind::Hades,
+            manifest: ConstitutionalManifest::new(
                 "hades",
-                "1.0.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(1, 0, 0),
                 "Pandora Soul Harness",
             ),
         }
@@ -93,7 +94,10 @@ impl Default for HadesHarness {
     }
 }
 impl SourceHarness for HadesHarness {
-    fn manifest(&self) -> &SourceHarnessManifest {
+    fn kind(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Hades
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -102,7 +106,7 @@ mod tests {
     use super::*;
     #[test]
     fn hades_manifest() {
-        assert_eq!(HadesHarness::new().manifest().name, "hades");
+        assert_eq!(HadesHarness::new().manifest().identity.name, "hades");
     }
     #[test]
     fn hades_health() {

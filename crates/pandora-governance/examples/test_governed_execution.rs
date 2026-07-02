@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 
 use pandora_governance::context::ExecutionContext;
 
-use pandora_governance::event::{ExecutionEvent, ExecutionEventKind};
+use pandora_governance::event::ExecutionEvent;
 
 use pandora_governance::tier::ExecutionTier;
 

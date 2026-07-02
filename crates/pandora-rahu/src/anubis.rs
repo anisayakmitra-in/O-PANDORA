@@ -1,16 +1,17 @@
 //! Concrete Anubis Harness.
-use crate::harness::{SourceHarness, SourceHarnessKind, SourceHarnessManifest};
+use crate::harness::{SourceHarness, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct AnubisHarness {
-    manifest: SourceHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl AnubisHarness {
     pub fn new() -> Self {
         AnubisHarness {
-            manifest: SourceHarnessManifest::new(
-                SourceHarnessKind::Anubis,
+            manifest: ConstitutionalManifest::new(
                 "anubis",
-                "1.0.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(1, 0, 0),
                 "Pandora Memory Harness",
             ),
         }
@@ -97,7 +98,10 @@ impl Default for AnubisHarness {
     }
 }
 impl SourceHarness for AnubisHarness {
-    fn manifest(&self) -> &SourceHarnessManifest {
+    fn kind(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Anubis
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -106,7 +110,7 @@ mod tests {
     use super::*;
     #[test]
     fn anubis_manifest() {
-        assert_eq!(AnubisHarness::new().manifest().name, "anubis");
+        assert_eq!(AnubisHarness::new().manifest().identity.name, "anubis");
     }
     #[test]
     fn anubis_health() {

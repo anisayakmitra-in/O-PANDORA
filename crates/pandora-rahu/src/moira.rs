@@ -1,16 +1,17 @@
 //! Concrete Moira Harness.
-use crate::harness::{SourceHarness, SourceHarnessKind, SourceHarnessManifest};
+use crate::harness::{SourceHarness, SourceHarnessKind};
 use crate::runtime::{HealthStatus, LifecycleState, TelemetryReport};
+use pandora_types::constitutional::{ConstitutionalManifest, ManifestKind, ManifestVersion};
 pub struct MoiraHarness {
-    manifest: SourceHarnessManifest,
+    manifest: ConstitutionalManifest,
 }
 impl MoiraHarness {
     pub fn new() -> Self {
         MoiraHarness {
-            manifest: SourceHarnessManifest::new(
-                SourceHarnessKind::Moira,
+            manifest: ConstitutionalManifest::new(
                 "moira",
-                "1.0.0",
+                ManifestKind::SourceHarness,
+                ManifestVersion::new(1, 0, 0),
                 "Pandora Decision Harness",
             ),
         }
@@ -95,7 +96,10 @@ impl Default for MoiraHarness {
     }
 }
 impl SourceHarness for MoiraHarness {
-    fn manifest(&self) -> &SourceHarnessManifest {
+    fn kind(&self) -> SourceHarnessKind {
+        SourceHarnessKind::Moira
+    }
+    fn manifest(&self) -> &ConstitutionalManifest {
         &self.manifest
     }
 }
@@ -104,7 +108,7 @@ mod tests {
     use super::*;
     #[test]
     fn moira_manifest() {
-        assert_eq!(MoiraHarness::new().manifest().name, "moira");
+        assert_eq!(MoiraHarness::new().manifest().identity.name, "moira");
     }
     #[test]
     fn moira_health() {
