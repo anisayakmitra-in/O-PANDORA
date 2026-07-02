@@ -31,8 +31,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use crate::universal::GeneManifest;
 use crate::gene_context::{GeneExecutionContext, GeneExecutionResult};
+use crate::universal::GeneManifest;
 use serde::{Deserialize, Serialize};
 
 /// The kind of constitutional object a manifest
@@ -705,60 +705,33 @@ impl ManifestMetadata {
 }
 
 /// The identity portion of a ConstitutionalManifest.
-/// This wraps a ConstitutionalManifest, making it the canonical identity.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// This is the part the registry indexes by.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct IdentityManifest {
-    pub manifest: Box<ConstitutionalManifest>,
+    pub name: String,
+    pub kind: ManifestKind,
+    pub version: ManifestVersion,
 }
 
 impl IdentityManifest {
-    pub fn new(
-        name: impl Into<String>,
-        kind: ManifestKind,
-        version: ManifestVersion,
-        description: impl Into<String>,
-    ) -> Self {
+    pub fn new(name: impl Into<String>, kind: ManifestKind, version: ManifestVersion) -> Self {
         IdentityManifest {
-            manifest: Box::new(ConstitutionalManifest::new(name, kind, version, description)),
+            name: name.into(),
+            kind,
+            version,
         }
     }
 
     /// Returns a string id suitable for registry
     /// indexing. Format: "<name>@<version>".
     pub fn id(&self) -> String {
-        self.manifest.id()
-    }
-
-    /// Access the inner manifest's identity fields
-    pub fn name(&self) -> &str {
-        &self.manifest.identity.name
-    }
-
-    pub fn kind(&self) -> ManifestKind {
-        self.manifest.identity.kind
-    }
-
-    pub fn version(&self) -> ManifestVersion {
-        self.manifest.identity.version
+        format!("{}@{}", self.name, self.version)
     }
 }
 
-impl std::ops::Deref for IdentityManifest {
-    type Target = ConstitutionalManifest;
-
-    fn deref(&self) -> &Self::Target {
-        &self.manifest
-    }
-}
-
-impl AsRef<ConstitutionalManifest> for IdentityManifest {
-    fn as_ref(&self) -> &ConstitutionalManifest {
-        &self.manifest
-    }
-}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConstitutionalManifest {
-    pub identity: Box<IdentityManifest>,
+    pub identity: IdentityManifest,
     pub schema_version: ManifestSchemaVersion,
     pub description: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -812,12 +785,13 @@ impl ConstitutionalManifest {
         description: impl Into<String>,
     ) -> Self {
         ConstitutionalManifest {
-            identity: Box::new(IdentityManifest::new(name, kind, version, description)),
+            identity: IdentityManifest::new(name, kind, version),
             schema_version: ManifestSchemaVersion::default(),
             description: description.into(),
             author: None,
             license: None,
-            repository: None,            homepage: None,
+            repository: None,
+            homepage: None,
             documentation: None,
             examples: Vec::new(),
             capabilities: Vec::new(),
