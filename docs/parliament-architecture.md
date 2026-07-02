@@ -466,3 +466,228 @@ Every package records its dependency tree. If a dependency is found malicious: a
 ### Defense in Depth
 
 Cryptographic signatures + capability manifests + static analysis + sandboxed execution + behavioral verification + lease-based permissions + trust + community reporting + reproducible builds + supply-chain tracking + quarantine mode.
+
+
+## 16. Workflow Engine
+
+The Workflow Engine defines **what** gets executed. The Loop Engine decides **how** to iterate. They are separate concerns.
+
+```
+Task -> Workflow Engine -> Execution Graph -> Loop Engine -> Capability Resolver -> Providers -> Execution
+```
+
+## 17. YOLO Mode
+
+YOLO does not bypass governance. It adjusts policy thresholds:
+- Safe: maximum confirmation, minimum permissions
+- Assisted: standard operation with user prompts
+- Trusted: reduced confirmation, expanded permissions
+- YOLO: minimal confirmation, maximum budget, relaxed retry limits
+PANOPTES/PANOPTIKON still enforce constitutional boundaries in all modes.
+
+## 18. Scheduler
+
+A constitutional scheduler beyond cron:
+Cron Jobs, Timers, Delayed Jobs, Event Jobs, Dependency Jobs, Workflow Jobs, Loop Jobs, Recurring Jobs, Retry Jobs, Conditional Jobs, Distributed Jobs.
+
+Commands: /schedule, /schedule list, /schedule create, /schedule pause, /schedule resume, /schedule delete, /schedule history.
+
+## 19. Workflow Engine - Separation of Concerns
+
+The Workflow Engine and Loop Engine are distinct layers with different responsibilities.
+
+### Workflow Engine: Defines WHAT gets executed
+- Task parsing and decomposition
+- Execution Graph generation (DAG of steps)
+- Dependency resolution between steps
+- Step type classification (sequential, parallel, conditional, loop)
+- Output wiring between steps
+
+### Loop Engine: Defines HOW to iterate
+- Iteration strategy (closed loop, open loop, fleet loop)
+- Budget tracking (iterations, time, cost)
+- Retry and recovery policies
+- Loop state management
+- Completion detection
+
+### Pipeline
+
+Task -> Workflow Engine -> Execution Graph -> Loop Engine -> Capability Resolution Engine -> Providers -> Execution -> Evaluation -> [Done?] --NO--> Loop Engine (iterate) --YES--> Complete
+
+### Key Principle
+The Workflow Engine produces a static execution graph. The Loop Engine consumes it dynamically. The Workflow Engine never iterates. The Loop Engine never defines what steps are.
+
+
+## 20. Instruction Engine
+
+### Hierarchical Instruction Layers
+
+Instead of flat system prompts, Pandora supports layered instructions. Each layer overrides or extends the previous one:
+
+```
+Global Instructions
+  -> Workspace Instructions
+    -> Project Instructions
+      -> Conversation Instructions
+        -> Loop Instructions
+          -> Agent/SubAgent Instructions
+```
+
+### CLI
+
+/instruction global edit, /instruction workspace edit, /instruction project edit,
+/instruction chat edit, /instruction loop edit, /instruction list,
+/instruction enable, /instruction disable
+
+### Example Layers
+
+- Global: "Always verify before writing. Use Rust 2024 edition."
+- Project: "Always run cargo fmt and clippy. Update TUI panels. Preserve constitutional architecture."
+- Loop: "Always benchmark. Always verify with KETU. Maximum 5 iterations."
+
+## 21. Policy Engine
+
+### Post-Execution Policies
+
+Instead of baking post-execution steps into prompts, make them policies. Example:
+
+```
+Coding Workflow -> Generate -> cargo fmt -> cargo clippy -> cargo test -> Benchmark -> Update ANUBIS -> Update Model Intelligence -> Done
+```
+
+### CLI
+
+/policy create, /policy edit, /policy attach <domain>
+
+## 22. Profile Engine
+
+### Runtime Profiles
+
+Profiles change policies automatically:
+
+- Development: maximum feedback, all checks enabled
+- Research: exploration mode, relaxed constraints
+- Production: safety-first, minimum retries
+- YOLO: maximum speed, minimum confirmation
+- Enterprise: compliance, audit trail, SSO
+- Offline: local models only, no network
+- Battery Saver: minimum GPU, cached responses
+- Benchmark: maximum data collection
+
+## 23. Conversation Profiles
+
+- Temporary: Chat only
+- Persistent: Project-level
+- Shared: Workspace-level
+- Global: Every conversation
+
+## 24. Model Profiles
+
+Every model has a profile: Temperature, Top P, Context, Reasoning capability,
+Preferred Domains, Weaknesses, Average Latency, Average Cost, Success Rate.
+These feed the Model Intelligence Engine.
+
+## 25. Endpoint Configuration
+
+Providers support multiple endpoints (localhost, workstation, server, cloud, raspberry-pi).
+Each endpoint is benchmarked independently.
+Provider types: REST, OpenAI, Anthropic, Ollama, llama.cpp, LM Studio, vLLM,
+MCP, gRPC, WebSocket, SSH, Local Process, Python, Shell, Custom.
+
+## 26. Provider Routing Policies
+
+Domain-specific routing preferences. Example:
+
+- Coding: Prefer Claude > Qwen > DeepSeek > Gemma
+- Research: Prefer Gemini > Claude > GPT
+- Vision: Prefer Gemini > Qwen VL > Llama Vision
+
+## 27. Prompt Templates
+
+/template coding, /template research, /template debugging,
+/template benchmark, /template design, /template rtl, /template firmware.
+Templates become reusable assets in KUBER Palace.
+
+## 28. Context Packs
+
+/context add <pack> loads specifications, datasheets, libraries,
+toolchains, and instructions as a single unit.
+
+
+## 29. Failure Intelligence Engine
+
+A Parliament subsystem that learns from production patterns, not single failures.
+
+### Pipeline
+
+Execution -> OpenTelemetry Trace -> Failure Extractor -> Failure Clustering -> Root Cause Analysis -> Pattern Detection -> GEPA -> DSR -> Proposal -> PANOPTES -> Parliament -> Sandbox -> Deploy
+
+GEPA reads runtime behavior, not code.
+
+### FailureRecord
+
+Each failure is structured: id, timestamp, service, source_harness, meta_harness, gene, workflow, provider, model, domain, input_signature, failure_type, stack_trace, telemetry, resource_usage, latency, retries, exit_status, constitutional_context.
+
+### Failure Clustering
+
+Cluster 642 failures into one root cause: "Memory retrieval fails when vector DB exceeds 2M entries." GEPA analyzes clusters, not individual bugs.
+
+### Safety Boundary
+
+Automatic patching is NOT the default. Instead: Failure Analysis -> GEPA -> DSR -> Improvement Proposal -> PANOPTES -> Parliament -> Sandbox Validation -> Benchmark -> Human or Policy Approval -> Deploy. Pandora proposes changes but does NOT rewrite production automatically.
+
+## 30. OpenTelemetry Integration
+
+Every execution stage emits OpenTelemetry spans: Task -> Parliament -> Loop Engine -> Planner -> Capability Resolver -> ANUBIS -> Provider -> Execution -> Verification. Each stage becomes a span in a distributed trace.
+
+This feeds the TUI, Failure Intelligence Engine, and Knowledge Distillation Engine.
+
+## 31. Knowledge Distillation Engine
+
+Filters millions of traces into durable knowledge. Without this, ANUBIS becomes a massive trace archive.
+
+Pipeline: Production -> Telemetry -> OpenTelemetry -> Failure Intelligence -> Knowledge Distillation -> ANUBIS -> GEPA -> DSR -> Parliament.
+
+Decides what is worth keeping: execution summaries, benchmark results, recurring failure patterns, architectural lessons, optimization opportunities.
+
+## 32. Tiered Memory Architecture
+
+### L0 - Ephemeral (Runtime Traces)
+OpenTelemetry spans, raw execution logs, temporary chat context. Dies with the session.
+
+### L1 - Distilled (Execution Knowledge)
+Summaries, benchmark results, failure clusters, decision logs. Persists across sessions.
+
+### L2 - Evolutionary (Long-term)
+Stored in ANUBIS: lineage, lessons, approved optimizations, constitutional decisions, evolution history.
+
+## 33. Two Memory Layers (Local + ANUBIS)
+
+### Local Memory (.pandora/)
+Every project gets a local memory file: .pandora/memory.md or memory.json, plus notes/, decisions/, tasks/ directories. Contains TODOs, coding conventions, project summaries, architectural notes, current objectives. Like a project notebook.
+
+### ANUBIS (Advanced Memory Service)
+Provides graph memory, temporal memory, causal memory, reflection memory, replay, compression, embeddings, retrieval, lineage, evolution history. If ANUBIS is removed, the project still has memory.md - Pandora still works, it simply loses advanced capabilities.
+
+### Capability-Based Memory
+Not hardcoded to ANUBIS. The Memory Service advertises capabilities: Persistent, Semantic, Temporal, Causal, Compression, Reflection, Replay. ANUBIS advertises all. Another provider may only advertise Persistent + Search. Capability Resolution chooses the best one.
+
+## 34. Updated Parliament Subsystems
+
+### Parliament (Constitutional Kernel)
+- Shadow Council
+- Loop Engine
+- Capability Resolution Engine
+- Failure Intelligence Engine
+- Model Intelligence Engine
+- Benchmark Engine
+- Knowledge Distillation Engine
+- Personality Engine
+- Debate Engine
+- Event Bus
+- Service Registry
+
+## 35. Reports Instead of Patches
+
+GEPA generates structured reports with: Component, Frequency, Root Cause, Confidence, Suggested Fixes, Estimated Gain, Risk. DSR converts reports into concrete implementation proposals. PANOPTES evaluates. Parliament approves or rejects.
+

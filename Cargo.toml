@@ -12,6 +12,8 @@ members = [
     "crates/pandora-memory",
     "crates/pandora-model",
     "crates/pandora-narad",
+    "crates/pandora-instruction",
+    "crates/pandora-benchmark",
     "crates/pandora-parliament",
     "crates/pandora-loops",
     "crates/pandora-panoptikon",

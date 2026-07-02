@@ -23,4 +23,4 @@ pub mod service_registry;
 pub use constitution_engine::{ConstitutionEngine, ConstitutionalState, Policy, PolicyEvaluation};
 pub use event_bus::{Event, EventBus, EventBusError};
 pub use lease_manager::{Lease, LeaseId, LeaseManager, LeaseManagerError, LeaseState};
-pub use service_registry::{ServiceId, ServiceRegistry, ServiceRegistryError};
+pub use service_registry::{ServiceRegistry, ServiceRegistryError};

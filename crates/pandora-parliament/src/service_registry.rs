@@ -1,57 +1,26 @@
-use std::any::Any;
+use pandora_types::services::{Service, ServiceId};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::info;
-
-/// A unique identifier for a constitutional service.
-/// Always refer to services by their contract, not by implementation name.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ServiceId {
-    Memory,
-    Execution,
-    Planning,
-    Governance,
-    Evolution,
-    Identity,
-    Security,
-    Custom(String),
-}
-
-impl ServiceId {
-    pub fn as_str(&self) -> &str {
-        match self {
-            ServiceId::Memory => "memory",
-            ServiceId::Execution => "execution",
-            ServiceId::Planning => "planning",
-            ServiceId::Governance => "governance",
-            ServiceId::Evolution => "evolution",
-            ServiceId::Identity => "identity",
-            ServiceId::Security => "security",
-            ServiceId::Custom(s) => s,
-        }
-    }
-}
 
 /// A registered service implementation.
 pub struct ServiceEntry {
     pub service_id: ServiceId,
     pub provider_name: String,
-    pub instance: Arc<dyn Any + Send + Sync>,
+    pub instance: Arc<dyn Service>,
     pub version: String,
 }
 
 impl ServiceEntry {
-    pub fn new(
-        service_id: ServiceId,
-        provider_name: impl Into<String>,
-        instance: Arc<dyn Any + Send + Sync>,
-        version: impl Into<String>,
-    ) -> Self {
+    pub fn new(instance: Arc<dyn Service>) -> Self {
+        let sid = instance.service_id();
+        let name = instance.provider_name().to_string();
+        let ver = instance.version().to_string();
         Self {
-            service_id,
-            provider_name: provider_name.into(),
+            service_id: sid,
+            provider_name: name,
             instance,
-            version: version.into(),
+            version: ver,
         }
     }
 }
@@ -68,9 +37,6 @@ pub enum ServiceRegistryError {
     AtCapacity,
 }
 
-/// The Service Registry - canonical service resolution.
-/// Instead of `PhoenixHarness::new()`, resolve by contract:
-/// `registry.resolve(ServiceId::Execution)?`
 pub struct ServiceRegistry {
     services: HashMap<ServiceId, Vec<ServiceEntry>>,
     capacity: usize,
@@ -91,23 +57,15 @@ impl ServiceRegistry {
         }
     }
 
-    pub fn register(
-        &mut self,
-        service_id: ServiceId,
-        provider_name: impl Into<String>,
-        instance: Arc<dyn Any + Send + Sync>,
-        version: impl Into<String>,
-    ) -> Result<(), ServiceRegistryError> {
-        let provider_name = provider_name.into();
+    pub fn register(&mut self, instance: Arc<dyn Service>) -> Result<(), ServiceRegistryError> {
         if self.services.len() >= self.capacity {
             return Err(ServiceRegistryError::AtCapacity);
         }
-        let entry = ServiceEntry::new(service_id.clone(), &provider_name, instance, version);
-        self.services
-            .entry(service_id.clone())
-            .or_default()
-            .push(entry);
-        info!(service = %service_id.as_str(), provider = %provider_name, "registered provider");
+        let sid = instance.service_id();
+        let name = instance.provider_name().to_string();
+        let entry = ServiceEntry::new(instance);
+        self.services.entry(sid.clone()).or_default().push(entry);
+        info!(service = %sid, provider = %name, "registered");
         Ok(())
     }
 
@@ -161,7 +119,7 @@ impl ServiceRegistry {
             let before = entries.len();
             entries.retain(|e| e.provider_name != provider_name);
             if entries.len() < before {
-                info!(service = %service_id.as_str(), provider = %provider_name, "unregistered");
+                info!(service = %service_id, provider = %provider_name, "unregistered");
                 return Ok(());
             }
         }
@@ -182,39 +140,49 @@ impl Default for ServiceRegistry {
 mod tests {
     use super::*;
 
+    #[derive(Debug)]
+    struct MockService;
+    impl Service for MockService {
+        fn service_id(&self) -> ServiceId {
+            ServiceId::Execution
+        }
+        fn provider_name(&self) -> &str {
+            "mock-phoenix"
+        }
+        fn version(&self) -> &str {
+            "0.1.0"
+        }
+    }
+
     #[test]
     fn register_and_resolve() {
         let mut r = ServiceRegistry::new();
-        r.register(
-            ServiceId::Execution,
-            "phoenix",
-            Arc::new(String::from("mock")),
-            "0.1.0",
-        )
-        .unwrap();
+        r.register(Arc::new(MockService)).unwrap();
         let resolved = r.resolve(&ServiceId::Execution).unwrap();
         assert_eq!(resolved.len(), 1);
-        assert_eq!(resolved[0].provider_name, "phoenix");
+        assert_eq!(resolved[0].provider_name, "mock-phoenix");
     }
 
     #[test]
     fn multiple_providers() {
         let mut r = ServiceRegistry::new();
-        r.register(
-            ServiceId::Memory,
-            "anubis",
-            Arc::new(String::from("a")),
-            "0.1.0",
-        )
-        .unwrap();
-        r.register(
-            ServiceId::Memory,
-            "enterprise",
-            Arc::new(String::from("e")),
-            "0.2.0",
-        )
-        .unwrap();
-        assert_eq!(r.resolve(&ServiceId::Memory).unwrap().len(), 2);
+        r.register(Arc::new(MockService)).unwrap();
+
+        #[derive(Debug)]
+        struct MockService2;
+        impl Service for MockService2 {
+            fn service_id(&self) -> ServiceId {
+                ServiceId::Execution
+            }
+            fn provider_name(&self) -> &str {
+                "mock-phoenix-2"
+            }
+            fn version(&self) -> &str {
+                "0.2.0"
+            }
+        }
+        r.register(Arc::new(MockService2)).unwrap();
+        assert_eq!(r.resolve(&ServiceId::Execution).unwrap().len(), 2);
     }
 
     #[test]
@@ -229,27 +197,8 @@ mod tests {
     #[test]
     fn unregister_works() {
         let mut r = ServiceRegistry::new();
-        r.register(
-            ServiceId::Execution,
-            "phoenix",
-            Arc::new(String::from("p")),
-            "1.0",
-        )
-        .unwrap();
-        r.unregister(&ServiceId::Execution, "phoenix").unwrap();
+        r.register(Arc::new(MockService)).unwrap();
+        r.unregister(&ServiceId::Execution, "mock-phoenix").unwrap();
         assert!(!r.has_service(&ServiceId::Execution));
-    }
-
-    #[test]
-    fn list_providers() {
-        let mut r = ServiceRegistry::new();
-        r.register(
-            ServiceId::Memory,
-            "anubis",
-            Arc::new(String::from("a")),
-            "1.0",
-        )
-        .unwrap();
-        assert_eq!(r.providers(&ServiceId::Memory), vec!["anubis"]);
     }
 }

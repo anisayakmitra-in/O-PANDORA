@@ -1,3 +1,4 @@
+#![allow(clippy::field_reassign_with_default)]
 //! Provider contract crate.
 //!
 //! This crate defines the core traits and types for model providers.
@@ -11,6 +12,17 @@ pub mod manifest;
 pub mod registry;
 pub mod traits;
 pub mod types;
+
+pub mod adapter;
+#[cfg(feature = "legacy-ollama")]
+pub mod custom;
+pub mod discovery;
+pub mod loader;
+#[cfg(feature = "legacy-ollama")]
+pub mod openai;
+
+#[cfg(feature = "legacy-ollama")]
+pub mod ollama;
 
 #[cfg(feature = "legacy-ollama")]
 pub mod legacy;
