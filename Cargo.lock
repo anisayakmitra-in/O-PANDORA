@@ -889,14 +889,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-compiler-feedback"
-version = "0.1.0"
-dependencies = [
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "pandora-config"
 version = "0.1.0"
 
@@ -1327,27 +1319,6 @@ dependencies = [
 
 [[package]]
 name = "pandora-repair"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-repair-planner"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-repair-validation"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-replay-scoring"
 version = "0.1.0"
 dependencies = [
  "serde",
