@@ -9,7 +9,10 @@ pub struct RuntimeContext {
 
 impl RuntimeContext {
     pub fn new() -> Self {
-        Self { properties: HashMap::new(), boot_time: None }
+        Self {
+            properties: HashMap::new(),
+            boot_time: None,
+        }
     }
     pub fn set_property(&mut self, key: String, value: String) {
         self.properties.insert(key, value);
@@ -26,5 +29,7 @@ impl RuntimeContext {
 }
 
 impl Default for RuntimeContext {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

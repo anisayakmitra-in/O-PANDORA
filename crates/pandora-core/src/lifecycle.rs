@@ -17,7 +17,9 @@ pub struct KernelLifecycle {
 
 impl KernelLifecycle {
     pub fn new() -> Self {
-        Self { state: KernelState::Uninitialized }
+        Self {
+            state: KernelState::Uninitialized,
+        }
     }
 
     pub fn state(&self) -> &KernelState {
@@ -39,13 +41,18 @@ impl KernelLifecycle {
             self.state = next;
             Ok(())
         } else {
-            Err(format!("Invalid transition: {:?} -> {:?}", self.state, next))
+            Err(format!(
+                "Invalid transition: {:?} -> {:?}",
+                self.state, next
+            ))
         }
     }
 }
 
 impl Default for KernelLifecycle {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 pub struct BootConfig {

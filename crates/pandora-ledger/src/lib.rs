@@ -82,19 +82,24 @@ impl ExecutionLedger {
 
     /// Query entries by provider.
     pub fn by_provider(&self, provider: &str) -> Vec<&LedgerEntry> {
-        self.entries.iter().filter(|e| e.provider == provider).collect()
+        self.entries
+            .iter()
+            .filter(|e| e.provider == provider)
+            .collect()
     }
 
     /// Query entries by outcome.
     pub fn by_outcome(&self, outcome: &LedgerOutcome) -> Vec<&LedgerEntry> {
-        self.entries.iter().filter(|e| {
-            std::mem::discriminant(&e.outcome) == std::mem::discriminant(outcome)
-        }).collect()
+        self.entries
+            .iter()
+            .filter(|e| std::mem::discriminant(&e.outcome) == std::mem::discriminant(outcome))
+            .collect()
     }
 
     /// Query entries within a time range.
     pub fn by_time_range(&self, start: &str, end: &str) -> Vec<&LedgerEntry> {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|e| e.timestamp >= start.to_string() && e.timestamp <= end.to_string())
             .collect()
     }
@@ -107,8 +112,11 @@ impl ExecutionLedger {
     /// Search entries by reason or decision text.
     pub fn search(&self, query: &str) -> Vec<&LedgerEntry> {
         let q = query.to_lowercase();
-        self.entries.iter()
-            .filter(|e| e.reason.to_lowercase().contains(&q) || e.decision.to_lowercase().contains(&q))
+        self.entries
+            .iter()
+            .filter(|e| {
+                e.reason.to_lowercase().contains(&q) || e.decision.to_lowercase().contains(&q)
+            })
             .collect()
     }
 
@@ -128,7 +136,9 @@ impl ExecutionLedger {
 }
 
 impl Default for ExecutionLedger {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

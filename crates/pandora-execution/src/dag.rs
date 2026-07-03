@@ -41,7 +41,12 @@ impl ExecutionDag {
     pub fn get_ready(&self) -> Vec<&DagNode> {
         self.nodes
             .values()
-            .filter(|n| !n.completed && n.dependencies.iter().all(|d| self.nodes.get(d).map_or(false, |dep| dep.completed)))
+            .filter(|n| {
+                !n.completed
+                    && n.dependencies
+                        .iter()
+                        .all(|d| self.nodes.get(d).is_some_and(|dep| dep.completed))
+            })
             .collect()
     }
 

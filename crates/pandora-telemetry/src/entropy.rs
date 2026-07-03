@@ -62,10 +62,7 @@ mod tests {
 
     #[test]
     fn entropy_max_for_even_distribution() {
-        let calls = vec![
-            ToolCall::new("a"),
-            ToolCall::new("b"),
-        ];
+        let calls = vec![ToolCall::new("a"), ToolCall::new("b")];
         let entropy = EntropyEngine::calculate_entropy(&calls);
         assert!((entropy - 1.0).abs() < 1e-10);
     }

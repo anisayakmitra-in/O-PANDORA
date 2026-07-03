@@ -5,15 +5,15 @@
 
 pub mod kernel;
 pub mod lifecycle;
-pub mod service_container;
 pub mod plugin_loader;
 pub mod runtime_context;
+pub mod service_container;
 
 pub use kernel::Kernel;
-pub use lifecycle::{KernelLifecycle, KernelState, BootConfig};
-pub use service_container::ServiceContainer;
+pub use lifecycle::{BootConfig, KernelLifecycle, KernelState};
 pub use plugin_loader::PluginLoader;
 pub use runtime_context::RuntimeContext;
+pub use service_container::ServiceContainer;
 
 use std::fmt;
 

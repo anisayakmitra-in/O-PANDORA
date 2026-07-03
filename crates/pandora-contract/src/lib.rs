@@ -47,6 +47,9 @@ impl ContractValidator {
     }
 
     pub fn dependency_satisfied(contract: &ContractDescriptor, available: &[String]) -> bool {
-        contract.dependencies.iter().all(|dep| available.contains(dep))
+        contract
+            .dependencies
+            .iter()
+            .all(|dep| available.contains(dep))
     }
 }

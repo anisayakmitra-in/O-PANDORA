@@ -1,8 +1,8 @@
 //! Kernel trait — the core abstraction.
 
+use crate::lifecycle::KernelState;
 use crate::BootConfig;
 use crate::{BootError, PluginLoader, RuntimeContext, ServiceContainer, ShutdownError};
-use crate::lifecycle::KernelState;
 
 pub trait Kernel {
     fn boot(&mut self, config: BootConfig) -> Result<(), BootError>;
