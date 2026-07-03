@@ -19,3 +19,6 @@ pandora-checkpoint = { path = "../pandora-checkpoint" }
 pandora-config = { path = "../pandora-config" }
 pandora-contract = { path = "../pandora-contract" }
 pandora-dag = { path = "../pandora-dag" }
+pandora-ast-engine = { path = "../pandora-ast-engine" }
+pandora-filesystem = { path = "../pandora-filesystem" }
+pandora-consensus = { path = "../pandora-consensus" }
