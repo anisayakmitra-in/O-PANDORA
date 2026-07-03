@@ -41,6 +41,7 @@ pub mod runtime_context;
 pub mod workflow_engine;
 pub mod provider_learning;
 pub mod recorder;
+pub mod telemetry_engine;
 pub mod self_healing;
 pub mod services;
 pub mod universal;
