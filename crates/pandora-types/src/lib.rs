@@ -38,6 +38,7 @@ pub mod gene_context;
 pub mod governance_runtime;
 pub mod identity_runtime;
 pub mod runtime_context;
+pub mod workflow_engine;
 pub mod self_healing;
 pub mod services;
 pub mod universal;
