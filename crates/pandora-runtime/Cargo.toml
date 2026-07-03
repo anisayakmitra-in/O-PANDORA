@@ -28,3 +28,11 @@ pandora-durable-queue = { path = "../pandora-durable-queue" }
 pandora-embedding-engine = { path = "../pandora-embedding-engine" }
 pandora-entropy-collapse = { path = "../pandora-entropy-collapse" }
 pandora-execution-archaeology = { path = "../pandora-execution-archaeology" }
+pandora-execution-kernel = { path = "../pandora-execution-kernel" }
+pandora-execution-license = { path = "../pandora-execution-license" }
+pandora-execution-lineage = { path = "../pandora-execution-lineage" }
+pandora-execution-ranking = { path = "../pandora-execution-ranking" }
+pandora-execution-survivability = { path = "../pandora-execution-survivability" }
+pandora-fitness = { path = "../pandora-fitness" }
+pandora-harness-loader = { path = "../pandora-harness-loader" }
+pandora-harness-manifest = { path = "../pandora-harness-manifest" }

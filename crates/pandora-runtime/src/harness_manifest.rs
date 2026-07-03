@@ -1,10 +1,3 @@
-#[derive(Debug, Clone)]
-pub struct HarnessManifest {
-    pub name: String,
-
-    pub version: String,
-
-    pub author: String,
-
-    pub description: String,
-}
+//! Harness Manifest — re-exported from pandora-harness-manifest (Phase 1A).
+#![allow(deprecated)]
+pub use pandora_harness_manifest::{HarnessManifest};

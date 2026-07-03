@@ -1324,10 +1324,56 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-execution-kernel"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "pandora-execution-license"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pandora-execution-lineage"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pandora-execution-ranking"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "pandora-execution-survivability"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "pandora-filesystem"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "pandora-fitness"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1368,6 +1414,22 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "pandora-harness-loader"
+version = "0.1.0"
+dependencies = [
+ "libloading",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pandora-harness-manifest"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -1522,7 +1584,15 @@ dependencies = [
  "pandora-embedding-engine",
  "pandora-entropy-collapse",
  "pandora-execution-archaeology",
+ "pandora-execution-kernel",
+ "pandora-execution-license",
+ "pandora-execution-lineage",
+ "pandora-execution-ranking",
+ "pandora-execution-survivability",
  "pandora-filesystem",
+ "pandora-fitness",
+ "pandora-harness-loader",
+ "pandora-harness-manifest",
  "pandora-loop-detection",
  "pandora-telemetry",
  "reqwest 0.12.28",
