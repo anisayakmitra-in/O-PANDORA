@@ -7,28 +7,47 @@
 //!   - Standard: stores distilled knowledge for ANUBIS
 //!   - Parliament: monitors failures across all services, triggers governance actions
 
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Classification of a failure.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum FailureClass {
-    Reasoning, Tool, Provider, Harness, Gene, Memory,
-    Execution, Security, Network, Sandbox, Model,
-    Policy, Environment, User, Unknown,
+    Reasoning,
+    Tool,
+    Provider,
+    Harness,
+    Gene,
+    Memory,
+    Execution,
+    Security,
+    Network,
+    Sandbox,
+    Model,
+    Policy,
+    Environment,
+    User,
+    Unknown,
 }
 
 impl FailureClass {
     pub fn name(&self) -> &'static str {
         match self {
-            FailureClass::Reasoning => "reasoning", FailureClass::Tool => "tool",
-            FailureClass::Provider => "provider", FailureClass::Harness => "harness",
-            FailureClass::Gene => "gene", FailureClass::Memory => "memory",
-            FailureClass::Execution => "execution", FailureClass::Security => "security",
-            FailureClass::Network => "network", FailureClass::Sandbox => "sandbox",
-            FailureClass::Model => "model", FailureClass::Policy => "policy",
-            FailureClass::Environment => "environment", FailureClass::User => "user",
+            FailureClass::Reasoning => "reasoning",
+            FailureClass::Tool => "tool",
+            FailureClass::Provider => "provider",
+            FailureClass::Harness => "harness",
+            FailureClass::Gene => "gene",
+            FailureClass::Memory => "memory",
+            FailureClass::Execution => "execution",
+            FailureClass::Security => "security",
+            FailureClass::Network => "network",
+            FailureClass::Sandbox => "sandbox",
+            FailureClass::Model => "model",
+            FailureClass::Policy => "policy",
+            FailureClass::Environment => "environment",
+            FailureClass::User => "user",
             FailureClass::Unknown => "unknown",
         }
     }
@@ -163,50 +182,77 @@ pub struct FailureIntelligenceEngine {
 
 impl FailureIntelligenceEngine {
     pub fn new() -> Self {
-        Self { failures: Vec::new(), root_causes: Vec::new(), reports: Vec::new(), max_failures: 100_000 }
+        Self {
+            failures: Vec::new(),
+            root_causes: Vec::new(),
+            reports: Vec::new(),
+            max_failures: 100_000,
+        }
     }
 
     /// Ingest a failure from execution telemetry.
     pub fn ingest(&mut self, record: FailureRecord) {
         self.failures.push(record);
-        while self.failures.len() > self.max_failures { self.failures.remove(0); }
+        while self.failures.len() > self.max_failures {
+            self.failures.remove(0);
+        }
     }
 
     /// Cluster failures and identify root causes.
     pub fn cluster(&mut self) -> Vec<RootCause> {
         let mut clusters: HashMap<String, Vec<&FailureRecord>> = HashMap::new();
         for failure in &self.failures {
-            let key = format!("{}:{}:{}", failure.service, failure.domain, failure.error_message.chars().take(80).collect::<String>());
+            let key = format!(
+                "{}:{}:{}",
+                failure.service,
+                failure.domain,
+                failure.error_message.chars().take(80).collect::<String>()
+            );
             clusters.entry(key).or_default().push(failure);
         }
 
-        self.root_causes = clusters.into_iter().map(|(key, records)| {
-            let first = records[0];
-            let freq = records.len() as u64;
-            RootCause {
-                id: format!("rc-{:x}", rand::random::<u64>()),
-                failure_class: first.failure_class,
-                service: first.service.clone(),
-                domain: first.domain.clone(),
-                root_cause_label: key.clone(),
-                description: format!("{} failures in {}:{}", freq, first.service, first.domain),
-                frequency: freq,
-                first_seen: records.iter().map(|r| r.timestamp).min().unwrap_or(Utc::now()),
-                last_seen: records.iter().map(|r| r.timestamp).max().unwrap_or(Utc::now()),
-                avg_latency_ms: records.iter().map(|r| r.latency_ms as f64).sum::<f64>() / records.len() as f64,
-                avg_retries: records.iter().map(|r| r.retries as f64).sum::<f64>() / records.len() as f64,
-                confidence: (freq as f64 / (freq as f64 + 10.0)).min(0.99),
-                related_root_causes: Vec::new(),
-                sample_failure_ids: records.iter().take(5).map(|r| r.id.clone()).collect(),
-            }
-        }).collect();
+        self.root_causes = clusters
+            .into_iter()
+            .map(|(key, records)| {
+                let first = records[0];
+                let freq = records.len() as u64;
+                RootCause {
+                    id: format!("rc-{:x}", rand::random::<u64>()),
+                    failure_class: first.failure_class,
+                    service: first.service.clone(),
+                    domain: first.domain.clone(),
+                    root_cause_label: key.clone(),
+                    description: format!("{} failures in {}:{}", freq, first.service, first.domain),
+                    frequency: freq,
+                    first_seen: records
+                        .iter()
+                        .map(|r| r.timestamp)
+                        .min()
+                        .unwrap_or(Utc::now()),
+                    last_seen: records
+                        .iter()
+                        .map(|r| r.timestamp)
+                        .max()
+                        .unwrap_or(Utc::now()),
+                    avg_latency_ms: records.iter().map(|r| r.latency_ms as f64).sum::<f64>()
+                        / records.len() as f64,
+                    avg_retries: records.iter().map(|r| r.retries as f64).sum::<f64>()
+                        / records.len() as f64,
+                    confidence: (freq as f64 / (freq as f64 + 10.0)).min(0.99),
+                    related_root_causes: Vec::new(),
+                    sample_failure_ids: records.iter().take(5).map(|r| r.id.clone()).collect(),
+                }
+            })
+            .collect();
         self.root_causes.clone()
     }
 
     /// Generate structured reports from root causes.
     pub fn generate_reports(&self) -> Vec<FailureReport> {
-        self.root_causes.iter().filter(|rc| rc.frequency >= 3).map(|rc| {
-            FailureReport {
+        self.root_causes
+            .iter()
+            .filter(|rc| rc.frequency >= 3)
+            .map(|rc| FailureReport {
                 id: format!("report-{:x}", rand::random::<u64>()),
                 root_cause: rc.root_cause_label.clone(),
                 failure_class: rc.failure_class,
@@ -217,10 +263,14 @@ impl FailureIntelligenceEngine {
                 description: rc.description.clone(),
                 suggested_fixes: vec!["Investigate and patch".to_string()],
                 estimated_gain: (rc.frequency as f64 * 0.1).min(100.0),
-                risk: if rc.frequency > 10 { "high".to_string() } else { "medium".to_string() },
+                risk: if rc.frequency > 10 {
+                    "high".to_string()
+                } else {
+                    "medium".to_string()
+                },
                 timestamp: Utc::now(),
-            }
-        }).collect()
+            })
+            .collect()
     }
 
     /// Get all root causes, sorted by frequency descending.
@@ -231,9 +281,15 @@ impl FailureIntelligenceEngine {
     }
 
     /// Get all reports.
-    pub fn reports(&self) -> &[FailureReport] { &self.reports }
-    pub fn root_cause_count(&self) -> usize { self.root_causes.len() }
-    pub fn failure_count(&self) -> usize { self.failures.len() }
+    pub fn reports(&self) -> &[FailureReport] {
+        &self.reports
+    }
+    pub fn root_cause_count(&self) -> usize {
+        self.root_causes.len()
+    }
+    pub fn failure_count(&self) -> usize {
+        self.failures.len()
+    }
 
     /// Produce ANUBIS-compatible distilled knowledge.
     pub fn distill_for_anubis(&self) -> DistilledFailureKnowledge {
@@ -241,18 +297,42 @@ impl FailureIntelligenceEngine {
         DistilledFailureKnowledge {
             total_failures: self.failures.len() as u64,
             total_root_causes: self.root_causes.len() as u64,
-            cluster_summary: self.root_causes.iter().map(|rc| {
-                format!("[{}] {} ({} occurrences, {:.0}% confidence)",
-                    rc.failure_class.name(), rc.root_cause_label, rc.frequency, rc.confidence * 100.0)
-            }).collect(),
-            reports: reports.iter().map(|r| format!("[{}] {}: {} (x{}, risk: {})",
-                r.failure_class.name(), r.root_cause, r.description, r.frequency, r.risk)).collect(),
+            cluster_summary: self
+                .root_causes
+                .iter()
+                .map(|rc| {
+                    format!(
+                        "[{}] {} ({} occurrences, {:.0}% confidence)",
+                        rc.failure_class.name(),
+                        rc.root_cause_label,
+                        rc.frequency,
+                        rc.confidence * 100.0
+                    )
+                })
+                .collect(),
+            reports: reports
+                .iter()
+                .map(|r| {
+                    format!(
+                        "[{}] {}: {} (x{}, risk: {})",
+                        r.failure_class.name(),
+                        r.root_cause,
+                        r.description,
+                        r.frequency,
+                        r.risk
+                    )
+                })
+                .collect(),
             generated_at: Utc::now(),
         }
     }
 }
 
-impl Default for FailureIntelligenceEngine { fn default() -> Self { Self::new() } }
+impl Default for FailureIntelligenceEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Compact distilled failure knowledge for ANUBIS storage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -313,10 +393,14 @@ pub struct ParliamentFailureMonitor {
 impl ParliamentFailureMonitor {
     pub fn new() -> Self {
         let mut thresholds = HashMap::new();
-        thresholds.insert("max_failure_rate".to_string(), 0.1);    // 10%
+        thresholds.insert("max_failure_rate".to_string(), 0.1); // 10%
         thresholds.insert("max_latency_degradation".to_string(), 2.0); // 2x normal
         thresholds.insert("min_confidence_for_action".to_string(), 0.6);
-        Self { engine: FailureIntelligenceEngine::new(), governance_actions: Vec::new(), thresholds }
+        Self {
+            engine: FailureIntelligenceEngine::new(),
+            governance_actions: Vec::new(),
+            thresholds,
+        }
     }
 
     /// Ingest a failure from any service.
@@ -330,7 +414,13 @@ impl ParliamentFailureMonitor {
         let mut actions = Vec::new();
 
         for rc in &root_causes {
-            if rc.confidence < self.thresholds.get("min_confidence_for_action").copied().unwrap_or(0.5) {
+            if rc.confidence
+                < self
+                    .thresholds
+                    .get("min_confidence_for_action")
+                    .copied()
+                    .unwrap_or(0.5)
+            {
                 continue;
             }
 
@@ -338,14 +428,20 @@ impl ParliamentFailureMonitor {
             if rc.frequency > 10 {
                 let mut action = FailureGovernanceAction::new("quarantine", &rc.service);
                 action.root_cause_id = rc.id.clone();
-                action.description = format!("Automatic quarantine: {} failures in {}:{}", rc.frequency, rc.service, rc.domain);
+                action.description = format!(
+                    "Automatic quarantine: {} failures in {}:{}",
+                    rc.frequency, rc.service, rc.domain
+                );
                 action.severity = "high".to_string();
                 action.requires_approval = true;
                 actions.push(action);
             } else if rc.frequency > 3 {
                 let mut action = FailureGovernanceAction::new("investigate", &rc.service);
                 action.root_cause_id = rc.id.clone();
-                action.description = format!("Investigate: {} failures in {}:{}", rc.frequency, rc.service, rc.domain);
+                action.description = format!(
+                    "Investigate: {} failures in {}:{}",
+                    rc.frequency, rc.service, rc.domain
+                );
                 action.severity = "medium".to_string();
                 actions.push(action);
             }
@@ -364,16 +460,28 @@ impl ParliamentFailureMonitor {
             clusters: distilled.cluster_summary,
             reports: distilled.reports,
             active_governance_actions: self.governance_actions.len(),
-            pending_actions: self.governance_actions.iter().filter(|a| a.requires_approval).count(),
+            pending_actions: self
+                .governance_actions
+                .iter()
+                .filter(|a| a.requires_approval)
+                .count(),
             generated_at: Utc::now(),
         }
     }
 
-    pub fn governance_actions(&self) -> &[FailureGovernanceAction] { &self.governance_actions }
-    pub fn set_threshold(&mut self, key: impl Into<String>, value: f64) { self.thresholds.insert(key.into(), value); }
+    pub fn governance_actions(&self) -> &[FailureGovernanceAction] {
+        &self.governance_actions
+    }
+    pub fn set_threshold(&mut self, key: impl Into<String>, value: f64) {
+        self.thresholds.insert(key.into(), value);
+    }
 }
 
-impl Default for ParliamentFailureMonitor { fn default() -> Self { Self::new() } }
+impl Default for ParliamentFailureMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Parliament-specific failure report for constitutional review.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -395,7 +503,12 @@ pub struct ParliamentFailureReport {
 mod tests {
     use super::*;
 
-    fn sample_failure(service: &str, domain: &str, error: &str, class: FailureClass) -> FailureRecord {
+    fn sample_failure(
+        service: &str,
+        domain: &str,
+        error: &str,
+        class: FailureClass,
+    ) -> FailureRecord {
         let mut f = FailureRecord::new(service, domain);
         f.failure_class = class;
         f.error_message = error.to_string();
@@ -408,7 +521,12 @@ mod tests {
     fn ingest_failures() {
         let mut engine = FailureIntelligenceEngine::new();
         for i in 0..10 {
-            let f = sample_failure("anubis", "memory", &format!("timeout #{}", i), FailureClass::Memory);
+            let f = sample_failure(
+                "anubis",
+                "memory",
+                &format!("timeout #{}", i),
+                FailureClass::Memory,
+            );
             engine.ingest(f);
         }
         assert_eq!(engine.failure_count(), 10);
@@ -418,10 +536,20 @@ mod tests {
     fn clustering_groups_similar_failures() {
         let mut engine = FailureIntelligenceEngine::new();
         for _ in 0..5 {
-            engine.ingest(sample_failure("anubis", "memory", "vector_db_timeout", FailureClass::Memory));
+            engine.ingest(sample_failure(
+                "anubis",
+                "memory",
+                "vector_db_timeout",
+                FailureClass::Memory,
+            ));
         }
         for _ in 0..3 {
-            engine.ingest(sample_failure("phoenix", "execution", "provider_unavailable", FailureClass::Provider));
+            engine.ingest(sample_failure(
+                "phoenix",
+                "execution",
+                "provider_unavailable",
+                FailureClass::Provider,
+            ));
         }
         let rc = engine.cluster();
         assert!(rc.len() >= 2);
@@ -431,7 +559,12 @@ mod tests {
     fn reports_generated_for_frequent_failures() {
         let mut engine = FailureIntelligenceEngine::new();
         for _ in 0..5 {
-            engine.ingest(sample_failure("anubis", "memory", "timeout", FailureClass::Memory));
+            engine.ingest(sample_failure(
+                "anubis",
+                "memory",
+                "timeout",
+                FailureClass::Memory,
+            ));
         }
         engine.cluster();
         let reports = engine.generate_reports();
@@ -442,7 +575,12 @@ mod tests {
     fn parliament_monitor_governance_actions() {
         let mut monitor = ParliamentFailureMonitor::new();
         for _ in 0..15 {
-            monitor.ingest(sample_failure("anubis", "memory", "critical_failure", FailureClass::Memory));
+            monitor.ingest(sample_failure(
+                "anubis",
+                "memory",
+                "critical_failure",
+                FailureClass::Memory,
+            ));
         }
         let actions = monitor.analyze();
         assert!(!actions.is_empty());
@@ -454,7 +592,12 @@ mod tests {
     fn distill_for_anubis_produces_summary() {
         let mut engine = FailureIntelligenceEngine::new();
         for _ in 0..10 {
-            engine.ingest(sample_failure("anubis", "memory", "timeout", FailureClass::Memory));
+            engine.ingest(sample_failure(
+                "anubis",
+                "memory",
+                "timeout",
+                FailureClass::Memory,
+            ));
         }
         engine.cluster();
         let distilled = engine.distill_for_anubis();
@@ -466,7 +609,12 @@ mod tests {
     fn parliament_report_contains_governance_info() {
         let mut monitor = ParliamentFailureMonitor::new();
         for _ in 0..20 {
-            monitor.ingest(sample_failure("phoenix", "execution", "provider_down", FailureClass::Provider));
+            monitor.ingest(sample_failure(
+                "phoenix",
+                "execution",
+                "provider_down",
+                FailureClass::Provider,
+            ));
         }
         monitor.analyze();
         let report = monitor.distill_for_parliament();

@@ -15,52 +15,38 @@ use serde::{Deserialize, Serialize};
 // =========================================================================
 
 /// Memory persistence strategy for this execution.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum MemoryMode {
-    Local,  // .pandora/memory.md only
+    #[default]
+    Local, // .pandora/memory.md only
     ANUBIS, // Full graph/temporal/causal memory
     Hybrid, // Local + ANUBIS
 }
 
-impl Default for MemoryMode {
-    fn default() -> Self {
-        MemoryMode::Local
-    }
-}
-
 /// Loop execution strategy.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum LoopMode {
     None,
+    #[default]
     Closed,
     Open,
     Fleet,
 }
 
-impl Default for LoopMode {
-    fn default() -> Self {
-        LoopMode::Closed
-    }
-}
-
 /// Safety level for execution.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum SafetyLevel {
     Low,
+    #[default]
     Medium,
     High,
     Maximum,
 }
 
-impl Default for SafetyLevel {
-    fn default() -> Self {
-        SafetyLevel::Medium
-    }
-}
-
 /// Execution backend type.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum ExecutionBackend {
+    #[default]
     Native,
     Docker,
     WASM,
@@ -68,40 +54,24 @@ pub enum ExecutionBackend {
     Remote,
 }
 
-impl Default for ExecutionBackend {
-    fn default() -> Self {
-        ExecutionBackend::Native
-    }
-}
-
 /// Approval mode for execution decisions.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum ApprovalMode {
-    Auto,    // Approve automatically
+    #[default]
+    Auto, // Approve automatically
     Confirm, // Ask user before executing
     Review,  // Require human review
     Vote,    // Require parliament vote
 }
 
-impl Default for ApprovalMode {
-    fn default() -> Self {
-        ApprovalMode::Auto
-    }
-}
-
 /// Provider selection policy.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum ProviderPolicy {
-    Auto,             // Allow capability resolution to choose
+    #[default]
+    Auto, // Allow capability resolution to choose
     PreferLocal,      // Prefer local providers (Ollama, llama.cpp)
     PreferCloud,      // Prefer cloud providers (OpenAI, Anthropic)
     Specific(String), // Use a specific provider
-}
-
-impl Default for ProviderPolicy {
-    fn default() -> Self {
-        ProviderPolicy::Auto
-    }
 }
 
 /// Retry strategy for failures.

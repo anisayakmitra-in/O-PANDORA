@@ -1,37 +1,45 @@
+#![allow(clippy::len_without_is_empty)]
 //! Execution Recorder + Replay Engine.
 //!
 //! Every execution is recorded and becomes deterministically replayable.
 //! Captures: inputs, outputs, provider, model, context, artifacts, metrics.
 //! Generates a unique ReplayId for each execution.
 
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 /// Unique identifier for a recorded execution.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ReplayId(pub String);
 
+impl Default for ReplayId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReplayId {
     pub fn new() -> Self {
         use std::sync::atomic::{AtomicU64, Ordering};
         static COUNTER: AtomicU64 = AtomicU64::new(1);
-        ReplayId(format!("replay-{:016x}", COUNTER.fetch_add(1, Ordering::Relaxed)))
+        ReplayId(format!(
+            "replay-{:016x}",
+            COUNTER.fetch_add(1, Ordering::Relaxed)
+        ))
     }
 }
 
 /// Execution mode for replay.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub enum ReplayMode {
     /// Full deterministic re-execution.
+    #[default]
     Deterministic,
     /// Re-execute with same inputs but allow provider/model changes.
     Evolve,
     /// Replay with interactive step-through.
     StepThrough,
 }
-
-impl Default for ReplayMode { fn default() -> Self { ReplayMode::Deterministic } }
 
 /// A single execution frame — a step in the execution graph.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,13 +125,25 @@ pub struct ExecutionRecorder {
     max_recordings: usize,
 }
 
+impl Default for ExecutionRecorder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExecutionRecorder {
     pub fn new() -> Self {
-        Self { recordings: Vec::new(), max_recordings: 10_000 }
+        Self {
+            recordings: Vec::new(),
+            max_recordings: 10_000,
+        }
     }
 
     pub fn with_max(max: usize) -> Self {
-        Self { recordings: Vec::new(), max_recordings: max }
+        Self {
+            recordings: Vec::new(),
+            max_recordings: max,
+        }
     }
 
     /// Begin recording a new execution.
@@ -161,8 +181,16 @@ impl ExecutionRecorder {
     }
 
     /// Record a single execution frame.
-    pub fn record_frame(&mut self, replay_id: &ReplayId, frame: ExecutionFrame) -> Result<(), String> {
-        if let Some(rec) = self.recordings.iter_mut().find(|r| r.replay_id == *replay_id) {
+    pub fn record_frame(
+        &mut self,
+        replay_id: &ReplayId,
+        frame: ExecutionFrame,
+    ) -> Result<(), String> {
+        if let Some(rec) = self
+            .recordings
+            .iter_mut()
+            .find(|r| r.replay_id == *replay_id)
+        {
             rec.frames.push(frame);
             Ok(())
         } else {
@@ -180,7 +208,11 @@ impl ExecutionRecorder {
         total_retries: u32,
         success: bool,
     ) -> Result<(), String> {
-        if let Some(rec) = self.recordings.iter_mut().find(|r| r.replay_id == *replay_id) {
+        if let Some(rec) = self
+            .recordings
+            .iter_mut()
+            .find(|r| r.replay_id == *replay_id)
+        {
             rec.total_duration_ms = total_duration_ms;
             rec.total_tokens = total_tokens;
             rec.total_cost = total_cost;
@@ -206,19 +238,25 @@ impl ExecutionRecorder {
 
     /// Find recordings by domain.
     pub fn find_by_domain(&self, domain: &str) -> Vec<&RecordedExecution> {
-        self.recordings.iter().filter(|r| r.domain == domain).collect()
+        self.recordings
+            .iter()
+            .filter(|r| r.domain == domain)
+            .collect()
     }
 
     /// Find recordings by task substring.
     pub fn search(&self, query: &str) -> Vec<&RecordedExecution> {
         let q = query.to_lowercase();
-        self.recordings.iter()
+        self.recordings
+            .iter()
             .filter(|r| r.task.to_lowercase().contains(&q) || r.domain.to_lowercase().contains(&q))
             .collect()
     }
 
     /// Total recordings stored.
-    pub fn len(&self) -> usize { self.recordings.len() }
+    pub fn len(&self) -> usize {
+        self.recordings.len()
+    }
 }
 
 // =========================================================================
@@ -232,24 +270,47 @@ pub struct ReplayEngine;
 impl ReplayEngine {
     /// Get the input/output diff for a recorded execution.
     pub fn diff(recording: &RecordedExecution) -> Vec<(String, String, String, String)> {
-        recording.frames.iter().map(|f| {
-            let label = format!("{}: {}", f.step_kind, f.step_label);
-            let status = if f.success { "PASS" } else { "FAIL" };
-            (label, f.input_hash.clone(), f.output_hash.clone(), status.to_string())
-        }).collect()
+        recording
+            .frames
+            .iter()
+            .map(|f| {
+                let label = format!("{}: {}", f.step_kind, f.step_label);
+                let status = if f.success { "PASS" } else { "FAIL" };
+                (
+                    label,
+                    f.input_hash.clone(),
+                    f.output_hash.clone(),
+                    status.to_string(),
+                )
+            })
+            .collect()
     }
 
     /// Get the execution trace as a tree string.
     pub fn trace(recording: &RecordedExecution) -> String {
         let mut out = format!("EXECUTION TRACE: {}\n", recording.task);
         out.push_str(&format!("Replay ID: {}\n", recording.replay_id.0));
-        out.push_str(&format!("Domain: {} | Success: {}\n", recording.domain, recording.success));
-        out.push_str(&format!("Duration: {}ms | Tokens: {} | Cost: ${:.4}\n", recording.total_duration_ms, recording.total_tokens, recording.total_cost));
+        out.push_str(&format!(
+            "Domain: {} | Success: {}\n",
+            recording.domain, recording.success
+        ));
+        out.push_str(&format!(
+            "Duration: {}ms | Tokens: {} | Cost: ${:.4}\n",
+            recording.total_duration_ms, recording.total_tokens, recording.total_cost
+        ));
         out.push_str("\nFRAMES:\n");
         for frame in &recording.frames {
             let indent = if frame.parent_id.is_some() { "  " } else { "" };
             let status = if frame.success { "✓" } else { "✗" };
-            out.push_str(&format!("{}[{}] {} {} ({}ms, {} tokens)\n", indent, status, frame.step_kind, frame.step_label, frame.duration_ms, frame.tokens_used));
+            out.push_str(&format!(
+                "{}[{}] {} {} ({}ms, {} tokens)\n",
+                indent,
+                status,
+                frame.step_kind,
+                frame.step_label,
+                frame.duration_ms,
+                frame.tokens_used
+            ));
         }
         out
     }
@@ -258,7 +319,6 @@ impl ReplayEngine {
         &recording.frames
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -275,11 +335,21 @@ mod tests {
     fn recorder_begin_and_retrieve() {
         let mut recorder = ExecutionRecorder::new();
         let props = RecordedProperties {
-            memory_mode: "local".into(), loop_mode: "closed".into(),
-            safety_level: "medium".into(), execution_backend: "native".into(),
-            reasoning_depth: 3, telemetry_level: 2,
+            memory_mode: "local".into(),
+            loop_mode: "closed".into(),
+            safety_level: "medium".into(),
+            execution_backend: "native".into(),
+            reasoning_depth: 3,
+            telemetry_level: 2,
         };
-        let rid = recorder.begin("test task", "coding", "exec-1", "session-1", "project-1", props);
+        let rid = recorder.begin(
+            "test task",
+            "coding",
+            "exec-1",
+            "session-1",
+            "project-1",
+            props,
+        );
         assert!(recorder.get(&rid).is_some());
     }
 
@@ -287,9 +357,12 @@ mod tests {
     fn record_frame_works() {
         let mut recorder = ExecutionRecorder::new();
         let props = RecordedProperties {
-            memory_mode: "local".into(), loop_mode: "closed".into(),
-            safety_level: "medium".into(), execution_backend: "native".into(),
-            reasoning_depth: 3, telemetry_level: 2,
+            memory_mode: "local".into(),
+            loop_mode: "closed".into(),
+            safety_level: "medium".into(),
+            execution_backend: "native".into(),
+            reasoning_depth: 3,
+            telemetry_level: 2,
         };
         let rid = recorder.begin("test", "test", "e1", "s1", "p1", props);
         let frame = ExecutionFrame::new("plan", "Initial plan");
@@ -301,9 +374,12 @@ mod tests {
     fn finalize_recording() {
         let mut recorder = ExecutionRecorder::new();
         let props = RecordedProperties {
-            memory_mode: "local".into(), loop_mode: "closed".into(),
-            safety_level: "medium".into(), execution_backend: "native".into(),
-            reasoning_depth: 3, telemetry_level: 2,
+            memory_mode: "local".into(),
+            loop_mode: "closed".into(),
+            safety_level: "medium".into(),
+            execution_backend: "native".into(),
+            reasoning_depth: 3,
+            telemetry_level: 2,
         };
         let rid = recorder.begin("test", "test", "e1", "s1", "p1", props);
         recorder.finalize(&rid, 1500, 500, 0.05, 2, true).unwrap();
@@ -317,9 +393,12 @@ mod tests {
     fn search_by_query() {
         let mut recorder = ExecutionRecorder::new();
         let props = RecordedProperties {
-            memory_mode: "local".into(), loop_mode: "closed".into(),
-            safety_level: "medium".into(), execution_backend: "native".into(),
-            reasoning_depth: 3, telemetry_level: 2,
+            memory_mode: "local".into(),
+            loop_mode: "closed".into(),
+            safety_level: "medium".into(),
+            execution_backend: "native".into(),
+            reasoning_depth: 3,
+            telemetry_level: 2,
         };
         recorder.begin("Implement RISC-V processor", "eda", "e1", "s1", "p1", props);
         let results = recorder.search("risc-v");
@@ -330,13 +409,20 @@ mod tests {
     fn trace_output() {
         let mut recorder = ExecutionRecorder::new();
         let props = RecordedProperties {
-            memory_mode: "local".into(), loop_mode: "closed".into(),
-            safety_level: "medium".into(), execution_backend: "native".into(),
-            reasoning_depth: 3, telemetry_level: 2,
+            memory_mode: "local".into(),
+            loop_mode: "closed".into(),
+            safety_level: "medium".into(),
+            execution_backend: "native".into(),
+            reasoning_depth: 3,
+            telemetry_level: 2,
         };
         let rid = recorder.begin("design", "eda", "e1", "s1", "p1", props);
-        recorder.record_frame(&rid, ExecutionFrame::new("plan", "Architecture")).unwrap();
-        recorder.record_frame(&rid, ExecutionFrame::new("execute", "Implementation")).unwrap();
+        recorder
+            .record_frame(&rid, ExecutionFrame::new("plan", "Architecture"))
+            .unwrap();
+        recorder
+            .record_frame(&rid, ExecutionFrame::new("execute", "Implementation"))
+            .unwrap();
         recorder.finalize(&rid, 5000, 1000, 0.10, 1, true).unwrap();
         let rec = recorder.get(&rid).unwrap();
         let trace = ReplayEngine::trace(rec);

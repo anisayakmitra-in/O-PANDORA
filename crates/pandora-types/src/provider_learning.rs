@@ -8,8 +8,8 @@
 //!   Coding, Research, Math, EDA, Vision, Robotics, Embedded, Firmware,
 //!   Reasoning, Planning, ToolUse, Cost, Latency, Reliability, ContextQuality
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// A single observation from one execution.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,7 +27,11 @@ pub struct ModelObservation {
 }
 
 impl ModelObservation {
-    pub fn new(model: impl Into<String>, provider: impl Into<String>, domain: impl Into<String>) -> Self {
+    pub fn new(
+        model: impl Into<String>,
+        provider: impl Into<String>,
+        domain: impl Into<String>,
+    ) -> Self {
         Self {
             model: model.into(),
             provider: provider.into(),
@@ -109,7 +113,11 @@ impl ProviderLearningEngine {
     }
 
     pub fn with_max_observations(max: usize) -> Self {
-        Self { profiles: HashMap::new(), recent_observations: Vec::new(), max_observations: max }
+        Self {
+            profiles: HashMap::new(),
+            recent_observations: Vec::new(),
+            max_observations: max,
+        }
     }
 
     /// Record an observation from an execution.
@@ -125,9 +133,10 @@ impl ProviderLearningEngine {
         }
 
         // Update profile
-        let profile = self.profiles.entry(model).or_insert_with(|| {
-            ModelProfile::new(&domain, "unknown")
-        });
+        let profile = self
+            .profiles
+            .entry(model)
+            .or_insert_with(|| ModelProfile::new(&domain, "unknown"));
 
         profile.total_observations += 1;
         profile.last_updated = chrono::Utc::now().to_rfc3339();
@@ -151,8 +160,13 @@ impl ProviderLearningEngine {
 
     /// Rank all known models for a specific domain.
     pub fn rank_for_domain(&self, domain: &str) -> Vec<(String, f64, f64)> {
-        let mut results: Vec<(String, f64, f64)> = self.profiles.values()
-            .filter_map(|p| p.score_for(domain).map(|s| (p.model.clone(), s, p.confidence(domain))))
+        let mut results: Vec<(String, f64, f64)> = self
+            .profiles
+            .values()
+            .filter_map(|p| {
+                p.score_for(domain)
+                    .map(|s| (p.model.clone(), s, p.confidence(domain)))
+            })
             .collect();
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         results
@@ -160,13 +174,20 @@ impl ProviderLearningEngine {
 
     /// Rank models by weighted combination of domain scores.
     pub fn rank_weighted(&self, weights: &HashMap<String, f64>) -> Vec<(String, f64)> {
-        let mut results: Vec<(String, f64)> = self.profiles.values()
+        let mut results: Vec<(String, f64)> = self
+            .profiles
+            .values()
             .map(|p| {
-                let total_weight: f64 = weights.iter()
+                let total_weight: f64 = weights
+                    .iter()
                     .map(|(domain, w)| p.score_for(domain).unwrap_or(50.0) * w)
                     .sum();
                 let weight_sum: f64 = weights.values().sum();
-                let score = if weight_sum > 0.0 { total_weight / weight_sum } else { 0.0 };
+                let score = if weight_sum > 0.0 {
+                    total_weight / weight_sum
+                } else {
+                    0.0
+                };
                 (p.model.clone(), score)
             })
             .collect();
@@ -181,7 +202,8 @@ impl ProviderLearningEngine {
 
     /// Get trend for a model in a domain (recent N scores).
     pub fn trend(&self, model: &str, domain: &str, count: usize) -> Vec<(String, f64)> {
-        self.recent_observations.iter()
+        self.recent_observations
+            .iter()
             .filter(|o| o.model == model && o.domain == domain)
             .rev()
             .take(count)
@@ -201,7 +223,9 @@ impl ProviderLearningEngine {
 }
 
 impl Default for ProviderLearningEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -210,7 +234,12 @@ mod tests {
 
     fn sample_observations() -> ProviderLearningEngine {
         let mut engine = ProviderLearningEngine::new();
-        let models = vec!["claude-sonnet-4", "qwen3-coder", "gpt-4o", "deepseek-coder-v2"];
+        let models = [
+            "claude-sonnet-4",
+            "qwen3-coder",
+            "gpt-4o",
+            "deepseek-coder-v2",
+        ];
         let domains = vec!["coding", "reasoning", "rust", "research"];
 
         for (mi, model) in models.iter().enumerate() {
@@ -244,7 +273,7 @@ mod tests {
         assert!(!ranked.is_empty());
         // Highest score first
         for i in 0..ranked.len().saturating_sub(1) {
-            assert!(ranked[i].1 >= ranked[i+1].1);
+            assert!(ranked[i].1 >= ranked[i + 1].1);
         }
     }
 
@@ -259,7 +288,7 @@ mod tests {
         let trend = engine.trend("qwen", "coding", 3);
         assert_eq!(trend.len(), 3);
         // Most recent (highest score) first
-        assert!(trend[0].1 >= trend[trend.len()-1].1);
+        assert!(trend[0].1 >= trend[trend.len() - 1].1);
     }
 
     #[test]

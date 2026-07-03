@@ -4,10 +4,9 @@
 //! Spans form a tree (parent-child) representing the full execution flow.
 //! The TUI renders live span trees.
 
-use std::collections::HashMap;
-use std::time::Instant;
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Severity level for a span event.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -22,7 +21,14 @@ pub enum SpanLevel {
 
 impl SpanLevel {
     pub fn name(&self) -> &'static str {
-        match self { SpanLevel::Trace => "TRACE", SpanLevel::Debug => "DEBUG", SpanLevel::Info => "INFO", SpanLevel::Warn => "WARN", SpanLevel::Error => "ERROR", SpanLevel::Fatal => "FATAL" }
+        match self {
+            SpanLevel::Trace => "TRACE",
+            SpanLevel::Debug => "DEBUG",
+            SpanLevel::Info => "INFO",
+            SpanLevel::Warn => "WARN",
+            SpanLevel::Error => "ERROR",
+            SpanLevel::Fatal => "FATAL",
+        }
     }
 }
 
@@ -37,7 +43,12 @@ pub struct SpanEvent {
 
 impl SpanEvent {
     pub fn new(level: SpanLevel, message: impl Into<String>) -> Self {
-        Self { timestamp: Utc::now(), level, message: message.into(), attributes: HashMap::new() }
+        Self {
+            timestamp: Utc::now(),
+            level,
+            message: message.into(),
+            attributes: HashMap::new(),
+        }
     }
 }
 
@@ -68,7 +79,11 @@ pub struct Span {
 }
 
 impl Span {
-    pub fn new(trace_id: impl Into<String>, name: impl Into<String>, stage: impl Into<String>) -> Self {
+    pub fn new(
+        trace_id: impl Into<String>,
+        name: impl Into<String>,
+        stage: impl Into<String>,
+    ) -> Self {
         Self {
             span_id: format!("span-{:x}", 42u64),
             parent_span_id: None,
@@ -106,7 +121,11 @@ pub struct Trace {
 }
 
 impl Trace {
-    pub fn new(trace_id: impl Into<String>, execution_id: impl Into<String>, task: impl Into<String>) -> Self {
+    pub fn new(
+        trace_id: impl Into<String>,
+        execution_id: impl Into<String>,
+        task: impl Into<String>,
+    ) -> Self {
         Self {
             trace_id: trace_id.into(),
             execution_id: execution_id.into(),
@@ -127,12 +146,18 @@ impl Trace {
 
     /// Get root spans (no parent).
     pub fn root_spans(&self) -> Vec<&Span> {
-        self.spans.iter().filter(|s| s.parent_span_id.is_none()).collect()
+        self.spans
+            .iter()
+            .filter(|s| s.parent_span_id.is_none())
+            .collect()
     }
 
     /// Get children of a span.
     pub fn child_spans(&self, parent_id: &str) -> Vec<&Span> {
-        self.spans.iter().filter(|s| s.parent_span_id.as_deref() == Some(parent_id)).collect()
+        self.spans
+            .iter()
+            .filter(|s| s.parent_span_id.as_deref() == Some(parent_id))
+            .collect()
     }
 
     /// Render trace as an indented tree string.
@@ -146,9 +171,20 @@ impl Trace {
 
     fn format_span(&self, out: &mut String, span: &Span, depth: usize) {
         let indent = "  ".repeat(depth);
-        let status = match span.status { SpanStatus::Ok => "✓", SpanStatus::Error => "✗", SpanStatus::Cancelled => "–" };
-        let duration = if span.duration_ms > 0 { format!("{}ms", span.duration_ms) } else { "running".to_string() };
-        out.push_str(&format!("{}{} [{}] {} ({})\n", indent, status, span.stage, span.name, duration));
+        let status = match span.status {
+            SpanStatus::Ok => "✓",
+            SpanStatus::Error => "✗",
+            SpanStatus::Cancelled => "–",
+        };
+        let duration = if span.duration_ms > 0 {
+            format!("{}ms", span.duration_ms)
+        } else {
+            "running".to_string()
+        };
+        out.push_str(&format!(
+            "{}{} [{}] {} ({})\n",
+            indent, status, span.stage, span.name, duration
+        ));
         for child in self.child_spans(&span.span_id) {
             self.format_span(out, child, depth + 1);
         }
@@ -166,17 +202,35 @@ pub struct TelemetryEngine {
 
 impl TelemetryEngine {
     pub fn new() -> Self {
-        Self { traces: HashMap::new(), active_trace: None, span_id_counter: 0, max_traces: 1000 }
+        Self {
+            traces: HashMap::new(),
+            active_trace: None,
+            span_id_counter: 0,
+            max_traces: 1000,
+        }
     }
 
-    pub fn with_max_traces(max: usize) -> Self { Self { traces: HashMap::new(), active_trace: None, span_id_counter: 0, max_traces: max } }
+    pub fn with_max_traces(max: usize) -> Self {
+        Self {
+            traces: HashMap::new(),
+            active_trace: None,
+            span_id_counter: 0,
+            max_traces: max,
+        }
+    }
 
     /// Begin a new trace for an execution.
-    pub fn begin_trace(&mut self, execution_id: impl Into<String>, task: impl Into<String>) -> String {
+    pub fn begin_trace(
+        &mut self,
+        execution_id: impl Into<String>,
+        task: impl Into<String>,
+    ) -> String {
         let trace_id = format!("trace-{:x}", self.span_id_counter);
         self.span_id_counter += 1;
         let trace = Trace::new(&trace_id, execution_id, task);
-        if self.traces.len() >= self.max_traces { self.traces.clear(); }
+        if self.traces.len() >= self.max_traces {
+            self.traces.clear();
+        }
         self.traces.insert(trace_id.clone(), trace);
         self.active_trace = Some(trace_id.clone());
         trace_id
@@ -192,7 +246,12 @@ impl TelemetryEngine {
     }
 
     /// Begin a new span within the active trace.
-    pub fn begin_span(&mut self, trace_id: &str, name: impl Into<String>, stage: impl Into<String>) -> String {
+    pub fn begin_span(
+        &mut self,
+        trace_id: &str,
+        name: impl Into<String>,
+        stage: impl Into<String>,
+    ) -> String {
         let span_id = format!("span-{:x}", self.span_id_counter);
         self.span_id_counter += 1;
         let mut span = Span::new(trace_id, name, stage);
@@ -204,7 +263,13 @@ impl TelemetryEngine {
     }
 
     /// End a span with final status and duration.
-    pub fn end_span(&mut self, trace_id: &str, span_id: &str, status: SpanStatus, duration_ms: u64) {
+    pub fn end_span(
+        &mut self,
+        trace_id: &str,
+        span_id: &str,
+        status: SpanStatus,
+        duration_ms: u64,
+    ) {
         if let Some(trace) = self.traces.get_mut(trace_id) {
             if let Some(span) = trace.spans.iter_mut().find(|s| s.span_id == span_id) {
                 span.end_time = Some(Utc::now());
@@ -215,7 +280,13 @@ impl TelemetryEngine {
     }
 
     /// Add an event to a span.
-    pub fn add_event(&mut self, trace_id: &str, span_id: &str, level: SpanLevel, message: impl Into<String>) {
+    pub fn add_event(
+        &mut self,
+        trace_id: &str,
+        span_id: &str,
+        level: SpanLevel,
+        message: impl Into<String>,
+    ) {
         if let Some(trace) = self.traces.get_mut(trace_id) {
             if let Some(span) = trace.spans.iter_mut().find(|s| s.span_id == span_id) {
                 span.events.push(SpanEvent::new(level, message));
@@ -237,14 +308,21 @@ impl TelemetryEngine {
 
     /// Find traces with errors.
     pub fn failed_traces(&self) -> Vec<&Trace> {
-        self.traces.values().filter(|t| t.spans.iter().any(|s| s.status == SpanStatus::Error)).collect()
+        self.traces
+            .values()
+            .filter(|t| t.spans.iter().any(|s| s.status == SpanStatus::Error))
+            .collect()
     }
 
-    pub fn trace_count(&self) -> usize { self.traces.len() }
+    pub fn trace_count(&self) -> usize {
+        self.traces.len()
+    }
 }
 
 impl Default for TelemetryEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

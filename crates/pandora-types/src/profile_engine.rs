@@ -4,8 +4,8 @@
 //! Each profile bundles: loop depth, verification level, checkpoint frequency,
 //! provider preference, telemetry level, cost budget, retry policy.
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// A named runtime profile.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +53,11 @@ impl ExecutionProfile {
     }
 }
 
-impl Default for ExecutionProfile { fn default() -> Self { Self::new("default") } }
+impl Default for ExecutionProfile {
+    fn default() -> Self {
+        Self::new("default")
+    }
+}
 
 /// The Profile Engine — manages and applies execution profiles.
 pub struct ProfileEngine {
@@ -65,7 +69,10 @@ impl ProfileEngine {
     pub fn new() -> Self {
         let mut profiles = HashMap::new();
         profiles.insert("default".to_string(), ExecutionProfile::new("default"));
-        Self { profiles, active: "default".to_string() }
+        Self {
+            profiles,
+            active: "default".to_string(),
+        }
     }
 
     pub fn register(&mut self, profile: ExecutionProfile) {
@@ -82,51 +89,97 @@ impl ProfileEngine {
         }
     }
 
-    pub fn active(&self) -> &ExecutionProfile { &self.profiles[&self.active] }
-    pub fn get(&self, name: &str) -> Option<&ExecutionProfile> { self.profiles.get(name) }
-    pub fn list(&self) -> Vec<&str> { self.profiles.keys().map(|s| s.as_str()).collect() }
+    pub fn active(&self) -> &ExecutionProfile {
+        &self.profiles[&self.active]
+    }
+    pub fn get(&self, name: &str) -> Option<&ExecutionProfile> {
+        self.profiles.get(name)
+    }
+    pub fn list(&self) -> Vec<&str> {
+        self.profiles.keys().map(|s| s.as_str()).collect()
+    }
 
     /// Build standard profiles.
     pub fn build_standard(&mut self) {
         let dev = ExecutionProfile {
-            name: "development".into(), description: "Fast iteration, minimal verification".into(),
-            loop_depth: 2, verification_enabled: false, checkpoint_every_step: false,
-            max_retries: 1, telemetry_level: 1, reasoning_depth: 2,
-            prefer_local: true, cost_budget: 0.1, max_latency_ms: 10000,
-            record_executions: true, update_provider_learning: true, update_benchmarks: false,
+            name: "development".into(),
+            description: "Fast iteration, minimal verification".into(),
+            loop_depth: 2,
+            verification_enabled: false,
+            checkpoint_every_step: false,
+            max_retries: 1,
+            telemetry_level: 1,
+            reasoning_depth: 2,
+            prefer_local: true,
+            cost_budget: 0.1,
+            max_latency_ms: 10000,
+            record_executions: true,
+            update_provider_learning: true,
+            update_benchmarks: false,
         };
         self.register(dev);
 
         let research = ExecutionProfile {
-            name: "research".into(), description: "Deep exploration, high verification".into(),
-            loop_depth: 10, verification_enabled: true, checkpoint_every_step: true,
-            max_retries: 5, telemetry_level: 3, reasoning_depth: 5,
-            prefer_local: false, cost_budget: 10.0, max_latency_ms: 120000,
-            record_executions: true, update_provider_learning: true, update_benchmarks: true,
+            name: "research".into(),
+            description: "Deep exploration, high verification".into(),
+            loop_depth: 10,
+            verification_enabled: true,
+            checkpoint_every_step: true,
+            max_retries: 5,
+            telemetry_level: 3,
+            reasoning_depth: 5,
+            prefer_local: false,
+            cost_budget: 10.0,
+            max_latency_ms: 120000,
+            record_executions: true,
+            update_provider_learning: true,
+            update_benchmarks: true,
         };
         self.register(research);
 
         let yolo = ExecutionProfile {
-            name: "yolo".into(), description: "Maximum speed, minimal safety".into(),
-            loop_depth: 1, verification_enabled: false, checkpoint_every_step: false,
-            max_retries: 0, telemetry_level: 0, reasoning_depth: 1,
-            prefer_local: true, cost_budget: 0.01, max_latency_ms: 5000,
-            record_executions: false, update_provider_learning: false, update_benchmarks: false,
+            name: "yolo".into(),
+            description: "Maximum speed, minimal safety".into(),
+            loop_depth: 1,
+            verification_enabled: false,
+            checkpoint_every_step: false,
+            max_retries: 0,
+            telemetry_level: 0,
+            reasoning_depth: 1,
+            prefer_local: true,
+            cost_budget: 0.01,
+            max_latency_ms: 5000,
+            record_executions: false,
+            update_provider_learning: false,
+            update_benchmarks: false,
         };
         self.register(yolo);
 
         let enterprise = ExecutionProfile {
-            name: "enterprise".into(), description: "Maximum safety, governance, audit".into(),
-            loop_depth: 3, verification_enabled: true, checkpoint_every_step: true,
-            max_retries: 3, telemetry_level: 3, reasoning_depth: 3,
-            prefer_local: false, cost_budget: 100.0, max_latency_ms: 60000,
-            record_executions: true, update_provider_learning: false, update_benchmarks: false,
+            name: "enterprise".into(),
+            description: "Maximum safety, governance, audit".into(),
+            loop_depth: 3,
+            verification_enabled: true,
+            checkpoint_every_step: true,
+            max_retries: 3,
+            telemetry_level: 3,
+            reasoning_depth: 3,
+            prefer_local: false,
+            cost_budget: 100.0,
+            max_latency_ms: 60000,
+            record_executions: true,
+            update_provider_learning: false,
+            update_benchmarks: false,
         };
         self.register(enterprise);
     }
 }
 
-impl Default for ProfileEngine { fn default() -> Self { Self::new() } }
+impl Default for ProfileEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

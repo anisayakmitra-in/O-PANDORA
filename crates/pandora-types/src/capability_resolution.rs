@@ -92,7 +92,9 @@ pub struct ProviderBenchmarkRegistry {
 }
 
 impl ProviderBenchmarkRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Register a provider with its benchmark data.
     pub fn register(&mut self, entry: ProviderEntry) {
@@ -109,7 +111,9 @@ impl ProviderBenchmarkRegistry {
 
     /// Get ranked models for a domain.
     pub fn ranked_for_domain(&self, domain: &str) -> Vec<(String, f64)> {
-        let mut results: Vec<(String, f64)> = self.providers.iter()
+        let mut results: Vec<(String, f64)> = self
+            .providers
+            .iter()
             .filter_map(|p| p.domain_scores.get(domain).map(|s| (p.model.clone(), *s)))
             .collect();
         results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -132,21 +136,32 @@ impl CapabilityResolutionEngine {
     }
 
     pub fn with_weights(weights: ResolutionWeights) -> Self {
-        Self { weights, registry: ProviderBenchmarkRegistry::new() }
+        Self {
+            weights,
+            registry: ProviderBenchmarkRegistry::new(),
+        }
     }
 
-    pub fn registry(&self) -> &ProviderBenchmarkRegistry { &self.registry }
-    pub fn registry_mut(&mut self) -> &mut ProviderBenchmarkRegistry { &mut self.registry }
+    pub fn registry(&self) -> &ProviderBenchmarkRegistry {
+        &self.registry
+    }
+    pub fn registry_mut(&mut self) -> &mut ProviderBenchmarkRegistry {
+        &mut self.registry
+    }
 
     /// Resolve a capability request into ranked candidates.
     pub fn resolve(&self, request: &CapabilityRequest) -> Vec<CapabilityCandidate> {
-        let mut candidates: Vec<CapabilityCandidate> = self.registry.providers.iter()
+        let mut candidates: Vec<CapabilityCandidate> = self
+            .registry
+            .providers
+            .iter()
             .filter(|p| self.meets_constraints(p, &request.constraints))
             .map(|p| self.score_candidate(p, request))
             .collect();
 
         candidates.sort_by(|a, b| {
-            b.overall_score.partial_cmp(&a.overall_score)
+            b.overall_score
+                .partial_cmp(&a.overall_score)
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
         candidates
@@ -163,8 +178,16 @@ impl CapabilityResolutionEngine {
     }
 
     /// Score a single provider against a request.
-    fn score_candidate(&self, entry: &ProviderEntry, request: &CapabilityRequest) -> CapabilityCandidate {
-        let domain_score = entry.domain_scores.get(&request.domain).copied().unwrap_or(50.0);
+    fn score_candidate(
+        &self,
+        entry: &ProviderEntry,
+        request: &CapabilityRequest,
+    ) -> CapabilityCandidate {
+        let domain_score = entry
+            .domain_scores
+            .get(&request.domain)
+            .copied()
+            .unwrap_or(50.0);
         let cost_score = self.normalize_cost(entry.cost);
         let latency_score = self.normalize_latency(entry.latency_ms);
         let context_score = self.normalize_context(entry.context_limit);
@@ -188,33 +211,53 @@ impl CapabilityResolutionEngine {
     }
 
     /// Check if a provider meets all constraints.
-    fn meets_constraints(&self, entry: &ProviderEntry, constraints: &CapabilityConstraints) -> bool {
+    fn meets_constraints(
+        &self,
+        entry: &ProviderEntry,
+        constraints: &CapabilityConstraints,
+    ) -> bool {
         if let Some(max_cost) = constraints.max_cost {
-            if entry.cost > max_cost { return false; }
+            if entry.cost > max_cost {
+                return false;
+            }
         }
         if let Some(min_score) = constraints.min_score {
-            let avg: f64 = entry.domain_scores.values().sum::<f64>()
-                / entry.domain_scores.len().max(1) as f64;
-            if avg < min_score { return false; }
+            let avg: f64 =
+                entry.domain_scores.values().sum::<f64>() / entry.domain_scores.len().max(1) as f64;
+            if avg < min_score {
+                return false;
+            }
         }
         if let Some(max_lat) = constraints.max_latency_ms {
-            if entry.latency_ms > max_lat as f64 { return false; }
+            if entry.latency_ms > max_lat as f64 {
+                return false;
+            }
         }
-        if constraints.require_tools && !entry.supports_tools { return false; }
-        if constraints.require_vision && !entry.supports_vision { return false; }
+        if constraints.require_tools && !entry.supports_tools {
+            return false;
+        }
+        if constraints.require_vision && !entry.supports_vision {
+            return false;
+        }
         if let Some(min_ctx) = constraints.min_context {
-            if entry.context_limit < min_ctx { return false; }
+            if entry.context_limit < min_ctx {
+                return false;
+            }
         }
         true
     }
 
     fn normalize_cost(&self, cost: f64) -> f64 {
-        if cost <= 0.0 { return 1.0; }
+        if cost <= 0.0 {
+            return 1.0;
+        }
         (1.0 / (1.0 + cost)).min(1.0)
     }
 
     fn normalize_latency(&self, ms: f64) -> f64 {
-        if ms <= 0.0 { return 1.0; }
+        if ms <= 0.0 {
+            return 1.0;
+        }
         (1.0 / (1.0 + ms / 1000.0)).min(1.0)
     }
 
@@ -224,7 +267,9 @@ impl CapabilityResolutionEngine {
 }
 
 impl Default for CapabilityResolutionEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -234,16 +279,34 @@ mod tests {
     fn sample_engine() -> CapabilityResolutionEngine {
         let mut engine = CapabilityResolutionEngine::new();
         engine.registry_mut().register(ProviderEntry {
-            model: "claude-sonnet-4".into(), provider: "anthropic".into(),
-            domain_scores: HashMap::from([("rust".into(), 95.0), ("reasoning".into(), 92.0), ("coding".into(), 93.0)]),
-            cost: 0.015, latency_ms: 800.0, context_limit: 200000,
-            supports_tools: true, supports_vision: true, is_offline: false,
+            model: "claude-sonnet-4".into(),
+            provider: "anthropic".into(),
+            domain_scores: HashMap::from([
+                ("rust".into(), 95.0),
+                ("reasoning".into(), 92.0),
+                ("coding".into(), 93.0),
+            ]),
+            cost: 0.015,
+            latency_ms: 800.0,
+            context_limit: 200000,
+            supports_tools: true,
+            supports_vision: true,
+            is_offline: false,
         });
         engine.registry_mut().register(ProviderEntry {
-            model: "qwen3-coder".into(), provider: "ollama".into(),
-            domain_scores: HashMap::from([("rust".into(), 88.0), ("coding".into(), 90.0), ("python".into(), 91.0)]),
-            cost: 0.0, latency_ms: 200.0, context_limit: 32000,
-            supports_tools: true, supports_vision: false, is_offline: true,
+            model: "qwen3-coder".into(),
+            provider: "ollama".into(),
+            domain_scores: HashMap::from([
+                ("rust".into(), 88.0),
+                ("coding".into(), 90.0),
+                ("python".into(), 91.0),
+            ]),
+            cost: 0.0,
+            latency_ms: 200.0,
+            context_limit: 32000,
+            supports_tools: true,
+            supports_vision: false,
+            is_offline: true,
         });
         engine
     }
@@ -260,14 +323,23 @@ mod tests {
     fn constraints_filter_providers() {
         let mut engine = CapabilityResolutionEngine::new();
         engine.registry_mut().register(ProviderEntry {
-            model: "cheap-model".into(), provider: "local".into(),
+            model: "cheap-model".into(),
+            provider: "local".into(),
             domain_scores: HashMap::from([("coding".into(), 60.0)]),
-            cost: 0.001, latency_ms: 100.0, context_limit: 4096,
-            supports_tools: false, supports_vision: false, is_offline: true,
+            cost: 0.001,
+            latency_ms: 100.0,
+            context_limit: 4096,
+            supports_tools: false,
+            supports_vision: false,
+            is_offline: true,
         });
         let request = CapabilityRequest {
-            domain: "coding".into(), task_type: "general".into(),
-            constraints: CapabilityConstraints { min_score: Some(80.0), ..Default::default() },
+            domain: "coding".into(),
+            task_type: "general".into(),
+            constraints: CapabilityConstraints {
+                min_score: Some(80.0),
+                ..Default::default()
+            },
         };
         let results = engine.resolve(&request);
         assert!(results.is_empty());

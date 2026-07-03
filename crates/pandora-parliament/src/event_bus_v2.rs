@@ -6,9 +6,9 @@
 //!   - Event replay for late-joining subscribers
 //!   - Optional persistence for audit
 
-use std::collections::{HashMap, VecDeque};
-use std::fmt::Debug;
 use chrono::{DateTime, Utc};
+use std::collections::VecDeque;
+use std::fmt::Debug;
 
 /// A typed event with routing metadata.
 #[derive(Debug, Clone)]
@@ -23,16 +23,40 @@ pub struct TypedEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum EventSeverity { Debug, Info, Warn, Error, Critical }
+pub enum EventSeverity {
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Critical,
+}
 
-impl EventSeverity { pub fn name(&self) -> &'static str { match self { EventSeverity::Debug => "debug", EventSeverity::Info => "info", EventSeverity::Warn => "warn", EventSeverity::Error => "error", EventSeverity::Critical => "critical" } } }
+impl EventSeverity {
+    pub fn name(&self) -> &'static str {
+        match self {
+            EventSeverity::Debug => "debug",
+            EventSeverity::Info => "info",
+            EventSeverity::Warn => "warn",
+            EventSeverity::Error => "error",
+            EventSeverity::Critical => "critical",
+        }
+    }
+}
 
 impl TypedEvent {
-    pub fn new(event_type: impl Into<String>, source: impl Into<String>, domain: impl Into<String>) -> Self {
+    pub fn new(
+        event_type: impl Into<String>,
+        source: impl Into<String>,
+        domain: impl Into<String>,
+    ) -> Self {
         Self {
             event_id: format!("evt-{:x}", 42u64),
-            event_type: event_type.into(), source: source.into(), domain: domain.into(),
-            severity: EventSeverity::Info, payload: None, timestamp: Utc::now(),
+            event_type: event_type.into(),
+            source: source.into(),
+            domain: domain.into(),
+            severity: EventSeverity::Info,
+            payload: None,
+            timestamp: Utc::now(),
         }
     }
 }
@@ -48,10 +72,24 @@ pub struct EventFilter {
 
 impl EventFilter {
     pub fn matches(&self, event: &TypedEvent) -> bool {
-        if !self.event_types.is_empty() && !self.event_types.contains(&event.event_type) { return false; }
-        if !self.domains.is_empty() && !self.domains.contains(&event.domain) { return false; }
-        if !self.sources.is_empty() && !self.sources.contains(&event.source) { return false; }
-        let sev = |s: &EventSeverity| -> u8 { match s { EventSeverity::Debug => 0, EventSeverity::Info => 1, EventSeverity::Warn => 2, EventSeverity::Error => 3, EventSeverity::Critical => 4 } };
+        if !self.event_types.is_empty() && !self.event_types.contains(&event.event_type) {
+            return false;
+        }
+        if !self.domains.is_empty() && !self.domains.contains(&event.domain) {
+            return false;
+        }
+        if !self.sources.is_empty() && !self.sources.contains(&event.source) {
+            return false;
+        }
+        let sev = |s: &EventSeverity| -> u8 {
+            match s {
+                EventSeverity::Debug => 0,
+                EventSeverity::Info => 1,
+                EventSeverity::Warn => 2,
+                EventSeverity::Error => 3,
+                EventSeverity::Critical => 4,
+            }
+        };
         sev(&event.severity) >= sev(&self.min_severity)
     }
 }
@@ -70,25 +108,39 @@ pub struct EventBusV2 {
 }
 
 impl EventBusV2 {
-    pub fn new() -> Self { Self { events: VecDeque::new(), subscribers: Vec::new(), max_history: 1000 } }
+    pub fn new() -> Self {
+        Self {
+            events: VecDeque::new(),
+            subscribers: Vec::new(),
+            max_history: 1000,
+        }
+    }
 
     /// Publish a typed event.
     pub fn publish(&mut self, event: TypedEvent) {
         self.events.push_back(event);
-        while self.events.len() > self.max_history { self.events.pop_front(); }
+        while self.events.len() > self.max_history {
+            self.events.pop_front();
+        }
     }
 
     /// Register a subscriber.
     pub fn subscribe(&mut self, id: impl Into<String>) -> String {
         let sid = id.into();
-        self.subscribers.push(EventSubscriber { id: sid.clone(), filter: None });
+        self.subscribers.push(EventSubscriber {
+            id: sid.clone(),
+            filter: None,
+        });
         sid
     }
 
     /// Subscribe with a filter.
     pub fn subscribe_filtered(&mut self, id: impl Into<String>, filter: EventFilter) -> String {
         let sid = id.into();
-        self.subscribers.push(EventSubscriber { id: sid.clone(), filter: Some(filter) });
+        self.subscribers.push(EventSubscriber {
+            id: sid.clone(),
+            filter: Some(filter),
+        });
         sid
     }
 
@@ -99,12 +151,17 @@ impl EventBusV2 {
                 Some(filter) => self.events.iter().filter(|e| filter.matches(e)).collect(),
                 None => self.events.iter().collect(),
             }
-        } else { Vec::new() }
+        } else {
+            Vec::new()
+        }
     }
 
     /// Get all events since a count.
     pub fn events_since(&self, count: usize) -> &[TypedEvent] {
-        let start = self.events.len().saturating_sub(self.events.len() - count.min(self.events.len()));
+        let start = self
+            .events
+            .len()
+            .saturating_sub(self.events.len() - count.min(self.events.len()));
         &self.events.as_slices().0[start..]
     }
 
@@ -115,13 +172,28 @@ impl EventBusV2 {
 
     /// Find events by severity threshold.
     pub fn by_severity(&self, min: EventSeverity) -> Vec<&TypedEvent> {
-        let sev = |s: &EventSeverity| -> u8 { match s { EventSeverity::Debug => 0, EventSeverity::Info => 1, EventSeverity::Warn => 2, EventSeverity::Error => 3, EventSeverity::Critical => 4 } };
+        let sev = |s: &EventSeverity| -> u8 {
+            match s {
+                EventSeverity::Debug => 0,
+                EventSeverity::Info => 1,
+                EventSeverity::Warn => 2,
+                EventSeverity::Error => 3,
+                EventSeverity::Critical => 4,
+            }
+        };
         let min_s = sev(&min);
-        self.events.iter().filter(|e| sev(&e.severity) >= min_s).collect()
+        self.events
+            .iter()
+            .filter(|e| sev(&e.severity) >= min_s)
+            .collect()
     }
 
-    pub fn event_count(&self) -> usize { self.events.len() }
-    pub fn subscriber_count(&self) -> usize { self.subscribers.len() }
+    pub fn event_count(&self) -> usize {
+        self.events.len()
+    }
+    pub fn subscriber_count(&self) -> usize {
+        self.subscribers.len()
+    }
 
     /// Replay all events to a new subscriber.
     pub fn replay_all(&self) -> impl Iterator<Item = &TypedEvent> {
@@ -129,7 +201,11 @@ impl EventBusV2 {
     }
 }
 
-impl Default for EventBusV2 { fn default() -> Self { Self::new() } }
+impl Default for EventBusV2 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -146,9 +222,15 @@ mod tests {
     #[test]
     fn subscriber_filtering() {
         let mut bus = EventBusV2::new();
-        let sid = bus.subscribe_filtered("test-sub", EventFilter {
-            event_types: vec!["execution.completed".into()], domains: vec![], min_severity: EventSeverity::Info, sources: vec![],
-        });
+        let sid = bus.subscribe_filtered(
+            "test-sub",
+            EventFilter {
+                event_types: vec!["execution.completed".into()],
+                domains: vec![],
+                min_severity: EventSeverity::Info,
+                sources: vec![],
+            },
+        );
         bus.publish(TypedEvent::new("execution.completed", "orch", "coding"));
         bus.publish(TypedEvent::new("benchmark.updated", "bench", "coding"));
         let events = bus.events_for(&sid);
@@ -178,7 +260,9 @@ mod tests {
     #[test]
     fn replay_all() {
         let mut bus = EventBusV2::new();
-        for i in 0..5 { bus.publish(TypedEvent::new(format!("e{}", i), "s", "t")); }
+        for i in 0..5 {
+            bus.publish(TypedEvent::new(format!("e{}", i), "s", "t"));
+        }
         let replayed: Vec<&TypedEvent> = bus.replay_all().collect();
         assert_eq!(replayed.len(), 5);
     }

@@ -9,9 +9,8 @@
 //!
 //! One workflow, many loop strategies.
 
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use crate::runtime_context::{ExecutionProperties, RuntimeContext};
+use crate::runtime_context::RuntimeContext;
+use serde::Serialize;
 
 /// The type of work a workflow step performs.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
@@ -136,10 +135,10 @@ impl ExecutionGraph {
 
     /// Get the steps that have no unsatisfied dependencies.
     pub fn ready_steps(&self, completed: &[String]) -> Vec<&WorkflowStep> {
-        self.steps.iter()
+        self.steps
+            .iter()
             .filter(|s| {
-                !completed.contains(&s.id)
-                    && s.depends_on.iter().all(|dep| completed.contains(dep))
+                !completed.contains(&s.id) && s.depends_on.iter().all(|dep| completed.contains(dep))
             })
             .collect()
     }
@@ -207,7 +206,7 @@ impl WorkflowDefinition {
         self
     }
 
-    pub fn instantiate(&self, context: &RuntimeContext) -> ExecutionGraph {
+    pub fn instantiate(&self, _context: &RuntimeContext) -> ExecutionGraph {
         let mut graph = ExecutionGraph::new(&self.name);
         for step in &self.steps {
             graph.add_step(step.clone());
@@ -291,10 +290,7 @@ mod tests {
     #[test]
     fn topological_sort_respects_dependencies() {
         let mut graph = ExecutionGraph::new("deps");
-        graph.add_step(
-            WorkflowStep::new("b", StepKind::Execute, "Step B")
-                .depends_on("a")
-        );
+        graph.add_step(WorkflowStep::new("b", StepKind::Execute, "Step B").depends_on("a"));
         graph.add_step(WorkflowStep::new("a", StepKind::Plan, "Step A"));
         let order = graph.topological_sort();
         assert_eq!(order.len(), 2);
@@ -305,10 +301,7 @@ mod tests {
     #[test]
     fn ready_steps_tracks_completion() {
         let mut graph = ExecutionGraph::new("test");
-        graph.add_step(
-            WorkflowStep::new("b", StepKind::Execute, "B")
-                .depends_on("a")
-        );
+        graph.add_step(WorkflowStep::new("b", StepKind::Execute, "B").depends_on("a"));
         graph.add_step(WorkflowStep::new("a", StepKind::Plan, "A"));
 
         // Before any completion: only A (no deps) is ready
@@ -326,8 +319,9 @@ mod tests {
     fn workflow_definition_instantiate() {
         let def = WorkflowDefinition::new("code-review")
             .with_step(WorkflowStep::new("read", StepKind::Review, "Read code"))
-            .with_step(WorkflowStep::new("analyze", StepKind::Analyze, "Analyze")
-                .depends_on("read"));
+            .with_step(
+                WorkflowStep::new("analyze", StepKind::Analyze, "Analyze").depends_on("read"),
+            );
 
         let ctx = RuntimeContext::new("test".to_string(), "proj".to_string());
         let graph = def.instantiate(&ctx);

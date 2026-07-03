@@ -1,9 +1,9 @@
 //! Capability Graph Engine — dependency-aware capability reasoning.
 
-use std::collections::{HashMap, HashSet, VecDeque};
-use serde::{Deserialize, Serialize};
-use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::algo::has_path_connecting;
+use petgraph::graph::{DiGraph, NodeIndex};
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CapabilityNode {
@@ -18,7 +18,11 @@ pub struct CapabilityNode {
 }
 
 impl CapabilityNode {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, category: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        category: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -39,7 +43,12 @@ pub struct CapabilityGraph {
 }
 
 impl CapabilityGraph {
-    pub fn new() -> Self { Self { graph: DiGraph::new(), node_indices: HashMap::new() } }
+    pub fn new() -> Self {
+        Self {
+            graph: DiGraph::new(),
+            node_indices: HashMap::new(),
+        }
+    }
 
     pub fn add_node(&mut self, node: CapabilityNode) {
         let id = node.id.clone();
@@ -47,15 +56,30 @@ impl CapabilityGraph {
         self.node_indices.insert(id, idx);
     }
 
-    pub fn add_dependency(&mut self, from: &str, to: &str, relationship: &str) -> Result<(), String> {
-        let from_idx = self.node_indices.get(from).ok_or_else(|| format!("node '{}' not found", from))?;
-        let to_idx = self.node_indices.get(to).ok_or_else(|| format!("node '{}' not found", to))?;
-        self.graph.add_edge(*from_idx, *to_idx, relationship.to_string());
+    pub fn add_dependency(
+        &mut self,
+        from: &str,
+        to: &str,
+        relationship: &str,
+    ) -> Result<(), String> {
+        let from_idx = self
+            .node_indices
+            .get(from)
+            .ok_or_else(|| format!("node '{}' not found", from))?;
+        let to_idx = self
+            .node_indices
+            .get(to)
+            .ok_or_else(|| format!("node '{}' not found", to))?;
+        self.graph
+            .add_edge(*from_idx, *to_idx, relationship.to_string());
         Ok(())
     }
 
     pub fn is_available(&self, id: &str) -> bool {
-        self.node_indices.get(id).map(|idx| self.graph[*idx].installed).unwrap_or(false)
+        self.node_indices
+            .get(id)
+            .map(|idx| self.graph[*idx].installed)
+            .unwrap_or(false)
     }
 
     pub fn dependencies_of(&self, id: &str) -> Vec<&CapabilityNode> {
@@ -69,7 +93,10 @@ impl CapabilityGraph {
         queue.push_back(start);
         visited.insert(start);
         while let Some(current) = queue.pop_front() {
-            for neighbor in self.graph.neighbors_directed(current, petgraph::Direction::Outgoing) {
+            for neighbor in self
+                .graph
+                .neighbors_directed(current, petgraph::Direction::Outgoing)
+            {
                 if visited.insert(neighbor) {
                     result.push(&self.graph[neighbor]);
                     queue.push_back(neighbor);
@@ -80,7 +107,10 @@ impl CapabilityGraph {
     }
 
     pub fn missing_capabilities(&self, id: &str) -> Vec<&CapabilityNode> {
-        self.dependencies_of(id).into_iter().filter(|n| !n.installed).collect()
+        self.dependencies_of(id)
+            .into_iter()
+            .filter(|n| !n.installed)
+            .collect()
     }
 
     pub fn find_path(&self, from: &str, to: &str) -> Option<Vec<String>> {
@@ -104,7 +134,10 @@ impl CapabilityGraph {
                     path.reverse();
                     return Some(path);
                 }
-                for neighbor in self.graph.neighbors_directed(current, petgraph::Direction::Outgoing) {
+                for neighbor in self
+                    .graph
+                    .neighbors_directed(current, petgraph::Direction::Outgoing)
+                {
                     if visited.insert(neighbor) {
                         parent.insert(neighbor, current);
                         queue.push_back(neighbor);
@@ -116,14 +149,20 @@ impl CapabilityGraph {
     }
 
     pub fn suggest_install(&self, id: &str) -> Vec<(&CapabilityNode, Vec<&CapabilityNode>)> {
-        self.missing_capabilities(id).into_iter().map(|cap| {
-            let deps = self.dependencies_of(&cap.id);
-            (cap, deps)
-        }).collect()
+        self.missing_capabilities(id)
+            .into_iter()
+            .map(|cap| {
+                let deps = self.dependencies_of(&cap.id);
+                (cap, deps)
+            })
+            .collect()
     }
 
     pub fn by_category(&self, category: &str) -> Vec<&CapabilityNode> {
-        self.graph.node_weights().filter(|n| n.category == category).collect()
+        self.graph
+            .node_weights()
+            .filter(|n| n.category == category)
+            .collect()
     }
 
     pub fn get(&self, id: &str) -> Option<&CapabilityNode> {
@@ -140,21 +179,37 @@ impl CapabilityGraph {
         }
     }
 
-    pub fn node_count(&self) -> usize { self.graph.node_count() }
-    pub fn edge_count(&self) -> usize { self.graph.edge_count() }
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
+    }
+    pub fn edge_count(&self) -> usize {
+        self.graph.edge_count()
+    }
 }
 
-impl Default for CapabilityGraph { fn default() -> Self { Self::new() } }
+impl Default for CapabilityGraph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 pub struct CapabilityGraphEngine {
     graph: CapabilityGraph,
 }
 
 impl CapabilityGraphEngine {
-    pub fn new() -> Self { Self { graph: CapabilityGraph::new() } }
+    pub fn new() -> Self {
+        Self {
+            graph: CapabilityGraph::new(),
+        }
+    }
 
-    pub fn graph(&self) -> &CapabilityGraph { &self.graph }
-    pub fn graph_mut(&mut self) -> &mut CapabilityGraph { &mut self.graph }
+    pub fn graph(&self) -> &CapabilityGraph {
+        &self.graph
+    }
+    pub fn graph_mut(&mut self) -> &mut CapabilityGraph {
+        &mut self.graph
+    }
 
     pub fn analyze_task(&self, task: &str, domain: &str) -> TaskCapabilityAnalysis {
         let relevant_caps = self.graph.by_category(domain);
@@ -166,12 +221,29 @@ impl CapabilityGraphEngine {
             total_required: relevant_caps.len(),
             available,
             missing,
-            missing_capabilities: relevant_caps.iter().filter(|c| !c.installed).map(|c| c.name.clone()).collect(),
+            missing_capabilities: relevant_caps
+                .iter()
+                .filter(|c| !c.installed)
+                .map(|c| c.name.clone())
+                .collect(),
             suggestion: if missing > 0 {
-                format!("Missing {} capabilities in {}. Consider installing: {}", missing, domain,
-                    relevant_caps.iter().filter(|c| !c.installed).map(|c| c.name.as_str()).collect::<Vec<_>>().join(", "))
+                format!(
+                    "Missing {} capabilities in {}. Consider installing: {}",
+                    missing,
+                    domain,
+                    relevant_caps
+                        .iter()
+                        .filter(|c| !c.installed)
+                        .map(|c| c.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             } else {
-                format!("All {} capabilities in {} are available.", relevant_caps.len(), domain)
+                format!(
+                    "All {} capabilities in {} are available.",
+                    relevant_caps.len(),
+                    domain
+                )
             },
         }
     }
@@ -179,24 +251,54 @@ impl CapabilityGraphEngine {
     pub fn build_standard(&mut self) {
         self.add("verilog", "Verilog", "eda", true, "yosys");
         self.add("vhdl", "VHDL", "eda", true, "ghdl");
-        let simulation = self.add("simulation", "Simulation", "eda", false, "verilator");
-        let synthesis = self.add("synthesis", "Synthesis", "eda", false, "yosys");
-        let timing = self.add("timing-analysis", "Timing Analysis", "eda", false, "opensta");
-        let fpga = self.add("fpga-programming", "FPGA Programming", "eda", false, "nextpnr");
-        let waveform = self.add("waveform-viewer", "Waveform Viewer", "eda", false, "gtkwave");
+        let _simulation = self.add("simulation", "Simulation", "eda", false, "verilator");
+        let _synthesis = self.add("synthesis", "Synthesis", "eda", false, "yosys");
+        let _timing = self.add(
+            "timing-analysis",
+            "Timing Analysis",
+            "eda",
+            false,
+            "opensta",
+        );
+        let _fpga = self.add(
+            "fpga-programming",
+            "FPGA Programming",
+            "eda",
+            false,
+            "nextpnr",
+        );
+        let _waveform = self.add(
+            "waveform-viewer",
+            "Waveform Viewer",
+            "eda",
+            false,
+            "gtkwave",
+        );
 
-        let _ = self.graph.add_dependency("simulation", "waveform-viewer", "requires");
-        let _ = self.graph.add_dependency("synthesis", "timing-analysis", "requires");
-        let _ = self.graph.add_dependency("fpga-programming", "synthesis", "requires");
-        let _ = self.graph.add_dependency("simulation", "verilog", "requires");
+        let _ = self
+            .graph
+            .add_dependency("simulation", "waveform-viewer", "requires");
+        let _ = self
+            .graph
+            .add_dependency("synthesis", "timing-analysis", "requires");
+        let _ = self
+            .graph
+            .add_dependency("fpga-programming", "synthesis", "requires");
+        let _ = self
+            .graph
+            .add_dependency("simulation", "verilog", "requires");
 
         // Rust capabilities
         self.add("rust-compiler", "Rust Compiler", "rust", true, "rustc");
         self.add("clippy", "Clippy", "rust", true, "clippy");
-        let wasm = self.add("wasm-target", "WASM Target", "rust", false, "wasm-pack");
+        let _wasm = self.add("wasm-target", "WASM Target", "rust", false, "wasm-pack");
 
-        let _ = self.graph.add_dependency("clippy", "rust-compiler", "requires");
-        let _ = self.graph.add_dependency("wasm-target", "clippy", "requires");
+        let _ = self
+            .graph
+            .add_dependency("clippy", "rust-compiler", "requires");
+        let _ = self
+            .graph
+            .add_dependency("wasm-target", "clippy", "requires");
     }
 
     fn add(&mut self, id: &str, name: &str, category: &str, installed: bool, hint: &str) -> String {
@@ -208,7 +310,11 @@ impl CapabilityGraphEngine {
     }
 }
 
-impl Default for CapabilityGraphEngine { fn default() -> Self { Self::new() } }
+impl Default for CapabilityGraphEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskCapabilityAnalysis {
@@ -232,7 +338,10 @@ mod tests {
     }
 
     #[test]
-    fn graph_creation() { let engine = sample(); assert!(engine.graph().node_count() > 0); }
+    fn graph_creation() {
+        let engine = sample();
+        assert!(engine.graph().node_count() > 0);
+    }
 
     #[test]
     fn dependency_traversal() {
@@ -282,6 +391,6 @@ mod tests {
         let engine = sample();
         let eda = engine.graph().by_category("eda");
         let rust = engine.graph().by_category("rust");
-        assert!(eda.len() > 0 && rust.len() > 0);
+        assert!(!eda.is_empty() && !rust.is_empty());
     }
 }

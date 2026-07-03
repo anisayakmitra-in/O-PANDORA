@@ -8,9 +8,9 @@
 //!   L1: Distilled execution summaries, benchmark results, failure clusters
 //!   L2: Evolutionary knowledge (lineage, lessons, approved optimizations)
 
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Tier of distilled knowledge.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -55,6 +55,7 @@ impl KnowledgeNode {
 }
 
 /// The Knowledge Distillation Engine.
+#[allow(dead_code)]
 pub struct KnowledgeDistillationEngine {
     nodes: Vec<KnowledgeNode>,
     max_l0_nodes: usize,
@@ -63,11 +64,20 @@ pub struct KnowledgeDistillationEngine {
 
 impl KnowledgeDistillationEngine {
     pub fn new() -> Self {
-        Self { nodes: Vec::new(), max_l0_nodes: 1_000, max_l1_nodes: 10_000 }
+        Self {
+            nodes: Vec::new(),
+            max_l0_nodes: 1_000,
+            max_l1_nodes: 10_000,
+        }
     }
 
     /// Distill a raw telemetry string into an L0 knowledge node.
-    pub fn ingest_telemetry(&mut self, source: impl Into<String>, body: impl Into<String>, tags: Vec<String>) -> String {
+    pub fn ingest_telemetry(
+        &mut self,
+        source: impl Into<String>,
+        body: impl Into<String>,
+        tags: Vec<String>,
+    ) -> String {
         let mut node = KnowledgeNode::new(KnowledgeTier::L0, "telemetry", "");
         node.body = body.into();
         node.tags = tags;
@@ -79,7 +89,12 @@ impl KnowledgeDistillationEngine {
     }
 
     /// Promote L0 knowledge to L1 by summarizing and deduplicating.
-    pub fn distill_to_l1(&mut self, source_ids: Vec<String>, title: impl Into<String>, body: impl Into<String>) -> String {
+    pub fn distill_to_l1(
+        &mut self,
+        source_ids: Vec<String>,
+        title: impl Into<String>,
+        body: impl Into<String>,
+    ) -> String {
         let mut node = KnowledgeNode::new(KnowledgeTier::L1, "distilled_summary", title);
         node.body = body.into();
         node.source_ids = source_ids;
@@ -90,7 +105,12 @@ impl KnowledgeDistillationEngine {
     }
 
     /// Promote L1 to L2 — permanent evolutionary knowledge.
-    pub fn promote_to_l2(&mut self, source_id: &str, title: impl Into<String>, body: impl Into<String>) -> Option<String> {
+    pub fn promote_to_l2(
+        &mut self,
+        source_id: &str,
+        title: impl Into<String>,
+        body: impl Into<String>,
+    ) -> Option<String> {
         let source = self.nodes.iter().find(|n| n.id == source_id)?;
         let mut node = KnowledgeNode::new(KnowledgeTier::L2, "evolutionary", title);
         node.body = body.into();
@@ -107,15 +127,28 @@ impl KnowledgeDistillationEngine {
         let before = self.nodes.len();
         let mut seen: HashMap<String, bool> = HashMap::new();
         self.nodes.retain(|n| {
-            let key = format!("{}:{}:{}", n.tier as u8, n.kind, n.body.chars().take(50).collect::<String>());
-            if seen.contains_key(&key) { false } else { seen.insert(key, true); true }
+            let key = format!(
+                "{}:{}:{}",
+                n.tier as u8,
+                n.kind,
+                n.body.chars().take(50).collect::<String>()
+            );
+            if let std::collections::hash_map::Entry::Vacant(e) = seen.entry(key) {
+                e.insert(true);
+                true
+            } else {
+                false
+            }
         });
         before - self.nodes.len()
     }
 
     /// Cluster similar L1 nodes by shared tags.
     pub fn cluster(&self, tag: &str) -> Vec<&KnowledgeNode> {
-        self.nodes.iter().filter(|n| n.tags.contains(&tag.to_string())).collect()
+        self.nodes
+            .iter()
+            .filter(|n| n.tags.contains(&tag.to_string()))
+            .collect()
     }
 
     /// Get all nodes at a specific tier.
@@ -124,14 +157,22 @@ impl KnowledgeDistillationEngine {
     }
 
     /// Total distilled knowledge nodes.
-    pub fn knowledge_count(&self) -> usize { self.nodes.len() }
+    pub fn knowledge_count(&self) -> usize {
+        self.nodes.len()
+    }
 
     fn enforce_limits(&mut self) {
-        let l0: Vec<usize> = self.nodes.iter().enumerate()
+        let l0: Vec<usize> = self
+            .nodes
+            .iter()
+            .enumerate()
             .filter(|(_, n)| n.tier == KnowledgeTier::L0)
             .map(|(i, _)| i)
             .collect();
-        let l1: Vec<usize> = self.nodes.iter().enumerate()
+        let _l1: Vec<usize> = self
+            .nodes
+            .iter()
+            .enumerate()
             .filter(|(_, n)| n.tier == KnowledgeTier::L1)
             .map(|(i, _)| i)
             .collect();
@@ -144,7 +185,11 @@ impl KnowledgeDistillationEngine {
     }
 }
 
-impl Default for KnowledgeDistillationEngine { fn default() -> Self { Self::new() } }
+impl Default for KnowledgeDistillationEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 // =========================================================================
 // Parliament-integrated Knowledge Distillation
@@ -159,11 +204,19 @@ pub struct ParliamentDistillationService {
 
 impl ParliamentDistillationService {
     pub fn new() -> Self {
-        Self { engine: KnowledgeDistillationEngine::new(), service_history: HashMap::new() }
+        Self {
+            engine: KnowledgeDistillationEngine::new(),
+            service_history: HashMap::new(),
+        }
     }
 
     /// Ingest telemetry from any parliamentary service.
-    pub fn ingest(&mut self, service: impl Into<String>, telemetry: impl Into<String>, tags: Vec<String>) {
+    pub fn ingest(
+        &mut self,
+        service: impl Into<String>,
+        telemetry: impl Into<String>,
+        tags: Vec<String>,
+    ) {
         let service = service.into();
         let id = self.engine.ingest_telemetry(&service, telemetry, tags);
         self.service_history.entry(service).or_default().push(id);
@@ -172,8 +225,13 @@ impl ParliamentDistillationService {
     /// Distill all observations for a service into L1 summary.
     pub fn distill_service(&mut self, service: &str, summary: impl Into<String>) -> Option<String> {
         let ids = self.service_history.get(service)?;
-        if ids.is_empty() { return None; }
-        Some(self.engine.distill_to_l1(ids.clone(), format!("{} summary", service), summary))
+        if ids.is_empty() {
+            return None;
+        }
+        Some(
+            self.engine
+                .distill_to_l1(ids.clone(), format!("{} summary", service), summary),
+        )
     }
 
     /// Produce a compact report for Parliament review.
@@ -190,10 +248,16 @@ impl ParliamentDistillationService {
         }
     }
 
-    pub fn engine(&mut self) -> &mut KnowledgeDistillationEngine { &mut self.engine }
+    pub fn engine(&mut self) -> &mut KnowledgeDistillationEngine {
+        &mut self.engine
+    }
 }
 
-impl Default for ParliamentDistillationService { fn default() -> Self { Self::new() } }
+impl Default for ParliamentDistillationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParliamentDistillationReport {
@@ -212,7 +276,11 @@ mod tests {
     #[test]
     fn ingest_telemetry_creates_l0() {
         let mut engine = KnowledgeDistillationEngine::new();
-        engine.ingest_telemetry("anubis", "memory retrieval: 200ms", vec!["memory".to_string()]);
+        engine.ingest_telemetry(
+            "anubis",
+            "memory retrieval: 200ms",
+            vec!["memory".to_string()],
+        );
         assert_eq!(engine.knowledge_count(), 1);
     }
 
@@ -221,7 +289,11 @@ mod tests {
         let mut engine = KnowledgeDistillationEngine::new();
         let id1 = engine.ingest_telemetry("anubis", "timeout", vec!["memory".to_string()]);
         let id2 = engine.ingest_telemetry("anubis", "timeout again", vec!["memory".to_string()]);
-        engine.distill_to_l1(vec![id1, id2], "Memory timeouts", "ANUBIS experienced repeated timeouts");
+        engine.distill_to_l1(
+            vec![id1, id2],
+            "Memory timeouts",
+            "ANUBIS experienced repeated timeouts",
+        );
         let l1 = engine.by_tier(KnowledgeTier::L1);
         assert_eq!(l1.len(), 1);
     }
