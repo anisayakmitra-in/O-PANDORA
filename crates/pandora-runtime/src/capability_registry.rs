@@ -1,28 +1,3 @@
-use crate::capability::CapabilityDescriptor;
-
-#[derive(Debug, Clone)]
-pub struct CapabilityRegistry {
-    pub capabilities: Vec<CapabilityDescriptor>,
-}
-
-impl Default for CapabilityRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl CapabilityRegistry {
-    pub fn new() -> Self {
-        Self {
-            capabilities: Vec::new(),
-        }
-    }
-
-    pub fn register(&mut self, capability: CapabilityDescriptor) {
-        self.capabilities.push(capability);
-    }
-
-    pub fn list(&self) -> &[CapabilityDescriptor] {
-        &self.capabilities
-    }
-}
+//! Capability Registry — re-exported from pandora-capability (Phase 1A decomposition).
+#![allow(deprecated)]
+pub use pandora_capability::CapabilityRegistry;
