@@ -691,3 +691,431 @@ Not hardcoded to ANUBIS. The Memory Service advertises capabilities: Persistent,
 
 GEPA generates structured reports with: Component, Frequency, Root Cause, Confidence, Suggested Fixes, Estimated Gain, Risk. DSR converts reports into concrete implementation proposals. PANOPTES evaluates. Parliament approves or rejects.
 
+
+
+# BOOK II: Execution Runtime
+
+## 36. Recorder & Replay Engine
+
+Every execution is recorded and becomes deterministically replayable.
+
+```
+Execution
+  → ReplayId (unique per execution)
+  → ExecutionFrame (per step: id, kind, provider, duration, success, model, tokens, cost)
+  → RecordedExecution (all frames + metadata: totals, artifacts)
+  → ReplayEngine.diff() visualizes changes between two recordings
+  → ReplayEngine.trace() produces text timeline
+```
+
+The recorder is separate from the telemetry engine. Telemetry tracks execution flow for
+observability. The recorder captures execution evidence for replay, audit, and learning.
+
+## 37. Provider Learning Engine
+
+Continuous empirical model evaluation. Every execution updates model profiles.
+
+```
+ModelObservation (model, provider, domain, score, latency, cost, success, timestamp)
+  → ModelProfile (per-domain scores with confidence, success_rate, total_runs)
+  → ProviderLearningEngine.observe() updates profiles
+  → rank_for_domain(domain) returns sorted (model, score, confidence)
+  → rank_weighted() combines domain + overall scores
+  → trend() shows recent performance direction
+  → known_models() lists all tracked models
+```
+
+Confidence grows with observations. Single-observation models are marked low confidence.
+
+## 38. Failure Intelligence Engine
+
+Clusters failures from execution telemetry into root causes and generates structured reports.
+
+```
+FailureClass (15 classes: Reasoning, Tool, Provider, Harness, Gene, Memory, Network, etc.)
+  → FailureRecord (occurrence with full context)
+  → RootCause (clustered: class, frequency, confidence, related causes)
+  → FailureReport (root_cause, description, suggested_fixes, estimated_gain, risk)
+  → FailureIntelligenceEngine.ingest() → cluster() → generate_reports()
+  → ParliamentFailureMonitor watches all services, generates FailureGovernanceAction
+```
+
+Governance actions include quarantine, investigation, and automatic policy updates.
+
+## 39. Knowledge Distillation Engine
+
+Filters raw telemetry into durable knowledge. Prevents ANUBIS from exploding.
+
+```
+L0 (ephemeral telemetry)
+  → distill_to_l1() → L1 (summarized clusters with tags)
+  → promote_to_l2() → L2 (permanent evolutionary knowledge)
+  → deduplicate() removes redundant nodes
+  → cluster(tag) groups nodes by domain
+```
+
+ParliamentDistillationService per-service history tracking for governance reports.
+
+## 40. Experiment Engine
+
+Pandora's scientific method. Powered by the Benchmark Engine + Provider Learning.
+
+```
+Experiment (name, domain, variants, runs_per_variant, status)
+  → VariantRun (score, latency, cost, tokens, success, retries)
+  → analyze() computes mean, median, std_dev, confidence interval
+  → winner detection via sorted ranking
+  → recommendation text based on score thresholds
+```
+
+Powers provider ranking, workflow optimization, GEPA, DSR, engineering, and research.
+
+## 41. Capability Graph Engine
+
+Dependency-aware capability reasoning using petgraph.
+
+```
+CapabilityNode (id, label, installed, version, health)
+  → add_capability(), add_dependency()
+  → dependencies_of(id) returns all transitive deps
+  → find_path(from, to) finds shortest dependency path
+  → missing_capabilities(domain) finds uninstalled requirements
+  → analyze_task(task, domain) → TaskCapabilityAnalysis with suggestions
+  → suggest_install(domain) → ordered list of installation commands
+```
+
+Missing Verilator? Pandora tells you what to install.
+
+## 42. Execution Orchestrator
+
+The integration pipeline that wires all engines together.
+
+```
+ExecutionStage (Intent → Instruction → Context → Planning → Workflow
+  → CapabilityGraph → CapabilityResolution → ProviderLearning
+  → Loop → Execution → Recorder → Telemetry → FailureIntelligence
+  → KnowledgeDistillation → ProviderLearningFeedback → Complete)
+  → ExecutionOrchestrator.execute() runs full pipeline
+  → Each stage contributes to RuntimeContext
+  → No engine invents its own state
+```
+
+## 43. Policy Engine
+
+Post-execution pipelines applied after work completes.
+
+```
+Policy (name, trigger: "after_coding"|"after_research", domain_pattern)
+  → PolicyAction: Format, Lint, Test, Benchmark, UpdateDashboard, Summarize, Notify, Release
+  → PolicyEngine.register() → execute() returns matched actions
+  → Standard policies: "Standard Coding Workflow" (format → lint → test → benchmark)
+  → Policies can be disabled or prioritized
+```
+
+No subsystem needs to hardcode post-execution behavior.
+
+## 44. Profile Engine
+
+Execution profiles that change how Pandora behaves.
+
+```
+ExecutionProfile (name, loop_depth, verification_enabled, reasoning_depth,
+  cost_budget, max_latency_ms, telemetry_level)
+  → ProfileEngine defines built-in: Development, Research, YOLO, Enterprise
+  → ProfileEngine.get(name) returns profile
+  → Orchestrator.execute_with_profile() applies profile settings
+```
+
+Not prompt engineering — execution engineering.
+
+## 45. Event Bus v2
+
+Typed events with routing, filtering, and subscription.
+
+```
+PandoraEvent (id, event_type, source, domain, severity, timestamp, payload)
+  → EventBusV2.publish() dispatches to matching subscribers
+  → EventFilter filters by type, domain, severity, source
+  → Subscriber trait for typed handlers
+  → Supports event replay for resilience verification
+```
+
+## 46. Runtime Decomposition
+
+The pandora-runtime monolith (168 modules) should be split:
+
+| Module | Target |
+|---|---|
+| Workflow | pandora-workflow |
+| Loop | pandora-loops |
+| Capability | pandora-types |
+| Telemetry | pandora-telemetry |
+| Recorder | pandora-recorder |
+| Failure | pandora-failure |
+| Distillation | pandora-distillation |
+| Experiments | pandora-experiment |
+
+Runtime should orchestrate, not own.
+
+## 47. Priority Order
+
+```
+P0: Runtime Context, Execution Properties, Workflow Engine, Provider Learning,
+     Recorder + Replay, OpenTelemetry, Failure Intelligence,
+     Knowledge Distillation, Capability Graph, Experiment Engine
+P1: Policy Engine, Profile Engine, Event Bus v2
+P2: Domain Harnesses, Execution Personas, Skill System
+P3: World State Engine, Resource Governor, Device Service
+P4: Execution Scheduler, Reasoning Engine, Adaptive Memory Manager
+
+
+# BOOK III: Constitutional Execution — Terminology Freeze
+
+## 48. Layer Definitions (Frozen)
+
+| Layer | Responsibility |
+|---|---|
+| Parliament | Constitutional orchestration and governance |
+| Source Harness | Implements ONE constitutional service (Memory, Execution, Planning, Governance, Identity) |
+| Meta Harness | Applies policies, never owns services |
+| Domain Harness | Execution environment bundles (EDA, Research, Embedded) |
+| Domain Pack | Capability bundles for domains |
+| Skill | Reusable operational procedures |
+| Workflow | WHAT to execute (DAG of steps) |
+| Loop | HOW to iterate (Closed, Open, Fleet) |
+| Gene | Concrete algorithms, adapters, strategies |
+| Provider | External models, APIs, hardware |
+
+## 49. Source Harnesses Only
+
+Five constitutional Source Harnesses, never more:
+
+- ANUBIS: Memory Service
+- PHOENIX: Execution Service
+- MOIRA: Planning Service
+- PANOPTES: Governance Service
+- HADES: Identity Service
+
+Users interact with Execution Harnesses, not Source Harnesses.
+
+## 50. Meta Harnesses Only
+
+- RAHU: Planning Policy
+- KETU: Verification
+- PANOPTIKON: Security
+- Future: Performance, Debug, Enterprise, Compliance
+
+Multiple Meta Harnesses may run together.
+
+## 51. Domain Harnesses (Not Yet Built)
+
+A Domain Harness is a portable execution environment bundle:
+
+Instructions + Execution Properties + Workflow Templates + Loop Templates
++ Capability Preferences + Policies + Benchmarks + Personalities
+
+Examples: EDA Harness, Research Harness, Embedded Harness, Security Harness.
+
+## 52. Execution Personas (Not Yet Built)
+
+Execution behavior profiles that change how Pandora works without changing prompts:
+
+Debug: loop_depth=5, verification=Always, checkpoint=EveryStep, provider=Coding-first
+Research: exploration=High, open_loop=Enabled, provider_diversity=Enabled, budget=Large
+Enterprise: verification=Maximum, approval=Required, telemetry=Verbose
+
+## 53. Task Observer Engine (Not Yet Built)
+
+Constitutional subsystem that watches all execution and discovers reusable skills.
+
+Observes: execution time, retries, loop count, provider switches, successful strategies,
+tool sequences, benchmark improvements, user corrections, manual edits, abandoned workflows.
+
+Output: "What reusable skill did we just discover?"
+
+## 54. Cognitive Skill Engine (Not Yet Built)
+
+"Compiler for experience" — synthesizes skills from observed behavior.
+
+Execution → Observer → Recorder → Knowledge Distillation → Skill Synthesizer
+→ Candidate Skill → Parliament Review → Skill Registry → KUBER Palace
+
+## 55. Skill Registry (Not Yet Built)
+
+Stores reusable operational procedures. Skills are portable, versioned, and can
+be shared through KUBER Palace.
+
+Skill types: Skill, Workflow, LoopTemplate, ExecutionPersona.
+
+## 56. Capability Marketplace (Not Yet Built)
+
+KUBER distributes: Genes, Skills, Workflows, Loop Templates, Execution Personas,
+Domain Harnesses, Domain Packs, Benchmarks, Instruction Profiles,
+Reasoning Profiles, Provider Configurations, Datasets, Memory Packs.
+
+## 57. Final Architecture
+
+```
+Parliament
+  → Constitutional Runtime
+  → Service Registry
+  → Capability Resolution
+  → Execution Environment (Domain Harness)
+  → Source Harnesses (services)
+  → Meta Harnesses (policies)
+  → Genes (algorithms)
+  → Providers (external)
+```
+
+
+
+# BOOK IV: Integration & Platform Roadmap
+
+## 58. Integration Pipeline (Phase 1)
+
+Connect all existing engines into one coherent execution lifecycle:
+
+```
+Task → Instruction → Context → RuntimeContext → ExecutionProperties
+  → Workflow → CapabilityGraph → CapabilityResolution → ProviderLearning
+  → Loop → Execution → Recorder → Telemetry → FailureIntelligence
+  → KnowledgeDistillation → ANUBIS → ProviderLearning feedback → Done
+```
+
+Every engine contributes to one stage. All state flows through RuntimeContext.
+
+## 59. Experiment Engine (Phase 2) — Complete
+
+Pandora's scientific method for comparative benchmarking.
+See Section 40 for details.
+
+## 60. Skill System (Phase 3)
+
+Task Observer → Pattern Discovery → Skill Synthesizer → Skill Benchmark
+→ Skill Registry → ANUBIS
+
+Pandora begins remembering HOW work gets done, not just facts.
+
+Skill types: Skill (operational procedure), Workflow (execution DAG),
+Loop Template (iteration pattern), Execution Persona (behavior profile).
+
+## 61. Domain Harnesses (Phase 4)
+
+User-installable execution environments. Examples:
+
+- EDA Harness: Verilog, SPICE, OpenROAD, Timing Analysis, Waveform Viewer
+- Research Harness: Paper collection, summarization, citation management
+- Embedded Harness: Cross-compilation, flashing, debugging
+- Security Harness: Penetration testing, vulnerability scanning, compliance
+
+## 62. Execution Personas (Phase 5)
+
+Execution behavior profiles that change execution properties automatically.
+Not prompt engineering — execution engineering.
+
+See Section 52 for details.
+
+## 63. World State Engine (Phase 6)
+
+Unified runtime view of everything Pandora knows:
+
+Files, Projects, Devices, Containers, Providers, Models, Loops, Services,
+Capabilities, Network, Secrets, Variables.
+
+## 64. Resource Governor (Phase 7)
+
+Every execution asks: Should I run locally? Need cloud? Need quantization?
+Need batching? Need another provider? Need compression? Need checkpoint?
+
+Decides: model selection, hardware allocation, token budget, cost optimization.
+
+## 65. Device Service (Phase 7b)
+
+Multi-platform execution: Android, Windows, Linux, Mac, Browser, SSH, Docker, VM, Cloud.
+
+Every device becomes another provider.
+
+## 66. Execution Scheduler (Phase 8)
+
+OS-level execution scheduling: immediate, delayed, cron, event-triggered,
+dependency-triggered, retry queues, background maintenance,
+recurring benchmarks, overnight learning, idle-time optimization.
+
+## 67. Reasoning Engine / Cognition Engine (Phase 9)
+
+Sits above MOIRA. Decides what kind of cognition a task requires.
+
+Intent → Decomposition → Constraint Analysis → Capability Planning
+→ Workflow Planning → Loop Selection → Provider Planning → Execution Strategy
+
+## 68. Adaptive Memory Manager (Phase 10)
+
+L0: Execution Cache
+L1: Project Memory
+L2: User Memory
+L3: ANUBIS
+L4: Archive
+
+Every execution chooses where knowledge belongs.
+
+## 69. Execution Journal
+
+Operational history like git reflog. Different from ANUBIS, Recorder, and Replay.
+
+Every execution produces a journal entry: time, provider, workflow, cost, reason, result.
+Queryable: "What happened yesterday?" "Why did Provider X stop being used?"
+
+## 70. Trust Engine
+
+Separate from PANOPTES. PANOPTES judges. Trust accumulates evidence.
+
+Model → Benchmarks → Failures → Replay → Production Success → Community Reports → Trust Score
+
+Trust becomes another Capability Resolution signal.
+
+## 71. Extended ExecutionProperties
+
+All execution policies become declarative fields on ExecutionProperties:
+
+MemoryMode, LoopMode, ApprovalMode, ReasoningDepth, RetryPolicy, Budget, Timeout,
+FailurePolicy, CheckpointPolicy, ReplayPolicy, LearningPolicy, ExperimentPolicy,
+TelemetryPolicy, PrivacyPolicy, CompressionPolicy, CachingPolicy,
+ProviderPolicy, ContextPolicy, SkillPolicy, ObserverPolicy, MutationPolicy.
+
+No subsystem invents its own flags.
+
+## 72. Final Crate Layout
+
+```
+pandora-types        pandora-runtime        pandora-orchestrator
+pandora-workflow     pandora-loops          pandora-provider
+pandora-telemetry    pandora-recorder       pandora-failure
+pandora-distillation pandora-experiment     pandora-skills
+pandora-observer     pandora-reasoning      pandora-world
+pandora-resource     pandora-device         pandora-project
+pandora-kuber        pandora-platform-linux pandora-platform-windows
+pandora-platform-macos pandora-platform-android
+```
+
+Each crate has a single, well-defined responsibility.
+
+## 73. Final Priority Order
+
+| Priority | System | Phase |
+|---|---|---|
+| 1 | Integration Pipeline | Phase 1 |
+| 2 | Experiment Engine | Phase 2 |
+| 3 | Skill System | Phase 3 |
+| 4 | Domain Harnesses | Phase 4 |
+| 5 | Execution Personas | Phase 5 |
+| 6 | World State Engine | Phase 6 |
+| 7 | Resource Governor | Phase 7 |
+| 8 | Device Service | Phase 7b |
+| 9 | Execution Scheduler | Phase 8 |
+| 10 | Reasoning Engine | Phase 9 |
+| 11 | Adaptive Memory Manager | Phase 10 |
+| 12 | Execution Journal | — |
+| 13 | Trust Engine | — |
+| 14 | Extended ExecutionProperties | — |
+| 15 | Runtime Decomposition | §46 |
+| 16 | KUBER Palace | Ecosystem |

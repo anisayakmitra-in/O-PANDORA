@@ -107,10 +107,22 @@ impl CapabilityGraph {
     }
 
     pub fn missing_capabilities(&self, id: &str) -> Vec<&CapabilityNode> {
-        self.dependencies_of(id)
+        let mut missing: Vec<&CapabilityNode> = self
+            .dependencies_of(id)
             .into_iter()
             .filter(|n| !n.installed)
-            .collect()
+            .collect();
+        if let Some(idx) = self
+            .graph
+            .node_indices()
+            .find(|idx| self.graph[*idx].id == id)
+        {
+            let node = &self.graph[idx];
+            if !node.installed {
+                missing.push(node);
+            }
+        }
+        missing
     }
 
     pub fn find_path(&self, from: &str, to: &str) -> Option<Vec<String>> {

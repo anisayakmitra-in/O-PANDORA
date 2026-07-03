@@ -149,6 +149,7 @@ impl ExecutionGraph {
         let mut order: Vec<String> = Vec::new();
         let mut stack: Vec<String> = self.steps.iter().map(|s| s.id.clone()).collect();
 
+        let mut deferred: std::collections::HashSet<String> = std::collections::HashSet::new();
         while let Some(id) = stack.pop() {
             if visited.contains(&id) {
                 continue;
@@ -158,7 +159,12 @@ impl ExecutionGraph {
                 if all_deps_visited {
                     visited.insert(id.clone());
                     order.push(id);
+                } else if deferred.contains(&id) {
+                    // Already tried, skip to avoid infinite loop on missing deps
+                    visited.insert(id.clone());
+                    order.push(id);
                 } else {
+                    deferred.insert(id.clone());
                     stack.push(id);
                     for dep in &step.depends_on {
                         if !visited.contains(dep) {

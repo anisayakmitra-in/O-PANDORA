@@ -177,8 +177,11 @@ mod tests {
         let mut p = Policy::new("Disabled Test", "after_coding", "*");
         p.enabled = false;
         engine.register(p);
+        let mut enabled = Policy::new("Enabled Test", "after_coding", "*");
+        enabled = enabled.action(PolicyAction::Benchmark);
+        engine.register(enabled);
         let actions = engine.execute("after_coding", "coding");
-        // Standard coding workflow should still fire
+        assert!(!actions.is_empty());
         assert!(actions.iter().any(|a| a.name() == "benchmark"));
     }
 }

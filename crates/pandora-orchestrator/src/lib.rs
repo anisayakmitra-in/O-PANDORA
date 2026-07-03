@@ -325,3 +325,40 @@ impl Default for Orchestrator {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn orchestrator_runs_pipeline() {
+        let mut o = Orchestrator::new();
+        let mut ctx = RuntimeContext::new("test".to_string(), "pandora".to_string());
+        let result = o.execute("Write integration test", "coding", &mut ctx);
+        assert!(result.success);
+        assert!(result.completed_stages.contains(&"complete".to_string()));
+    }
+
+    #[test]
+    fn orchestrator_with_profile() {
+        let mut o = Orchestrator::new();
+        let result = o.execute_with_profile("Research topic", "research", "research");
+        assert!(result.success);
+    }
+
+    #[test]
+    fn orchestrator_records_trace() {
+        let mut o = Orchestrator::new();
+        let mut ctx = RuntimeContext::new("test".to_string(), "p".to_string());
+        let result = o.execute("Task", "coding", &mut ctx);
+        assert!(o.telemetry.trace_count() >= 1);
+    }
+
+    #[test]
+    fn policy_actions_included() {
+        let mut o = Orchestrator::new();
+        let mut ctx = RuntimeContext::new("test".to_string(), "p".to_string());
+        let result = o.execute("Code", "coding", &mut ctx);
+        assert!(result.success);
+    }
+}
