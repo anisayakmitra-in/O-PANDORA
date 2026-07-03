@@ -1,15 +1,3 @@
-use std::fs;
-
-use crate::execution_graph::PersistentExecutionGraph;
-
-pub fn persist_graph(graph: &PersistentExecutionGraph) {
-    fs::create_dir_all("graphs").unwrap();
-
-    let path = format!("graphs/{}.json", graph.graph_id);
-
-    let json = serde_json::to_string_pretty(graph).unwrap();
-
-    fs::write(path, json).unwrap();
-
-    println!("[GRAPH STORE] persisted {}", graph.graph_id);
-}
+//! Graph Store — re-exported from pandora-graph-store (Phase 1B).
+#![allow(deprecated)]
+pub use pandora_graph_store::{persist_graph};

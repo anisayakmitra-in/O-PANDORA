@@ -1,15 +1,3 @@
-use std::fs;
-
-use crate::lineage::CognitionLineage;
-
-pub fn persist_lineage(lineage: &CognitionLineage) {
-    fs::create_dir_all("lineage").unwrap();
-
-    let path = format!("lineage/{}.json", lineage.lineage_id);
-
-    let serialized = serde_json::to_string_pretty(lineage).unwrap();
-
-    fs::write(path, serialized).unwrap();
-
-    println!("[LINEAGE] persisted {}", lineage.lineage_id);
-}
+//! Lineage Store — re-exported from pandora-lineage-store (Phase 1B).
+#![allow(deprecated)]
+pub use pandora_lineage_store::{persist_lineage};

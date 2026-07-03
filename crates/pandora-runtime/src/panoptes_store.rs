@@ -1,15 +1,3 @@
-use std::fs;
-
-use crate::panoptes::CognitionScore;
-
-pub fn persist_score(score: &CognitionScore) {
-    fs::create_dir_all("panoptes").unwrap();
-
-    let path = format!("panoptes/{}.json", score.score_id);
-
-    let serialized = serde_json::to_string_pretty(score).unwrap();
-
-    fs::write(path, serialized).unwrap();
-
-    println!("[PANOPTES] persisted {}", score.score_id);
-}
+//! Panoptes Store — re-exported from pandora-panoptes-store (Phase 1B).
+#![allow(deprecated)]
+pub use pandora_panoptes_store::{persist_score};

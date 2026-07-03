@@ -1,24 +1,3 @@
-use crate::capability::{CapabilityDescriptor, CapabilityRequest};
-
-use crate::capability_registry::CapabilityRegistry;
-
-pub fn negotiate_capability(
-    request: &CapabilityRequest,
-
-    registry: &CapabilityRegistry,
-) -> Option<CapabilityDescriptor> {
-    for capability in registry.list() {
-        let outputs_match = request.required_outputs.iter().all(|required_output| {
-            capability
-                .outputs
-                .iter()
-                .any(|output| output.name == *required_output)
-        });
-
-        if outputs_match {
-            return Some(capability.clone());
-        }
-    }
-
-    None
-}
+//! Negotiation — re-exported from pandora-negotiation (Phase 1B).
+#![allow(deprecated)]
+pub use pandora_negotiation::{negotiate_capability};
