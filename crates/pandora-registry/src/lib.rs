@@ -47,7 +47,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::contract::ContractDescriptor;
+use pandora_contract::ContractDescriptor;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegistryEntry {

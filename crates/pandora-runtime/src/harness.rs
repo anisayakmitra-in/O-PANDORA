@@ -1,4 +1,4 @@
-use crate::capability::{CapabilityDecision, CapabilityRequest};
+use pandora_capability::{CapabilityDecision, CapabilityRequest};
 
 use crate::gene::GeneManifest;
 

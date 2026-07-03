@@ -10,3 +10,4 @@ pandora-capability = { path = "../pandora-capability" }
 pandora-fitness = { path = "../pandora-fitness" }
 pandora-gene = { path = "../pandora-gene" }
 pandora-registry = { path = "../pandora-registry" }
+pandora-runtime = { path = "../pandora-runtime" }

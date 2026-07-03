@@ -2,9 +2,9 @@
 //!
 //! Pandora Negotiation — extracted from pandora-runtime (Phase 1B).
 //!
-use pandora_capability::capability::{CapabilityDescriptor, CapabilityRequest};
+use pandora_capability::{CapabilityDescriptor, CapabilityRequest};
 
-use pandora_capability::capability_registry::CapabilityRegistry;
+use pandora_capability::CapabilityRegistry;
 
 pub fn negotiate_capability(
     request: &CapabilityRequest,

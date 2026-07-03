@@ -1,4 +1,4 @@
-use crate::capability::CapabilityRequest;
+use pandora_capability::CapabilityRequest;
 
 #[derive(Debug, Clone)]
 pub enum SandboxLevel {

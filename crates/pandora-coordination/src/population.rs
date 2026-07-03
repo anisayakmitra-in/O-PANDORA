@@ -4,7 +4,7 @@
 //!
 use serde::{Deserialize, Serialize};
 
-use pandora_fitness::fitness::FitnessEvaluation;
+use pandora_fitness::FitnessEvaluation;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvolutionCandidate {

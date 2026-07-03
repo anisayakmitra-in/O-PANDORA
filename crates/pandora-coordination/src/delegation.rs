@@ -1,14 +1,14 @@
 //! Absorbed from pandora-delegation (Phase 1C).
 //!
-use pandora_capability::capability_registry::CapabilityRegistry;
+use pandora_capability::CapabilityRegistry;
 
 use serde::{Deserialize, Serialize};
 
-use pandora_capability::capability::CapabilityRequest;
+use pandora_capability::CapabilityRequest;
 
 use crate::negotiate_capability;
 
-use pandora_registry::registry::HarnessRegistry;
+use pandora_registry::HarnessRegistry;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionDelegation {

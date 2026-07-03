@@ -1,6 +1,6 @@
 //! Absorbed from pandora-evolution (Phase 1C).
 //!
-use pandora_gene::gene::GeneManifest;
+use pandora_runtime::gene::GeneManifest;
 
 use std::fs;
 

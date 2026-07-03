@@ -11,24 +11,6 @@ reqwest = { version = "0.12", features = ["blocking", "json"] }
 libloading = "0.8"
 
 anubis-memory = { path = "../anubis-memory" }
-pandora-telemetry = { path = "../pandora-telemetry" }
-pandora-benchmark-runtime = { path = "../pandora-benchmark-runtime" }
 pandora-capability = { path = "../pandora-capability" }
-pandora-config = { path = "../pandora-config" }
-pandora-contract = { path = "../pandora-contract" }
-pandora-ast-engine = { path = "../pandora-ast-engine" }
-pandora-filesystem = { path = "../pandora-filesystem" }
-pandora-consensus = { path = "../pandora-consensus" }
-pandora-context-reset = { path = "../pandora-context-reset" }
-pandora-context-router = { path = "../pandora-context-router" }
-pandora-durable-queue = { path = "../pandora-durable-queue" }
-pandora-embedding-engine = { path = "../pandora-embedding-engine" }
-pandora-entropy-collapse = { path = "../pandora-entropy-collapse" }
-pandora-execution-archaeology = { path = "../pandora-execution-archaeology" }
-pandora-fitness = { path = "../pandora-fitness" }
+pandora-discovery = { path = "../pandora-discovery" }
 pandora-harness-loader = { path = "../pandora-harness-loader" }
-pandora-harness-manifest = { path = "../pandora-harness-manifest" }
-pandora-execution = { path = "../pandora-execution" }
-pandora-repair = { path = "../pandora-repair" }
-pandora-coordination = { path = "../pandora-coordination" }
-pandora-core = { path = "../pandora-core" }

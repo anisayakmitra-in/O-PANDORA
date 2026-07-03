@@ -7,3 +7,4 @@ edition.workspace = true
 serde = { version = "1", features = ["derive"] }
 
 pandora-runtime = { path = "../pandora-runtime" }
+pandora-contract = { path = "../pandora-contract" }

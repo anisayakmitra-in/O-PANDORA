@@ -1,5 +1,5 @@
 use crate::harness::MetaHarness;
-use crate::harness_loader::HarnessLoader;
+use pandora_harness_loader::HarnessLoader;
 
 pub struct PandoraRuntime {
     pub harnesses: Vec<Box<dyn MetaHarness>>,
