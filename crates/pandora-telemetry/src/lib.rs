@@ -5,7 +5,10 @@
 
 pub mod entropy;
 
+pub mod loop_detection;
+
 pub use entropy::{EntropyEngine, ToolCall};
+pub use loop_detection::LoopDetector;
 
 // Future modules (absorbed in subsequent commits):
 // pub mod recorder;

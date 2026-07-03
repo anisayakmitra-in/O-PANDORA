@@ -1201,13 +1201,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-loop-detection"
-version = "0.1.0"
-dependencies = [
- "pandora-telemetry",
-]
-
-[[package]]
 name = "pandora-manifest"
 version = "0.1.0"
 dependencies = [

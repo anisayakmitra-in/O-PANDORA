@@ -54,7 +54,6 @@ members = [
     "crates/pandora-lineage",
     "crates/pandora-llamacpp-provider",
     "crates/pandora-long-context",
-    "crates/pandora-loop-detection",
     "crates/pandora-manifest",
     "crates/pandora-meta-evolution",
     "crates/pandora-meta-harness-governor",

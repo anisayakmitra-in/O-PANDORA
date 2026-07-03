@@ -1,14 +1,12 @@
-//! Pandora Loop Detection — detects repetitive tool call patterns.
+//! Loop Detection — detects repetitive tool call patterns.
 //!
-//! Phase 1A decomposition: extracted from pandora-runtime/src/loop_detection.rs.
+//! Absorbed from pandora-loop-detection micro-crate (Phase 1C).
 
-use pandora_telemetry::ToolCall;
+use crate::entropy::ToolCall;
 
-/// Detects repetitive tool call sequences.
 pub struct LoopDetector;
 
 impl LoopDetector {
-    /// Returns true if the last `threshold` calls all use the same tool.
     pub fn detect_repetition(calls: &[ToolCall], threshold: usize) -> bool {
         if calls.len() < threshold {
             return false;
@@ -22,6 +20,7 @@ impl LoopDetector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::entropy::ToolCall;
 
     #[test]
     fn detects_repetition() {

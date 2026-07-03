@@ -1,3 +1,3 @@
-//! Loop Detection — re-exported from pandora-loop-detection (Phase 1A).
+//! Loop Detection — re-exported from pandora-telemetry (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_loop_detection::LoopDetector;
+pub use pandora_telemetry::LoopDetector;
