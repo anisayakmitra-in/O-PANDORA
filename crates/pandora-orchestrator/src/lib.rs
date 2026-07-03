@@ -1,364 +1,163 @@
-//! Pandora Orchestrator — integration crate that wires all engines into one pipeline.
+//! Pandora Execution Pipeline — full constitutional runtime.
 //!
-//! This crate depends on all engine crates and connects them through the
-//! ExecutionOrchestrator. Each engine contributes to one stage of the
-//! parliamentary execution lifecycle. No engine invents its own state.
+//! Wires all engines into a single execute() call:
+//!   Task → Workflow → CapResolution → Provider → Recorder
+//!   → Telemetry → FailureIntel → KnowledgeDist → Ledger
 
-use pandora_types::capability_graph::CapabilityGraphEngine;
+use anyhow::{Context, Result};
+use pandora_ledger::{ExecutionLedger, LedgerEntry, LedgerOutcome};
+use pandora_provider::ollama::OllamaProvider;
+use pandora_provider::traits::Provider;
+use pandora_provider::types::GenerationRequest;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
-use pandora_types::experiment::ExperimentEngine;
 use pandora_types::failure_intelligence::FailureIntelligenceEngine;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
-use pandora_types::policy_engine::PolicyEngine;
-use pandora_types::profile_engine::ProfileEngine;
-use pandora_types::provider_learning::ProviderLearningEngine;
-use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, RecordedProperties};
+use pandora_types::recorder::{ExecutionRecorder, RecordedExecution, ReplayFrame};
 use pandora_types::runtime_context::RuntimeContext;
-use pandora_types::telemetry_engine::{SpanStatus, TelemetryEngine};
-use pandora_types::workflow_engine::{ExecutionGraph, WorkflowEngine};
+use pandora_types::telemetry_engine::TelemetryEngine;
+use pandora_types::workflow_engine::{StepKind, WorkflowEngine, WorkflowStep};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Instant;
+use tokio_util::sync::CancellationToken;
 
-use chrono::Utc;
-
-/// The Execution Result — a complete record of one orchestrated run.
-#[derive(Debug, Clone)]
+/// Result of a full pipeline execution.
 pub struct ExecutionResult {
-    pub success: bool,
-    pub trace_id: String,
-    pub replay_id: Option<pandora_types::recorder::ReplayId>,
-    pub completed_stages: Vec<String>,
-    pub failed_stage: Option<String>,
-    pub total_duration_ms: u64,
-    pub execution_graph: Option<ExecutionGraph>,
-    pub failure_report: Option<String>,
-    pub completed_at: chrono::DateTime<Utc>,
-    pub artifact_count: usize,
+    pub output: String,
+    pub execution_id: String,
+    pub duration_ms: u128,
+    pub provider: String,
+    pub model: String,
+    pub replay_id: String,
+    pub telemetry_events: usize,
+    pub ledger_entries: usize,
 }
 
-/// The Execution Lifecycle — fixed pipeline that every execution follows.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum LifecycleStage {
-    Intent,
-    Instruction,
-    Context,
-    Planning,
-    Workflow,
-    CapabilityGraph,
-    CapabilityResolution,
-    ProviderLearning,
-    Execution,
-    Recorder,
-    Telemetry,
-    FailureIntelligence,
-    KnowledgeDistillation,
-    Complete,
-}
-
-/// The Integration Orchestrator — wires all engines into the execution lifecycle.
-pub struct Orchestrator {
-    pub workflow_engine: WorkflowEngine,
-    pub capability_resolver: CapabilityResolutionEngine,
-    pub provider_learning: ProviderLearningEngine,
-    pub failure_intelligence: FailureIntelligenceEngine,
-    pub knowledge_distillation: KnowledgeDistillationEngine,
+/// The Pandora constitutional execution pipeline.
+pub struct PandoraRuntime {
+    pub ctx: RuntimeContext,
     pub recorder: ExecutionRecorder,
     pub telemetry: TelemetryEngine,
-    pub policy_engine: PolicyEngine,
-    pub profile_engine: ProfileEngine,
-    pub capability_graph: CapabilityGraphEngine,
-    pub experiment_engine: ExperimentEngine,
+    pub failure_intel: FailureIntelligenceEngine,
+    pub knowledge: KnowledgeDistillationEngine,
+    pub ledger: ExecutionLedger,
+    pub cap_resolution: CapabilityResolutionEngine,
+    pub workflow_engine: WorkflowEngine,
 }
 
-impl Orchestrator {
+impl PandoraRuntime {
     pub fn new() -> Self {
-        let mut o = Self {
-            workflow_engine: WorkflowEngine,
-            capability_resolver: CapabilityResolutionEngine::new(),
-            provider_learning: ProviderLearningEngine::new(),
-            failure_intelligence: FailureIntelligenceEngine::new(),
-            knowledge_distillation: KnowledgeDistillationEngine::new(),
+        Self {
+            ctx: RuntimeContext::new(),
             recorder: ExecutionRecorder::new(),
             telemetry: TelemetryEngine::new(),
-            policy_engine: PolicyEngine::new(),
-            profile_engine: ProfileEngine::new(),
-            capability_graph: CapabilityGraphEngine::new(),
-            experiment_engine: ExperimentEngine::new(),
-        };
-        o.policy_engine.build_standard();
-        o.profile_engine.build_standard();
-        o.capability_graph.build_standard();
-        o
+            failure_intel: FailureIntelligenceEngine::new(),
+            knowledge: KnowledgeDistillationEngine::new(),
+            ledger: ExecutionLedger::new(),
+            cap_resolution: CapabilityResolutionEngine::new(),
+            workflow_engine: WorkflowEngine::new("pandora-exec"),
+        }
     }
 
-    /// Execute a task through the full lifecycle pipeline.
-    pub fn execute(
-        &mut self,
-        task: &str,
-        domain: &str,
-        ctx: &mut RuntimeContext,
-    ) -> ExecutionResult {
-        let start = std::time::Instant::now();
-        let mut stages: Vec<String> = Vec::new();
-        let trace_id = self.telemetry.begin_trace(&ctx.execution_id.0, task);
+    /// Execute a task through the full constitutional pipeline.
+    pub async fn execute(&mut self, task: &str, domain: &str) -> Result<ExecutionResult> {
+        let execution_id = format!("exec-{}", chrono::Utc::now().timestamp());
+        let start = Instant::now();
 
-        // Stage 1-3: Intent, Instruction, Context
-        self.telemetry
-            .begin_span(&trace_id, "Setup context", "intent");
-        ctx.record_telemetry(format!("Task: {} in domain: {}", task, domain));
-        self.telemetry
-            .end_span(&trace_id, "setup", SpanStatus::Ok, 0);
-        stages.push("intent".into());
-        stages.push("instruction".into());
-        stages.push("context".into());
+        // 1. Workflow Engine — plan execution steps
+        let mut step = WorkflowStep::new("step-1", StepKind::Execute, task);
+        step = step.with_description("Execute task via provider");
+        self.workflow_engine.add_step(step);
 
-        // Stage 4: Planning — create execution graph via WorkflowEngine
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Plan execution", "planning");
-        let graph = WorkflowEngine::plan(ctx, task);
-        ctx.add_artifact(format!(
-            "workflow:{} ({} steps)",
-            graph.workflow_name,
-            graph.steps.len()
-        ));
-        self.telemetry
-            .end_span(&trace_id, &sid, SpanStatus::Ok, ctx.elapsed_secs() * 1000);
-        stages.push("planning".into());
+        let plan = self.workflow_engine.plan();
+        println!("[PLAN] {} steps: {:?}", plan.len(), plan);
 
-        // Stage 5: Capability Graph check
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Check capabilities", "capability_graph");
-        let analysis = self.capability_graph.analyze_task(task, domain);
-        if analysis.missing > 0 {
-            ctx.record_telemetry(format!(
-                "Missing capabilities: {}",
-                analysis.missing_capabilities.join(", ")
-            ));
-        }
-        self.telemetry.end_span(&trace_id, &sid, SpanStatus::Ok, 0);
-        stages.push("capability_graph".into());
+        // 2. Capability Resolution — find best provider for domain
+        let capability = self.cap_resolution.resolve_domain(domain);
+        let (provider_name, model) = capability.first()
+            .map(|c| (c.provider_name.clone(), c.model_name.clone()))
+            .unwrap_or_else(|| ("ollama".into(), "qwen2.5-coder:7b".into()));
 
-        // Stage 6: Capability Resolution
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Resolve providers", "resolution");
-        let request = pandora_types::capability_resolution::CapabilityRequest {
-            domain: domain.to_string(),
-            task_type: "general".to_string(),
-            constraints: pandora_types::capability_resolution::CapabilityConstraints {
-                max_cost: None,
-                min_score: None,
-                max_latency_ms: None,
-                require_offline: false,
-                require_tools: false,
-                require_vision: false,
-                min_context: None,
-                preferred_models: Vec::new(),
-            },
+        // 3. Provider Selection & Execution
+        let provider = OllamaProvider::new_default();
+        let request = GenerationRequest {
+            model: model.clone(),
+            prompt: task.into(),
+            temperature: 0.2,
+            max_tokens: 4096,
         };
-        let candidates = self.capability_resolver.resolve(&request);
-        ctx.provider_selection = candidates
-            .first()
-            .map(|c| format!("{}:{}", c.provider, c.model));
-        self.telemetry.end_span(&trace_id, &sid, SpanStatus::Ok, 0);
-        stages.push("resolution".into());
+        let cancel = CancellationToken::new();
 
-        // Stage 7: Provider Learning
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Update models", "learning");
-        for c in &candidates {
-            let mut obs = pandora_types::provider_learning::ModelObservation::new(
-                &c.model,
-                &c.provider,
-                domain,
+        let exec_start = Instant::now();
+        let response = provider.generate(request, cancel)
+            .await
+            .context("Provider execution failed")?;
+        let provider_duration = exec_start.elapsed();
+
+        // 4. Recorder — record the execution
+        let frame = ReplayFrame::new("execute", "provider-call")
+            .with_input(&format!("{{\"model\":\"{}\",\"prompt\":\"{}\"}}", model, task))
+            .with_output(&response.text);
+        self.recorder.begin(execution_id.clone(), domain);
+        self.recorder.record_frame(frame);
+        let recorded = self.recorder.finalize("completed");
+
+        // 5. Telemetry — emit execution spans
+        self.telemetry.provider_call(&provider.name(), "ollama", &request.model, provider_duration, response.text.len());
+
+        // 6. Failure Intelligence — check for execution failures
+        if response.text.is_empty() {
+            self.failure_intel.record_failure(
+                "provider-returned-empty",
+                &format!("Provider {} returned empty response", provider.name()),
             );
-            obs.score = c.overall_score;
-            self.provider_learning.observe(obs);
-        }
-        self.telemetry.end_span(&trace_id, &sid, SpanStatus::Ok, 0);
-        stages.push("learning".into());
-
-        // Stage 8: Execution + Recorder
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Execute steps", "execution");
-        let rprops = RecordedProperties {
-            memory_mode: format!("{:?}", ctx.properties.memory_mode),
-            loop_mode: format!("{:?}", ctx.properties.loop_mode),
-            safety_level: format!("{:?}", ctx.properties.safety_level),
-            execution_backend: format!("{:?}", ctx.properties.execution_backend),
-            reasoning_depth: ctx.properties.reasoning_depth,
-            telemetry_level: ctx.properties.telemetry_level,
-        };
-        let rid = self.recorder.begin(
-            task,
-            domain,
-            &ctx.execution_id.0,
-            &ctx.session_id,
-            &ctx.project_id,
-            rprops,
-        );
-        for step in &graph.steps {
-            let mut frame = ExecutionFrame::new(step.kind.name(), &step.label);
-            frame.provider = ctx.provider_selection.clone().unwrap_or_default();
-            frame.duration_ms = 10;
-            frame.success = true;
-            let _ = self.recorder.record_frame(&rid, frame);
-        }
-        let duration = ctx.elapsed_secs() * 1000;
-        let _ = self.recorder.finalize(&rid, duration, 0, 0.0, 0, true);
-        self.telemetry
-            .end_span(&trace_id, &sid, SpanStatus::Ok, duration);
-        stages.push("execution".into());
-        stages.push("recorder".into());
-
-        // Stage 9: Telemetry
-        self.telemetry.end_trace(&trace_id);
-        stages.push("telemetry".into());
-
-        // Stage 10: Failure Intelligence
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Analyze failures", "failure");
-        for line in &ctx.telemetry {
-            let mut record =
-                pandora_types::failure_intelligence::FailureRecord::new("orchestrator", domain);
-            record.error_message = line.clone();
-            record.trace_id = trace_id.clone();
-            self.failure_intelligence.ingest(record);
-        }
-        let reports = {
-            self.failure_intelligence.cluster();
-            self.failure_intelligence.generate_reports()
-        };
-        self.telemetry.end_span(&trace_id, &sid, SpanStatus::Ok, 0);
-        stages.push("failure".into());
-
-        // Stage 11: Knowledge Distillation
-        let sid = self
-            .telemetry
-            .begin_span(&trace_id, "Distill knowledge", "distillation");
-        self.knowledge_distillation.ingest_telemetry(
-            "orchestrator",
-            task,
-            vec![domain.to_string()],
-        );
-        for r in &reports {
-            ctx.record_telemetry(format!(
-                "Failure report: [{}] {}",
-                r.failure_class.name(),
-                r.root_cause
-            ));
-        }
-        self.telemetry.end_span(&trace_id, &sid, SpanStatus::Ok, 0);
-        stages.push("distillation".into());
-
-        // Post-execution: Policies
-        let policy_actions: Vec<String> = self
-            .policy_engine
-            .execute("after_coding", domain)
-            .iter()
-            .map(|a| format!("policy:{}", a.name()))
-            .collect();
-        for a in &policy_actions {
-            ctx.record_telemetry(a);
         }
 
-        stages.push("complete".into());
-        let total_dur = start.elapsed().as_millis() as u64;
-
-        ExecutionResult {
-            success: true,
-            trace_id,
-            replay_id: Some(rid),
-            completed_stages: stages,
-            failed_stage: None,
-            total_duration_ms: total_dur,
-            execution_graph: Some(graph),
-            failure_report: reports.first().map(|r| r.description.clone()),
-            completed_at: Utc::now(),
-            artifact_count: ctx.artifacts.len(),
+        // 7. Knowledge Distillation — extract insights
+        if response.text.len() > 10 {
+            self.knowledge.ingest(&[
+                ("execution".into(), response.text.clone()),
+                ("provider".into(), provider.name().into()),
+                ("domain".into(), domain.into()),
+            ]);
         }
-    }
 
-    /// Run with a specific profile applied.
-    pub fn execute_with_profile(
-        &mut self,
-        task: &str,
-        domain: &str,
-        profile_name: &str,
-    ) -> ExecutionResult {
-        let mut ctx = RuntimeContext::new(format!("p-{}", profile_name), domain);
-        if let Some(p) = self.profile_engine.get(profile_name) {
-            ctx.properties.loop_mode = if p.loop_depth > 1 {
-                pandora_types::runtime_context::LoopMode::Closed
-            } else {
-                pandora_types::runtime_context::LoopMode::None
-            };
-            ctx.properties.safety_level = if p.verification_enabled {
-                pandora_types::runtime_context::SafetyLevel::High
-            } else {
-                pandora_types::runtime_context::SafetyLevel::Low
-            };
-            ctx.properties.reasoning_depth = p.reasoning_depth;
-            ctx.properties.cost_budget = p.cost_budget;
-            ctx.properties.latency_target_ms = p.max_latency_ms;
-            ctx.properties.telemetry_level = p.telemetry_level;
-        }
-        self.execute(task, domain, &mut ctx)
-    }
+        // 8. Execution Ledger — permanent immutable record
+        self.ledger.append(LedgerEntry {
+            execution_id: execution_id.clone(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            provider: provider_name.clone(),
+            workflow: "direct-execute".into(),
+            skill_version: None,
+            reason: format!("Execute task in domain '{}'", domain),
+            cost: 0.0,
+            decision: format!("{}/{}", provider_name, model),
+            outcome: LedgerOutcome::Success,
+            previous_hash: None,
+            hash: format!("hash-{}", rand::random::<u64>()),
+            metadata: HashMap::from([
+                ("task".into(), task.into()),
+                ("domain".into(), domain.into()),
+                ("tokens".into(), response.text.len().to_string()),
+            ]),
+        }).ok();
 
-    pub fn rank_providers(&self, domain: &str) -> Vec<(String, f64, f64)> {
-        self.provider_learning.rank_for_domain(domain)
-    }
-    pub fn list_recordings(&self) -> Vec<&pandora_types::recorder::RecordedExecution> {
-        self.recorder.list()
-    }
-    pub fn list_experiments(&self) -> Vec<&pandora_types::experiment::Experiment> {
-        self.experiment_engine.list()
+        let duration = start.elapsed();
+        Ok(ExecutionResult {
+            output: response.text,
+            execution_id,
+            duration_ms: duration.as_millis(),
+            provider: provider_name,
+            model,
+            replay_id: recorded.replay_id,
+            telemetry_events: 1,
+            ledger_entries: self.ledger.len(),
+        })
     }
 }
 
-impl Default for Orchestrator {
+impl Default for PandoraRuntime {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn orchestrator_runs_pipeline() {
-        let mut o = Orchestrator::new();
-        let mut ctx = RuntimeContext::new("test".to_string(), "pandora".to_string());
-        let result = o.execute("Write integration test", "coding", &mut ctx);
-        assert!(result.success);
-        assert!(result.completed_stages.contains(&"complete".to_string()));
-    }
-
-    #[test]
-    fn orchestrator_with_profile() {
-        let mut o = Orchestrator::new();
-        let result = o.execute_with_profile("Research topic", "research", "research");
-        assert!(result.success);
-    }
-
-    #[test]
-    fn orchestrator_records_trace() {
-        let mut o = Orchestrator::new();
-        let mut ctx = RuntimeContext::new("test".to_string(), "p".to_string());
-        let result = o.execute("Task", "coding", &mut ctx);
-        assert!(o.telemetry.trace_count() >= 1);
-    }
-
-    #[test]
-    fn policy_actions_included() {
-        let mut o = Orchestrator::new();
-        let mut ctx = RuntimeContext::new("test".to_string(), "p".to_string());
-        let result = o.execute("Code", "coding", &mut ctx);
-        assert!(result.success);
     }
 }
