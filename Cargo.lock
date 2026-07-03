@@ -1025,6 +1025,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1033,44 +1034,6 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "pandora-execution-kernel"
-version = "0.1.0"
-dependencies = [
- "serde",
- "tokio",
-]
-
-[[package]]
-name = "pandora-execution-license"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-execution-lineage"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-execution-ranking"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-execution-survivability"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -1151,13 +1114,6 @@ dependencies = [
 
 [[package]]
 name = "pandora-kuber-governor"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-lifecycle"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1462,13 +1418,6 @@ dependencies = [
 
 [[package]]
 name = "pandora-sovereign-constitution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-state-machine"
 version = "0.1.0"
 dependencies = [
  "serde",

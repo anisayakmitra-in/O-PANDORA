@@ -1,3 +1,3 @@
-//! Execution Lineage — re-exported from pandora-execution-lineage (Phase 1A).
+//! execution_lineage — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_execution_lineage::{LineageNode, LineageDirective, SovereignLineageState, RecursiveExecutionLineage};
+pub use pandora_execution::execution_lineage::*;

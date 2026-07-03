@@ -1,3 +1,5 @@
+//! Absorbed from pandora-lifecycle (Phase 1C).
+//!
 //! Pandora Lifecycle — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

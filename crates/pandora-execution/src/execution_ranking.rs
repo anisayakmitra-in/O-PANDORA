@@ -1,3 +1,5 @@
+//! Absorbed from pandora-execution-ranking (Phase 1C).
+//!
 //! Pandora Execution Ranking — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

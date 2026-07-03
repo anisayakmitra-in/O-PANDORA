@@ -1,3 +1,5 @@
+//! Absorbed from pandora-execution-lineage (Phase 1C).
+//!
 //! Pandora Execution Lineage — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,3 @@
-//! Execution License — re-exported from pandora-execution-license (Phase 1A).
+//! execution_license — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_execution_license::{ExecutionArtifact, ExecutionDirective, ExecutionState, ConstitutionalExecutionLicenseEngine};
+pub use pandora_execution::execution_license::*;

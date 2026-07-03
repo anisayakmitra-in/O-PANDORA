@@ -1,3 +1,5 @@
+//! Absorbed from pandora-state-machine (Phase 1C).
+//!
 //! Pandora State Machine — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

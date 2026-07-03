@@ -1,3 +1,3 @@
-//! Execution Ranking — re-exported from pandora-execution-ranking (Phase 1A).
+//! execution_ranking — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_execution_ranking::{ExecutionCandidate, RankedExecution, ExecutionRankingEngine};
+pub use pandora_execution::execution_ranking::*;

@@ -1,3 +1,5 @@
+//! Absorbed from pandora-execution-kernel (Phase 1C).
+//!
 //! Pandora Execution Kernel — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

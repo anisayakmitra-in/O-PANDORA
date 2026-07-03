@@ -1,3 +1,5 @@
+//! Absorbed from pandora-execution-license (Phase 1C).
+//!
 //! Pandora Execution License — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,3 @@
-//! Execution Survivability — re-exported from pandora-execution-survivability (Phase 1A).
+//! execution_survivability — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_execution_survivability::{SurvivabilityCandidate, SurvivabilityAssessment, ExecutionSurvivabilityEngine};
+pub use pandora_execution::execution_survivability::*;

@@ -1,3 +1,3 @@
-//! State Machine — re-exported from pandora-state-machine (Phase 1A).
+//! state_machine — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_state_machine::{ExecutionState, StateTransition, ExecutionStateMachine;, ExecutionStateKind, StateTransitionKind};
+pub use pandora_execution::state_machine::*;

@@ -1,3 +1,3 @@
-//! Lifecycle — re-exported from pandora-lifecycle (Phase 1A).
+//! lifecycle — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_lifecycle::{RuntimeState, LifecycleManager};
+pub use pandora_execution::lifecycle::*;

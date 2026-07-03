@@ -1,3 +1,5 @@
+//! Absorbed from pandora-execution-survivability (Phase 1C).
+//!
 //! Pandora Execution Survivability — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

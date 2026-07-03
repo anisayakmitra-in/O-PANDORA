@@ -1,3 +1,3 @@
-//! Execution Kernel — re-exported from pandora-execution-kernel (Phase 1A).
+//! execution_kernel — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_execution_kernel::{ExecutionTask, ExecutionResult, ExecutionKernel};
+pub use pandora_execution::execution_kernel::*;
