@@ -68,6 +68,7 @@ members = [
     "crates/pandora-reasoning-chain",
     "crates/pandora-recursive-planner",
     "crates/pandora-repair",
+    "crates/pandora-ledger",
     "crates/pandora-repository-evolution",
     "crates/pandora-repository-indexer",
     "crates/pandora-repository-memory-graph",

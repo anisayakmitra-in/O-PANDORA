@@ -1112,6 +1112,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-ledger"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "pandora-lineage"
 version = "0.1.0"
 dependencies = [
