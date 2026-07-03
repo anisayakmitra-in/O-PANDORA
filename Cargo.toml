@@ -111,6 +111,11 @@ members = [
     "crates/pandora-topology-synthesis",
     "crates/pandora-uncertainty-topology",
     "crates/pandora-unified-graph",
+    "crates/pandora-discovery",
+    "crates/pandora-security",
+    "crates/pandora-intelligence",
+    "crates/pandora-coordination",
+    "crates/pandora-runtime",
     "test-runner",
     "dynamic_harness",
 ]
