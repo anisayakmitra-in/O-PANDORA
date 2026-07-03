@@ -1208,6 +1208,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-checkpoint"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "pandora-cli"
 version = "0.1.0"
 dependencies = [
@@ -1419,6 +1427,7 @@ dependencies = [
  "libloading",
  "pandora-benchmark-runtime",
  "pandora-capability",
+ "pandora-checkpoint",
  "pandora-loop-detection",
  "pandora-telemetry",
  "reqwest 0.12.28",
