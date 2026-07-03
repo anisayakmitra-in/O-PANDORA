@@ -1,3 +1,3 @@
-//! DAG — re-exported from pandora-dag (Phase 1A).
+//! dag — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_dag::{DagNode, ExecutionDag};
+pub use pandora_execution::DagNode, ExecutionDag;

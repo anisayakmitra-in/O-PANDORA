@@ -1,3 +1,3 @@
-//! Execution Graph — re-exported from pandora-execution-graph (Phase 1A).
+//! execution_graph — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_execution_graph::{ExecutionVertex, ExecutionConnection, PersistentExecutionGraph, ExecutionGraphPersistence;};
+pub use pandora_execution::*;

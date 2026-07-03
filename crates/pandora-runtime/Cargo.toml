@@ -16,7 +16,6 @@ pandora-benchmark-runtime = { path = "../pandora-benchmark-runtime" }
 pandora-capability = { path = "../pandora-capability" }
 pandora-config = { path = "../pandora-config" }
 pandora-contract = { path = "../pandora-contract" }
-pandora-dag = { path = "../pandora-dag" }
 pandora-ast-engine = { path = "../pandora-ast-engine" }
 pandora-filesystem = { path = "../pandora-filesystem" }
 pandora-consensus = { path = "../pandora-consensus" }

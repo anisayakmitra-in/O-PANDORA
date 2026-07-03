@@ -1,3 +1,5 @@
+//! Absorbed from pandora-execution-graph (Phase 1C).
+//!
 //! Pandora Execution Graph — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

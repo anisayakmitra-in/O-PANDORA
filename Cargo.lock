@@ -940,13 +940,6 @@ name = "pandora-core"
 version = "0.1.0"
 
 [[package]]
-name = "pandora-dag"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-dependency-graph"
 version = "0.1.0"
 dependencies = [
@@ -1027,7 +1020,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-execution-archaeology"
+name = "pandora-execution"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1035,7 +1028,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-execution-graph"
+name = "pandora-execution-archaeology"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1702,14 +1695,6 @@ name = "pandora-unified-graph"
 version = "0.1.0"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "pandora-workflow"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]

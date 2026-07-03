@@ -1,3 +1,3 @@
-//! Workflow — re-exported from pandora-workflow (Phase 1A).
+//! workflow — re-exported from pandora-execution (Phase 1C).
 #![allow(deprecated)]
-pub use pandora_workflow::{WorkflowStep, DurableWorkflow, WorkflowEngine;};
+pub use pandora_execution::DurableWorkflow, WorkflowEngine, WorkflowStep;

@@ -1,3 +1,5 @@
+//! Absorbed from pandora-dag (Phase 1C).
+//!
 //! Pandora DAG — directed acyclic graph for execution planning.
 //!
 //! Phase 1A decomposition: extracted from pandora-runtime/src/dag.rs.

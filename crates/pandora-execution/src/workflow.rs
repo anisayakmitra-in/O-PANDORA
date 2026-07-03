@@ -1,3 +1,5 @@
+//! Absorbed from pandora-workflow (Phase 1C).
+//!
 //! Pandora Workflow — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};
