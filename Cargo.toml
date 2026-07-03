@@ -19,6 +19,7 @@ members = [
     "crates/pandora-checkpoint",
     "crates/pandora-config",
     "crates/pandora-contract",
+    "crates/pandora-dag",
     "crates/pandora-instruction",
     "crates/pandora-benchmark",
     "crates/pandora-parliament",

@@ -1247,6 +1247,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-dag"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "pandora-events"
 version = "0.1.0"
 dependencies = [
@@ -1441,6 +1448,7 @@ dependencies = [
  "pandora-checkpoint",
  "pandora-config",
  "pandora-contract",
+ "pandora-dag",
  "pandora-loop-detection",
  "pandora-telemetry",
  "reqwest 0.12.28",

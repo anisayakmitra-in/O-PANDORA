@@ -18,3 +18,4 @@ pandora-loop-detection = { path = "../pandora-loop-detection" }
 pandora-checkpoint = { path = "../pandora-checkpoint" }
 pandora-config = { path = "../pandora-config" }
 pandora-contract = { path = "../pandora-contract" }
+pandora-dag = { path = "../pandora-dag" }
