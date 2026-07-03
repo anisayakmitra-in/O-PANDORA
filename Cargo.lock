@@ -1330,6 +1330,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-orchestrator"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "pandora-types",
+ "serde",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "pandora-panoptikon"
 version = "0.1.0"
 

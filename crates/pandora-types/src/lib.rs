@@ -46,6 +46,8 @@ pub mod telemetry_engine;
 pub mod failure_intelligence;
 pub mod knowledge_distillation;
 pub mod experiment;
+pub mod policy_engine;
+pub mod profile_engine;
 pub mod capability_graph;
 pub mod self_healing;
 pub mod services;

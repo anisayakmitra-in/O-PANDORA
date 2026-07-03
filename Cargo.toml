@@ -26,6 +26,7 @@ members = [
     "crates/pandora-signal",
     "crates/pandora-tools",
     "crates/pandora-tui",
+    "crates/pandora-orchestrator",
     "crates/pandora-types",
     "test-runner",
     "dynamic_harness",

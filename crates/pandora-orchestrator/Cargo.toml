@@ -1,0 +1,11 @@
+[package]
+name = "pandora-orchestrator"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
+tokio = { version = "1", features = ["rt", "sync"] }
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+tracing = "0.1"
