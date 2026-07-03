@@ -22,3 +22,9 @@ pandora-dag = { path = "../pandora-dag" }
 pandora-ast-engine = { path = "../pandora-ast-engine" }
 pandora-filesystem = { path = "../pandora-filesystem" }
 pandora-consensus = { path = "../pandora-consensus" }
+pandora-context-reset = { path = "../pandora-context-reset" }
+pandora-context-router = { path = "../pandora-context-router" }
+pandora-durable-queue = { path = "../pandora-durable-queue" }
+pandora-embedding-engine = { path = "../pandora-embedding-engine" }
+pandora-entropy-collapse = { path = "../pandora-entropy-collapse" }
+pandora-execution-archaeology = { path = "../pandora-execution-archaeology" }

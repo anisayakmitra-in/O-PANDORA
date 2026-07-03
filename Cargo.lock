@@ -1254,6 +1254,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-context-reset"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "pandora-context-router"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "pandora-contract"
 version = "0.1.0"
 dependencies = [
@@ -1262,6 +1276,28 @@ dependencies = [
 
 [[package]]
 name = "pandora-dag"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "pandora-durable-queue"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "pandora-embedding-engine"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "pandora-entropy-collapse"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1277,6 +1313,14 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "pandora-execution-archaeology"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1470,8 +1514,14 @@ dependencies = [
  "pandora-checkpoint",
  "pandora-config",
  "pandora-consensus",
+ "pandora-context-reset",
+ "pandora-context-router",
  "pandora-contract",
  "pandora-dag",
+ "pandora-durable-queue",
+ "pandora-embedding-engine",
+ "pandora-entropy-collapse",
+ "pandora-execution-archaeology",
  "pandora-filesystem",
  "pandora-loop-detection",
  "pandora-telemetry",
