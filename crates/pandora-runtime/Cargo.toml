@@ -17,3 +17,4 @@ pandora-capability = { path = "../pandora-capability" }
 pandora-loop-detection = { path = "../pandora-loop-detection" }
 pandora-checkpoint = { path = "../pandora-checkpoint" }
 pandora-config = { path = "../pandora-config" }
+pandora-contract = { path = "../pandora-contract" }
