@@ -17,6 +17,7 @@
 
 pub mod constitution_engine;
 pub mod event_bus;
+pub mod event_bus_v2;
 pub mod lease_manager;
 pub mod service_registry;
 
