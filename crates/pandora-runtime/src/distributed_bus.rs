@@ -1,19 +1,3 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DistributedEvent {
-    pub node_id: String,
-
-    pub event_type: String,
-}
-
-pub struct DistributedBus;
-
-impl DistributedBus {
-    pub fn broadcast(event: &DistributedEvent) {
-        println!(
-            "[DISTRIBUTED BUS] node={} event={}",
-            event.node_id, event.event_type
-        );
-    }
-}
+//! Distributed Bus — re-exported from pandora-distributed-bus (Phase 1A).
+#![allow(deprecated)]
+pub use pandora_distributed_bus::{DistributedEvent, DistributedBus;};

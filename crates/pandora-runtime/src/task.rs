@@ -1,21 +1,3 @@
-#[derive(Debug, Clone)]
-pub enum TaskStatus {
-    Pending,
-
-    Running,
-
-    Completed,
-
-    Failed,
-}
-
-#[derive(Debug, Clone)]
-pub struct RuntimeTask {
-    pub id: String,
-
-    pub task_type: String,
-
-    pub target: String,
-
-    pub status: TaskStatus,
-}
+//! Task — re-exported from pandora-task (Phase 1A).
+#![allow(deprecated)]
+pub use pandora_task::{TaskStatus, RuntimeTask};

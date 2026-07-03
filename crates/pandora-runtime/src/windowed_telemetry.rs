@@ -1,11 +1,3 @@
-pub struct WindowedTelemetry;
-
-impl WindowedTelemetry {
-    pub fn moving_average(values: &[f32]) -> f32 {
-        if values.is_empty() {
-            return 0.0;
-        }
-
-        values.iter().sum::<f32>() / values.len() as f32
-    }
-}
+//! Windowed Telemetry — re-exported from pandora-windowed-telemetry (Phase 1A).
+#![allow(deprecated)]
+pub use pandora_windowed_telemetry::{WindowedTelemetry;};
