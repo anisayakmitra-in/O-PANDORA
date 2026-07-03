@@ -14,7 +14,6 @@ anubis-memory = { path = "../anubis-memory" }
 pandora-telemetry = { path = "../pandora-telemetry" }
 pandora-benchmark-runtime = { path = "../pandora-benchmark-runtime" }
 pandora-capability = { path = "../pandora-capability" }
-pandora-checkpoint = { path = "../pandora-checkpoint" }
 pandora-config = { path = "../pandora-config" }
 pandora-contract = { path = "../pandora-contract" }
 pandora-dag = { path = "../pandora-dag" }

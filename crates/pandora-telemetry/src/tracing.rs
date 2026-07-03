@@ -1,3 +1,5 @@
+//! Tracing — absorbed from pandora-tracing (Phase 1C).
+//!
 //! Pandora Tracing — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

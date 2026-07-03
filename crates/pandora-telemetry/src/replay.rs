@@ -1,3 +1,5 @@
+//! Replay — absorbed from pandora-replay (Phase 1C).
+//!
 //! Pandora Replay — extracted from pandora-runtime (Phase 1A).
 //!
 use serde::{Deserialize, Serialize};

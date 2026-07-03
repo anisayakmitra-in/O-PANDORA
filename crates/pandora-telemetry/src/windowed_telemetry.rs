@@ -1,3 +1,5 @@
+//! Windowed Telemetry — absorbed from pandora-windowed-telemetry (Phase 1C).
+//!
 //! Pandora Windowed Telemetry — extracted from pandora-runtime (Phase 1A).
 //!
 pub struct WindowedTelemetry;

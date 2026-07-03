@@ -5,6 +5,9 @@
 
 pub mod entropy;
 
+pub mod checkpoint;
+pub mod trace;
+pub mod windowed_telemetry;
 pub mod loop_detection;
 
 pub use entropy::{EntropyEngine, ToolCall};

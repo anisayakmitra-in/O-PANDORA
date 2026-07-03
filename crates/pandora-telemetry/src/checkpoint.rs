@@ -1,3 +1,5 @@
+//! Checkpoint — absorbed from pandora-checkpoint (Phase 1C).
+//!
 //! Pandora Checkpoint — runtime checkpoint persistence and recovery.
 //!
 //! Phase 1A decomposition: extracted from pandora-runtime/src/checkpoint.rs.

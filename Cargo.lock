@@ -854,14 +854,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-checkpoint"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "pandora-coding-engine"
 version = "0.1.0"
 dependencies = [
@@ -1406,13 +1398,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-replay"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-replay-scoring"
 version = "0.1.0"
 dependencies = [
@@ -1669,6 +1654,7 @@ name = "pandora-telemetry"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1693,21 +1679,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-trace"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-tracing"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "pandora-types"
 version = "0.1.0"
 dependencies = [
@@ -1728,13 +1699,6 @@ dependencies = [
 
 [[package]]
 name = "pandora-unified-graph"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-windowed-telemetry"
 version = "0.1.0"
 dependencies = [
  "serde",
