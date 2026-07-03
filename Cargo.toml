@@ -118,6 +118,7 @@ members = [
     "crates/pandora-swarm-will",
     "crates/pandora-task",
     "crates/pandora-task-spawner",
+    "crates/pandora-core",
     "crates/pandora-telemetry",
     "crates/pandora-tool-cognition",
     "crates/pandora-topology-laboratory",
