@@ -1,0 +1,7 @@
+[package]
+name = "pandora-loop-detection"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-telemetry = { path = "../pandora-telemetry" }

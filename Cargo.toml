@@ -15,6 +15,7 @@ members = [
     "crates/pandora-telemetry",
     "crates/pandora-benchmark-runtime",
     "crates/pandora-capability",
+    "crates/pandora-loop-detection",
     "crates/pandora-instruction",
     "crates/pandora-benchmark",
     "crates/pandora-parliament",

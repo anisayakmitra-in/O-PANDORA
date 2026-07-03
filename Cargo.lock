@@ -1302,6 +1302,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-loop-detection"
+version = "0.1.0"
+dependencies = [
+ "pandora-telemetry",
+]
+
+[[package]]
 name = "pandora-loops"
 version = "0.1.0"
 dependencies = [
@@ -1412,6 +1419,7 @@ dependencies = [
  "libloading",
  "pandora-benchmark-runtime",
  "pandora-capability",
+ "pandora-loop-detection",
  "pandora-telemetry",
  "reqwest 0.12.28",
  "serde",
