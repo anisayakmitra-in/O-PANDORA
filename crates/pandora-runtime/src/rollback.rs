@@ -1,9 +1,3 @@
-use crate::checkpoint::RuntimeCheckpoint;
-
-pub struct RollbackEngine;
-
-impl RollbackEngine {
-    pub fn recover(checkpoints: &[RuntimeCheckpoint]) -> Option<RuntimeCheckpoint> {
-        checkpoints.last().cloned()
-    }
-}
+//! Rollback — re-exported from pandora-rollback (Phase 1B).
+#![allow(deprecated)]
+pub use pandora_rollback::{RollbackEngine;};
