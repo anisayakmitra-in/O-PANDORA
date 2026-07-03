@@ -17,6 +17,7 @@ members = [
     "crates/pandora-capability",
     "crates/pandora-loop-detection",
     "crates/pandora-checkpoint",
+    "crates/pandora-config",
     "crates/pandora-instruction",
     "crates/pandora-benchmark",
     "crates/pandora-parliament",

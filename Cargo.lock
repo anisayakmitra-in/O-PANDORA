@@ -1236,6 +1236,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-config"
+version = "0.1.0"
+
+[[package]]
 name = "pandora-events"
 version = "0.1.0"
 dependencies = [
@@ -1428,6 +1432,7 @@ dependencies = [
  "pandora-benchmark-runtime",
  "pandora-capability",
  "pandora-checkpoint",
+ "pandora-config",
  "pandora-loop-detection",
  "pandora-telemetry",
  "reqwest 0.12.28",
