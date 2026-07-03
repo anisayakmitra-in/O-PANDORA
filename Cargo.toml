@@ -13,6 +13,7 @@ members = [
     "crates/pandora-model",
     "crates/pandora-narad",
     "crates/pandora-telemetry",
+    "crates/pandora-benchmark-runtime",
     "crates/pandora-instruction",
     "crates/pandora-benchmark",
     "crates/pandora-parliament",

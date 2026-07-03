@@ -1194,6 +1194,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-benchmark-runtime"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "pandora-cli"
 version = "0.1.0"
 dependencies = [
@@ -1396,6 +1403,7 @@ version = "0.1.0"
 dependencies = [
  "anubis-memory",
  "libloading",
+ "pandora-benchmark-runtime",
  "pandora-telemetry",
  "reqwest 0.12.28",
  "serde",

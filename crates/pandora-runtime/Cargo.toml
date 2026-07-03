@@ -24,3 +24,4 @@ libloading = "0.8"
 
 anubis-memory = { path = "../anubis-memory" }
 pandora-telemetry = { path = "../pandora-telemetry" }
+pandora-benchmark-runtime = { path = "../pandora-benchmark-runtime" }
