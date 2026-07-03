@@ -1,9 +1,10 @@
-//! Population — consolidated into pandora-coordination.
+//! Absorbed from pandora-population (Phase 1C).
 //!
+//! Pandora Population — extracted from pandora-runtime (Phase 1B).
 //!
 use serde::{Deserialize, Serialize};
 
-use crate::fitness::FitnessEvaluation;
+use pandora_fitness::fitness::FitnessEvaluation;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvolutionCandidate {

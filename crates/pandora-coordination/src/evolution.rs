@@ -1,6 +1,6 @@
-//! Evolution — consolidated into pandora-coordination.
+//! Absorbed from pandora-evolution (Phase 1C).
 //!
-use crate::gene::GeneManifest;
+use pandora_gene::gene::GeneManifest;
 
 use std::fs;
 

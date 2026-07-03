@@ -1,9 +1,10 @@
-//! Negotiation — consolidated into pandora-coordination.
+//! Absorbed from pandora-negotiation (Phase 1C).
 //!
+//! Pandora Negotiation — extracted from pandora-runtime (Phase 1B).
 //!
-use crate::capability::{CapabilityDescriptor, CapabilityRequest};
+use pandora_capability::capability::{CapabilityDescriptor, CapabilityRequest};
 
-use crate::capability_registry::CapabilityRegistry;
+use pandora_capability::capability_registry::CapabilityRegistry;
 
 pub fn negotiate_capability(
     request: &CapabilityRequest,

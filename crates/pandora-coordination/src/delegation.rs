@@ -1,14 +1,14 @@
-//! Delegation — consolidated into pandora-coordination.
+//! Absorbed from pandora-delegation (Phase 1C).
 //!
-use crate::capability_registry::CapabilityRegistry;
+use pandora_capability::capability_registry::CapabilityRegistry;
 
 use serde::{Deserialize, Serialize};
 
-use crate::capability::CapabilityRequest;
+use pandora_capability::capability::CapabilityRequest;
 
-use crate::negotiation::negotiate_capability;
+use crate::negotiate_capability;
 
-use crate::registry::HarnessRegistry;
+use pandora_registry::registry::HarnessRegistry;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionDelegation {

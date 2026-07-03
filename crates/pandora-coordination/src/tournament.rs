@@ -1,6 +1,6 @@
-//! Tournament — consolidated into pandora-coordination.
+//! Absorbed from pandora-tournament (Phase 1C).
 //!
-use crate::population::EvolutionCandidate;
+use crate::EvolutionCandidate;
 
 pub struct TournamentSelector;
 

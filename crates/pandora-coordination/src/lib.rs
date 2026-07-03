@@ -1,9 +1,12 @@
-//! Pandora Coordination — subsystem crate (consolidation Phase 1C).
+//! Pandora Coordination — subsystem crate.
 //!
-//! Modules: delegation, negotiation, evolution, tournament, population
-
 pub mod delegation;
-pub mod negotiation;
+pub use delegation::*;
 pub mod evolution;
-pub mod tournament;
+pub use evolution::*;
+pub mod negotiation;
+pub use negotiation::*;
 pub mod population;
+pub use population::*;
+pub mod tournament;
+pub use tournament::*;
