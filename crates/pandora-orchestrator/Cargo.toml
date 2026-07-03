@@ -5,7 +5,16 @@ edition.workspace = true
 
 [dependencies]
 pandora-types = { path = "../pandora-types" }
-tokio = { version = "1", features = ["rt", "sync"] }
+pandora-provider = { path = "../pandora-provider" }
+pandora-ledger = { path = "../pandora-ledger" }
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
+rand = "0.8"
+anyhow = "1"
+
+[features]
+default = ["ollama"]
+ollama = ["pandora-provider/legacy-ollama"]
