@@ -44,6 +44,7 @@ pub mod recorder;
 pub mod telemetry_engine;
 pub mod failure_intelligence;
 pub mod knowledge_distillation;
+pub mod experiment;
 pub mod self_healing;
 pub mod services;
 pub mod universal;
