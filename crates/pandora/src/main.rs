@@ -5,7 +5,10 @@ use std::process;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 { usage(); process::exit(1); }
+    if args.len() < 2 {
+        usage();
+        process::exit(1);
+    }
     match args[1].as_str() {
         "install" => cmd_install(&args),
         "run" => cmd_run(&args),
@@ -15,7 +18,11 @@ fn main() {
         "genes" => cmd_genes(),
         "architecture" => cmd_architecture(),
         "new" => cmd_new(&args),
-        _ => { eprintln!("Unknown: {}", args[1]); usage(); process::exit(1); }
+        _ => {
+            eprintln!("Unknown: {}", args[1]);
+            usage();
+            process::exit(1);
+        }
     }
 }
 
@@ -28,8 +35,10 @@ fn usage() {
     eprintln!("  list            List installed genes");
     eprintln!("  info <id>       Package details");
     eprintln!("  genes           List available first-party genes");
-    eprintln!("  architecture    Show the Pandora architecture tree
-  new gene <n>    Scaffold a gene template");
+    eprintln!(
+        "  architecture    Show the Pandora architecture tree
+  new gene <n>    Scaffold a gene template"
+    );
     eprintln!("  new skill <n>   Scaffold a skill");
 }
 
@@ -38,18 +47,29 @@ fn get_sc() -> pandora_shadow_council::ShadowCouncil {
 }
 
 fn cmd_install(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora install <id>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora install <id>");
+        process::exit(1);
+    }
     let mut sc = get_sc();
     let mut k = pandora_kuber::Kuber::new(&mut sc);
-    if let Ok(cwd) = env::current_dir() { k.add_source("local", &cwd.to_string_lossy()); }
+    if let Ok(cwd) = env::current_dir() {
+        k.add_source("local", &cwd.to_string_lossy());
+    }
     match k.install(&args[2]) {
         Ok(_) => println!("Installed: {}", args[2]),
-        Err(e) => { eprintln!("{}", e); process::exit(1); }
+        Err(e) => {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
     }
 }
 
 fn cmd_run(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora run <task>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora run <task>");
+        process::exit(1);
+    }
     let task: String = args[2..].join(" ");
     println!("Task: {}", task);
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -60,36 +80,61 @@ fn cmd_run(args: &[String]) {
                 if report.success {
                     let preview: String = report.output.chars().take(2000).collect();
                     println!("{}", preview);
-                } else { eprintln!("Pipeline returned empty"); process::exit(1); }
+                } else {
+                    eprintln!("Pipeline returned empty");
+                    process::exit(1);
+                }
             }
-            Err(e) => { eprintln!("Pipeline failed: {}", e); process::exit(1); }
+            Err(e) => {
+                eprintln!("Pipeline failed: {}", e);
+                process::exit(1);
+            }
         }
     });
 }
 
 fn cmd_search(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora search <q>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora search <q>");
+        process::exit(1);
+    }
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
     let results = k.search(&args[2]);
-    if results.is_empty() { println!("No matches for: {}", args[2]); }
-    else { for p in &results { println!("  {} v{} ({})", p.id, p.version, p.kind); } }
+    if results.is_empty() {
+        println!("No matches for: {}", args[2]);
+    } else {
+        for p in &results {
+            println!("  {} v{} ({})", p.id, p.version, p.kind);
+        }
+    }
 }
 
 fn cmd_list() {
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
     let installed = k.list_installed();
-    if installed.is_empty() { println!("Nothing installed."); }
-    else { for id in &installed { println!("  {}", id); } }
+    if installed.is_empty() {
+        println!("Nothing installed.");
+    } else {
+        for id in &installed {
+            println!("  {}", id);
+        }
+    }
 }
 
 fn cmd_info(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora info <id>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora info <id>");
+        process::exit(1);
+    }
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
     match k.info(&args[2]) {
-        Some(p) => { println!("{} v{} ({})", p.id, p.version, p.kind); println!("  {}", p.description); }
+        Some(p) => {
+            println!("{} v{} ({})", p.id, p.version, p.kind);
+            println!("  {}", p.description);
+        }
         None => println!("Not found: {}", args[2]),
     }
 }
@@ -129,18 +174,25 @@ fn cmd_architecture() {
     println!("├── KUBER (package distribution)");
     println!("└── Skills (declarative bundles)");
     println!();
-    println!("Invariant: every executable behavior originates from a Constitutional Service or a Gene.");
+    println!(
+        "Invariant: every executable behavior originates from a Constitutional Service or a Gene."
+    );
 }
 
 fn cmd_new(args: &[String]) {
-    if args.len() < 4 { eprintln!("Usage: pandora new gene|skill <name>"); process::exit(1); }
+    if args.len() < 4 {
+        eprintln!("Usage: pandora new gene|skill <name>");
+        process::exit(1);
+    }
     match args[2].as_str() {
         "gene" => {
             let mut sc = get_sc();
             let mut kuber = pandora_kuber::Kuber::new(&mut sc);
             match kuber.install("todo") {
-                Ok(_) => {},
-                Err(e) => { eprintln!("{}", e); }
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
             }
             // Scaffold via  pattern
             println!("Scaffolding gene: {}", args[3]);

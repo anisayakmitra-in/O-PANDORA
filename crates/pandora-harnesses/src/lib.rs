@@ -1,16 +1,29 @@
 // ponytail: reference Source Harnesses — each wraps a service, augments with commands.
 
 use pandora_shadow_council::ShadowCouncil;
-use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, SlashCommand};
+use pandora_types::harness::{
+    Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, SlashCommand,
+};
 use pandora_types::services::*;
 use std::sync::Arc;
 
 fn source_manifest(id: &str, name: &str, caps: &[&str], cmds: &[(&str, &str)]) -> HarnessManifest {
     let mut b = HarnessManifestBuilder::default()
-        .id(id).name(name).version("0.1.0").author("pandora").kind(HarnessKind::Source)
-        .description(format!("{} Source Harness — augments the {} service", name, name));
-    for c in caps { b = b.capability(*c); }
-    for (cmd, desc) in cmds { b = b.slash_command(*cmd, *desc); }
+        .id(id)
+        .name(name)
+        .version("0.1.0")
+        .author("pandora")
+        .kind(HarnessKind::Source)
+        .description(format!(
+            "{} Source Harness — augments the {} service",
+            name, name
+        ));
+    for c in caps {
+        b = b.capability(*c);
+    }
+    for (cmd, desc) in cmds {
+        b = b.slash_command(*cmd, *desc);
+    }
     b.build().unwrap()
 }
 
@@ -26,11 +39,14 @@ impl MemorySourceHarness {
     pub fn new(service: Arc<dyn MemoryService>) -> Self {
         Self {
             manifest: source_manifest(
-                "memory-source", "Memory",
+                "memory-source",
+                "Memory",
                 &["memory", "storage", "retrieval"],
-                &[("/memory.graph", "View memory graph"),
-                  ("/memory.timeline", "View memory timeline"),
-                  ("/memory.export", "Export memory data")],
+                &[
+                    ("/memory.graph", "View memory graph"),
+                    ("/memory.timeline", "View memory timeline"),
+                    ("/memory.export", "Export memory data"),
+                ],
             ),
             service,
         }
@@ -38,7 +54,9 @@ impl MemorySourceHarness {
 }
 
 impl Harness for MemorySourceHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }
 
 // ── Planning Source Harness ──
@@ -53,10 +71,13 @@ impl PlanningSourceHarness {
     pub fn new(service: Arc<dyn PlanningService>) -> Self {
         Self {
             manifest: source_manifest(
-                "planning-source", "Planning",
+                "planning-source",
+                "Planning",
                 &["planning", "workflow", "scheduling"],
-                &[("/plan.create", "Create a plan"),
-                  ("/plan.status", "Check plan status")],
+                &[
+                    ("/plan.create", "Create a plan"),
+                    ("/plan.status", "Check plan status"),
+                ],
             ),
             service,
         }
@@ -64,7 +85,9 @@ impl PlanningSourceHarness {
 }
 
 impl Harness for PlanningSourceHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }
 
 // ── Execution Source Harness ──
@@ -79,10 +102,13 @@ impl ExecutionSourceHarness {
     pub fn new(service: Arc<dyn ExecutionService>) -> Self {
         Self {
             manifest: source_manifest(
-                "execution-source", "Execution",
+                "execution-source",
+                "Execution",
                 &["execution", "sandbox", "runtime"],
-                &[("/exec.run", "Execute a command"),
-                  ("/exec.checkpoint", "Create checkpoint")],
+                &[
+                    ("/exec.run", "Execute a command"),
+                    ("/exec.checkpoint", "Create checkpoint"),
+                ],
             ),
             service,
         }
@@ -90,7 +116,9 @@ impl ExecutionSourceHarness {
 }
 
 impl Harness for ExecutionSourceHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }
 
 // ── Governance Source Harness ──
@@ -105,10 +133,13 @@ impl GovernanceSourceHarness {
     pub fn new(service: Arc<dyn GovernanceService>) -> Self {
         Self {
             manifest: source_manifest(
-                "governance-source", "Governance",
+                "governance-source",
+                "Governance",
                 &["governance", "policy", "audit"],
-                &[("/gov.evaluate", "Evaluate an action"),
-                  ("/gov.audit", "View audit log")],
+                &[
+                    ("/gov.evaluate", "Evaluate an action"),
+                    ("/gov.audit", "View audit log"),
+                ],
             ),
             service,
         }
@@ -116,7 +147,9 @@ impl GovernanceSourceHarness {
 }
 
 impl Harness for GovernanceSourceHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }
 
 // ── Identity Source Harness ──
@@ -131,10 +164,13 @@ impl IdentitySourceHarness {
     pub fn new(service: Arc<dyn IdentityService>) -> Self {
         Self {
             manifest: source_manifest(
-                "identity-source", "Identity",
+                "identity-source",
+                "Identity",
                 &["identity", "auth", "sessions"],
-                &[("/identity.fork", "Fork an identity"),
-                  ("/identity.merge", "Merge identities")],
+                &[
+                    ("/identity.fork", "Fork an identity"),
+                    ("/identity.merge", "Merge identities"),
+                ],
             ),
             service,
         }
@@ -142,18 +178,35 @@ impl IdentitySourceHarness {
 }
 
 impl Harness for IdentitySourceHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }
 
 // ── Helper: register all reference source harnesses into Shadow Council ──
 
 pub fn register_all(sc: &mut ShadowCouncil) {
     use pandora_services::*;
-    sc.install(Box::new(MemorySourceHarness::new(Arc::new(DefaultMemoryService::new())))).ok();
-    sc.install(Box::new(PlanningSourceHarness::new(Arc::new(DefaultPlanningService::new())))).ok();
-    sc.install(Box::new(ExecutionSourceHarness::new(Arc::new(DefaultExecutionService::new())))).ok();
-    sc.install(Box::new(GovernanceSourceHarness::new(Arc::new(DefaultGovernanceService::new())))).ok();
-    sc.install(Box::new(IdentitySourceHarness::new(Arc::new(DefaultIdentityService::new())))).ok();
+    sc.install(Box::new(MemorySourceHarness::new(Arc::new(
+        DefaultMemoryService::new(),
+    ))))
+    .ok();
+    sc.install(Box::new(PlanningSourceHarness::new(Arc::new(
+        DefaultPlanningService::new(),
+    ))))
+    .ok();
+    sc.install(Box::new(ExecutionSourceHarness::new(Arc::new(
+        DefaultExecutionService::new(),
+    ))))
+    .ok();
+    sc.install(Box::new(GovernanceSourceHarness::new(Arc::new(
+        DefaultGovernanceService::new(),
+    ))))
+    .ok();
+    sc.install(Box::new(IdentitySourceHarness::new(Arc::new(
+        DefaultIdentityService::new(),
+    ))))
+    .ok();
 }
 
 #[cfg(test)]
@@ -193,6 +246,9 @@ mod tests {
     fn governance_harness_policy_capability() {
         let svc = pandora_services::DefaultGovernanceService::new();
         let h = GovernanceSourceHarness::new(Arc::new(svc));
-        assert!(h.manifest().capabilities.contains(&"governance".to_string()));
+        assert!(h
+            .manifest()
+            .capabilities
+            .contains(&"governance".to_string()));
     }
 }
