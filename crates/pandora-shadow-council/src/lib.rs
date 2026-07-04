@@ -6,9 +6,7 @@
 //! Parliament calls `shadow_council.install()` / `.enable()` / `.dispatch()` etc.
 //! The council never executes — it finds and routes.
 
-use pandora_types::gene::{
-    Gene, GeneKind, GeneLineage, GeneManifest, SlashCommandOwner,
-};
+use pandora_types::gene::{Gene, GeneKind, GeneLineage, GeneManifest, SlashCommandOwner};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, SlashCommand};
 use std::collections::HashMap;
 
