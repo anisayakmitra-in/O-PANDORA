@@ -1,4 +1,4 @@
-//! Canonical Gene types — the universal building block of Pandora.
+//! Canonical Gene types — GeneManifest (runtime) + GeneMetadata (rich) — the universal building block of Pandora.
 //!
 //! Genes are small composable runtime units. Every capability is a Gene.
 //! They can exist alone or inside a Harness.
@@ -45,7 +45,8 @@ impl GeneKind {
     }
 }
 
-/// Canonical Gene manifest — one manifest, all kinds.
+/// Canonical Gene manifest — minimal runtime fields only.
+/// Rich metadata (description, homepage, license, etc.) lives in GeneMetadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneManifest {
     pub id: String,
@@ -53,13 +54,50 @@ pub struct GeneManifest {
     pub kind: GeneKind,
     pub version: String,
     pub author: String,
-    pub description: String,
-    pub capabilities: Vec<String>,
     pub dependencies: Vec<String>,
+    pub capabilities: Vec<String>,
     pub slash_commands: Vec<super::harness::SlashCommand>,
+    pub owner_harness: Option<String>,
+    pub metadata: GeneMetadata,
+}
+
+/// Rich metadata for a Gene — used by KUBER for display, search, and publishing.
+/// Not part of the runtime execution path.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneMetadata {
+    pub description: String,
+    pub homepage: Option<String>,
+    pub license: Option<String>,
+    pub repository: Option<String>,
+    pub tags: Vec<String>,
+    pub documentation: Option<String>,
+    pub icon: Option<String>,
+    pub examples: Vec<String>,
+    pub custom: std::collections::HashMap<String, String>,
     pub permissions: Vec<String>,
-    pub metadata: std::collections::HashMap<String, String>,
-    pub owner_harness: Option<String>, // which harness owns this gene, if any
+}
+
+impl GeneMetadata {
+    pub fn new() -> Self {
+        Self {
+            description: String::new(),
+            homepage: None,
+            license: None,
+            repository: None,
+            tags: Vec::new(),
+            documentation: None,
+            icon: None,
+            examples: Vec::new(),
+            custom: std::collections::HashMap::new(),
+            permissions: Vec::new(),
+        }
+    }
+}
+
+impl Default for GeneMetadata {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GeneManifest {
@@ -138,19 +176,29 @@ impl GeneManifestBuilder {
     }
 
     pub fn build(self) -> Result<GeneManifest, String> {
+        let metadata = GeneMetadata {
+            description: self.description.unwrap_or_default(),
+            homepage: None,
+            license: None,
+            repository: None,
+            tags: Vec::new(),
+            documentation: None,
+            icon: None,
+            examples: Vec::new(),
+            custom: self.metadata,
+            permissions: self.permissions,
+        };
         Ok(GeneManifest {
             id: self.id.ok_or("Missing: id")?,
             name: self.name.ok_or("Missing: name")?,
             kind: self.kind.ok_or("Missing: kind")?,
             version: self.version.ok_or("Missing: version")?,
             author: self.author.unwrap_or_default(),
-            description: self.description.unwrap_or_default(),
             capabilities: self.capabilities,
             dependencies: self.dependencies,
             slash_commands: self.slash_commands,
-            permissions: self.permissions,
-            metadata: self.metadata,
             owner_harness: self.owner_harness,
+            metadata,
         })
     }
 }
