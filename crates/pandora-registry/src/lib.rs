@@ -1,3 +1,5 @@
+//! DEPRECATED — use pandora-shadow-council instead. Pre-freeze (July 2026).
+#![allow(deprecated)]
 //! Pandora Registry — extracted from pandora-runtime (Phase 1B).
 //!
 #[derive(Debug, Clone)]
@@ -57,6 +59,7 @@ pub struct RegistryEntry {
 }
 
 #[derive(Debug, Default)]
+#[deprecated(note = "Use pandora_shadow_council::HarnessRegistry. This is pre-freeze.")]
 pub struct HarnessRegistry {
     entries: HashMap<String, RegistryEntry>,
 }

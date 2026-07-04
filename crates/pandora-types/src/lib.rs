@@ -35,6 +35,12 @@ pub use gene::{
     Gene, GeneKind, GeneLineage, GeneLineageEntry, GeneManifest, GeneManifestBuilder,
     SlashCommandOwner,
 };
+
+/// Architecture invariant: every executable behavior originates from
+/// either a Constitutional Service or a Gene. Nothing else may execute.
+/// This prevents future abstraction creep beyond the frozen 5-layer model.
+pub const ARCHITECTURE_INVARIANT: &str = "execute-from-service-or-gene-only";
+
 pub use gene_package::{discover_gene_packages, GenePackage, GenePackageManifest, SlashCommandDef};
 pub use harness_gene::HarnessGene;
 

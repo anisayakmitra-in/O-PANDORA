@@ -127,7 +127,7 @@ impl RuntimeDelta {
 
 // ── ProviderRegistry — multi-provider dispatch with model resolution (2C) ──
 
-use pandora_provider::{ExecutionTarget, Locality};
+use pandora_provider::ExecutionTarget;
 
 /// Registry of available providers with model-level resolution.
 pub struct ProviderRegistry {
@@ -176,11 +176,7 @@ impl ProviderRegistry {
         let model = model_hint
             .or(self.default_model_name.as_deref())
             .or(manifest.models.first().map(|s| s.as_str()))?;
-        let locality = if pname == "ollama" || pname == "llama.cpp" {
-            Locality::Local
-        } else {
-            Locality::Remote
-        };
+        let locality = manifest.locality.clone();
         Some(ExecutionTarget {
             provider: pname.to_string(),
             model: model.to_string(),

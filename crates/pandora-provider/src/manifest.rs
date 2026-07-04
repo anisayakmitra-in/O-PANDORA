@@ -1,3 +1,4 @@
+use crate::target::Locality;
 use serde::{Deserialize, Serialize};
 
 use crate::capability::ModelCapabilities;
@@ -22,6 +23,9 @@ pub struct ProviderManifest {
 
     /// Provider endpoint/configuration (optional).
     pub endpoint: Option<String>,
+
+    /// Where execution occurs — Local, Remote, or Any.
+    pub locality: Locality,
 }
 
 impl ProviderManifest {
@@ -34,6 +38,7 @@ impl ProviderManifest {
             models: Vec::new(),
             capabilities: ModelCapabilities::default(),
             endpoint: None,
+            locality: Locality::Any,
         }
     }
 
@@ -52,6 +57,12 @@ impl ProviderManifest {
     /// Set provider endpoint.
     pub fn with_endpoint(mut self, endpoint: impl Into<String>) -> Self {
         self.endpoint = Some(endpoint.into());
+        self
+    }
+
+    /// Set provider locality.
+    pub fn with_locality(mut self, locality: Locality) -> Self {
+        self.locality = locality;
         self
     }
 }

@@ -137,6 +137,7 @@ mod tests {
             models: vec!["llama3".to_string()],
             capabilities: caps(),
             endpoint: Some("http://localhost".to_string()),
+            locality: crate::target::Locality::Local,
         }
     }
 

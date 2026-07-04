@@ -152,6 +152,9 @@ impl SourceHarnessRole {
 
 /// The canonical Source Harness trait. Every Source Harness implementation
 /// MUST satisfy this contract. Implementations are replaceable.
+#[deprecated(
+    note = "Use the single Harness trait in pandora_types::harness instead. SourceHarness is pre-freeze (July 2026)."
+)]
 pub trait SourceHarness: Send + Sync + std::fmt::Debug {
     /// The role this Source Harness fulfills.
     fn role(&self) -> SourceHarnessRole;
@@ -200,6 +203,9 @@ impl MetaHarnessKind {
 
 /// The canonical Meta Harness trait. Meta Harnesses are domain extensions
 /// that extend Source Harness behavior.
+#[deprecated(
+    note = "Use the single Harness trait in pandora_types::harness instead. MetaHarness is pre-freeze (July 2026)."
+)]
 pub trait MetaHarness: Send + Sync + std::fmt::Debug {
     fn kind(&self) -> MetaHarnessKind;
     fn manifest(&self) -> &ConstitutionalManifest;

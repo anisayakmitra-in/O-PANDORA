@@ -58,6 +58,7 @@ pub struct CapabilityDecision {
 
 /// A registry of capabilities.
 #[derive(Debug, Clone)]
+#[deprecated(note = "Use pandora_shadow_council::CapabilityRegistry. Pre-freeze.")]
 pub struct CapabilityRegistry {
     pub capabilities: Vec<CapabilityDescriptor>,
 }
