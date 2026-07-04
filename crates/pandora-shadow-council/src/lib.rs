@@ -6,7 +6,7 @@
 //! Parliament calls `shadow_council.install()` / `.enable()` / `.dispatch()` etc.
 //! The council never executes — it finds and routes.
 
-use pandora_types::gene::{Gene, GeneKind, GeneManifest, SlashCommandOwner};
+use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneLineage, GeneLineageEntry, SlashCommandOwner};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, SlashCommand};
 use std::collections::HashMap;
 
@@ -43,6 +43,37 @@ impl PackageGene {
             _path: path,
         }
     }
+}
+
+
+
+/// An installed gene — the runtime instance of a GenePackage.
+/// Mutable: can be enabled/disabled, configured, evolved.
+/// The original GenePackage stays immutable.
+#[derive(Debug)]
+pub struct InstalledGene {
+    pub instance_id: String,
+    pub gene: Box<dyn Gene>,
+    pub enabled: bool,
+    pub config: std::collections::HashMap<String, String>,
+    pub lineage: GeneLineage,
+}
+
+impl InstalledGene {
+    pub fn new(gene: Box<dyn Gene>, package_id: &str, version: &str) -> Self {
+        let id = gene.id().to_string();
+        Self {
+            instance_id: id.clone(),
+            gene,
+            enabled: false,
+            config: std::collections::HashMap::new(),
+            lineage: GeneLineage::new(package_id, version),
+        }
+    }
+
+    pub fn id(&self) -> &str { &self.instance_id }
+    pub fn kind(&self) -> &GeneKind { self.gene.kind() }
+    pub fn manifest(&self) -> &GeneManifest { self.gene.manifest() }
 }
 
 impl Gene for PackageGene {
@@ -622,44 +653,32 @@ impl Default for HarnessRegistry {
 // ═══════════════════════════════════════════
 
 /// Registry for all installed genes across all harnesses.
+/// Stores InstalledGene wrappers — tracks lineage, config, and enabled state.
 #[derive(Debug)]
 pub struct GeneRegistry {
-    genes: std::collections::HashMap<String, Box<dyn Gene>>,
-    gene_states: std::collections::HashMap<String, GeneLifecycleState>,
+    genes: std::collections::HashMap<String, InstalledGene>,
 }
 
-/// Lifecycle state for a gene.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GeneLifecycleState {
-    Registered,
-    Enabled,
-    Disabled,
-}
 
 impl GeneRegistry {
     pub fn new() -> Self {
         Self {
             genes: std::collections::HashMap::new(),
-            gene_states: std::collections::HashMap::new(),
         }
     }
 
-    pub fn register(&mut self, gene: Box<dyn Gene>) -> Result<(), String> {
-        let id = gene.id().to_string();
+    pub fn register(&mut self, installed: InstalledGene) -> Result<(), String> {
+        let id = installed.id().to_string();
         if self.genes.contains_key(&id) {
-            return Err(format!("Gene already registered: {}", id));
+            return Err(format!("Gene already installed: {}", id));
         }
-        gene.validate()?;
-        self.gene_states
-            .insert(id.clone(), GeneLifecycleState::Registered);
-        self.genes.insert(id, gene);
+        self.genes.insert(id, installed);
         Ok(())
     }
 
     pub fn enable(&mut self, id: &str) -> Result<(), String> {
-        if self.genes.contains_key(id) {
-            self.gene_states
-                .insert(id.to_string(), GeneLifecycleState::Enabled);
+        if let Some(g) = self.genes.get_mut(id) {
+            g.enabled = true;
             Ok(())
         } else {
             Err(format!("Gene not found: {}", id))
@@ -667,9 +686,8 @@ impl GeneRegistry {
     }
 
     pub fn disable(&mut self, id: &str) -> Result<(), String> {
-        if self.genes.contains_key(id) {
-            self.gene_states
-                .insert(id.to_string(), GeneLifecycleState::Disabled);
+        if let Some(g) = self.genes.get_mut(id) {
+            g.enabled = false;
             Ok(())
         } else {
             Err(format!("Gene not found: {}", id))
@@ -678,31 +696,33 @@ impl GeneRegistry {
 
     pub fn unregister(&mut self, id: &str) -> Result<(), String> {
         self.genes.remove(id);
-        self.gene_states.remove(id);
         Ok(())
     }
 
-    pub fn get(&self, id: &str) -> Option<&dyn Gene> {
-        self.genes.get(id).map(|g| g.as_ref())
+    pub fn get(&self, id: &str) -> Option<&InstalledGene> {
+        self.genes.get(id)
     }
 
-    pub fn list_by_kind(&self, kind: &GeneKind) -> Vec<&dyn Gene> {
+    pub fn get_gene(&self, id: &str) -> Option<&dyn Gene> {
+        self.genes.get(id).map(|g| g.gene.as_ref())
+    }
+
+    pub fn list_by_kind(&self, kind: &GeneKind) -> Vec<&InstalledGene> {
         self.genes
             .values()
             .filter(|g| g.kind() == kind)
-            .map(|g| g.as_ref())
             .collect()
     }
 
-    pub fn all(&self) -> Vec<&dyn Gene> {
-        self.genes.values().map(|g| g.as_ref()).collect()
+    pub fn all(&self) -> Vec<&InstalledGene> {
+        self.genes.values().collect()
     }
 
     pub fn total_count(&self) -> usize {
         self.genes.len()
     }
-    pub fn state(&self, id: &str) -> Option<&GeneLifecycleState> {
-        self.gene_states.get(id)
+    pub fn enabled_count(&self) -> usize {
+        self.genes.values().filter(|g| g.enabled).count()
     }
 }
 
@@ -900,17 +920,20 @@ impl ShadowCouncil {
 
     // ── Gene management methods ──
 
-    /// Install a gene — register + index capabilities + register slash commands.
+    /// Install a gene — wrap in InstalledGene, register + index capabilities + register slash commands.
     pub fn install_gene(&mut self, gene: Box<dyn Gene>) -> Result<(), String> {
         let id = gene.id().to_string();
-        let manifest = gene.manifest().clone();
+        let package_id = gene.manifest().name.clone();
+        let version = gene.manifest().version.clone();
+        let installed = InstalledGene::new(gene, &package_id, &version);
+        let manifest = installed.manifest().clone();
         let owner = manifest
             .owner_harness
             .clone()
             .map(SlashCommandOwner::Harness)
             .unwrap_or_else(|| SlashCommandOwner::Gene(id.clone()));
 
-        self.genes.register(gene)?;
+        self.genes.register(installed)?;
         // Register slash commands with the appropriate owner
         for cmd in &manifest.slash_commands {
             match &owner {
@@ -936,11 +959,11 @@ impl ShadowCouncil {
     pub fn find_gene(&self, capability: &str) -> Option<&dyn Gene> {
         self.gene_router
             .find_by_capability(capability)
-            .and_then(|id| self.genes.get(id))
+            .and_then(|id| self.genes.get_gene(id))
     }
 
     /// List all genes of a given kind.
-    pub fn genes_by_kind(&self, kind: &GeneKind) -> Vec<&dyn Gene> {
+    pub fn genes_by_kind(&self, kind: &GeneKind) -> Vec<&InstalledGene> {
         self.genes.list_by_kind(kind)
     }
 
@@ -1061,6 +1084,7 @@ description = "Run the {name} gene"
             slash_commands: self.slash_commands.len(),
             capabilities: self.capabilities.len(),
             genes: self.genes.total_count(),
+            genes_enabled: self.genes.enabled_count(),
         }
     }
 }
@@ -1082,6 +1106,7 @@ pub struct CouncilSummary {
     pub slash_commands: usize,
     pub capabilities: usize,
     pub genes: usize,
+    pub genes_enabled: usize,
 }
 
 // ═══════════════════════════════════════════
@@ -1371,12 +1396,9 @@ mod tests {
     #[test]
     fn gene_registry_register_and_list() {
         let mut reg = GeneRegistry::new();
-        let g1 = TestGene::new("cargo-check", GeneKind::Tool);
-        let g2 = TestGene::new("ollama-provider", GeneKind::Provider);
-        let g3 = TestGene::new("bug-fix", GeneKind::Workflow);
-        reg.register(Box::new(g1)).unwrap();
-        reg.register(Box::new(g2)).unwrap();
-        reg.register(Box::new(g3)).unwrap();
+        reg.register(InstalledGene::new(Box::new(TestGene::new("cargo-check", GeneKind::Tool)), "cargo-check", "0.1.0")).unwrap();
+        reg.register(InstalledGene::new(Box::new(TestGene::new("ollama-provider", GeneKind::Provider)), "ollama-provider", "0.1.0")).unwrap();
+        reg.register(InstalledGene::new(Box::new(TestGene::new("bug-fix", GeneKind::Workflow)), "bug-fix", "0.1.0")).unwrap();
         assert_eq!(reg.total_count(), 3);
         assert_eq!(reg.list_by_kind(&GeneKind::Tool).len(), 1);
         assert_eq!(reg.list_by_kind(&GeneKind::Provider).len(), 1);
@@ -1386,18 +1408,11 @@ mod tests {
     #[test]
     fn gene_registry_enable_disable() {
         let mut reg = GeneRegistry::new();
-        reg.register(Box::new(TestGene::new("test-gene", GeneKind::Skill)))
-            .unwrap();
+        reg.register(InstalledGene::new(Box::new(TestGene::new("test-gene", GeneKind::Skill)), "test-gene", "0.1.0")).unwrap();
         reg.enable("test-gene").unwrap();
-        assert_eq!(
-            reg.state("test-gene").unwrap(),
-            &GeneLifecycleState::Enabled
-        );
+        assert!(reg.get("test-gene").unwrap().enabled);
         reg.disable("test-gene").unwrap();
-        assert_eq!(
-            reg.state("test-gene").unwrap(),
-            &GeneLifecycleState::Disabled
-        );
+        assert!(!reg.get("test-gene").unwrap().enabled);
     }
 
     #[test]
@@ -1423,18 +1438,15 @@ mod tests {
     fn shadow_council_install_gene_with_commands() {
         let mut sc = ShadowCouncil::new();
         let mut g = TestGene::new("code-gene", GeneKind::Tool);
-        g.manifest
-            .slash_commands
-            .push(pandora_types::harness::SlashCommand {
-                command: "code.lint".into(),
-                description: "Lint code".into(),
-            });
+        g.manifest.slash_commands.push(pandora_types::harness::SlashCommand {
+            command: "code.lint".into(),
+            description: "Lint code".into(),
+        });
         g.manifest.capabilities.push("code-linting".to_string());
         sc.install_gene(Box::new(g)).unwrap();
 
         assert_eq!(sc.genes.total_count(), 1);
         assert!(sc.find_gene("code-linting").is_some());
-        // Gene-owned commands are reachable via route_owner, not route (which returns harnesses)
         assert_eq!(sc.route_owner("code.lint").unwrap(), "code-gene");
         assert_eq!(sc.genes_by_kind(&GeneKind::Tool).len(), 1);
     }

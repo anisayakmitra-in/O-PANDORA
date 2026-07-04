@@ -100,6 +100,37 @@ impl Default for GeneMetadata {
     }
 }
 
+
+/// One entry in a gene evolution lineage.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneLineageEntry {
+    pub entry_id: u64,
+    pub parent_id: Option<String>,
+    pub mutation_desc: String,
+    pub benchmark_result: Option<String>,
+    pub accepted: bool,
+    pub timestamp: String,
+    pub gene_snapshot: Option<String>,
+}
+
+/// Tracks evolution history. Origin is immutable, local commits are the lineage.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneLineage {
+    pub original_package_id: String,
+    pub original_version: String,
+    pub original_hash: Option<String>,
+    pub entries: Vec<GeneLineageEntry>,
+}
+
+impl GeneLineage {
+    pub fn new(package_id: &str, version: &str) -> Self {
+        Self { original_package_id: package_id.to_string(), original_version: version.to_string(), original_hash: None, entries: Vec::new() }
+    }
+    pub fn add_entry(&mut self, entry: GeneLineageEntry) { self.entries.push(entry); }
+    pub fn latest_entry(&self) -> Option<&GeneLineageEntry> { self.entries.last() }
+    pub fn entry_count(&self) -> usize { self.entries.len() }
+}
+
 impl GeneManifest {
     pub fn builder() -> GeneManifestBuilder {
         GeneManifestBuilder::default()
