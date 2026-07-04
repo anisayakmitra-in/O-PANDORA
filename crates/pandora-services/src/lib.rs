@@ -16,20 +16,32 @@ pub struct DefaultMemoryService {
 
 impl DefaultMemoryService {
     pub fn new() -> Self {
-        Self { store: Mutex::new(HashMap::new()), provider: "pandora".into(), version: "0.1.0".into() }
+        Self {
+            store: Mutex::new(HashMap::new()),
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
     }
 }
 
 impl Service for DefaultMemoryService {
-    fn service_id(&self) -> ServiceId { ServiceId::Memory }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Memory
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl MemoryService for DefaultMemoryService {
     fn store(&self, namespace: &str, key: &str, value: &[u8]) -> Result<(), String> {
         let mut map = self.store.lock().map_err(|e| e.to_string())?;
-        map.entry(namespace.to_string()).or_default().insert(key.to_string(), value.to_vec());
+        map.entry(namespace.to_string())
+            .or_default()
+            .insert(key.to_string(), value.to_vec());
         Ok(())
     }
 
@@ -40,20 +52,32 @@ impl MemoryService for DefaultMemoryService {
 
     fn forget(&self, namespace: &str, key: &str) -> Result<(), String> {
         let mut map = self.store.lock().map_err(|e| e.to_string())?;
-        if let Some(ns) = map.get_mut(namespace) { ns.remove(key); }
+        if let Some(ns) = map.get_mut(namespace) {
+            ns.remove(key);
+        }
         Ok(())
     }
 
     fn search(&self, namespace: &str, query: &str) -> Result<Vec<String>, String> {
         let map = self.store.lock().map_err(|e| e.to_string())?;
         let q = query.to_lowercase();
-        Ok(map.get(namespace).map(|ns| {
-            ns.keys().filter(|k| k.to_lowercase().contains(&q)).cloned().collect()
-        }).unwrap_or_default())
+        Ok(map
+            .get(namespace)
+            .map(|ns| {
+                ns.keys()
+                    .filter(|k| k.to_lowercase().contains(&q))
+                    .cloned()
+                    .collect()
+            })
+            .unwrap_or_default())
     }
 
-    fn archive(&self, _namespace: &str, _key: &str) -> Result<(), String> { Ok(()) }
-    fn summarize(&self, _namespace: &str) -> Result<String, String> { Ok("in-memory".into()) }
+    fn archive(&self, _namespace: &str, _key: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn summarize(&self, _namespace: &str) -> Result<String, String> {
+        Ok("in-memory".into())
+    }
 }
 
 // ── Execution Service (stub) ──
@@ -65,21 +89,42 @@ pub struct DefaultExecutionService {
 }
 
 impl DefaultExecutionService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 
 impl Service for DefaultExecutionService {
-    fn service_id(&self) -> ServiceId { ServiceId::Execution }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Execution
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl ExecutionService for DefaultExecutionService {
-    fn spawn(&self, task: &str) -> Result<String, String> { Ok(format!("exec-{}", task.len())) }
-    fn execute(&self, id: &str, cmd: &str) -> Result<String, String> { Ok(format!("{}: {}", id, cmd)) }
-    fn checkpoint(&self, _id: &str) -> Result<(), String> { Ok(()) }
-    fn restore(&self, _id: &str, _cp: &str) -> Result<(), String> { Ok(()) }
-    fn teardown(&self, _id: &str) -> Result<(), String> { Ok(()) }
+    fn spawn(&self, task: &str) -> Result<String, String> {
+        Ok(format!("exec-{}", task.len()))
+    }
+    fn execute(&self, id: &str, cmd: &str) -> Result<String, String> {
+        Ok(format!("{}: {}", id, cmd))
+    }
+    fn checkpoint(&self, _id: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn restore(&self, _id: &str, _cp: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn teardown(&self, _id: &str) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 // ── Planning Service (stub) ──
@@ -91,20 +136,39 @@ pub struct DefaultPlanningService {
 }
 
 impl DefaultPlanningService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 
 impl Service for DefaultPlanningService {
-    fn service_id(&self) -> ServiceId { ServiceId::Planning }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Planning
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl PlanningService for DefaultPlanningService {
-    fn plan(&self, goal: &str) -> Result<String, String> { Ok(format!("plan-{}", goal.len())) }
-    fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> { Ok(vec![plan_id.to_string()]) }
-    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> { Ok(pid.to_string()) }
-    fn topology(&self, plan_id: &str) -> Result<String, String> { Ok(plan_id.to_string()) }
+    fn plan(&self, goal: &str) -> Result<String, String> {
+        Ok(format!("plan-{}", goal.len()))
+    }
+    fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
+        Ok(vec![plan_id.to_string()])
+    }
+    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> {
+        Ok(pid.to_string())
+    }
+    fn topology(&self, plan_id: &str) -> Result<String, String> {
+        Ok(plan_id.to_string())
+    }
 }
 
 // ── Governance Service (stub) ──
@@ -116,137 +180,288 @@ pub struct DefaultGovernanceService {
 }
 
 impl DefaultGovernanceService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 
 impl Service for DefaultGovernanceService {
-    fn service_id(&self) -> ServiceId { ServiceId::Governance }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Governance
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl GovernanceService for DefaultGovernanceService {
-    fn evaluate(&self, _action: &str, _ctx: &str) -> Result<bool, String> { Ok(true) }
-    fn audit(&self, _action: &str, _decision: &str) -> Result<(), String> { Ok(()) }
-    fn score(&self, _target: &str) -> Result<f64, String> { Ok(0.5) }
-    fn verify(&self, _artifact: &str) -> Result<bool, String> { Ok(true) }
+    fn evaluate(&self, _action: &str, _ctx: &str) -> Result<bool, String> {
+        Ok(true)
+    }
+    fn audit(&self, _action: &str, _decision: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn score(&self, _target: &str) -> Result<f64, String> {
+        Ok(0.5)
+    }
+    fn verify(&self, _artifact: &str) -> Result<bool, String> {
+        Ok(true)
+    }
 }
-
-
 
 // ── Identity Service (stub) ──
 
 #[derive(Debug)]
-pub struct DefaultIdentityService { provider: String, version: String }
+pub struct DefaultIdentityService {
+    provider: String,
+    version: String,
+}
 impl DefaultIdentityService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 impl Service for DefaultIdentityService {
-    fn service_id(&self) -> ServiceId { ServiceId::Identity }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Identity
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 impl IdentityService for DefaultIdentityService {
-    fn persist(&self, id: &str) -> Result<(), String> { Ok(()) }
-    fn resurrect(&self, id: &str) -> Result<String, String> { Ok(id.into()) }
-    fn fork(&self, _id: &str, name: &str) -> Result<String, String> { Ok(name.into()) }
-    fn merge(&self, _src: &str, _tgt: &str) -> Result<(), String> { Ok(()) }
+    fn persist(&self, id: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn resurrect(&self, id: &str) -> Result<String, String> {
+        Ok(id.into())
+    }
+    fn fork(&self, _id: &str, name: &str) -> Result<String, String> {
+        Ok(name.into())
+    }
+    fn merge(&self, _src: &str, _tgt: &str) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 // ── Sandbox Service — wraps StorageService semantics ──
 
 #[derive(Debug)]
-pub struct DefaultSandboxService { provider: String, version: String }
+pub struct DefaultSandboxService {
+    provider: String,
+    version: String,
+}
 impl DefaultSandboxService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 impl Service for DefaultSandboxService {
-    fn service_id(&self) -> ServiceId { ServiceId::Custom("sandbox".into()) }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Custom("sandbox".into())
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 impl StorageService for DefaultSandboxService {
-    fn read(&self, path: &str) -> Result<Vec<u8>, String> { Err(format!("sandbox: {} not accessible", path)) }
-    fn write(&self, _path: &str, _data: &[u8]) -> Result<(), String> { Ok(()) }
-    fn delete(&self, _path: &str) -> Result<(), String> { Ok(()) }
-    fn list(&self, prefix: &str) -> Result<Vec<String>, String> { Ok(vec![prefix.into()]) }
+    fn read(&self, path: &str) -> Result<Vec<u8>, String> {
+        Err(format!("sandbox: {} not accessible", path))
+    }
+    fn write(&self, _path: &str, _data: &[u8]) -> Result<(), String> {
+        Ok(())
+    }
+    fn delete(&self, _path: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn list(&self, prefix: &str) -> Result<Vec<String>, String> {
+        Ok(vec![prefix.into()])
+    }
 }
 
 // ── Workflow Service (stub) ──
 
 #[derive(Debug)]
-pub struct DefaultWorkflowService { provider: String, version: String }
+pub struct DefaultWorkflowService {
+    provider: String,
+    version: String,
+}
 impl DefaultWorkflowService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 impl Service for DefaultWorkflowService {
-    fn service_id(&self) -> ServiceId { ServiceId::Custom("workflow".into()) }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Custom("workflow".into())
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 impl PlanningService for DefaultWorkflowService {
-    fn plan(&self, goal: &str) -> Result<String, String> { Ok(format!("wf-{}", goal.len())) }
-    fn dag(&self, pid: &str) -> Result<Vec<String>, String> { Ok(vec![pid.into()]) }
-    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> { Ok(pid.into()) }
-    fn topology(&self, pid: &str) -> Result<String, String> { Ok(pid.into()) }
+    fn plan(&self, goal: &str) -> Result<String, String> {
+        Ok(format!("wf-{}", goal.len()))
+    }
+    fn dag(&self, pid: &str) -> Result<Vec<String>, String> {
+        Ok(vec![pid.into()])
+    }
+    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> {
+        Ok(pid.into())
+    }
+    fn topology(&self, pid: &str) -> Result<String, String> {
+        Ok(pid.into())
+    }
 }
 
 // ── Provider Service (stub) ──
 
 #[derive(Debug)]
-pub struct DefaultProviderRegistryService { provider: String, version: String }
+pub struct DefaultProviderRegistryService {
+    provider: String,
+    version: String,
+}
 impl DefaultProviderRegistryService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 impl Service for DefaultProviderRegistryService {
-    fn service_id(&self) -> ServiceId { ServiceId::Provider }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Provider
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 impl ProviderService for DefaultProviderRegistryService {
-    fn list_models(&self) -> Result<Vec<String>, String> { Ok(vec!["ollama/qwen2.5-coder:7b".into()]) }
-    fn health(&self) -> Result<String, String> { Ok("ok".into()) }
-    fn context_limit(&self, _m: &str) -> Result<usize, String> { Ok(4096) }
-    fn cost(&self, _m: &str) -> Result<f64, String> { Ok(0.0) }
-    fn latency(&self, _m: &str) -> Result<f64, String> { Ok(100.0) }
-    fn invoke(&self, _m: &str, p: &str) -> Result<String, String> { Ok(format!("echo: {}", p)) }
+    fn list_models(&self) -> Result<Vec<String>, String> {
+        Ok(vec!["ollama/qwen2.5-coder:7b".into()])
+    }
+    fn health(&self) -> Result<String, String> {
+        Ok("ok".into())
+    }
+    fn context_limit(&self, _m: &str) -> Result<usize, String> {
+        Ok(4096)
+    }
+    fn cost(&self, _m: &str) -> Result<f64, String> {
+        Ok(0.0)
+    }
+    fn latency(&self, _m: &str) -> Result<f64, String> {
+        Ok(100.0)
+    }
+    fn invoke(&self, _m: &str, p: &str) -> Result<String, String> {
+        Ok(format!("echo: {}", p))
+    }
 }
 
 // ── Scheduler Service (stub) ──
 
 #[derive(Debug)]
-pub struct DefaultSchedulerService { provider: String, version: String }
+pub struct DefaultSchedulerService {
+    provider: String,
+    version: String,
+}
 impl DefaultSchedulerService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 impl Service for DefaultSchedulerService {
-    fn service_id(&self) -> ServiceId { ServiceId::Scheduler }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Scheduler
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 impl SchedulerService for DefaultSchedulerService {
-    fn schedule(&self, spec: &str, action: &str) -> Result<String, String> { Ok(format!("job-{}", spec.len())) }
-    fn cancel(&self, _id: &str) -> Result<(), String> { Ok(()) }
-    fn list(&self) -> Result<Vec<(String, String, String)>, String> { Ok(vec![]) }
-    fn history(&self, _id: &str) -> Result<Vec<(String, String)>, String> { Ok(vec![]) }
+    fn schedule(&self, spec: &str, action: &str) -> Result<String, String> {
+        Ok(format!("job-{}", spec.len()))
+    }
+    fn cancel(&self, _id: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn list(&self) -> Result<Vec<(String, String, String)>, String> {
+        Ok(vec![])
+    }
+    fn history(&self, _id: &str) -> Result<Vec<(String, String)>, String> {
+        Ok(vec![])
+    }
 }
 
 // ── Ledger Service (stub) — wraps existing ExecutionLedger ──
 
 #[derive(Debug)]
-pub struct DefaultLedgerService { provider: String, version: String }
+pub struct DefaultLedgerService {
+    provider: String,
+    version: String,
+}
 impl DefaultLedgerService {
-    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+    pub fn new() -> Self {
+        Self {
+            provider: "pandora".into(),
+            version: "0.1.0".into(),
+        }
+    }
 }
 impl Service for DefaultLedgerService {
-    fn service_id(&self) -> ServiceId { ServiceId::Custom("ledger".into()) }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Custom("ledger".into())
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 impl TelemetryService for DefaultLedgerService {
-    fn record(&self, metric: &str, value: f64, labels: &str) -> Result<(), String> { Ok(()) }
-    fn query(&self, metric: &str, filter: &str) -> Result<Vec<(String, f64)>, String> { Ok(vec![]) }
-    fn aggregate(&self, metric: &str, _window: &str) -> Result<f64, String> { Ok(0.0) }
+    fn record(&self, metric: &str, value: f64, labels: &str) -> Result<(), String> {
+        Ok(())
+    }
+    fn query(&self, metric: &str, filter: &str) -> Result<Vec<(String, f64)>, String> {
+        Ok(vec![])
+    }
+    fn aggregate(&self, metric: &str, _window: &str) -> Result<f64, String> {
+        Ok(0.0)
+    }
 }
 
 #[cfg(test)]
@@ -337,5 +552,4 @@ mod tests {
         let plan = svc.plan("build api").unwrap();
         assert!(plan.starts_with("wf-"));
     }
-
 }
