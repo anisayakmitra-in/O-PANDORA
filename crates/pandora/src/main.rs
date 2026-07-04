@@ -13,6 +13,7 @@ fn main() {
         "list" => cmd_list(),
         "info" => cmd_info(&args),
         "genes" => cmd_genes(),
+        "architecture" => cmd_architecture(),
         "new" => cmd_new(&args),
         _ => { eprintln!("Unknown: {}", args[1]); usage(); process::exit(1); }
     }
@@ -27,7 +28,8 @@ fn usage() {
     eprintln!("  list            List installed genes");
     eprintln!("  info <id>       Package details");
     eprintln!("  genes           List available first-party genes");
-    eprintln!("  new gene <n>    Scaffold a gene template");
+    eprintln!("  architecture    Show the Pandora architecture tree
+  new gene <n>    Scaffold a gene template");
     eprintln!("  new skill <n>   Scaffold a skill");
 }
 
@@ -103,6 +105,31 @@ fn cmd_genes() {
     println!("  workflow     Multi-step workflows");
     println!();
     println!("Install: pandora install <name>");
+}
+
+fn cmd_architecture() {
+    println!("Parliament");
+    println!("├── Constitutional Services");
+    println!("│   ├── Memory");
+    println!("│   ├── Planning");
+    println!("│   ├── Execution");
+    println!("│   ├── Governance");
+    println!("│   ├── Identity");
+    println!("│   ├── Sandbox");
+    println!("│   ├── Provider");
+    println!("│   ├── Scheduler");
+    println!("│   └── Ledger");
+    println!("│");
+    println!("├── Shadow Council");
+    println!("│   ├── Source Harnesses (augment services)");
+    println!("│   ├── Meta Harnesses (coordinate)");
+    println!("│   └── Domain Harnesses (package experiences)");
+    println!("│");
+    println!("├── Genes (atomic executable capabilities)");
+    println!("├── KUBER (package distribution)");
+    println!("└── Skills (declarative bundles)");
+    println!();
+    println!("Invariant: every executable behavior originates from a Constitutional Service or a Gene.");
 }
 
 fn cmd_new(args: &[String]) {
