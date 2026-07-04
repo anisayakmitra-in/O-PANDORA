@@ -21,6 +21,7 @@ pub enum GeneKind {
     MCP,
     Knowledge,
     Permission,
+    Benchmark,
     Custom(String),
 }
 
@@ -40,6 +41,7 @@ impl GeneKind {
             GeneKind::MCP => "mcp",
             GeneKind::Knowledge => "knowledge",
             GeneKind::Permission => "permission",
+            GeneKind::Benchmark => "benchmark",
             GeneKind::Custom(_) => "custom",
         }
     }
