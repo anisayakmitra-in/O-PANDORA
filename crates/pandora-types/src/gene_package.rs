@@ -25,12 +25,19 @@ pub struct GenePackageManifest {
     pub kind: String, // matches GeneKind::as_str()
     pub version: String,
     pub author: String,
+    #[serde(default)]
     pub description: Option<String>,
+    #[serde(default)]
     pub capabilities: Vec<String>,
+    #[serde(default)]
     pub dependencies: Vec<String>,
+    #[serde(default)]
     pub slash_commands: Vec<SlashCommandDef>,
+    #[serde(default)]
     pub homepage: Option<String>,
+    #[serde(default)]
     pub license: Option<String>,
+    #[serde(default)]
     pub tags: Vec<String>,
 }
 
