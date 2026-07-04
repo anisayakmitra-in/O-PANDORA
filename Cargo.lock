@@ -1176,6 +1176,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-harnesses"
+version = "0.1.0"
+dependencies = [
+ "pandora-services",
+ "pandora-shadow-council",
+ "pandora-types",
+ "serde",
+]
+
+[[package]]
 name = "pandora-health"
 version = "0.1.0"
 dependencies = [

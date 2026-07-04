@@ -38,6 +38,7 @@ members = [
     "crates/pandora-gene-orchestrator",
     "crates/pandora-harness-loader",
     "crates/pandora-harness-manifest",
+    "crates/pandora-harnesses",
     "crates/pandora-health",
     "crates/pandora-inference-router",
     "crates/pandora-kuber",
