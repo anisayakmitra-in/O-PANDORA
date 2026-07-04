@@ -1189,6 +1189,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-kuber"
+version = "0.1.0"
+dependencies = [
+ "pandora-shadow-council",
+ "pandora-types",
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
 name = "pandora-kuber-governor"
 version = "0.1.0"
 dependencies = [

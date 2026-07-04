@@ -40,6 +40,7 @@ members = [
     "crates/pandora-harness-manifest",
     "crates/pandora-health",
     "crates/pandora-inference-router",
+    "crates/pandora-kuber",
     "crates/pandora-kuber-governor",
     "crates/pandora-lineage",
     "crates/pandora-llamacpp-provider",
