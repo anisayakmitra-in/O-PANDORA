@@ -1,0 +1,200 @@
+//! Canonical Gene types — the universal building block of Pandora.
+//!
+//! Genes are small composable runtime units. Every capability is a Gene.
+//! They can exist alone or inside a Harness.
+
+use serde::{Deserialize, Serialize};
+
+/// Kind of gene — avoids 100+ special structs by using one canonical manifest.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum GeneKind {
+    Tool,
+    Provider,
+    Workflow,
+    Agent,
+    Skill,
+    Memory,
+    Planner,
+    Reasoner,
+    Execution,
+    SlashCommand,
+    MCP,
+    Knowledge,
+    Permission,
+    Custom(String),
+}
+
+impl GeneKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            GeneKind::Tool => "tool",
+            GeneKind::Provider => "provider",
+            GeneKind::Workflow => "workflow",
+            GeneKind::Agent => "agent",
+            GeneKind::Skill => "skill",
+            GeneKind::Memory => "memory",
+            GeneKind::Planner => "planner",
+            GeneKind::Reasoner => "reasoner",
+            GeneKind::Execution => "execution",
+            GeneKind::SlashCommand => "slash_command",
+            GeneKind::MCP => "mcp",
+            GeneKind::Knowledge => "knowledge",
+            GeneKind::Permission => "permission",
+            GeneKind::Custom(_) => "custom",
+        }
+    }
+}
+
+/// Canonical Gene manifest — one manifest, all kinds.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeneManifest {
+    pub id: String,
+    pub name: String,
+    pub kind: GeneKind,
+    pub version: String,
+    pub author: String,
+    pub description: String,
+    pub capabilities: Vec<String>,
+    pub dependencies: Vec<String>,
+    pub slash_commands: Vec<super::harness::SlashCommand>,
+    pub permissions: Vec<String>,
+    pub metadata: std::collections::HashMap<String, String>,
+    pub owner_harness: Option<String>, // which harness owns this gene, if any
+}
+
+impl GeneManifest {
+    pub fn builder() -> GeneManifestBuilder {
+        GeneManifestBuilder::default()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct GeneManifestBuilder {
+    id: Option<String>,
+    name: Option<String>,
+    kind: Option<GeneKind>,
+    version: Option<String>,
+    author: Option<String>,
+    description: Option<String>,
+    capabilities: Vec<String>,
+    dependencies: Vec<String>,
+    slash_commands: Vec<super::harness::SlashCommand>,
+    permissions: Vec<String>,
+    metadata: std::collections::HashMap<String, String>,
+    owner_harness: Option<String>,
+}
+
+impl GeneManifestBuilder {
+    pub fn id(mut self, id: impl Into<String>) -> Self {
+        self.id = Some(id.into());
+        self
+    }
+    pub fn name(mut self, n: impl Into<String>) -> Self {
+        self.name = Some(n.into());
+        self
+    }
+    pub fn kind(mut self, k: GeneKind) -> Self {
+        self.kind = Some(k);
+        self
+    }
+    pub fn version(mut self, v: impl Into<String>) -> Self {
+        self.version = Some(v.into());
+        self
+    }
+    pub fn author(mut self, a: impl Into<String>) -> Self {
+        self.author = Some(a.into());
+        self
+    }
+    pub fn description(mut self, d: impl Into<String>) -> Self {
+        self.description = Some(d.into());
+        self
+    }
+    pub fn capability(mut self, c: impl Into<String>) -> Self {
+        self.capabilities.push(c.into());
+        self
+    }
+    pub fn dependency(mut self, d: impl Into<String>) -> Self {
+        self.dependencies.push(d.into());
+        self
+    }
+    pub fn slash_command(mut self, cmd: impl Into<String>, desc: impl Into<String>) -> Self {
+        self.slash_commands.push(super::harness::SlashCommand {
+            command: cmd.into(),
+            description: desc.into(),
+        });
+        self
+    }
+    pub fn permission(mut self, p: impl Into<String>) -> Self {
+        self.permissions.push(p.into());
+        self
+    }
+    pub fn metadata(mut self, k: impl Into<String>, v: impl Into<String>) -> Self {
+        self.metadata.insert(k.into(), v.into());
+        self
+    }
+    pub fn owner_harness(mut self, h: impl Into<String>) -> Self {
+        self.owner_harness = Some(h.into());
+        self
+    }
+
+    pub fn build(self) -> Result<GeneManifest, String> {
+        Ok(GeneManifest {
+            id: self.id.ok_or("Missing: id")?,
+            name: self.name.ok_or("Missing: name")?,
+            kind: self.kind.ok_or("Missing: kind")?,
+            version: self.version.ok_or("Missing: version")?,
+            author: self.author.unwrap_or_default(),
+            description: self.description.unwrap_or_default(),
+            capabilities: self.capabilities,
+            dependencies: self.dependencies,
+            slash_commands: self.slash_commands,
+            permissions: self.permissions,
+            metadata: self.metadata,
+            owner_harness: self.owner_harness,
+        })
+    }
+}
+
+/// Generic trait for any Gene type.
+/// All gene kinds share this same runtime contract.
+pub trait Gene: Send + Sync + std::fmt::Debug {
+    fn manifest(&self) -> &GeneManifest;
+
+    /// Execute the gene with the given input.
+    /// Returns a JSON-serializable result.
+    fn execute(&self, _input: &str) -> Result<String, String> {
+        Err("execute not implemented".into())
+    }
+
+    /// Validate the gene's configuration.
+    fn validate(&self) -> Result<(), String> {
+        Ok(())
+    }
+
+    // Convenience
+    fn id(&self) -> &str {
+        &self.manifest().id
+    }
+    fn name(&self) -> &str {
+        &self.manifest().name
+    }
+    fn kind(&self) -> &GeneKind {
+        &self.manifest().kind
+    }
+}
+
+/// Who owns a slash command — Harness or Gene.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SlashCommandOwner {
+    Harness(String),
+    Gene(String),
+}
+
+impl SlashCommandOwner {
+    pub fn id(&self) -> &str {
+        match self {
+            SlashCommandOwner::Harness(id) => id,
+            SlashCommandOwner::Gene(id) => id,
+        }
+    }
+}

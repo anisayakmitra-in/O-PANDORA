@@ -555,6 +555,149 @@ impl Default for HarnessRegistry {
 }
 
 // ═══════════════════════════════════════════
+// 7. GeneRegistry
+// ═══════════════════════════════════════════
+
+use pandora_types::gene::{Gene, GeneKind, SlashCommandOwner};
+
+/// Registry for all installed genes across all harnesses.
+#[derive(Debug)]
+pub struct GeneRegistry {
+    genes: std::collections::HashMap<String, Box<dyn Gene>>,
+    gene_states: std::collections::HashMap<String, GeneLifecycleState>,
+}
+
+/// Lifecycle state for a gene.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GeneLifecycleState {
+    Registered,
+    Enabled,
+    Disabled,
+}
+
+impl GeneRegistry {
+    pub fn new() -> Self {
+        Self {
+            genes: std::collections::HashMap::new(),
+            gene_states: std::collections::HashMap::new(),
+        }
+    }
+
+    pub fn register(&mut self, gene: Box<dyn Gene>) -> Result<(), String> {
+        let id = gene.id().to_string();
+        if self.genes.contains_key(&id) {
+            return Err(format!("Gene already registered: {}", id));
+        }
+        gene.validate()?;
+        self.gene_states
+            .insert(id.clone(), GeneLifecycleState::Registered);
+        self.genes.insert(id, gene);
+        Ok(())
+    }
+
+    pub fn enable(&mut self, id: &str) -> Result<(), String> {
+        if self.genes.contains_key(id) {
+            self.gene_states
+                .insert(id.to_string(), GeneLifecycleState::Enabled);
+            Ok(())
+        } else {
+            Err(format!("Gene not found: {}", id))
+        }
+    }
+
+    pub fn disable(&mut self, id: &str) -> Result<(), String> {
+        if self.genes.contains_key(id) {
+            self.gene_states
+                .insert(id.to_string(), GeneLifecycleState::Disabled);
+            Ok(())
+        } else {
+            Err(format!("Gene not found: {}", id))
+        }
+    }
+
+    pub fn unregister(&mut self, id: &str) -> Result<(), String> {
+        self.genes.remove(id);
+        self.gene_states.remove(id);
+        Ok(())
+    }
+
+    pub fn get(&self, id: &str) -> Option<&dyn Gene> {
+        self.genes.get(id).map(|g| g.as_ref())
+    }
+
+    pub fn list_by_kind(&self, kind: &GeneKind) -> Vec<&dyn Gene> {
+        self.genes
+            .values()
+            .filter(|g| g.kind() == kind)
+            .map(|g| g.as_ref())
+            .collect()
+    }
+
+    pub fn all(&self) -> Vec<&dyn Gene> {
+        self.genes.values().map(|g| g.as_ref()).collect()
+    }
+
+    pub fn total_count(&self) -> usize {
+        self.genes.len()
+    }
+    pub fn state(&self, id: &str) -> Option<&GeneLifecycleState> {
+        self.gene_states.get(id)
+    }
+}
+
+impl Default for GeneRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ═══════════════════════════════════════════
+// 8. GeneRouter
+// ═══════════════════════════════════════════
+
+/// Routes execution to the right gene based on capability or command.
+#[derive(Debug)]
+pub struct GeneRouter {
+    /// capability -> gene id mapping
+    capability_map: std::collections::HashMap<String, String>,
+}
+
+impl GeneRouter {
+    pub fn new() -> Self {
+        Self {
+            capability_map: std::collections::HashMap::new(),
+        }
+    }
+
+    pub fn register(&mut self, gene_id: &str, capabilities: &[String]) {
+        for cap in capabilities {
+            self.capability_map.insert(cap.clone(), gene_id.to_string());
+        }
+    }
+
+    pub fn remove(&mut self, gene_id: &str) {
+        self.capability_map.retain(|_, v| v != gene_id);
+    }
+
+    pub fn find_by_capability(&self, capability: &str) -> Option<&str> {
+        self.capability_map.get(capability).map(|s| s.as_str())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.capability_map.is_empty()
+    }
+    pub fn len(&self) -> usize {
+        self.capability_map.len()
+    }
+}
+
+impl Default for GeneRouter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ═══════════════════════════════════════════
 // ShadowCouncil — the unified runtime
 // ═══════════════════════════════════════════
 
@@ -564,6 +707,8 @@ pub struct ShadowCouncil {
     pub capabilities: CapabilityRegistry,
     pub dependencies: DependencyResolver,
     pub events: EventBus,
+    pub genes: GeneRegistry,
+    pub gene_router: GeneRouter,
 }
 
 impl ShadowCouncil {
@@ -574,6 +719,8 @@ impl ShadowCouncil {
             capabilities: CapabilityRegistry::new(),
             dependencies: DependencyResolver::new(),
             events: EventBus::new(),
+            genes: GeneRegistry::new(),
+            gene_router: GeneRouter::new(),
         }
     }
 
@@ -680,9 +827,78 @@ impl ShadowCouncil {
             .and_then(|id| self.harnesses.get(id))
     }
 
+    /// Find the owner of a slash command (harness ID or gene ID).
+    pub fn route_owner(&self, command: &str) -> Option<&str> {
+        self.slash_commands.owner(command)
+    }
+
     /// Dispatch to all enabled harnesses of a kind.
     pub fn dispatch(&self, kind: &HarnessKind) -> Vec<&dyn Harness> {
         self.harnesses.list_by_kind(kind)
+    }
+
+    // ── Gene management methods ──
+
+    /// Install a gene — register + index capabilities + register slash commands.
+    pub fn install_gene(&mut self, gene: Box<dyn Gene>) -> Result<(), String> {
+        let id = gene.id().to_string();
+        let manifest = gene.manifest().clone();
+        let owner = manifest
+            .owner_harness
+            .clone()
+            .map(SlashCommandOwner::Harness)
+            .unwrap_or_else(|| SlashCommandOwner::Gene(id.clone()));
+
+        self.genes.register(gene)?;
+        // Register slash commands with the appropriate owner
+        for cmd in &manifest.slash_commands {
+            match &owner {
+                SlashCommandOwner::Harness(hid) => {
+                    self.slash_commands.register(hid, cmd).ok();
+                }
+                SlashCommandOwner::Gene(_) => {
+                    self.slash_commands.register(&id, cmd).ok();
+                }
+            }
+        }
+        // Index capabilities in gene router
+        self.gene_router.register(&id, &manifest.capabilities);
+        println!(
+            "[SHADOW-COUNCIL] installed gene: {} ({})",
+            id,
+            manifest.kind.as_str()
+        );
+        Ok(())
+    }
+
+    /// Find a gene by capability.
+    pub fn find_gene(&self, capability: &str) -> Option<&dyn Gene> {
+        self.gene_router
+            .find_by_capability(capability)
+            .and_then(|id| self.genes.get(id))
+    }
+
+    /// List all genes of a given kind.
+    pub fn genes_by_kind(&self, kind: &GeneKind) -> Vec<&dyn Gene> {
+        self.genes.list_by_kind(kind)
+    }
+
+    /// Enable a gene.
+    pub fn enable_gene(&mut self, id: &str) -> Result<(), String> {
+        self.genes.enable(id)
+    }
+
+    /// Disable a gene.
+    pub fn disable_gene(&mut self, id: &str) -> Result<(), String> {
+        self.genes.disable(id)
+    }
+
+    /// Uninstall a gene.
+    pub fn uninstall_gene(&mut self, id: &str) -> Result<(), String> {
+        self.genes.unregister(id)?;
+        self.slash_commands.remove_owner(id);
+        self.gene_router.remove(id);
+        Ok(())
     }
 
     /// Summary of everything installed.
@@ -695,6 +911,7 @@ impl ShadowCouncil {
             domain_count: self.harnesses.count_by_kind(&HarnessKind::Domain),
             slash_commands: self.slash_commands.len(),
             capabilities: self.capabilities.len(),
+            genes: self.genes.total_count(),
         }
     }
 }
@@ -715,6 +932,7 @@ pub struct CouncilSummary {
     pub domain_count: usize,
     pub slash_commands: usize,
     pub capabilities: usize,
+    pub genes: usize,
 }
 
 // ═══════════════════════════════════════════
@@ -724,6 +942,7 @@ pub struct CouncilSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pandora_types::gene::*;
     use pandora_types::harness::HarnessManifestBuilder;
 
     #[derive(Debug)]
@@ -736,6 +955,30 @@ mod tests {
         }
     }
 
+    /// Test gene for testing the registry.
+    #[derive(Debug)]
+    struct TestGene {
+        manifest: GeneManifest,
+    }
+    impl TestGene {
+        fn new(id: &str, kind: GeneKind) -> Self {
+            Self {
+                manifest: GeneManifestBuilder::default()
+                    .id(id)
+                    .name(id)
+                    .kind(kind)
+                    .version("0.1.0")
+                    .author("test")
+                    .build()
+                    .unwrap(),
+            }
+        }
+    }
+    impl Gene for TestGene {
+        fn manifest(&self) -> &GeneManifest {
+            &self.manifest
+        }
+    }
     fn h(id: &str, kind: HarnessKind) -> TestHarness {
         TestHarness {
             manifest: HarnessManifestBuilder::default()
@@ -975,5 +1218,93 @@ mod tests {
         assert_eq!(s.source_count, 1);
         assert_eq!(s.meta_count, 1);
         assert_eq!(s.domain_count, 1);
+    }
+    #[test]
+    fn gene_registry_register_and_list() {
+        let mut reg = GeneRegistry::new();
+        let g1 = TestGene::new("cargo-check", GeneKind::Tool);
+        let g2 = TestGene::new("ollama-provider", GeneKind::Provider);
+        let g3 = TestGene::new("bug-fix", GeneKind::Workflow);
+        reg.register(Box::new(g1)).unwrap();
+        reg.register(Box::new(g2)).unwrap();
+        reg.register(Box::new(g3)).unwrap();
+        assert_eq!(reg.total_count(), 3);
+        assert_eq!(reg.list_by_kind(&GeneKind::Tool).len(), 1);
+        assert_eq!(reg.list_by_kind(&GeneKind::Provider).len(), 1);
+        assert_eq!(reg.list_by_kind(&GeneKind::Workflow).len(), 1);
+    }
+
+    #[test]
+    fn gene_registry_enable_disable() {
+        let mut reg = GeneRegistry::new();
+        reg.register(Box::new(TestGene::new("test-gene", GeneKind::Skill)))
+            .unwrap();
+        reg.enable("test-gene").unwrap();
+        assert_eq!(
+            reg.state("test-gene").unwrap(),
+            &GeneLifecycleState::Enabled
+        );
+        reg.disable("test-gene").unwrap();
+        assert_eq!(
+            reg.state("test-gene").unwrap(),
+            &GeneLifecycleState::Disabled
+        );
+    }
+
+    #[test]
+    fn gene_router_routes_by_capability() {
+        let mut router = GeneRouter::new();
+        router.register(
+            "ollama-gene",
+            &["llm-provider".to_string(), "text-generation".to_string()],
+        );
+        router.register("search-gene", &["web-search".to_string()]);
+        assert_eq!(
+            router.find_by_capability("llm-provider").unwrap(),
+            "ollama-gene"
+        );
+        assert_eq!(
+            router.find_by_capability("web-search").unwrap(),
+            "search-gene"
+        );
+        assert!(router.find_by_capability("memory").is_none());
+    }
+
+    #[test]
+    fn shadow_council_install_gene_with_commands() {
+        let mut sc = ShadowCouncil::new();
+        let mut g = TestGene::new("code-gene", GeneKind::Tool);
+        g.manifest
+            .slash_commands
+            .push(pandora_types::harness::SlashCommand {
+                command: "code.lint".into(),
+                description: "Lint code".into(),
+            });
+        g.manifest.capabilities.push("code-linting".to_string());
+        sc.install_gene(Box::new(g)).unwrap();
+
+        assert_eq!(sc.genes.total_count(), 1);
+        assert!(sc.find_gene("code-linting").is_some());
+        // Gene-owned commands are reachable via route_owner, not route (which returns harnesses)
+        assert_eq!(sc.route_owner("code.lint").unwrap(), "code-gene");
+        assert_eq!(sc.genes_by_kind(&GeneKind::Tool).len(), 1);
+    }
+
+    #[test]
+    fn gene_manifest_builder() {
+        let m = GeneManifestBuilder::default()
+            .id("test-gene")
+            .name("Test Gene")
+            .kind(GeneKind::Tool)
+            .version("0.1.0")
+            .author("me")
+            .capability("testing")
+            .slash_command("test.run", "Run tests")
+            .build()
+            .unwrap();
+        assert_eq!(m.id, "test-gene");
+        assert_eq!(m.kind, GeneKind::Tool);
+        assert_eq!(m.capabilities, vec!["testing"]);
+        assert_eq!(m.slash_commands.len(), 1);
     }
 }

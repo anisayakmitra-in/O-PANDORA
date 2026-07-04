@@ -28,7 +28,9 @@ pub use harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessSpec, SlashCommand,
 };
 
+pub mod gene;
 pub mod harness_gene;
+pub use gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder, SlashCommandOwner};
 pub use harness_gene::HarnessGene;
 
 pub mod capability_graph;
