@@ -7,7 +7,65 @@
 //! The council never executes — it finds and routes.
 
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, SlashCommand};
+use pandora_types::gene::{Gene, GeneKind, GeneManifest as GeneManifest, SlashCommandOwner};
 use std::collections::HashMap;
+
+// ── Gene Package helpers (P3a) ──
+
+fn parse_gene_kind(s: &str) -> GeneKind {
+    match s.to_lowercase().as_str() {
+        "tool" => GeneKind::Tool,
+        "provider" => GeneKind::Provider,
+        "workflow" => GeneKind::Workflow,
+        "agent" => GeneKind::Agent,
+        "skill" => GeneKind::Skill,
+        "memory" => GeneKind::Memory,
+        "planner" => GeneKind::Planner,
+        "reasoner" => GeneKind::Reasoner,
+        "execution" => GeneKind::Execution,
+        "mcp" => GeneKind::MCP,
+        "knowledge" => GeneKind::Knowledge,
+        _ => GeneKind::Custom(s.to_string()),
+    }
+}
+
+/// A gene backed by a filesystem package.
+#[derive(Debug)]
+pub struct PackageGene {
+    manifest: GeneManifest,
+    _path: String,
+}
+
+impl PackageGene {
+    pub fn new(manifest: GeneManifest, path: String) -> Self {
+        Self { manifest, _path: path }
+    }
+}
+
+impl Gene for PackageGene {
+    fn manifest(&self) -> &GeneManifest { &self.manifest }
+}
+
+// ── Gene Template code (P3a) ──
+const DEFAULT_GENE_MODULE: &str = r#"""pub struct Gene { pub id: String; }
+impl Gene { pub fn new() -> Self { Self { id: "gene".into() } }
+pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("gene: {}", input)) } }
+"""#;
+
+const TOOL_GENE_MODULE: &str = r#"""pub struct Gene { pub id: String; }
+impl Gene { pub fn new() -> Self { Self { id: "tool".into() } }
+pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("tool: {}", input)) } }
+"""#;
+
+const WORKFLOW_GENE_MODULE: &str = r#"""pub struct Gene { pub id: String; }
+impl Gene { pub fn new() -> Self { Self { id: "workflow".into() } }
+pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("workflow: {}", input)) } }
+"""#;
+
+const PROVIDER_GENE_MODULE: &str = r#"""pub struct Gene { pub id: String; }
+impl Gene { pub fn new() -> Self { Self { id: "provider".into() } }
+pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("provider: {}", input)) } }
+"""#;
 
 // ═══════════════════════════════════════════
 // 1. Event Hooks
@@ -558,8 +616,6 @@ impl Default for HarnessRegistry {
 // 7. GeneRegistry
 // ═══════════════════════════════════════════
 
-use pandora_types::gene::{Gene, GeneKind, SlashCommandOwner};
-
 /// Registry for all installed genes across all harnesses.
 #[derive(Debug)]
 pub struct GeneRegistry {
@@ -899,6 +955,92 @@ impl ShadowCouncil {
         self.slash_commands.remove_owner(id);
         self.gene_router.remove(id);
         Ok(())
+    }
+
+
+    // ── Gene Package Loader ──
+
+    /// Discover and load all gene packages from a directory.
+    /// Scans for gene.toml files, registers each gene in the registry.
+    pub fn load_gene_packages(&mut self, root: &str) -> Result<usize, String> {
+        let packages = pandora_types::gene_package::discover_gene_packages(root);
+        let mut count = 0;
+        for pkg in &packages {
+            // Create a simple gene wrapper from the file manifest
+            let kind = parse_gene_kind(&pkg.manifest.kind);
+            let mut b = pandora_types::gene::GeneManifestBuilder::default()
+                .id(&pkg.manifest.id)
+                .name(&pkg.manifest.name)
+                .kind(kind)
+                .version(&pkg.manifest.version)
+                .author(&pkg.manifest.author)
+                .description(pkg.manifest.description.as_deref().unwrap_or(""));
+            for cap in &pkg.manifest.capabilities {
+                b = b.capability(cap);
+            }
+            for dep in &pkg.manifest.dependencies {
+                b = b.dependency(dep);
+            }
+            for sc in &pkg.manifest.slash_commands {
+                b = b.slash_command(&sc.command, &sc.description);
+            }
+            let manifest = match b.build() {
+                Ok(m) => m,
+                Err(e) => {
+                    eprintln!("[WARN] Skipping {}: {}", pkg.manifest.id, e);
+                    continue;
+                }
+            };
+            let gene = PackageGene::new(manifest, pkg.root.to_string_lossy().to_string());
+            self.install_gene(Box::new(gene))?;
+            count += 1;
+        }
+        Ok(count)
+    }
+
+    /// Scaffold a new gene template into the given directory.
+    pub fn scaffold_gene(&self, kind: &GeneKind, name: &str, dir: &str) -> Result<String, String> {
+        let gene_dir = std::path::Path::new(dir).join(name);
+        std::fs::create_dir_all(gene_dir.join("src"))
+            .map_err(|e| format!("Cannot create directory: {}", e))?;
+
+        let kind_str = kind.as_str();
+        let module_code = match kind {
+            GeneKind::Tool => TOOL_GENE_MODULE,
+            GeneKind::Provider => PROVIDER_GENE_MODULE,
+            GeneKind::Workflow => WORKFLOW_GENE_MODULE,
+            _ => DEFAULT_GENE_MODULE,
+        };
+        let module_code = module_code.replace("{{name}}", name);
+
+        // Write gene.toml
+        let toml_content = format!(
+            r#"id = "{name}"
+name = "{name}"
+kind = "{kind_str}"
+version = "0.1.0"
+author = ""
+description = ""
+
+[[slash_commands]]
+command = "{name}.run"
+description = "Run the {name} gene"
+"#,
+            name = name, kind_str = kind_str
+        );
+        std::fs::write(gene_dir.join("gene.toml"), toml_content)
+            .map_err(|e| format!("Cannot write gene.toml: {}", e))?;
+
+        // Write src/lib.rs
+        std::fs::write(gene_dir.join("src").join("lib.rs"), module_code)
+            .map_err(|e| format!("Cannot write lib.rs: {}", e))?;
+
+        std::fs::write(gene_dir.join("src").join("mod.rs"),
+            "pub mod lib;
+")
+            .ok();
+
+        Ok(gene_dir.to_string_lossy().to_string())
     }
 
     /// Summary of everything installed.
@@ -1307,4 +1449,28 @@ mod tests {
         assert_eq!(m.capabilities, vec!["testing"]);
         assert_eq!(m.slash_commands.len(), 1);
     }
+    #[test]
+    fn scaffold_gene_creates_valid_package() {
+        use std::io::Write;
+        let sc = ShadowCouncil::new();
+        let tmp = std::env::temp_dir().join(format!("pandora-scaffold-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&tmp).unwrap();
+
+        let path = sc.scaffold_gene(&GeneKind::Tool, "my-tool", tmp.to_str().unwrap()).unwrap();
+        let gene_dir = std::path::Path::new(&path);
+
+        // Check directory structure
+        assert!(gene_dir.join("gene.toml").exists(), "gene.toml missing");
+        assert!(gene_dir.join("src").join("lib.rs").exists(), "lib.rs missing");
+
+        // Read back and check toml parses
+        let toml_str = std::fs::read_to_string(gene_dir.join("gene.toml")).unwrap();
+        assert!(toml_str.contains("my-tool"), "TOML should contain gene name");
+        assert!(toml_str.contains("tool"), "TOML should contain kind");
+
+        std::fs::remove_dir_all(tmp).unwrap();
+    }
+
+
+
 }

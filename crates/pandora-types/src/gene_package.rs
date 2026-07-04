@@ -1,0 +1,66 @@
+//! Gene Package — on-disk gene format.
+//!
+//! A Gene Package is a directory with:
+//!   <name>/
+//!   ├── gene.toml    # manifest
+//!   ├── src/
+//!   │   └── lib.rs   # implementation
+//!   └── README.md    # optional
+
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+
+/// A discovered gene on disk.
+#[derive(Debug, Clone)]
+pub struct GenePackage {
+    pub root: PathBuf,
+    pub manifest: GenePackageManifest,
+}
+
+/// The gene.toml manifest — mirrors GeneManifest for filesystem discovery.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenePackageManifest {
+    pub id: String,
+    pub name: String,
+    pub kind: String,  // matches GeneKind::as_str()
+    pub version: String,
+    pub author: String,
+    pub description: Option<String>,
+    pub capabilities: Vec<String>,
+    pub dependencies: Vec<String>,
+    pub slash_commands: Vec<SlashCommandDef>,
+    pub homepage: Option<String>,
+    pub license: Option<String>,
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlashCommandDef {
+    pub command: String,
+    pub description: String,
+}
+
+/// Scans a directory for gene packages (directories containing gene.toml).
+pub fn discover_gene_packages(root: &str) -> Vec<GenePackage> {
+    let mut packages = Vec::new();
+    let dir = match std::fs::read_dir(root) {
+        Ok(d) => d,
+        Err(_) => return packages,
+    };
+    for entry in dir.flatten() {
+        let path = entry.path();
+        if !path.is_dir() { continue; }
+        let toml_path = path.join("gene.toml");
+        if !toml_path.exists() { continue; }
+        let content = match std::fs::read_to_string(&toml_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let manifest: GenePackageManifest = match toml::from_str(&content) {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        packages.push(GenePackage { root: path, manifest });
+    }
+    packages
+}
