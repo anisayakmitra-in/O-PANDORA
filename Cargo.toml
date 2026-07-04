@@ -119,6 +119,7 @@ members = [
     "crates/pandora-intelligence",
     "crates/pandora-coordination",
     "crates/pandora-runtime",
+    "crates/pandora-services",
     "test-runner",
     "dynamic_harness",
 ]

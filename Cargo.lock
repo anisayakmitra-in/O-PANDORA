@@ -1576,6 +1576,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-services"
+version = "0.1.0"
+dependencies = [
+ "pandora-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "pandora-shadow-council"
 version = "0.1.0"
 dependencies = [
