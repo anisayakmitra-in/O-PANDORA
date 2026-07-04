@@ -11,7 +11,6 @@
 use anyhow::Result;
 use pandora_ledger::{ExecutionLedger, LedgerEntry, LedgerOutcome};
 use pandora_provider::ollama::OllamaProvider;
-use std::sync::Arc;
 use pandora_provider::traits::Provider;
 use pandora_provider::types::GenerationRequest;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
@@ -22,6 +21,7 @@ use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::telemetry_engine::TelemetryEngine;
 use pandora_types::workflow_engine::{ExecutionGraph, StepKind, WorkflowStep};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 use tokio_util::sync::CancellationToken;
 
@@ -70,7 +70,6 @@ pub struct ExecutionReport {
     pub success: bool,
 }
 
-
 // ── RuntimeDelta — accumulates stage outputs for Parliament merge (2B-3) ──
 
 /// Immutable accumulated delta from all 9 stages.
@@ -89,7 +88,9 @@ pub struct RuntimeDelta {
 }
 
 impl RuntimeDelta {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Merge into a RuntimeContext — the Parliament step.
     pub fn merge_into(&self, ctx: &mut RuntimeContext) {
@@ -114,7 +115,10 @@ impl RuntimeDelta {
         ctx.record_telemetry(format!(
             "RuntimeDelta merged: steps={} provider={} tokens={} success={}",
             self.workflow.as_ref().map(|w| w.step_count).unwrap_or(0),
-            self.capability.as_ref().map(|c| c.provider.as_str()).unwrap_or(""),
+            self.capability
+                .as_ref()
+                .map(|c| c.provider.as_str())
+                .unwrap_or(""),
             self.provider.as_ref().map(|p| p.tokens_used).unwrap_or(0),
             self.success,
         ));
@@ -132,7 +136,10 @@ pub struct ProviderRegistry {
 
 impl ProviderRegistry {
     pub fn new() -> Self {
-        Self { providers: Vec::new(), default_index: 0 }
+        Self {
+            providers: Vec::new(),
+            default_index: 0,
+        }
     }
 
     /// Register a provider. First registered becomes default.
@@ -157,7 +164,9 @@ impl ProviderRegistry {
 }
 
 impl Default for ProviderRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 // ── PandoraRuntime — constitutional pipeline ──
@@ -241,7 +250,9 @@ impl PandoraRuntime {
         };
 
         // Stage 4: Provider Execution (real HTTP call)
-        let provider = self.providers.get(&provider_name)
+        let provider = self
+            .providers
+            .get(&provider_name)
             .or_else(|| self.providers.default_provider())
             .ok_or_else(|| anyhow::anyhow!("No provider available for: {}", provider_name))?;
         let request = GenerationRequest {
@@ -501,15 +512,23 @@ mod tests {
         let mut ctx = RuntimeContext::new("s", "p");
         let delta = RuntimeDelta {
             workflow: Some(WorkflowStageOutput {
-                graph: ExecutionGraph::new("g"), step_count: 3,
+                graph: ExecutionGraph::new("g"),
+                step_count: 3,
             }),
             capability: Some(CapabilityStageOutput {
-                provider: "ollama".into(), model: "qwen".into(), candidates_considered: 1,
+                provider: "ollama".into(),
+                model: "qwen".into(),
+                candidates_considered: 1,
             }),
             provider: Some(ProviderStageOutput {
-                text: "hi".into(), tokens_used: 2, duration_ms: 10,
+                text: "hi".into(),
+                tokens_used: 2,
+                duration_ms: 10,
             }),
-            recorder: Some(RecorderStageOutput { replay_id: "r1".into(), frame_count: 1 }),
+            recorder: Some(RecorderStageOutput {
+                replay_id: "r1".into(),
+                frame_count: 1,
+            }),
             telemetry_spans: 5,
             root_causes: 0,
             knowledge_nodes: 4,

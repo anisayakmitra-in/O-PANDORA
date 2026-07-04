@@ -1366,6 +1366,7 @@ name = "pandora-parliament"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "pandora-shadow-council",
  "pandora-types",
  "serde",
  "serde_json",
@@ -1557,6 +1558,7 @@ dependencies = [
 name = "pandora-shadow-council"
 version = "0.1.0"
 dependencies = [
+ "pandora-types",
  "serde",
 ]
 

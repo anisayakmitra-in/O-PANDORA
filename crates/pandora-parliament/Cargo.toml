@@ -12,3 +12,4 @@ uuid = { version = "1", features = ["v4"] }
 chrono = "0.4"
 thiserror = "1"
 tracing = "0.1"
+pandora-shadow-council = { path = "../pandora-shadow-council" }
