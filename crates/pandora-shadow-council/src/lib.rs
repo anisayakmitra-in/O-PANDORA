@@ -6,8 +6,8 @@
 //! Parliament calls `shadow_council.install()` / `.enable()` / `.dispatch()` etc.
 //! The council never executes — it finds and routes.
 
+use pandora_types::gene::{Gene, GeneKind, GeneManifest, SlashCommandOwner};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, SlashCommand};
-use pandora_types::gene::{Gene, GeneKind, GeneManifest as GeneManifest, SlashCommandOwner};
 use std::collections::HashMap;
 
 // ── Gene Package helpers (P3a) ──
@@ -38,12 +38,17 @@ pub struct PackageGene {
 
 impl PackageGene {
     pub fn new(manifest: GeneManifest, path: String) -> Self {
-        Self { manifest, _path: path }
+        Self {
+            manifest,
+            _path: path,
+        }
     }
 }
 
 impl Gene for PackageGene {
-    fn manifest(&self) -> &GeneManifest { &self.manifest }
+    fn manifest(&self) -> &GeneManifest {
+        &self.manifest
+    }
 }
 
 // ── Gene Template code (P3a) ──
@@ -957,7 +962,6 @@ impl ShadowCouncil {
         Ok(())
     }
 
-
     // ── Gene Package Loader ──
 
     /// Discover and load all gene packages from a directory.
@@ -1026,7 +1030,8 @@ description = ""
 command = "{name}.run"
 description = "Run the {name} gene"
 "#,
-            name = name, kind_str = kind_str
+            name = name,
+            kind_str = kind_str
         );
         std::fs::write(gene_dir.join("gene.toml"), toml_content)
             .map_err(|e| format!("Cannot write gene.toml: {}", e))?;
@@ -1035,10 +1040,12 @@ description = "Run the {name} gene"
         std::fs::write(gene_dir.join("src").join("lib.rs"), module_code)
             .map_err(|e| format!("Cannot write lib.rs: {}", e))?;
 
-        std::fs::write(gene_dir.join("src").join("mod.rs"),
+        std::fs::write(
+            gene_dir.join("src").join("mod.rs"),
             "pub mod lib;
-")
-            .ok();
+",
+        )
+        .ok();
 
         Ok(gene_dir.to_string_lossy().to_string())
     }
@@ -1451,26 +1458,36 @@ mod tests {
     }
     #[test]
     fn scaffold_gene_creates_valid_package() {
-        use std::io::Write;
         let sc = ShadowCouncil::new();
-        let tmp = std::env::temp_dir().join(format!("pandora-scaffold-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let tmp = std::env::temp_dir().join(format!(
+            "pandora-scaffold-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
         std::fs::create_dir_all(&tmp).unwrap();
 
-        let path = sc.scaffold_gene(&GeneKind::Tool, "my-tool", tmp.to_str().unwrap()).unwrap();
+        let path = sc
+            .scaffold_gene(&GeneKind::Tool, "my-tool", tmp.to_str().unwrap())
+            .unwrap();
         let gene_dir = std::path::Path::new(&path);
 
         // Check directory structure
         assert!(gene_dir.join("gene.toml").exists(), "gene.toml missing");
-        assert!(gene_dir.join("src").join("lib.rs").exists(), "lib.rs missing");
+        assert!(
+            gene_dir.join("src").join("lib.rs").exists(),
+            "lib.rs missing"
+        );
 
         // Read back and check toml parses
         let toml_str = std::fs::read_to_string(gene_dir.join("gene.toml")).unwrap();
-        assert!(toml_str.contains("my-tool"), "TOML should contain gene name");
+        assert!(
+            toml_str.contains("my-tool"),
+            "TOML should contain gene name"
+        );
         assert!(toml_str.contains("tool"), "TOML should contain kind");
 
         std::fs::remove_dir_all(tmp).unwrap();
     }
-
-
-
 }

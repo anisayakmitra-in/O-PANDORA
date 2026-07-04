@@ -22,7 +22,7 @@ pub struct GenePackage {
 pub struct GenePackageManifest {
     pub id: String,
     pub name: String,
-    pub kind: String,  // matches GeneKind::as_str()
+    pub kind: String, // matches GeneKind::as_str()
     pub version: String,
     pub author: String,
     pub description: Option<String>,
@@ -49,9 +49,13 @@ pub fn discover_gene_packages(root: &str) -> Vec<GenePackage> {
     };
     for entry in dir.flatten() {
         let path = entry.path();
-        if !path.is_dir() { continue; }
+        if !path.is_dir() {
+            continue;
+        }
         let toml_path = path.join("gene.toml");
-        if !toml_path.exists() { continue; }
+        if !toml_path.exists() {
+            continue;
+        }
         let content = match std::fs::read_to_string(&toml_path) {
             Ok(c) => c,
             Err(_) => continue,
@@ -60,7 +64,10 @@ pub fn discover_gene_packages(root: &str) -> Vec<GenePackage> {
             Ok(m) => m,
             Err(_) => continue,
         };
-        packages.push(GenePackage { root: path, manifest });
+        packages.push(GenePackage {
+            root: path,
+            manifest,
+        });
     }
     packages
 }
