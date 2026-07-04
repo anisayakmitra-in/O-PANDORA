@@ -17,6 +17,8 @@ fn main() {
         "info" => cmd_info(&args),
         "genes" => cmd_genes(),
         "architecture" => cmd_architecture(),
+        "uninstall" => cmd_uninstall(&args),
+        "update" => cmd_update(&args),
         "new" => cmd_new(&args),
         _ => {
             eprintln!("Unknown: {}", args[1]);
@@ -34,6 +36,8 @@ fn usage() {
     eprintln!("  search <q>      Search packages");
     eprintln!("  list            List installed genes");
     eprintln!("  info <id>       Package details");
+    eprintln!("  uninstall <id>  Remove an installed package");
+    eprintln!("  update <id>     Check for updates");
     eprintln!("  genes           List available first-party genes");
     eprintln!(
         "  architecture    Show the Pandora architecture tree
@@ -139,6 +143,31 @@ fn cmd_info(args: &[String]) {
     }
 }
 
+fn cmd_uninstall(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora uninstall <id>"); process::exit(1); }
+    let mut sc = get_sc();
+    let mut k = pandora_kuber::Kuber::new(&mut sc);
+    match k.uninstall(&args[2]) {
+        Ok(_) => println!("Removed: {}", args[2]),
+        Err(e) => { eprintln!("{}", e); process::exit(1); }
+    }
+}
+
+fn cmd_update(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora update <id>"); process::exit(1); }
+    let mut sc = get_sc();
+    let k = pandora_kuber::Kuber::new(&mut sc);
+    let updates = k.check_updates();
+    let found: Vec<_> = updates.into_iter().filter(|(id, _, _)| id == &args[2]).collect();
+    if found.is_empty() {
+        println!("No updates for: {}", args[2]);
+    } else {
+        for (id, _cur, avail) in &found {
+            println!("{}: update available to {}", id, avail);
+        }
+    }
+}
+
 fn cmd_genes() {
     println!("Available first-party genes:");
     println!("  filesystem   Read/write/list files");
@@ -186,16 +215,52 @@ fn cmd_new(args: &[String]) {
     }
     match args[2].as_str() {
         "gene" => {
-            let mut sc = get_sc();
-            let mut kuber = pandora_kuber::Kuber::new(&mut sc);
-            match kuber.install("todo") {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("{}", e);
-                }
+            let name = &args[3];
+            let safe_name = name.replace("-", "_");
+            let dir = std::path::Path::new(".").join(name);
+            if dir.exists() {
+                eprintln!("Already exists: {}", name);
+                process::exit(1);
             }
-            // Scaffold via  pattern
-            println!("Scaffolding gene: {}", args[3]);
+            std::fs::create_dir_all(dir.join("src")).unwrap();
+            // Write gene.toml
+            {
+                use std::io::Write;
+                let mut f = std::fs::File::create(dir.join("gene.toml")).unwrap();
+                writeln!(f, "id = \"{}\"" , name).unwrap();
+                writeln!(f, "name = \"{}\"" , name).unwrap();
+                writeln!(f, "kind = \"Tool\"") .unwrap();
+                writeln!(f, "version = \"0.1.0\"") .unwrap();
+                writeln!(f, "author = \"\"") .unwrap();
+                writeln!(f, "description = \"\"") .unwrap();
+            }
+            // Write src/lib.rs
+            {
+                use std::io::Write;
+                let mut f = std::fs::File::create(dir.join("src").join("lib.rs")).unwrap();
+                writeln!(f, "use pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};").unwrap();
+                writeln!(f).unwrap();
+                writeln!(f, "#[derive(Debug)]").unwrap();
+                writeln!(f, "pub struct {}Gene {{ m: GeneManifest }}", safe_name).unwrap();
+                writeln!(f, "impl {}Gene {{", safe_name).unwrap();
+                writeln!(f, "    pub fn new() -> Self {{").unwrap();
+                writeln!(f, "        Self {{ m: GeneManifestBuilder::default()").unwrap();
+                writeln!(f, "            .id(\"{}\").name(\"{}\").kind(GeneKind::Tool)", name, name).unwrap();
+                writeln!(f, "            .version(\"0.1.0\").author(\"\")").unwrap();
+                writeln!(f, "            .description(\"{} gene\")", name).unwrap();
+                writeln!(f, "            .build().unwrap() }}").unwrap();
+                writeln!(f, "    }}").unwrap();
+                writeln!(f, "}}").unwrap();
+                writeln!(f, "impl Gene for {}Gene {{", safe_name).unwrap();
+                writeln!(f, "    fn manifest(&self) -> &GeneManifest {{ &self.m }}").unwrap();
+                writeln!(f, "    fn execute(&self, input: &str) -> Result<String, String> {{").unwrap();
+                writeln!(f, "        Ok(format!(\"executed: {{}}\" , input))").unwrap();
+                writeln!(f, "    }}").unwrap();
+                writeln!(f, "}}").unwrap();
+            }
+            println!("Created: {}/", name);
+            println!("  {}/gene.toml", name);
+            println!("  {}/src/lib.rs", name);
         }
         "skill" => {
             let dir = ".";
