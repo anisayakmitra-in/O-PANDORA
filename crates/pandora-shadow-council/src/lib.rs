@@ -6,7 +6,9 @@
 //! Parliament calls `shadow_council.install()` / `.enable()` / `.dispatch()` etc.
 //! The council never executes — it finds and routes.
 
-use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneLineage, GeneLineageEntry, SlashCommandOwner};
+use pandora_types::gene::{
+    Gene, GeneKind, GeneLineage, GeneLineageEntry, GeneManifest, SlashCommandOwner,
+};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, SlashCommand};
 use std::collections::HashMap;
 
@@ -45,8 +47,6 @@ impl PackageGene {
     }
 }
 
-
-
 /// An installed gene — the runtime instance of a GenePackage.
 /// Mutable: can be enabled/disabled, configured, evolved.
 /// The original GenePackage stays immutable.
@@ -71,9 +71,15 @@ impl InstalledGene {
         }
     }
 
-    pub fn id(&self) -> &str { &self.instance_id }
-    pub fn kind(&self) -> &GeneKind { self.gene.kind() }
-    pub fn manifest(&self) -> &GeneManifest { self.gene.manifest() }
+    pub fn id(&self) -> &str {
+        &self.instance_id
+    }
+    pub fn kind(&self) -> &GeneKind {
+        self.gene.kind()
+    }
+    pub fn manifest(&self) -> &GeneManifest {
+        self.gene.manifest()
+    }
 }
 
 impl Gene for PackageGene {
@@ -659,7 +665,6 @@ pub struct GeneRegistry {
     genes: std::collections::HashMap<String, InstalledGene>,
 }
 
-
 impl GeneRegistry {
     pub fn new() -> Self {
         Self {
@@ -708,10 +713,7 @@ impl GeneRegistry {
     }
 
     pub fn list_by_kind(&self, kind: &GeneKind) -> Vec<&InstalledGene> {
-        self.genes
-            .values()
-            .filter(|g| g.kind() == kind)
-            .collect()
+        self.genes.values().filter(|g| g.kind() == kind).collect()
     }
 
     pub fn all(&self) -> Vec<&InstalledGene> {
@@ -1396,9 +1398,24 @@ mod tests {
     #[test]
     fn gene_registry_register_and_list() {
         let mut reg = GeneRegistry::new();
-        reg.register(InstalledGene::new(Box::new(TestGene::new("cargo-check", GeneKind::Tool)), "cargo-check", "0.1.0")).unwrap();
-        reg.register(InstalledGene::new(Box::new(TestGene::new("ollama-provider", GeneKind::Provider)), "ollama-provider", "0.1.0")).unwrap();
-        reg.register(InstalledGene::new(Box::new(TestGene::new("bug-fix", GeneKind::Workflow)), "bug-fix", "0.1.0")).unwrap();
+        reg.register(InstalledGene::new(
+            Box::new(TestGene::new("cargo-check", GeneKind::Tool)),
+            "cargo-check",
+            "0.1.0",
+        ))
+        .unwrap();
+        reg.register(InstalledGene::new(
+            Box::new(TestGene::new("ollama-provider", GeneKind::Provider)),
+            "ollama-provider",
+            "0.1.0",
+        ))
+        .unwrap();
+        reg.register(InstalledGene::new(
+            Box::new(TestGene::new("bug-fix", GeneKind::Workflow)),
+            "bug-fix",
+            "0.1.0",
+        ))
+        .unwrap();
         assert_eq!(reg.total_count(), 3);
         assert_eq!(reg.list_by_kind(&GeneKind::Tool).len(), 1);
         assert_eq!(reg.list_by_kind(&GeneKind::Provider).len(), 1);
@@ -1408,7 +1425,12 @@ mod tests {
     #[test]
     fn gene_registry_enable_disable() {
         let mut reg = GeneRegistry::new();
-        reg.register(InstalledGene::new(Box::new(TestGene::new("test-gene", GeneKind::Skill)), "test-gene", "0.1.0")).unwrap();
+        reg.register(InstalledGene::new(
+            Box::new(TestGene::new("test-gene", GeneKind::Skill)),
+            "test-gene",
+            "0.1.0",
+        ))
+        .unwrap();
         reg.enable("test-gene").unwrap();
         assert!(reg.get("test-gene").unwrap().enabled);
         reg.disable("test-gene").unwrap();
@@ -1438,10 +1460,12 @@ mod tests {
     fn shadow_council_install_gene_with_commands() {
         let mut sc = ShadowCouncil::new();
         let mut g = TestGene::new("code-gene", GeneKind::Tool);
-        g.manifest.slash_commands.push(pandora_types::harness::SlashCommand {
-            command: "code.lint".into(),
-            description: "Lint code".into(),
-        });
+        g.manifest
+            .slash_commands
+            .push(pandora_types::harness::SlashCommand {
+                command: "code.lint".into(),
+                description: "Lint code".into(),
+            });
         g.manifest.capabilities.push("code-linting".to_string());
         sc.install_gene(Box::new(g)).unwrap();
 

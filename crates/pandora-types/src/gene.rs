@@ -100,7 +100,6 @@ impl Default for GeneMetadata {
     }
 }
 
-
 /// One entry in a gene evolution lineage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeneLineageEntry {
@@ -124,11 +123,22 @@ pub struct GeneLineage {
 
 impl GeneLineage {
     pub fn new(package_id: &str, version: &str) -> Self {
-        Self { original_package_id: package_id.to_string(), original_version: version.to_string(), original_hash: None, entries: Vec::new() }
+        Self {
+            original_package_id: package_id.to_string(),
+            original_version: version.to_string(),
+            original_hash: None,
+            entries: Vec::new(),
+        }
     }
-    pub fn add_entry(&mut self, entry: GeneLineageEntry) { self.entries.push(entry); }
-    pub fn latest_entry(&self) -> Option<&GeneLineageEntry> { self.entries.last() }
-    pub fn entry_count(&self) -> usize { self.entries.len() }
+    pub fn add_entry(&mut self, entry: GeneLineageEntry) {
+        self.entries.push(entry);
+    }
+    pub fn latest_entry(&self) -> Option<&GeneLineageEntry> {
+        self.entries.last()
+    }
+    pub fn entry_count(&self) -> usize {
+        self.entries.len()
+    }
 }
 
 impl GeneManifest {
