@@ -1146,6 +1146,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora-genes"
+version = "0.1.0"
+dependencies = [
+ "pandora-types",
+]
+
+[[package]]
 name = "pandora-harness"
 version = "0.1.0"
 dependencies = [

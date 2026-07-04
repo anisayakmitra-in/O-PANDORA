@@ -1,0 +1,7 @@
+[package]
+name = "pandora-genes"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
