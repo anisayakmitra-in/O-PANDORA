@@ -840,6 +840,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pandora"
+version = "0.1.0"
+dependencies = [
+ "pandora-kuber",
+ "pandora-orchestrator",
+ "pandora-shadow-council",
+ "tokio",
+]
+
+[[package]]
 name = "pandora-acquisition-orchestrator"
 version = "0.1.0"
 dependencies = [

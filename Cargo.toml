@@ -41,6 +41,7 @@ members = [
     "crates/pandora-health",
     "crates/pandora-inference-router",
     "crates/pandora-kuber",
+    "crates/pandora",
     "crates/pandora-kuber-governor",
     "crates/pandora-lineage",
     "crates/pandora-llamacpp-provider",
