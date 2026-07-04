@@ -24,7 +24,9 @@
 //! registries that compose these canonical types.
 
 pub mod harness;
-pub use harness::{HarnessManifest, HarnessManifestBuilder, HarnessKind, Harness, SlashCommand, HarnessSpec};
+pub use harness::{
+    Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessSpec, SlashCommand,
+};
 
 pub mod harness_gene;
 pub use harness_gene::HarnessGene;

@@ -64,17 +64,47 @@ pub struct HarnessManifestBuilder {
 }
 
 impl HarnessManifestBuilder {
-    pub fn id(mut self, id: impl Into<String>) -> Self { self.id = Some(id.into()); self }
-    pub fn name(mut self, name: impl Into<String>) -> Self { self.name = Some(name.into()); self }
-    pub fn version(mut self, v: impl Into<String>) -> Self { self.version = Some(v.into()); self }
-    pub fn author(mut self, a: impl Into<String>) -> Self { self.author = Some(a.into()); self }
-    pub fn kind(mut self, k: HarnessKind) -> Self { self.kind = Some(k); self }
-    pub fn description(mut self, d: impl Into<String>) -> Self { self.description = Some(d.into()); self }
-    pub fn dependency(mut self, dep: impl Into<String>) -> Self { self.dependencies.push(dep.into()); self }
-    pub fn capability(mut self, cap: impl Into<String>) -> Self { self.capabilities.push(cap.into()); self }
-    pub fn owned_gene(mut self, g: impl Into<String>) -> Self { self.owned_genes.push(g.into()); self }
+    pub fn id(mut self, id: impl Into<String>) -> Self {
+        self.id = Some(id.into());
+        self
+    }
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+    pub fn version(mut self, v: impl Into<String>) -> Self {
+        self.version = Some(v.into());
+        self
+    }
+    pub fn author(mut self, a: impl Into<String>) -> Self {
+        self.author = Some(a.into());
+        self
+    }
+    pub fn kind(mut self, k: HarnessKind) -> Self {
+        self.kind = Some(k);
+        self
+    }
+    pub fn description(mut self, d: impl Into<String>) -> Self {
+        self.description = Some(d.into());
+        self
+    }
+    pub fn dependency(mut self, dep: impl Into<String>) -> Self {
+        self.dependencies.push(dep.into());
+        self
+    }
+    pub fn capability(mut self, cap: impl Into<String>) -> Self {
+        self.capabilities.push(cap.into());
+        self
+    }
+    pub fn owned_gene(mut self, g: impl Into<String>) -> Self {
+        self.owned_genes.push(g.into());
+        self
+    }
     pub fn slash_command(mut self, cmd: impl Into<String>, desc: impl Into<String>) -> Self {
-        self.slash_commands.push(SlashCommand { command: cmd.into(), description: desc.into() });
+        self.slash_commands.push(SlashCommand {
+            command: cmd.into(),
+            description: desc.into(),
+        });
         self
     }
 
@@ -100,16 +130,28 @@ pub trait Harness: Send + Sync + std::fmt::Debug {
     fn manifest(&self) -> &HarnessManifest;
 
     /// Initialize — called on install/load.
-    fn initialize(&mut self) -> Result<(), String> { Ok(()) }
+    fn initialize(&mut self) -> Result<(), String> {
+        Ok(())
+    }
     /// Shutdown — called on uninstall/disable.
-    fn shutdown(&mut self) -> Result<(), String> { Ok(()) }
+    fn shutdown(&mut self) -> Result<(), String> {
+        Ok(())
+    }
     /// Health check.
-    fn health(&self) -> Result<(), String> { Ok(()) }
+    fn health(&self) -> Result<(), String> {
+        Ok(())
+    }
 
     // Convenience accessors
-    fn id(&self) -> &str { &self.manifest().id }
-    fn name(&self) -> &str { &self.manifest().name }
-    fn kind(&self) -> &HarnessKind { &self.manifest().kind }
+    fn id(&self) -> &str {
+        &self.manifest().id
+    }
+    fn name(&self) -> &str {
+        &self.manifest().name
+    }
+    fn kind(&self) -> &HarnessKind {
+        &self.manifest().kind
+    }
 }
 
 // Keep existing HarnessSpec for backward compat
@@ -123,7 +165,9 @@ pub struct HarnessSpec {
 }
 
 impl HarnessSpec {
-    pub fn builder() -> HarnessSpecBuilder { HarnessSpecBuilder::default() }
+    pub fn builder() -> HarnessSpecBuilder {
+        HarnessSpecBuilder::default()
+    }
 }
 
 #[derive(Debug, Default)]
@@ -136,20 +180,40 @@ pub struct HarnessSpecBuilder {
 }
 
 impl HarnessSpecBuilder {
-    pub fn name(mut self, name: impl Into<String>) -> Self { self.name = Some(name.into()); self }
-    pub fn domain(mut self, domain: impl Into<String>) -> Self { self.domain = Some(domain.into()); self }
-    pub fn allowed_tool(mut self, tool: impl Into<String>) -> Self { self.allowed_tools.push(tool.into()); self }
+    pub fn name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+    pub fn domain(mut self, domain: impl Into<String>) -> Self {
+        self.domain = Some(domain.into());
+        self
+    }
+    pub fn allowed_tool(mut self, tool: impl Into<String>) -> Self {
+        self.allowed_tools.push(tool.into());
+        self
+    }
     pub fn allowed_tools(mut self, tools: impl IntoIterator<Item = impl Into<String>>) -> Self {
-        self.allowed_tools.extend(tools.into_iter().map(|t| t.into())); self }
-    pub fn max_steps(mut self, steps: u32) -> Self { self.max_steps = Some(steps); self }
-    pub fn requires_validation(mut self, requires: bool) -> Self { self.requires_validation = Some(requires); self }
+        self.allowed_tools
+            .extend(tools.into_iter().map(|t| t.into()));
+        self
+    }
+    pub fn max_steps(mut self, steps: u32) -> Self {
+        self.max_steps = Some(steps);
+        self
+    }
+    pub fn requires_validation(mut self, requires: bool) -> Self {
+        self.requires_validation = Some(requires);
+        self
+    }
     pub fn build(self) -> Result<HarnessSpec, String> {
         Ok(HarnessSpec {
             name: self.name.ok_or("Missing: name")?,
             domain: self.domain.ok_or("Missing: domain")?,
             allowed_tools: self.allowed_tools,
             max_steps: self.max_steps.ok_or("Missing: max_steps")?,
-            requires_validation: self.requires_validation.ok_or("Missing: requires_validation")?,
+            requires_validation: self
+                .requires_validation
+                .ok_or("Missing: requires_validation")?,
         })
     }
 }
