@@ -36,11 +36,36 @@ pub struct HarnessManifest {
     pub version: String,
     pub author: String,
     pub kind: HarnessKind,
-    pub description: String,
     pub dependencies: Vec<String>,
     pub capabilities: Vec<String>,
     pub owned_genes: Vec<String>,
     pub slash_commands: Vec<SlashCommand>,
+}
+
+/// Rich metadata for display and distribution — not used at runtime.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HarnessMetadata {
+    pub description: String,
+    pub homepage: Option<String>,
+    pub license: Option<String>,
+    pub tags: Vec<String>,
+}
+
+impl HarnessMetadata {
+    pub fn new() -> Self {
+        Self {
+            description: String::new(),
+            homepage: None,
+            license: None,
+            tags: Vec::new(),
+        }
+    }
+}
+
+impl Default for HarnessMetadata {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HarnessManifest {
@@ -56,7 +81,7 @@ pub struct HarnessManifestBuilder {
     version: Option<String>,
     author: Option<String>,
     kind: Option<HarnessKind>,
-    description: Option<String>,
+    metadata: HarnessMetadata,
     dependencies: Vec<String>,
     capabilities: Vec<String>,
     owned_genes: Vec<String>,
@@ -85,7 +110,7 @@ impl HarnessManifestBuilder {
         self
     }
     pub fn description(mut self, d: impl Into<String>) -> Self {
-        self.description = Some(d.into());
+        self.metadata.description = d.into();
         self
     }
     pub fn dependency(mut self, dep: impl Into<String>) -> Self {
@@ -115,7 +140,6 @@ impl HarnessManifestBuilder {
             version: self.version.ok_or("Missing required field: version")?,
             author: self.author.ok_or("Missing required field: author")?,
             kind: self.kind.ok_or("Missing required field: kind")?,
-            description: self.description.unwrap_or_default(),
             dependencies: self.dependencies,
             capabilities: self.capabilities,
             owned_genes: self.owned_genes,

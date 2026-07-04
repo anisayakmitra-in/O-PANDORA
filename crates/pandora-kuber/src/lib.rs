@@ -4,8 +4,8 @@
 
 use pandora_shadow_council::ShadowCouncil;
 use pandora_types::gene_package::discover_gene_packages;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone)]
 pub struct PackageSource {
@@ -252,7 +252,8 @@ impl Kuber {
         let mut tests = 5u32;
         if src.exists() {
             let c = std::fs::read_to_string(&src).unwrap_or_default();
-            if c.contains("
+            if c.contains(
+                "
 
 // ── Skill System (P5) ──
 
@@ -285,7 +286,9 @@ pub struct SkillGeneRef {
 }
 
 pub mod skill;
-#[cfg(test)]") || c.contains("#[test]") {
+#[cfg(test)]",
+            ) || c.contains("#[test]")
+            {
                 tests += 3;
             }
             if c.len() > 100 {
@@ -392,8 +395,6 @@ fn info_from(pkg: pandora_types::gene_package::GenePackage, source: &str) -> Pac
             .collect(),
     }
 }
-
-
 
 // ── Skill System (P5) ──
 
@@ -524,5 +525,4 @@ mod tests {
         assert!(skills.is_empty());
         std::fs::remove_dir_all(d).unwrap();
     }
-
 }

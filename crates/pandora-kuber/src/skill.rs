@@ -10,21 +10,26 @@ pub fn discover(root: &str) -> Vec<SkillManifest> {
     };
     for entry in dir.flatten() {
         let p = entry.path();
-        if !p.is_dir() { continue; }
+        if !p.is_dir() {
+            continue;
+        }
         let toml = p.join("skill.toml");
-        if !toml.exists() { continue; }
+        if !toml.exists() {
+            continue;
+        }
         if let Ok(c) = std::fs::read_to_string(&toml) {
-            if let Ok(m) = toml::from_str(&c) { skills.push(m); }
+            if let Ok(m) = toml::from_str(&c) {
+                skills.push(m);
+            }
         }
     }
     skills
 }
 
 pub fn install(kuber: &mut Kuber, path: &str) -> Result<Skill, String> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| format!("Cannot read skill: {}", e))?;
-    let manifest: SkillManifest = toml::from_str(&content)
-        .map_err(|e| format!("Invalid skill.toml: {}", e))?;
+    let content = std::fs::read_to_string(path).map_err(|e| format!("Cannot read skill: {}", e))?;
+    let manifest: SkillManifest =
+        toml::from_str(&content).map_err(|e| format!("Invalid skill.toml: {}", e))?;
     for gene in &manifest.genes {
         match kuber.install(&gene.id) {
             Ok(_) => println!("  [gene] {}", gene.id),
@@ -37,8 +42,7 @@ pub fn install(kuber: &mut Kuber, path: &str) -> Result<Skill, String> {
 
 pub fn scaffold(name: &str, dir: &str) -> Result<String, String> {
     let skill_dir = std::path::Path::new(dir).join(name);
-    std::fs::create_dir_all(&skill_dir)
-        .map_err(|e| format!("Cannot create: {}", e))?;
+    std::fs::create_dir_all(&skill_dir).map_err(|e| format!("Cannot create: {}", e))?;
     let toml = format!(
         "id = \"{}\"\nname = \"{}\"\nversion = \"0.1.0\"\nauthor = \"\"\ndescription = \"\"\n\n[[genes]]\nid = \"\"\nversion = \"\"\n",
         name, name
