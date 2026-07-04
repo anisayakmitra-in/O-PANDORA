@@ -28,15 +28,15 @@ impl KernelLifecycle {
 
     pub fn transition(&mut self, next: KernelState) -> Result<(), String> {
         use KernelState::*;
-        let valid = match (&self.state, &next) {
-            (Uninitialized, Booting) => true,
-            (Booting, Running) => true,
-            (Running, Draining) => true,
-            (Draining, ShutDown) => true,
-            (_, Recovery) => true,
-            (Recovery, Running) => true,
-            _ => false,
-        };
+        let valid = matches!(
+            (&self.state, &next),
+            (Uninitialized, Booting)
+                | (Booting, Running)
+                | (Running, Draining)
+                | (Draining, ShutDown)
+                | (_, Recovery)
+                | (Recovery, Running)
+        );
         if valid {
             self.state = next;
             Ok(())

@@ -122,7 +122,7 @@ pub struct CapabilityResolutionEngine;
 
 impl CapabilityResolutionEngine {
     pub fn resolve(
-        workload: &str,
+        _workload: &str,
         domains: &[CapabilityDomain],
         genes: &[CapabilityGene],
     ) -> Vec<CapabilityResolution> {

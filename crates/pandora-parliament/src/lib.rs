@@ -18,10 +18,12 @@
 pub mod constitution_engine;
 pub mod event_bus;
 pub mod event_bus_v2;
+pub mod harness_registry;
 pub mod lease_manager;
 pub mod service_registry;
 
 pub use constitution_engine::{ConstitutionEngine, ConstitutionalState, Policy, PolicyEvaluation};
+pub use harness_registry::{HarnessRegistry, HarnessEntry, HarnessState};
 pub use event_bus::{Event, EventBus, EventBusError};
 pub use lease_manager::{Lease, LeaseId, LeaseManager, LeaseManagerError, LeaseState};
 pub use service_registry::{ServiceRegistry, ServiceRegistryError};

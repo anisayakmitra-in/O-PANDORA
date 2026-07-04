@@ -41,7 +41,7 @@ pub struct ExecutionDirective {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExecutionState {
+pub struct LicenseState {
     pub constitutional_execution_integrity: f64,
 
     pub sovereign_runtime_stability: f64,
@@ -56,7 +56,7 @@ pub struct ExecutionState {
 pub struct ConstitutionalExecutionLicenseEngine;
 
 impl ConstitutionalExecutionLicenseEngine {
-    pub fn authorize(artifacts: &[ExecutionArtifact]) -> ExecutionState {
+    pub fn authorize(artifacts: &[ExecutionArtifact]) -> LicenseState {
         let mut directives = Vec::new();
 
         let mut integrity = 0.0;
@@ -122,7 +122,7 @@ impl ConstitutionalExecutionLicenseEngine {
             && sovereign_runtime_stability > 0.81
             && autonomy_governance_stability > 0.78;
 
-        ExecutionState {
+        LicenseState {
             constitutional_execution_integrity,
 
             sovereign_runtime_stability,

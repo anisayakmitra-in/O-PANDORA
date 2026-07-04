@@ -100,7 +100,7 @@ impl ExecutionLedger {
     pub fn by_time_range(&self, start: &str, end: &str) -> Vec<&LedgerEntry> {
         self.entries
             .iter()
-            .filter(|e| e.timestamp >= start.to_string() && e.timestamp <= end.to_string())
+            .filter(|e| e.timestamp.as_str() >= start && e.timestamp.as_str() <= end)
             .collect()
     }
 

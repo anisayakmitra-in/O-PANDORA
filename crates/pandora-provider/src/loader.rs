@@ -18,24 +18,26 @@ pub fn load_custom_providers() -> Vec<CustomProvider> {
     pub fn load_custom_providers() -> Vec<CustomProvider> {
         vec![]
     }
+
     let dir = providers_dir();
     if !dir.exists() {
         return vec![];
     }
 
     let mut providers = vec![];
-    for entry in std::fs::read_dir(&dir).unwrap_or_else(|_| std::fs::read_dir(".").unwrap()) {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.extension().map_or(false, |e| e == "toml") {
-                match load_provider_from_toml(path.to_str().unwrap_or("")) {
-                    Ok(p) => {
-                        println!("[PROVIDER] Loaded custom: {} ({})", p.name, p.endpoint);
-                        providers.push(p);
-                    }
-                    Err(e) => {
-                        eprintln!("[PROVIDER] Failed to load {}: {}", path.display(), e);
-                    }
+    for entry in std::fs::read_dir(&dir)
+        .unwrap_or_else(|_| std::fs::read_dir(".").unwrap())
+        .filter_map(Result::ok)
+    {
+        let path = entry.path();
+        if path.extension().is_some_and(|e| e == "toml") {
+            match load_provider_from_toml(path.to_str().unwrap_or("")) {
+                Ok(p) => {
+                    println!("[PROVIDER] Loaded custom: {} ({})", p.name, p.endpoint);
+                    providers.push(p);
+                }
+                Err(e) => {
+                    eprintln!("[PROVIDER] Failed to load {}: {}", path.display(), e);
                 }
             }
         }

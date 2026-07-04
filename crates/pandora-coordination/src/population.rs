@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use pandora_fitness::FitnessEvaluation;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EvolutionCandidate {
+pub struct PopulationCandidate {
     pub candidate_id: String,
 
     pub generation: u32,
@@ -18,7 +18,7 @@ pub struct EvolutionCandidate {
 }
 
 pub struct PopulationManager {
-    pub population: Vec<EvolutionCandidate>,
+    pub population: Vec<PopulationCandidate>,
 }
 
 impl Default for PopulationManager {
@@ -34,11 +34,11 @@ impl PopulationManager {
         }
     }
 
-    pub fn add_candidate(&mut self, candidate: EvolutionCandidate) {
+    pub fn add_candidate(&mut self, candidate: PopulationCandidate) {
         self.population.push(candidate);
     }
 
-    pub fn best_candidate(&self) -> Option<&EvolutionCandidate> {
+    pub fn best_candidate(&self) -> Option<&PopulationCandidate> {
         self.population.iter().max_by(|a, b| {
             let a_score = a.fitness.as_ref().map(|f| f.final_score).unwrap_or(0.0);
 

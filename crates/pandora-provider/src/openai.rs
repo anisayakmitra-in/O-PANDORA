@@ -37,7 +37,7 @@ impl Provider for OpenAIProvider {
     async fn generate(
         &self,
         request: GenerationRequest,
-        cancel: CancellationToken,
+        _cancel: CancellationToken,
     ) -> Result<GenerationResponse, ProviderError> {
         let url = format!("{}/chat/completions", self.endpoint);
         let body = serde_json::json!({
@@ -127,11 +127,11 @@ impl Provider for OpenAIProvider {
 
     async fn embed(
         &self,
-        text: String,
-        cancel: CancellationToken,
+        _text: String,
+        _cancel: CancellationToken,
     ) -> Result<Vec<f32>, ProviderError> {
         let url = format!("{}/embeddings", self.endpoint);
-        let body = serde_json::json!({"model": "text-embedding-3-small", "input": text});
+        let body = serde_json::json!({"model": "text-embedding-3-small", "input": _text});
         let response = self
             .client
             .post(&url)
