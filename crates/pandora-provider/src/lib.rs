@@ -10,6 +10,7 @@ pub mod constitutional;
 pub mod error;
 pub mod manifest;
 pub mod registry;
+pub mod target;
 pub mod traits;
 pub mod types;
 
@@ -32,5 +33,6 @@ pub use capability::{LanguageSupport, ModelCapabilities};
 pub use error::ProviderError;
 pub use manifest::ProviderManifest;
 pub use registry::ProviderRegistry;
+pub use target::{ExecutionPolicy, ExecutionTarget, Locality};
 pub use traits::Provider;
 pub use types::{GenerationRequest, GenerationResponse, TokenChunk};

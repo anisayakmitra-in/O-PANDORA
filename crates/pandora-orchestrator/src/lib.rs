@@ -125,41 +125,83 @@ impl RuntimeDelta {
     }
 }
 
-// ── ProviderRegistry — multi-provider dispatch (2B-4) ──
+// ── ProviderRegistry — multi-provider dispatch with model resolution (2C) ──
 
-/// Registry of available providers. Resolves Arc<dyn Provider> by name.
-/// Default provider is the first registered (typically Ollama for local).
+use pandora_provider::{ExecutionTarget, Locality};
+
+/// Registry of available providers with model-level resolution.
 pub struct ProviderRegistry {
     providers: Vec<Arc<dyn Provider>>,
-    default_index: usize,
+    default_provider_name: Option<String>,
+    default_model_name: Option<String>,
 }
 
 impl ProviderRegistry {
     pub fn new() -> Self {
         Self {
             providers: Vec::new(),
-            default_index: 0,
+            default_provider_name: None,
+            default_model_name: None,
         }
     }
 
-    /// Register a provider. First registered becomes default.
     pub fn register(&mut self, provider: Arc<dyn Provider>) {
+        if self.default_provider_name.is_none() {
+            self.default_provider_name = Some(provider.name().to_string());
+            let manifest = provider.manifest();
+            self.default_model_name = manifest.models.first().cloned();
+        }
         self.providers.push(provider);
     }
 
-    /// Get provider by name, falling back to default.
     pub fn get(&self, name: &str) -> Option<Arc<dyn Provider>> {
         self.providers.iter().find(|p| p.name() == name).cloned()
     }
 
-    /// Default provider (first registered).
-    pub fn default_provider(&self) -> Option<Arc<dyn Provider>> {
-        self.providers.get(self.default_index).cloned()
+    pub fn set_defaults(&mut self, provider: Option<&str>, model: Option<&str>) {
+        self.default_provider_name = provider.map(|s| s.to_string());
+        self.default_model_name = model.map(|s| s.to_string());
     }
 
-    /// List all provider names.
+    /// Resolve an ExecutionTarget from hints + defaults.
+    pub fn resolve(
+        &self,
+        provider_hint: Option<&str>,
+        model_hint: Option<&str>,
+        _cap: Option<&str>,
+    ) -> Option<ExecutionTarget> {
+        let pname = provider_hint.or(self.default_provider_name.as_deref())?;
+        let provider = self.get(pname)?;
+        let manifest = provider.manifest();
+        let model = model_hint
+            .or(self.default_model_name.as_deref())
+            .or(manifest.models.first().map(|s| s.as_str()))?;
+        let locality = if pname == "ollama" || pname == "llama.cpp" {
+            Locality::Local
+        } else {
+            Locality::Remote
+        };
+        Some(ExecutionTarget {
+            provider: pname.to_string(),
+            model: model.to_string(),
+            endpoint: manifest.endpoint.clone(),
+            capabilities: manifest.capabilities.clone(),
+            locality,
+        })
+    }
+
     pub fn list(&self) -> Vec<&str> {
         self.providers.iter().map(|p| p.name()).collect()
+    }
+
+    pub fn list_models(&self) -> Vec<(String, String)> {
+        let mut r = Vec::new();
+        for p in &self.providers {
+            for m in &p.manifest().models {
+                r.push((p.name().to_string(), m.clone()));
+            }
+        }
+        r
     }
 }
 
@@ -234,8 +276,12 @@ impl PandoraRuntime {
         let candidates = self.cap_resolution.resolve_domain(domain);
         let (provider_name, model) = if let Some(best) = candidates.first() {
             (best.provider.clone(), best.model.clone())
+        } else if let Some(target) = self.providers.resolve(None, None, None) {
+            (target.provider, target.model)
         } else {
-            ("ollama".into(), "qwen2.5-coder:7b".into())
+            return Err(anyhow::anyhow!(
+                "No provider available - configure a default"
+            ));
         };
         println!(
             "[STAGE 3 - RESOLUTION] {} candidates -> {}/{}",
@@ -253,8 +299,7 @@ impl PandoraRuntime {
         let provider = self
             .providers
             .get(&provider_name)
-            .or_else(|| self.providers.default_provider())
-            .ok_or_else(|| anyhow::anyhow!("No provider available for: {}", provider_name))?;
+            .ok_or_else(|| anyhow::anyhow!("Provider not found: {}", provider_name))?;
         let request = GenerationRequest {
             model: model.clone(),
             prompt: format!(
@@ -546,12 +591,19 @@ mod tests {
     fn provider_registry_default_is_first() {
         let reg = ProviderRegistry::new();
         // empty -> no default
-        assert!(reg.default_provider().is_none());
+        assert!(reg.resolve(None, None, None).is_none());
         assert!(reg.get("ollama").is_none());
 
         // ponytail: can't construct OllamaProvider without legacy-ollama feat in cfg(test),
         // so just verify the empty case behavior
         let _: Vec<&str> = reg.list();
         assert!(reg.list().is_empty());
+        assert!(reg.list_models().is_empty());
+    }
+    #[test]
+    fn provider_registry_resolve_returns_none_if_empty() {
+        let reg = ProviderRegistry::new();
+        assert!(reg.resolve(None, None, None).is_none());
+        // No providers registered, any hint should return None
     }
 }
