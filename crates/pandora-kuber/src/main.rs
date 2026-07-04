@@ -24,7 +24,10 @@ fn main() {
         eprintln!("  source add <n> <p>  Register a package source");
         eprintln!("  source remove <n>   Remove a source");
         eprintln!("  source list         Show all sources");
-        eprintln!("  score <path>        Score a gene package");
+        eprintln!("  score <path>        Score a gene package
+  skill install <p>    Install a skill from skill.toml
+  skill scaffold <n>   Generate a skill.toml template
+  skill list [d]       List skills in a directory");
         eprintln!("  available           List all available packages");
         process::exit(1);
     }
@@ -38,6 +41,7 @@ fn main() {
         "available" => cmd_available(),
         "source" => cmd_source(&args),
         "score" => cmd_score(&args),
+        "skill" => cmd_skill(&args),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             process::exit(1);
@@ -180,6 +184,45 @@ fn cmd_source(args: &[String]) -> Result<(), String> {
             } else {
                 for s in sources {
                     println!("  {} -> {}", s.name, s.path);
+                }
+            }
+        }
+        _ => return Err(format!("Unknown: {}", args[2])),
+    }
+    Ok(())
+}
+
+
+fn cmd_skill(args: &[String]) -> Result<(), String> {
+    if args.len() < 3 { return Err("Usage: pandora-kuber skill <install|scaffold|list> [...]".into()); }
+    match args[2].as_str() {
+        "install" => {
+            if args.len() < 4 { return Err("Usage: pandora-kuber skill install <path>".into()); }
+            let mut kuber = get_kuber();
+            if let Ok(cwd) = env::current_dir() {
+                kuber.add_source("local", &cwd.to_string_lossy());
+            }
+            let skill = pandora_kuber::skill::install(&mut kuber, &args[3])?;
+            println!("Skill: {} v{}", skill.manifest.name, skill.manifest.version);
+        }
+        "scaffold" => {
+            if args.len() < 4 { return Err("Usage: pandora-kuber skill scaffold <name> [dir]".into()); }
+            let dir = if args.len() > 4 { &args[4] } else { "." };
+            let path = pandora_kuber::skill::scaffold(&args[3], dir)?;
+            println!("Created: {}", path);
+        }
+        "list" => {
+            let dir = if args.len() > 3 { &args[3] } else { "." };
+            let skills = pandora_kuber::skill::discover(dir);
+            if skills.is_empty() {
+                println!("No skills found in: {}", dir);
+            } else {
+                println!("Skills in {}:", dir);
+                for sk in &skills {
+                    println!("  {} v{} by {}", sk.id, sk.version, sk.author);
+                    if !sk.genes.is_empty() {
+                        println!("    genes: {}", sk.genes.iter().map(|g| g.id.as_str()).collect::<Vec<_>>().join(", "));
+                    }
                 }
             }
         }

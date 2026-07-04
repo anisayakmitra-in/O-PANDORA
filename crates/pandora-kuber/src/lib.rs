@@ -5,6 +5,7 @@
 use pandora_shadow_council::ShadowCouncil;
 use pandora_types::gene_package::discover_gene_packages;
 use std::path::Path;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone)]
 pub struct PackageSource {
@@ -251,7 +252,40 @@ impl Kuber {
         let mut tests = 5u32;
         if src.exists() {
             let c = std::fs::read_to_string(&src).unwrap_or_default();
-            if c.contains("#[cfg(test)]") || c.contains("#[test]") {
+            if c.contains("
+
+// ── Skill System (P5) ──
+
+/// A skill bundles multiple gene references with config.
+#[derive(Debug, Clone)]
+pub struct Skill {
+    pub manifest: SkillManifest,
+}
+
+/// skill.toml manifest — references genes to install together.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillManifest {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub author: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub genes: Vec<SkillGeneRef>,
+    #[serde(default)]
+    pub config: std::collections::HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillGeneRef {
+    pub id: String,
+    #[serde(default)]
+    pub version: Option<String>,
+}
+
+pub mod skill;
+#[cfg(test)]") || c.contains("#[test]") {
                 tests += 3;
             }
             if c.len() > 100 {
@@ -359,6 +393,39 @@ fn info_from(pkg: pandora_types::gene_package::GenePackage, source: &str) -> Pac
     }
 }
 
+
+
+// ── Skill System (P5) ──
+
+/// A skill bundles multiple gene references with config.
+#[derive(Debug, Clone)]
+pub struct Skill {
+    pub manifest: SkillManifest,
+}
+
+/// skill.toml manifest — references genes to install together.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillManifest {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub author: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub genes: Vec<SkillGeneRef>,
+    #[serde(default)]
+    pub config: std::collections::HashMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillGeneRef {
+    pub id: String,
+    #[serde(default)]
+    pub version: Option<String>,
+}
+
+pub mod skill;
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -439,4 +506,23 @@ mod tests {
         let updates = k.check_updates();
         assert!(updates.is_empty());
     }
+    // ── Skill tests ──
+
+    #[test]
+    fn skill_scaffold_creates_file() {
+        let d = tmp();
+        let path = crate::skill::scaffold("test-skill", d.to_str().unwrap()).unwrap();
+        assert!(std::path::Path::new(&path).join("skill.toml").exists());
+        std::fs::remove_dir_all(d).unwrap();
+    }
+
+    #[test]
+    fn skill_discover_finds_nothing_in_empty_dir() {
+        let d = tmp();
+        std::fs::create_dir_all(&d).unwrap();
+        let skills = crate::skill::discover(d.to_str().unwrap());
+        assert!(skills.is_empty());
+        std::fs::remove_dir_all(d).unwrap();
+    }
+
 }
