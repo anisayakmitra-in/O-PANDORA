@@ -133,6 +133,122 @@ impl GovernanceService for DefaultGovernanceService {
 }
 
 
+
+// ── Identity Service (stub) ──
+
+#[derive(Debug)]
+pub struct DefaultIdentityService { provider: String, version: String }
+impl DefaultIdentityService {
+    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+}
+impl Service for DefaultIdentityService {
+    fn service_id(&self) -> ServiceId { ServiceId::Identity }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+impl IdentityService for DefaultIdentityService {
+    fn persist(&self, id: &str) -> Result<(), String> { Ok(()) }
+    fn resurrect(&self, id: &str) -> Result<String, String> { Ok(id.into()) }
+    fn fork(&self, _id: &str, name: &str) -> Result<String, String> { Ok(name.into()) }
+    fn merge(&self, _src: &str, _tgt: &str) -> Result<(), String> { Ok(()) }
+}
+
+// ── Sandbox Service — wraps StorageService semantics ──
+
+#[derive(Debug)]
+pub struct DefaultSandboxService { provider: String, version: String }
+impl DefaultSandboxService {
+    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+}
+impl Service for DefaultSandboxService {
+    fn service_id(&self) -> ServiceId { ServiceId::Custom("sandbox".into()) }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+impl StorageService for DefaultSandboxService {
+    fn read(&self, path: &str) -> Result<Vec<u8>, String> { Err(format!("sandbox: {} not accessible", path)) }
+    fn write(&self, _path: &str, _data: &[u8]) -> Result<(), String> { Ok(()) }
+    fn delete(&self, _path: &str) -> Result<(), String> { Ok(()) }
+    fn list(&self, prefix: &str) -> Result<Vec<String>, String> { Ok(vec![prefix.into()]) }
+}
+
+// ── Workflow Service (stub) ──
+
+#[derive(Debug)]
+pub struct DefaultWorkflowService { provider: String, version: String }
+impl DefaultWorkflowService {
+    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+}
+impl Service for DefaultWorkflowService {
+    fn service_id(&self) -> ServiceId { ServiceId::Custom("workflow".into()) }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+impl PlanningService for DefaultWorkflowService {
+    fn plan(&self, goal: &str) -> Result<String, String> { Ok(format!("wf-{}", goal.len())) }
+    fn dag(&self, pid: &str) -> Result<Vec<String>, String> { Ok(vec![pid.into()]) }
+    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> { Ok(pid.into()) }
+    fn topology(&self, pid: &str) -> Result<String, String> { Ok(pid.into()) }
+}
+
+// ── Provider Service (stub) ──
+
+#[derive(Debug)]
+pub struct DefaultProviderRegistryService { provider: String, version: String }
+impl DefaultProviderRegistryService {
+    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+}
+impl Service for DefaultProviderRegistryService {
+    fn service_id(&self) -> ServiceId { ServiceId::Provider }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+impl ProviderService for DefaultProviderRegistryService {
+    fn list_models(&self) -> Result<Vec<String>, String> { Ok(vec!["ollama/qwen2.5-coder:7b".into()]) }
+    fn health(&self) -> Result<String, String> { Ok("ok".into()) }
+    fn context_limit(&self, _m: &str) -> Result<usize, String> { Ok(4096) }
+    fn cost(&self, _m: &str) -> Result<f64, String> { Ok(0.0) }
+    fn latency(&self, _m: &str) -> Result<f64, String> { Ok(100.0) }
+    fn invoke(&self, _m: &str, p: &str) -> Result<String, String> { Ok(format!("echo: {}", p)) }
+}
+
+// ── Scheduler Service (stub) ──
+
+#[derive(Debug)]
+pub struct DefaultSchedulerService { provider: String, version: String }
+impl DefaultSchedulerService {
+    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+}
+impl Service for DefaultSchedulerService {
+    fn service_id(&self) -> ServiceId { ServiceId::Scheduler }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+impl SchedulerService for DefaultSchedulerService {
+    fn schedule(&self, spec: &str, action: &str) -> Result<String, String> { Ok(format!("job-{}", spec.len())) }
+    fn cancel(&self, _id: &str) -> Result<(), String> { Ok(()) }
+    fn list(&self) -> Result<Vec<(String, String, String)>, String> { Ok(vec![]) }
+    fn history(&self, _id: &str) -> Result<Vec<(String, String)>, String> { Ok(vec![]) }
+}
+
+// ── Ledger Service (stub) — wraps existing ExecutionLedger ──
+
+#[derive(Debug)]
+pub struct DefaultLedgerService { provider: String, version: String }
+impl DefaultLedgerService {
+    pub fn new() -> Self { Self { provider: "pandora".into(), version: "0.1.0".into() } }
+}
+impl Service for DefaultLedgerService {
+    fn service_id(&self) -> ServiceId { ServiceId::Custom("ledger".into()) }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+impl TelemetryService for DefaultLedgerService {
+    fn record(&self, metric: &str, value: f64, labels: &str) -> Result<(), String> { Ok(()) }
+    fn query(&self, metric: &str, filter: &str) -> Result<Vec<(String, f64)>, String> { Ok(vec![]) }
+    fn aggregate(&self, metric: &str, _window: &str) -> Result<f64, String> { Ok(0.0) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,4 +297,45 @@ mod tests {
         let id = svc.spawn("test-task").unwrap();
         assert!(id.starts_with("exec-"));
     }
+    #[test]
+    fn identity_fork_returns_name() {
+        let svc = DefaultIdentityService::new();
+        assert_eq!(svc.fork("parent", "child").unwrap(), "child");
+    }
+
+    #[test]
+    fn sandbox_rejects_read() {
+        let svc = DefaultSandboxService::new();
+        assert!(svc.read("/etc/passwd").is_err());
+    }
+
+    #[test]
+    fn provider_lists_default_model() {
+        let svc = DefaultProviderRegistryService::new();
+        let models = svc.list_models().unwrap();
+        assert!(!models.is_empty());
+    }
+
+    #[test]
+    fn scheduler_creates_job() {
+        let svc = DefaultSchedulerService::new();
+        let id = svc.schedule("0 * * * *", "test").unwrap();
+        assert!(id.starts_with("job-"));
+    }
+
+    #[test]
+    fn ledger_records_and_queries() {
+        let svc = DefaultLedgerService::new();
+        svc.record("test_metric", 1.0, "").unwrap();
+        let results = svc.query("test_metric", "").unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn workflow_creates_plan() {
+        let svc = DefaultWorkflowService::new();
+        let plan = svc.plan("build api").unwrap();
+        assert!(plan.starts_with("wf-"));
+    }
+
 }
