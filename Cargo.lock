@@ -933,6 +933,7 @@ dependencies = [
  "pandora-kuber",
  "pandora-orchestrator",
  "pandora-shadow-council",
+ "pandora-types",
  "tokio",
 ]
 

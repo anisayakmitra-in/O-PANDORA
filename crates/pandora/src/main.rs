@@ -89,7 +89,31 @@ fn cmd_install(args: &[String]) {
         k.add_source("local", &cwd.to_string_lossy());
     }
     match k.install(&args[2]) {
-        Ok(_) => println!("Installed: {}", args[2]),
+        Ok(_) => {
+            // ponytail: track installation by writing a gene.toml
+            let pkg_dir = pandora_types::gene_package::packages_dir();
+            let gene_dir = pkg_dir.join(&args[2]);
+            if !gene_dir.join("gene.toml").exists() {
+                std::fs::create_dir_all(&gene_dir).ok();
+                let info = pandora_kuber::builtin::find(&args[2]);
+                if let Some(pkg) = info {
+                    let toml = format!(
+                        r#"id = "{}"
+name = "{}"
+kind = "{}"
+version = "{}"
+author = "{}"
+description = "{}"
+capabilities = []
+dependencies = []
+"#,
+                        pkg.id, pkg.name, pkg.kind, pkg.version, pkg.author, pkg.description
+                    );
+                    std::fs::write(gene_dir.join("gene.toml"), toml).ok();
+                }
+            }
+            println!("Installed: {}", args[2]);
+        }
         Err(e) => {
             eprintln!("Not found: {} ({})", args[2], e);
             process::exit(1);

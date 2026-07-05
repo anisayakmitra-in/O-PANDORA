@@ -75,10 +75,16 @@ unsafe impl Sync for Kuber {}
 
 impl Kuber {
     pub fn new(council: &mut ShadowCouncil) -> Self {
-        Self {
+        let mut s = Self {
             council,
             sources: Vec::new(),
+        };
+        // ponytail: auto-register the user packages directory
+        let pkg_dir = pandora_types::gene_package::packages_dir();
+        if pkg_dir.exists() {
+            s.add_source("local", &pkg_dir.to_string_lossy());
         }
+        s
     }
 
     fn council(&self) -> &ShadowCouncil {
