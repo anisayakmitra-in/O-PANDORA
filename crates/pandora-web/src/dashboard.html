@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANDORA-SYSTEMS | Governed Cognition Infrastructure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Fira Code', monospace; background-color: #05030a; color: #d1c4e9; }
+        .glow-text-purple { text-shadow: 0 0 10px rgba(157, 78, 223, 0.6); }
+        .glow-text-green { text-shadow: 0 0 10px rgba(0, 255, 102, 0.6); }
+        .border-purple-glow { border-color: rgba(62, 39, 94, 0.7); box-shadow: inset 0 0 15px rgba(36, 25, 66, 0.3); }
+        .bg-dark-panel { background-color: #0c0817; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #05030a; }
+        ::-webkit-scrollbar-thumb { background: #241942; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3e275e; }
+    </style>
+</head>
+<body class="h-screen flex flex-col justify-between overflow-hidden text-xs select-none">
+    <header class="w-full bg-dark-panel border-b border-purple-900/40 p-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-4">
+            <div class="w-14 h-14 rounded-full border border-purple-500/50 flex items-center justify-center bg-purple-950/40 text-purple-400 relative">
+                <span class="text-xl">🐱</span>
+                <div class="absolute bottom-0 right-0 w-4 h-4 bg-purple-500 rounded-full border border-[#05030a] flex items-center justify-center text-[8px] text-black font-bold">👁</div>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-wider text-purple-400 glow-text-purple">PANDORA-SYSTEMS</h1>
+                <p class="text-[10px] tracking-widest text-purple-300/60 uppercase">Governed Cognition Infrastructure</p>
+                <p class="text-[11px] text-purple-400/80 mt-1"><span class="text-green-400">pandora@runtime:~$</span> Welcome back, <span class="text-purple-300">Operator</span>.</p>
+            </div>
+        </div>
+        <div class="flex items-stretch space-x-6">
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] border-r border-purple-900/40 pr-6 text-purple-300/70">
+                <div>RUNTIME</div><div class="text-purple-400">%%VERSION%%</div>
+                <div>ARCHITECTURE</div><div class="text-purple-400">Constitutional</div>
+                <div>MODE</div><div class="text-purple-400">SOVEREIGN</div>
+                <div>USER</div><div class="text-purple-400">operator</div>
+            </div>
+            <div class="bg-purple-950/20 border border-purple-900/60 p-2 rounded min-w-[140px] flex flex-col justify-between">
+                <div class="flex justify-between items-center text-[9px] text-purple-400/70 uppercase">
+                    <span>Runtime Status</span>
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#00ff66]"></span>
+                </div>
+                <div class="text-green-400 font-bold tracking-wider text-sm mt-0.5 glow-text-green">OPERATIONAL</div>
+                <div class="text-[9px] text-purple-400/50 mt-1">UPTIME: %%UPTIME%%</div>
+            </div>
+        </div>
+    </header>
+    <div class="flex-1 flex overflow-hidden">
+        <aside class="w-64 bg-dark-panel border-r border-purple-900/40 p-3 flex flex-col justify-between overflow-y-auto">
+            <div class="space-y-1">
+                <a href="/" class="flex items-center space-x-3 bg-purple-900/30 text-purple-300 p-2 rounded border border-purple-700/40">
+                    <span>📊</span> <span class="uppercase tracking-wider">Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🕸</span> <span class="uppercase tracking-wider text-[11px]">Execution Topology</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🛡</span> <span class="uppercase tracking-wider text-[11px]">Source Harnesses</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>⚙</span> <span class="uppercase tracking-wider text-[11px]">Meta Harnesses</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🧬</span> <span class="uppercase tracking-wider text-[11px]">Gene Registry</span>
+                </a>
+                <a href="/memory" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>💾</span> <span class="uppercase tracking-wider text-[11px]">Memory Service</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🔑</span> <span class="uppercase tracking-wider text-[11px]">Capability Leases</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>👁</span> <span class="uppercase tracking-wider text-[11px]">Governance</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🔄</span> <span class="uppercase tracking-wider text-[11px]">Pipeline</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🔥</span> <span class="uppercase tracking-wider text-[11px]">Provider Engines</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>📈</span> <span class="uppercase tracking-wider text-[11px]">Telemetry</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🏰</span> <span class="uppercase tracking-wider text-[11px]">KUBER Registry</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🔧</span> <span class="uppercase tracking-wider text-[11px]">Settings</span>
+                </a>
+                <a href="/terminal" class="flex items-center space-x-3 text-purple-400/70 hover:bg-purple-950/40 hover:text-purple-300 p-2 rounded transition-all">
+                    <span>🐚</span> <span class="uppercase tracking-wider text-[11px]">Terminal</span>
+                </a>
+            </div>
+            <div class="border border-purple-900/40 p-2 rounded text-center text-purple-400/50 bg-purple-950/10">
+                Press <span class="text-purple-400 font-bold">?</span> for help
+            </div>
+        </aside>
+        <main class="flex-1 p-4 grid grid-cols-12 gap-4 overflow-y-auto bg-[#07040f]">
+            <section class="col-span-12 bg-dark-panel border border-purple-900/40 rounded p-4 flex flex-wrap justify-between items-center relative overflow-hidden">
+                <div class="z-10 max-w-md">
+                    <h2 class="text-purple-400 font-bold text-sm uppercase tracking-widest mb-2">Pandora Core</h2>
+                    <p class="text-purple-300/70 mb-1">Pandora dictates execution.</p>
+                    <p class="text-purple-300/70">Models are interchangeable.</p>
+                </div>
+                <div class="flex items-center space-x-6 z-10 border-l border-purple-900/30 pl-6 my-2 lg:my-0">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-[11px]">
+                        <div class="text-purple-300/80">• Capability-First</div>
+                        <div class="text-purple-300/80">• Constitutional Governance</div>
+                        <div class="text-purple-300/80">• Runtime Sovereignty</div>
+                        <div class="text-purple-300/80">• Memory-Driven Execution</div>
+                        <div class="text-purple-300/80">• Plugin Architecture</div>
+                        <div class="text-purple-300/80">• Extensible Harness Model</div>
+                    </div>
+                </div>
+                <div class="text-[10px] tracking-wider font-bold text-purple-900/60 uppercase absolute right-4 bottom-2 select-none font-serif italic">
+                    VERITAS FILIUS TEMPORIS
+                </div>
+            </section>
+            <section class="col-span-12 lg:col-span-5 bg-dark-panel border border-purple-900/40 rounded p-4 flex flex-col justify-between">
+                <div class="flex justify-between items-center border-b border-purple-900/30 pb-2 mb-3">
+                    <h3 class="text-purple-300 font-medium tracking-wide uppercase text-[11px]">Source Harnesses (%%HARNESS_SOURCE%%)</h3>
+                    <span class="text-green-400 font-bold text-[10px] border border-green-500/30 px-1 rounded bg-green-950/20">OK</span>
+                </div>
+                <div class="space-y-3 flex-1 overflow-y-auto pr-1" id="harness-list">
+                    <!-- populated by server -->
+                </div>
+            </section>
+            <section class="col-span-12 md:col-span-6 lg:col-span-3 bg-dark-panel border border-purple-900/40 rounded p-4 flex flex-col justify-between">
+                <div class="border-b border-purple-900/30 pb-2 mb-3">
+                    <h3 class="text-purple-300 font-medium tracking-wide uppercase text-[11px]">System Overview</h3>
+                </div>
+                <div class="space-y-2 text-[11px] flex-1">
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Services</span>
+                        <span class="text-purple-300 font-mono">%%SERVICE_COUNT%%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Genes Available</span>
+                        <span class="text-purple-300 font-mono">%%GENE_COUNT%%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Harnesses</span>
+                        <span class="text-purple-300 font-mono">%%HARNESS_TOTAL%%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Source</span>
+                        <span class="text-purple-300 font-mono">%%HARNESS_SOURCE%%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Meta</span>
+                        <span class="text-purple-300 font-mono">%%HARNESS_META%%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Domain</span>
+                        <span class="text-purple-300 font-mono">%%HARNESS_DOMAIN%%</span>
+                    </div>
+                    <div class="flex justify-between border-b border-purple-950 pb-1">
+                        <span class="text-purple-400/60">Slash Commands</span>
+                        <span class="text-purple-300 font-mono">%%SLASH_COUNT%%</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-2 border-t border-purple-900/30 flex justify-between items-center">
+                    <span class="text-[10px] text-purple-400/60 uppercase tracking-wider">Architecture</span>
+                    <span class="text-yellow-400 font-bold text-sm font-mono tracking-wider">v1.0</span>
+                </div>
+            </section>
+            <section class="col-span-12 md:col-span-6 lg:col-span-4 bg-dark-panel border border-purple-900/40 rounded p-4 flex flex-col justify-between">
+                <div class="border-b border-purple-900/30 pb-2 mb-2">
+                    <h3 class="text-purple-300 font-medium tracking-wide uppercase text-[11px]">Execution Pipeline</h3>
+                </div>
+                <div class="flex-1 flex flex-col justify-center items-center relative py-2 space-y-3">
+                    <div class="border border-purple-700/60 bg-purple-950/30 px-3 py-1.5 rounded text-center text-[9px] text-purple-300 min-w-[110px]">
+                        1. TASK<br><span class="text-purple-400/50 text-[8px]">Receive request</span>
+                    </div>
+                    <div class="border border-purple-700/60 bg-purple-950/30 px-3 py-1.5 rounded text-center text-[9px] text-purple-300 min-w-[110px]">
+                        2. WORKFLOW<br><span class="text-purple-400/50 text-[8px]">Generate plan</span>
+                    </div>
+                    <div class="w-full flex justify-between items-center px-2">
+                        <div class="border border-purple-700/60 bg-purple-950/30 px-2 py-1 rounded text-center text-[9px] text-purple-300 min-w-[85px]">
+                            3. CAPABILITY<br><span class="text-purple-400/50 text-[8px]">Resolve</span>
+                        </div>
+                        <div class="border-2 border-purple-600 bg-purple-900/40 px-2 py-1.5 rounded text-center text-[9px] text-purple-200 font-bold min-w-[100px] shadow-[0_0_10px_rgba(147,51,234,0.3)]">
+                            4. EXECUTE<br><span class="text-purple-400/60 text-[8px]">Provider call</span>
+                        </div>
+                        <div class="border border-purple-700/60 bg-purple-950/30 px-2 py-1 rounded text-center text-[9px] text-purple-300 min-w-[85px]">
+                            5. RECORD<br><span class="text-purple-400/50 text-[8px]">Capture</span>
+                        </div>
+                    </div>
+                    <div class="w-full flex justify-around items-center px-4">
+                        <div class="border border-purple-700/60 bg-purple-950/30 px-2 py-1 rounded text-center text-[9px] text-purple-300 min-w-[85px]">
+                            6. TELEMETRY<br><span class="text-purple-400/50 text-[8px]">Trace</span>
+                        </div>
+                        <div class="border border-purple-700/60 bg-purple-950/30 px-2 py-1 rounded text-center text-[9px] text-purple-300 min-w-[85px]">
+                            7. LEDGER<br><span class="text-purple-400/50 text-[8px]">Record outcome</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="col-span-12 md:col-span-6 lg:col-span-4 bg-dark-panel border border-purple-900/40 rounded p-4">
+                <div class="border-b border-purple-900/30 pb-2 mb-3">
+                    <h3 class="text-purple-300 font-medium tracking-wide uppercase text-[11px]">Memory Service</h3>
+                </div>
+                <div class="flex items-center space-x-6 h-32">
+                    <div class="text-purple-300/80 text-center flex-1">
+                        <p class="text-[11px]">In-memory session store</p>
+                        <p class="text-[10px] text-purple-400/50 mt-2">Memory service active</p>
+                        <p class="text-[10px] text-purple-400/50">Store/retrieve/search operations available</p>
+                    </div>
+                </div>
+            </section>
+            <section class="col-span-12 md:col-span-6 lg:col-span-4 bg-dark-panel border border-purple-900/40 rounded p-4 flex flex-col justify-between">
+                <div class="border-b border-purple-900/30 pb-2 mb-2">
+                    <h3 class="text-purple-300 font-medium tracking-wide uppercase text-[11px]">Providers</h3>
+                </div>
+                <div class="space-y-2 flex-1" id="provider-list">
+                    <!-- populated by server -->
+                </div>
+            </section>
+            <section class="col-span-12 lg:col-span-4 bg-dark-panel border border-purple-900/40 rounded p-4 flex flex-col justify-between">
+                <div class="border-b border-purple-900/30 pb-2 mb-2">
+                    <h3 class="text-purple-300 font-medium tracking-wide uppercase text-[11px]">Recent Activity</h3>
+                </div>
+                <div class="space-y-1 flex-1 font-mono text-[10px] overflow-y-auto pr-1" id="activity-log">
+                    <div class="flex items-center py-0.5 border-b border-purple-950/40">
+                        <span class="text-purple-400/60 w-[60px] shrink-0">READY</span>
+                        <span class="text-green-400">[SYSTEM]</span>
+                        <span class="text-purple-300 flex-1 ml-2">Pandora runtime online</span>
+                    </div>
+                </div>
+                <div class="mt-2 pt-1 border-t border-purple-900/20">
+                    <a href="#" class="text-purple-400 hover:text-purple-300 transition-colors underline decoration-dotted text-[10px]">
+                        View all: pandora logs
+                    </a>
+                </div>
+            </section>
+        </main>
+    </div>
+    <footer class="w-full bg-dark-panel border-t border-purple-900/60 px-4 py-1.5 text-[10px] flex flex-wrap justify-between items-center text-purple-400/70">
+        <div class="flex space-x-6">
+            <span class="font-bold text-purple-400">PANDORA-SYSTEMS <span class="font-normal text-purple-500/70">%%VERSION%%</span></span>
+            <span>MODE: <span class="text-purple-300 font-medium">SOVEREIGN</span></span>
+        </div>
+        <div>
+            <span class="font-mono text-purple-300" id="clock">--:--:--</span>
+        </div>
+    </footer>
+    <script>
+        function updateClock() {
+            document.getElementById("clock").textContent = new Date().toLocaleTimeString("en-IN", { hour12: false });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>

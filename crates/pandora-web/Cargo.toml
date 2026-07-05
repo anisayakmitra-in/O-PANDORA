@@ -1,0 +1,16 @@
+[package]
+name = "pandora-web"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
+pandora-shadow-council = { path = "../pandora-shadow-council" }
+pandora-kuber = { path = "../pandora-kuber" }
+pandora-services = { path = "../pandora-services" }
+pandora-harnesses = { path = "../pandora-harnesses" }
+pandora-genes = { path = "../pandora-genes" }
+tiny_http = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
