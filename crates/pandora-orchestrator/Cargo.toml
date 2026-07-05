@@ -14,7 +14,9 @@ serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
 rand = "0.8"
 anyhow = "1"
+pandora-shadow-council = { path = "../pandora-shadow-council" }
 
 [features]
 default = ["ollama"]
 ollama = ["pandora-provider/legacy-ollama"]
+# moved to deps = { path = "../pandora-shadow-council" }

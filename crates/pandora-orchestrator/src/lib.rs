@@ -17,6 +17,8 @@ use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::session::SessionStore;
+use pandora_types::harness::HarnessKind;
+use pandora_shadow_council::ShadowCouncil;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
 use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::telemetry_engine::TelemetryEngine;
@@ -220,6 +222,7 @@ pub struct PandoraRuntime {
     pub cap_resolution: CapabilityResolutionEngine,
     pub providers: ProviderRegistry,
     pub sessions: SessionStore,
+    pub council: ShadowCouncil,
 }
 
 impl PandoraRuntime {
@@ -235,6 +238,7 @@ impl PandoraRuntime {
             knowledge: KnowledgeDistillationEngine::new(),
             ledger: ExecutionLedger::new(),
             sessions: SessionStore::new(),
+            council: ShadowCouncil::new(),
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
         }
@@ -277,6 +281,16 @@ impl PandoraRuntime {
             graph,
             step_count: topo.len(),
         };
+
+        // Stage 2b: Shadow Council — route through architecture
+        let domain_harnesses = self.council.dispatch(&HarnessKind::Domain);
+        if !domain_harnesses.is_empty() {
+            let harness_names: Vec<&str> = domain_harnesses.iter().map(|h| h.manifest().id.as_str()).collect();
+            println!("[STAGE 2b - COUNCIL] domain harnesses: {:?}", harness_names);
+            session.metadata.insert("selected_harness".to_string(), harness_names.join(","));
+        } else {
+            println!("[STAGE 2b - COUNCIL] no domain harnesses registered");
+        }
 
         // Stage 3: Capability Resolution
         let candidates = self.cap_resolution.resolve_domain(domain);

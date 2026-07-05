@@ -1060,6 +1060,7 @@ dependencies = [
  "chrono",
  "pandora-ledger",
  "pandora-provider",
+ "pandora-shadow-council",
  "pandora-types",
  "rand",
  "serde",
