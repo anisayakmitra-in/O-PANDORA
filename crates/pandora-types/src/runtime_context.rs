@@ -23,14 +23,28 @@ pub enum MemoryMode {
     Hybrid, // Local + ANUBIS
 }
 
-/// Loop execution strategy.
+/// How the execution is scheduled.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-pub enum LoopMode {
-    None,
+pub enum ExecutionMode {
     #[default]
+    Single,
+    Parallel,
+}
+
+/// When the execution should stop.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
+pub enum ControlStrategy {
+    /// Run once and return.
+    #[default]
+    SingleShot,
+    /// Evaluate output and iterate until criteria met.
     Closed,
+    /// Ask the LLM whether to continue.
     Open,
-    Fleet,
+    /// Require human approval to continue.
+    Human,
+    /// Full autonomy with governance guardrails.
+    Autonomous,
 }
 
 /// Safety level for execution.
@@ -111,7 +125,7 @@ impl Default for ContextWindowStrategy {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionProperties {
     pub memory_mode: MemoryMode,
-    pub loop_mode: LoopMode,
+    pub exec_mode: ExecutionMode,
     pub safety_level: SafetyLevel,
     pub execution_backend: ExecutionBackend,
     pub approval_mode: ApprovalMode,
@@ -132,7 +146,7 @@ impl Default for ExecutionProperties {
     fn default() -> Self {
         Self {
             memory_mode: MemoryMode::default(),
-            loop_mode: LoopMode::default(),
+            exec_mode: ExecutionMode::default(),
             safety_level: SafetyLevel::default(),
             execution_backend: ExecutionBackend::default(),
             approval_mode: ApprovalMode::default(),
@@ -340,7 +354,7 @@ mod tests {
     fn execution_properties_defaults() {
         let props = ExecutionProperties::default();
         assert_eq!(props.memory_mode, MemoryMode::Local);
-        assert_eq!(props.loop_mode, LoopMode::Closed);
+        assert_eq!(props.exec_mode, LoopMode::Closed);
         assert_eq!(props.safety_level, SafetyLevel::Medium);
     }
 
@@ -365,7 +379,7 @@ mod tests {
     #[test]
     fn custom_properties_override() {
         let props = ExecutionProperties {
-            loop_mode: LoopMode::Open,
+            exec_mode: ExecutionMode::Open,
             reasoning_depth: 5,
             ..Default::default()
         };

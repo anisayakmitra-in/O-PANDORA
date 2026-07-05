@@ -24,6 +24,7 @@
 //! registries that compose these canonical types.
 
 pub mod harness;
+pub use decision::{Decision, DecisionLog, RejectedOption};
 pub use error::PandoraError;
 pub use session::{Session, SessionStore, SessionStatus};
 pub use harness::{
@@ -31,6 +32,7 @@ pub use harness::{
 };
 
 pub mod error;
+pub mod decision;
 pub mod session;
 pub mod gene;
 pub mod gene_package;

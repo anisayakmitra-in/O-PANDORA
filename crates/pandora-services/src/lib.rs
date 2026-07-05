@@ -264,6 +264,65 @@ impl PlanningService for DefaultPlanningService {
     }
 }
 
+
+// ── ExecutionController — owns execution decisions ──
+// ponytail: one coherent runtime controller instead of LoopEngine + RetryEngine + DelegationEngine.
+
+use pandora_types::decision::{Decision, DecisionLog};
+
+/// Controls execution flow: decide retry, stop, switch, delegate.
+/// Lives inside ExecutionService as its decision-making layer.
+#[derive(Debug)]
+pub struct ExecutionController {
+    pub decision_log: DecisionLog,
+    max_retries: u32,
+}
+
+impl ExecutionController {
+    pub fn new() -> Self {
+        Self { decision_log: DecisionLog::new(), max_retries: 3 }
+    }
+
+    pub fn set_max_retries(&mut self, n: u32) { self.max_retries = n; }
+
+    /// Record a decision with alternatives.
+    pub fn decide(&mut self, stage: &str, chosen: &str, reason: &str, rejected: Vec<(&str, &str)>) {
+        let mut d = Decision::new(stage, chosen, reason);
+        for (name, reason) in rejected {
+            d = d.reject(name, reason);
+        }
+        self.decision_log.record(d);
+    }
+
+    /// Whether to retry after a failure, based on retry count and output.
+    pub fn should_retry(&self, attempt: u32, output: &str) -> bool {
+        // ponytail: retry on empty output up to max_retries
+        if attempt >= self.max_retries { return false; }
+        output.is_empty() || output.contains("[ERROR]")
+    }
+
+    /// Choose a fallback provider when the primary fails.
+    pub fn select_fallback<'a>(&self, primary: &str, available: &'a [&str]) -> Option<&'a str> {
+        available.iter().find(|&&p| p != primary).copied()
+    }
+
+    /// Evaluate if the output meets quality criteria.
+    pub fn evaluate(&self, output: &str) -> Evaluation {
+        if output.is_empty() { return Evaluation::Retry("empty output".into()); }
+        if output.len() < 5 { return Evaluation::Retry("output too short".into()); }
+        Evaluation::Accept
+    }
+}
+
+/// Result of evaluating execution output.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Evaluation {
+    Accept,
+    Retry(String),
+    SwitchProvider(String),
+    Escalate(String),
+}
+
 // ── Governance Service — policy evaluation and audit ──
 
 #[derive(Debug)]

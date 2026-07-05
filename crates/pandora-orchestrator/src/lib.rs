@@ -19,6 +19,7 @@ use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::session::SessionStore;
 use pandora_types::harness::HarnessKind;
 use pandora_shadow_council::ShadowCouncil;
+use pandora_services::ExecutionController;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
 use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::telemetry_engine::TelemetryEngine;
@@ -223,6 +224,7 @@ pub struct PandoraRuntime {
     pub providers: ProviderRegistry,
     pub sessions: SessionStore,
     pub council: ShadowCouncil,
+    pub controller: ExecutionController,
 }
 
 impl PandoraRuntime {
@@ -239,6 +241,7 @@ impl PandoraRuntime {
             ledger: ExecutionLedger::new(),
             sessions: SessionStore::new(),
             council: ShadowCouncil::new(),
+            controller: ExecutionController::new(),
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
         }
@@ -299,10 +302,14 @@ impl PandoraRuntime {
         } else if let Some(target) = self.providers.resolve(None, None, None) {
             (target.provider, target.model)
         } else {
+            self.controller.decide("provider-selection", "none", "no provider available", vec![]);
             return Err(anyhow::anyhow!(
                 "No provider available - configure a default"
             ));
         };
+        // Record decision
+        let rejected: Vec<(&str, &str)> = candidates.iter().skip(1).map(|c| (c.provider.as_str(), "lower priority")).collect();
+        self.controller.decide("provider-selection", &format!("{}/{}", provider_name, model), "highest priority candidate", rejected);
         println!(
             "[STAGE 3 - RESOLUTION] {} candidates -> {}/{}",
             candidates.len(),
@@ -473,6 +480,10 @@ impl PandoraRuntime {
         session.completed_at = Some(std::time::SystemTime::now());
         session.workflow = Some("full-pipeline".into());
         session.replay_id = Some(replay_id.clone());
+        // Store decision log
+        let decision_count = self.controller.decision_log.len();
+        session.metadata.insert("decisions".to_string(), decision_count.to_string());
+        session.metadata.insert("decision_log".to_string(), format!("{:?}", self.controller.decision_log.decisions.iter().map(|d| &d.stage).collect::<Vec<_>>()));
         // ponytail: store by execution_id for now; real session mgmt later
         self.sessions.create(&execution_id, task);
         if let Some(s) = self.sessions.get_mut(&execution_id) {

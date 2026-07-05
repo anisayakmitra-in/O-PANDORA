@@ -15,6 +15,7 @@ tracing = "0.1"
 rand = "0.8"
 anyhow = "1"
 pandora-shadow-council = { path = "../pandora-shadow-council" }
+pandora-services = { path = "../pandora-services" }
 
 [features]
 default = ["ollama"]
