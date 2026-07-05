@@ -1,6 +1,7 @@
 // ponytail: reference Source Harnesses — each wraps a service, augments with commands.
 
 use pandora_shadow_council::ShadowCouncil;
+pub mod coding;
 use pandora_types::harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, SlashCommand,
 };
@@ -226,6 +227,13 @@ mod tests {
         let svc_m = pandora_services::DefaultMemoryService::new();
         let h = MemorySourceHarness::new(Arc::new(svc_m));
         assert!(!h.manifest().slash_commands.is_empty());
+    }
+
+    #[test]
+    fn coding_domain_is_domain_kind() {
+        let h = crate::coding::CodingDomainHarness::new();
+        assert_eq!(h.manifest().kind, pandora_types::harness::HarnessKind::Domain);
+        assert!(h.manifest().id.contains("coding"));
     }
 
     #[test]
