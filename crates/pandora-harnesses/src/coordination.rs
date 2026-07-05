@@ -16,17 +16,22 @@ impl CoordinationMetaHarness {
                 .version("0.1.0")
                 .author("pandora")
                 .kind(HarnessKind::Meta)
-                .description("Inter-harness coordination — delegation, routing, workflow orchestration")
+                .description(
+                    "Inter-harness coordination — delegation, routing, workflow orchestration",
+                )
                 .capability("coordination")
                 .capability("orchestration")
                 .slash_command("/delegate", "Delegate a task to another harness")
                 .slash_command("/route", "Route a request to the appropriate harness")
                 .slash_command("/orchestrate", "Run a multi-step orchestration")
-                .build().unwrap(),
+                .build()
+                .unwrap(),
         }
     }
 }
 
 impl Harness for CoordinationMetaHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }

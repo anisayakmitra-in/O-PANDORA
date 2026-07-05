@@ -4,8 +4,8 @@
 //! A Domain Harness packages experiences — it bundles genes,
 //! adds slash commands, and configures the domain environment.
 
-use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder};
 use pandora_types::gene::Gene;
+use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder};
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -31,7 +31,8 @@ impl CodingDomainHarness {
                 .slash_command("/test", "Run tests")
                 .slash_command("/lint", "Run linter")
                 .slash_command("/review", "Review code changes")
-                .build().unwrap(),
+                .build()
+                .unwrap(),
             genes: Vec::new(),
         }
     }
@@ -47,16 +48,17 @@ impl CodingDomainHarness {
 }
 
 impl Harness for CodingDomainHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 
     fn initialize(&mut self) -> Result<(), String> {
         // ponytail: domain initialization — just log for now
-        
+
         Ok(())
     }
 
     fn shutdown(&mut self) -> Result<(), String> {
-        
         Ok(())
     }
 }

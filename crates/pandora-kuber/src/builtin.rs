@@ -26,20 +26,44 @@ fn pkg(id: &str, desc: &str, caps: &[&str]) -> PackageInfo {
 
 pub fn all() -> Vec<PackageInfo> {
     vec![
-        pkg("filesystem", "Read/write/list files", &["filesystem", "storage"]),
+        pkg(
+            "filesystem",
+            "Read/write/list files",
+            &["filesystem", "storage"],
+        ),
         pkg("shell", "Execute shell commands", &["shell", "execution"]),
         pkg("git", "Git operations", &["git", "vcs"]),
         pkg("http", "HTTP requests via curl", &["http", "network"]),
-        pkg("rust-tool", "Cargo subcommands", &["rust", "cargo", "compilation"]),
+        pkg(
+            "rust-tool",
+            "Cargo subcommands",
+            &["rust", "cargo", "compilation"],
+        ),
         pkg("python-tool", "Python evaluation", &["python", "scripting"]),
-        pkg("workflow", "Multi-step workflows", &["workflow", "automation"]),
+        pkg(
+            "workflow",
+            "Multi-step workflows",
+            &["workflow", "automation"],
+        ),
         pkg("docker", "Docker container ops", &["docker", "containers"]),
-        pkg("browser", "Web page content via Scrapling", &["browser", "scraping"]),
+        pkg(
+            "browser",
+            "Web page content via Scrapling",
+            &["browser", "scraping"],
+        ),
         pkg("sqlite", "SQLite queries", &["sqlite", "database"]),
         pkg("github", "GitHub CLI ops", &["github", "devops"]),
         pkg("mcp", "MCP tools via npx", &["mcp", "protocol"]),
-        pkg("code-review", "Git diff analysis", &["code-review", "quality"]),
-        pkg("benchmark", "Time command execution", &["benchmark", "performance"]),
+        pkg(
+            "code-review",
+            "Git diff analysis",
+            &["code-review", "quality"],
+        ),
+        pkg(
+            "benchmark",
+            "Time command execution",
+            &["benchmark", "performance"],
+        ),
     ]
 }
 

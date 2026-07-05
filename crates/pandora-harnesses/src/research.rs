@@ -23,11 +23,14 @@ impl ResearchDomainHarness {
                 .slash_command("/search", "Search web and local sources")
                 .slash_command("/extract", "Extract structured data")
                 .slash_command("/summarize", "Summarize content")
-                .build().unwrap(),
+                .build()
+                .unwrap(),
         }
     }
 }
 
 impl Harness for ResearchDomainHarness {
-    fn manifest(&self) -> &HarnessManifest { &self.manifest }
+    fn manifest(&self) -> &HarnessManifest {
+        &self.manifest
+    }
 }

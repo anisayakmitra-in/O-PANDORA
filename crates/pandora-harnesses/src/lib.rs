@@ -2,8 +2,8 @@
 
 use pandora_shadow_council::ShadowCouncil;
 pub mod coding;
-pub mod research;
 pub mod coordination;
+pub mod research;
 use pandora_types::harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, SlashCommand,
 };
@@ -231,11 +231,13 @@ mod tests {
         assert!(!h.manifest().slash_commands.is_empty());
     }
 
-
     #[test]
     fn research_domain_is_domain_kind() {
         let h = crate::research::ResearchDomainHarness::new();
-        assert_eq!(h.manifest().kind, pandora_types::harness::HarnessKind::Domain);
+        assert_eq!(
+            h.manifest().kind,
+            pandora_types::harness::HarnessKind::Domain
+        );
         let _ = h;
     }
 
@@ -243,13 +245,19 @@ mod tests {
     fn coordination_meta_is_meta_kind() {
         let h = crate::coordination::CoordinationMetaHarness::new();
         assert_eq!(h.manifest().kind, pandora_types::harness::HarnessKind::Meta);
-        assert!(h.manifest().capabilities.contains(&"coordination".to_string()));
+        assert!(h
+            .manifest()
+            .capabilities
+            .contains(&"coordination".to_string()));
     }
 
     #[test]
     fn coding_domain_is_domain_kind() {
         let h = crate::coding::CodingDomainHarness::new();
-        assert_eq!(h.manifest().kind, pandora_types::harness::HarnessKind::Domain);
+        assert_eq!(
+            h.manifest().kind,
+            pandora_types::harness::HarnessKind::Domain
+        );
         assert!(h.manifest().id.contains("coding"));
     }
 

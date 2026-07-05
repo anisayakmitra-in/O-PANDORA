@@ -74,8 +74,14 @@ fn cmd_install(args: &[String]) {
         Err(_) => {
             let found = pandora_kuber::builtin::find(&args[2]);
             match found {
-                Some(pkg) => println!("Available: {} ({}) — {} v{}", pkg.id, pkg.kind, pkg.description, pkg.version),
-                None => { eprintln!("Not found: {}. Try pandora search <query>", args[2]); process::exit(1); }
+                Some(pkg) => println!(
+                    "Available: {} ({}) — {} v{}",
+                    pkg.id, pkg.kind, pkg.description, pkg.version
+                ),
+                None => {
+                    eprintln!("Not found: {}. Try pandora search <query>", args[2]);
+                    process::exit(1);
+                }
             }
         }
     }
@@ -90,7 +96,10 @@ fn cmd_run(args: &[String]) {
     println!("Task: {}", task);
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(e) => { eprintln!("Failed to start runtime: {}", e); process::exit(1); }
+        Err(e) => {
+            eprintln!("Failed to start runtime: {}", e);
+            process::exit(1);
+        }
     };
     rt.block_on(async {
         let mut runtime = pandora_orchestrator::PandoraRuntime::new();
@@ -121,7 +130,10 @@ fn cmd_search(args: &[String]) {
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
     let results = k.search(&args[2]);
-    let builtin_results: Vec<_> = pandora_kuber::builtin::all().into_iter().filter(|p| p.id.contains(&args[2]) || p.description.contains(&args[2])).collect();
+    let builtin_results: Vec<_> = pandora_kuber::builtin::all()
+        .into_iter()
+        .filter(|p| p.id.contains(&args[2]) || p.description.contains(&args[2]))
+        .collect();
     if results.is_empty() && builtin_results.is_empty() {
         println!("No matches for: {}", args[2]);
     } else {
@@ -170,21 +182,33 @@ fn cmd_info(args: &[String]) {
 }
 
 fn cmd_uninstall(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora uninstall <id>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora uninstall <id>");
+        process::exit(1);
+    }
     let mut sc = get_sc();
     let mut k = pandora_kuber::Kuber::new(&mut sc);
     match k.uninstall(&args[2]) {
         Ok(_) => println!("Removed: {}", args[2]),
-        Err(e) => { eprintln!("{}", e); process::exit(1); }
+        Err(e) => {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
     }
 }
 
 fn cmd_update(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora update <id>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora update <id>");
+        process::exit(1);
+    }
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
     let updates = k.check_updates();
-    let found: Vec<_> = updates.into_iter().filter(|(id, _, _)| id == &args[2]).collect();
+    let found: Vec<_> = updates
+        .into_iter()
+        .filter(|(id, _, _)| id == &args[2])
+        .collect();
     if found.is_empty() {
         println!("No updates for: {}", args[2]);
     } else {
@@ -196,8 +220,14 @@ fn cmd_update(args: &[String]) {
 
 fn cmd_providers() {
     println!("Configured providers:");
-    println!("  ollama   Local LLM (OLLAMA_HOST={})", std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into()));
-    println!("  llamacpp Local LLM via llama.cpp (LLAMA_CPP_HOST={})", std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into()));
+    println!(
+        "  ollama   Local LLM (OLLAMA_HOST={})",
+        std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())
+    );
+    println!(
+        "  llamacpp Local LLM via llama.cpp (LLAMA_CPP_HOST={})",
+        std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into())
+    );
     println!("  openai   Cloud LLM (requires API key)");
     println!("  anthropic Cloud LLM (requires API key)");
     println!("  custom   Any OpenAI-compatible endpoint (PROVIDER_ENDPOINT, PROVIDER_API_KEY)");
@@ -222,35 +252,55 @@ fn cmd_harnesses() {
 fn cmd_doctor() {
     println!("=== Pandora Doctor ===\n");
     // Check Ollama
-    let ollama_host = std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
+    let ollama_host =
+        std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
     print!("Ollama ({ollama_host})... ");
-    match std::process::Command::new("sh").arg("-c").arg(format!("curl -s {ollama_host}/api/tags > /dev/null 2>&1 && echo ok || echo fail")).output() {
+    match std::process::Command::new("sh")
+        .arg("-c")
+        .arg(format!(
+            "curl -s {ollama_host}/api/tags > /dev/null 2>&1 && echo ok || echo fail"
+        ))
+        .output()
+    {
         Ok(out) => {
             let result = String::from_utf8_lossy(&out.stdout);
-            if result.contains("ok") { println!("✅ reachable"); }
-            else { println!("❌ not reachable — start Ollama or set OLLAMA_HOST"); }
+            if result.contains("ok") {
+                println!("✅ reachable");
+            } else {
+                println!("❌ not reachable — start Ollama or set OLLAMA_HOST");
+            }
         }
         Err(_) => println!("❌ curl not available"),
     }
     // Check scrapling for BrowserGene
     print!("Scrapling (BrowserGene)... ");
-    match std::process::Command::new("sh").arg("-c").arg("which scrapling 2>/dev/null || echo no").output() {
+    match std::process::Command::new("sh")
+        .arg("-c")
+        .arg("which scrapling 2>/dev/null || echo no")
+        .output()
+    {
         Ok(out) => {
             let result = String::from_utf8_lossy(&out.stdout);
-            if result.trim() == "no" { println!("⚠️  not installed (needed for browser gene)"); }
-            else { println!("✅ installed"); }
+            if result.trim() == "no" {
+                println!("⚠️  not installed (needed for browser gene)");
+            } else {
+                println!("✅ installed");
+            }
         }
         Err(_) => println!("❌ check failed"),
     }
     // Check git
     print!("Git... ");
     match std::process::Command::new("git").arg("--version").output() {
-        Ok(out) => println!("✅ {}", String::from_utf8_lossy(&out.stdout).trim()), 
+        Ok(out) => println!("✅ {}", String::from_utf8_lossy(&out.stdout).trim()),
         Err(_) => println!("❌ not found"),
     }
     // Check docker
     print!("Docker... ");
-    match std::process::Command::new("docker").arg("--version").output() {
+    match std::process::Command::new("docker")
+        .arg("--version")
+        .output()
+    {
         Ok(out) => println!("✅ {}", String::from_utf8_lossy(&out.stdout).trim()),
         Err(_) => println!("⚠️  not found (optional)"),
     }
@@ -290,7 +340,10 @@ fn cmd_lineage() {
     println!("Installed genes: {}", s.genes);
     println!("Enabled: {}", s.genes_enabled);
     println!();
-    println!("Available first-party genes: {}", pandora_kuber::builtin::all().len());
+    println!(
+        "Available first-party genes: {}",
+        pandora_kuber::builtin::all().len()
+    );
     for g in pandora_kuber::builtin::all() {
         println!("  {} — {} v{} ({})", g.id, g.description, g.version, g.kind);
     }
@@ -318,9 +371,15 @@ fn cmd_inspect() {
     println!("Shadow Council");
     let sc = pandora_shadow_council::ShadowCouncil::new();
     let s = sc.summary();
-    println!("  Harnesses: {} total ({} source, {} meta, {} domain)", s.total_harnesses, s.source_count, s.meta_count, s.domain_count);
+    println!(
+        "  Harnesses: {} total ({} source, {} meta, {} domain)",
+        s.total_harnesses, s.source_count, s.meta_count, s.domain_count
+    );
     println!("  Slash commands: {}", s.slash_commands);
-    println!("  Genes: {} installed, {} enabled", s.genes, s.genes_enabled);
+    println!(
+        "  Genes: {} installed, {} enabled",
+        s.genes, s.genes_enabled
+    );
     println!();
     println!("KUBER (distribution)");
     println!("  Built-in genes: {}", pandora_kuber::builtin::all().len());
@@ -375,12 +434,12 @@ fn cmd_new(args: &[String]) {
             {
                 use std::io::Write;
                 let mut f = std::fs::File::create(dir.join("gene.toml")).unwrap();
-                writeln!(f, "id = \"{}\"" , name).unwrap();
-                writeln!(f, "name = \"{}\"" , name).unwrap();
-                writeln!(f, "kind = \"Tool\"") .unwrap();
-                writeln!(f, "version = \"0.1.0\"") .unwrap();
-                writeln!(f, "author = \"\"") .unwrap();
-                writeln!(f, "description = \"\"") .unwrap();
+                writeln!(f, "id = \"{}\"", name).unwrap();
+                writeln!(f, "name = \"{}\"", name).unwrap();
+                writeln!(f, "kind = \"Tool\"").unwrap();
+                writeln!(f, "version = \"0.1.0\"").unwrap();
+                writeln!(f, "author = \"\"").unwrap();
+                writeln!(f, "description = \"\"").unwrap();
             }
             // Write src/lib.rs
             {
@@ -393,7 +452,12 @@ fn cmd_new(args: &[String]) {
                 writeln!(f, "impl {}Gene {{", safe_name).unwrap();
                 writeln!(f, "    pub fn new() -> Self {{").unwrap();
                 writeln!(f, "        Self {{ m: GeneManifestBuilder::default()").unwrap();
-                writeln!(f, "            .id(\"{}\").name(\"{}\").kind(GeneKind::Tool)", name, name).unwrap();
+                writeln!(
+                    f,
+                    "            .id(\"{}\").name(\"{}\").kind(GeneKind::Tool)",
+                    name, name
+                )
+                .unwrap();
                 writeln!(f, "            .version(\"0.1.0\").author(\"\")").unwrap();
                 writeln!(f, "            .description(\"{} gene\")", name).unwrap();
                 writeln!(f, "            .build().unwrap() }}").unwrap();
@@ -401,7 +465,11 @@ fn cmd_new(args: &[String]) {
                 writeln!(f, "}}").unwrap();
                 writeln!(f, "impl Gene for {}Gene {{", safe_name).unwrap();
                 writeln!(f, "    fn manifest(&self) -> &GeneManifest {{ &self.m }}").unwrap();
-                writeln!(f, "    fn execute(&self, input: &str) -> Result<String, String> {{").unwrap();
+                writeln!(
+                    f,
+                    "    fn execute(&self, input: &str) -> Result<String, String> {{"
+                )
+                .unwrap();
                 writeln!(f, "        Ok(format!(\"executed: {{}}\" , input))").unwrap();
                 writeln!(f, "    }}").unwrap();
                 writeln!(f, "}}").unwrap();
