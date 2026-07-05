@@ -236,11 +236,18 @@ impl Gene for DockerGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
-        let out = Command::new("docker")
-            .args(input.split_whitespace())
-            .output()
-            .map_err(|e| e.to_string())?;
-        Ok(String::from_utf8_lossy(&out.stdout).to_string())
+        if input.trim().is_empty() {
+            return Err("Usage: docker <args>\nExample: docker ps\nExample: docker images".into());
+        }
+        let args: Vec<&str> = input.split_whitespace().collect();
+        let out = std::process::Command::new("docker").args(&args).output()
+            .map_err(|e| format!("docker not found: {}. Install Docker first.", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() {
+            return Err(if stderr.is_empty() { format!("docker exit {}", out.status) } else { stderr.trim().to_string() });
+        }
+        Ok(stdout)
     }
 }
 
@@ -317,15 +324,18 @@ impl Gene for GitHubGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
-        let out = Command::new("gh")
-            .args(input.split_whitespace())
-            .output()
-            .map_err(|e| e.to_string())?;
-        let err = String::from_utf8_lossy(&out.stderr).to_string();
-        if !err.is_empty() {
-            return Err(err);
+        if input.trim().is_empty() {
+            return Err("Usage: gh <command>\nExample: gh pr list\nExample: gh issue view 123".into());
         }
-        Ok(String::from_utf8_lossy(&out.stdout).to_string())
+        let args: Vec<&str> = input.split_whitespace().collect();
+        let out = std::process::Command::new("gh").args(&args).output()
+            .map_err(|e| format!("gh not found: {}. Install GitHub CLI (https://cli.github.com).", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() {
+            return Err(if stderr.is_empty() { format!("gh exit {}", out.status) } else { stderr.trim().to_string() });
+        }
+        Ok(stdout)
     }
 }
 
@@ -345,12 +355,21 @@ impl Gene for MCPGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
-        let out = Command::new("npx")
-            .arg("-y")
-            .args(input.split_whitespace())
-            .output()
-            .map_err(|e| e.to_string())?;
-        Ok(String::from_utf8_lossy(&out.stdout).to_string())
+        if input.trim().is_empty() {
+            return Err("Usage: mcp <package> [args]\nRequires Node.js (npx)".into());
+        }
+        let args: Vec<&str> = input.split_whitespace().collect();
+        let mut cmd = std::process::Command::new("npx");
+        cmd.arg("-y");
+        for a in &args { cmd.arg(a); }
+        let out = cmd.output()
+            .map_err(|e| format!("npx not found: {}. Install Node.js.", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() {
+            return Err(if stderr.is_empty() { format!("npx exit {}", out.status) } else { stderr.trim().to_string() });
+        }
+        Ok(stdout)
     }
 }
 
@@ -404,17 +423,18 @@ impl Gene for BenchmarkGene {
     fn execute(&self, input: &str) -> Result<String, String> {
         use std::time::Instant;
         let start = Instant::now();
-        let out = Command::new("sh")
-            .arg("-c")
-            .arg(input)
-            .output()
-            .map_err(|e| e.to_string())?;
+        if input.trim().is_empty() {
+            return Err("Usage: benchmark <command>\nExample: benchmark curl -s http://localhost:11434/api/tags".into());
+        }
+        let out = std::process::Command::new("sh").arg("-c").arg(input).output()
+            .map_err(|e| format!("Failed: {}", e))?;
         let elapsed = start.elapsed();
-        Ok(format!(
-            "{:?}\n{}",
-            elapsed,
-            String::from_utf8_lossy(&out.stdout)
-        ))
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() {
+            return Err(format!("Exit {}: {}", out.status, stderr.trim()));
+        }
+        Ok(format!("{:.2?}\n{}", elapsed, stdout))
     }
 }
 
