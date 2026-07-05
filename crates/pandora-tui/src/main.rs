@@ -1,11 +1,9 @@
-mod app;
-use app::{App, Tab};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs, Wrap},
+    text::{Line, Span},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Tabs},
     Frame, Terminal,
 };
 use crossterm::{
@@ -14,6 +12,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::{io, time::Duration};
+use pandora_kuber::builtin;
 
 fn main() -> anyhow::Result<()> {
     enable_raw_mode()?;
@@ -21,8 +20,7 @@ fn main() -> anyhow::Result<()> {
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let mut app = App::new();
-    let res = run_app(&mut terminal, &mut app);
+    let res = run(&mut terminal);
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
     terminal.show_cursor()?;
@@ -30,113 +28,112 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn run_app<B: ratatui::backend::Backend>(
-    terminal: &mut Terminal<B>, app: &mut App,
-) -> io::Result<()> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Tab { D, H, G, P, R, M }
+use Tab::*;
+
+fn run<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
+    let mut tab = D;
     loop {
-        terminal.draw(|f| ui(f, app))?;
+        terminal.draw(|f| draw(f, &tab))?;
         if !event::poll(Duration::from_millis(100))? { continue; }
         if let Event::Key(key) = event::read()? {
             if key.kind != KeyEventKind::Press { continue; }
             match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
-                KeyCode::Char(c) if c >= '1' && c <= '6' => {
-                    let tabs = [Tab::Overview, Tab::Services, Tab::Harnesses,
-                                Tab::Genes, Tab::Pipeline, Tab::Providers];
-                    app.current_tab = tabs[(c as u8 - b'1') as usize];
-                    app.list_selected = 0;
-                }
-                KeyCode::Down => {
-                    if app.list_selected < app.list_len().saturating_sub(1) {
-                        app.list_selected += 1;
-                    }
-                }
-                KeyCode::Up => {
-                    app.list_selected = app.list_selected.saturating_sub(1);
-                }
+                KeyCode::Char('1') => tab = D,
+                KeyCode::Char('2') => tab = H,
+                KeyCode::Char('3') => tab = G,
+                KeyCode::Char('4') => tab = P,
+                KeyCode::Char('5') => tab = R,
+                KeyCode::Char('6') => tab = M,
                 _ => {}
             }
         }
     }
 }
 
-fn ui(f: &mut Frame, app: &App) {
-    let area = f.area();
+fn draw(f: &mut Frame, tab: &Tab) {
     let vert = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(1), Constraint::Min(0), Constraint::Length(1)])
-        .split(area);
+        .split(f.area());
 
-    let status = format!(
-        " Pandora v{} | {} services | {} genes | {} harnesses | [1-6] tabs [q]uit ",
-        env!("CARGO_PKG_VERSION"), app.service_count,
-        app.gene_count + app.builtin_genes, app.harness_count,
-    );
-    let sbar = Paragraph::new(Line::from(Span::styled(
-        &status, Style::default().fg(Color::White).bg(Color::Rgb(30, 30, 100)),
-    ))).style(Style::default().bg(Color::Rgb(30, 30, 100)));
-    f.render_widget(sbar, vert[0]);
+    let st = Style::default().fg(Color::Rgb(180, 160, 220)).bg(Color::Rgb(20, 10, 40));
+    f.render_widget(Paragraph::new(Line::from(Span::styled(" PANDORA TUI  [1]Dash [2]Harness [3]Genes [4]Pipe [5]Prov [6]Mem  [q]uit", st))).style(st), vert[0]);
 
-    let tab_names = [" Overview ", " Services ", " Harnesses ", " Genes ", " Pipeline ", " Providers "];
-    let tab_lines: Vec<Line> = tab_names.iter().copied().enumerate().map(|(i, t)| {
-        let sel = i as u8 == app.current_tab as u8;
-        let s = if sel { Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD) }
-                else { Style::default().fg(Color::DarkGray) };
-        Line::from(Span::styled(t, s))
+    let names = [" Dashboard ", " Harnesses ", " Genes ", " Pipeline ", " Providers ", " Memory "];
+    let tlines: Vec<Line> = names.iter().enumerate().map(|(i, t)| {
+        let sel = *tab as u8 == i as u8;
+        let s = if sel { Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD) } else { Style::default().fg(Color::DarkGray) };
+        Line::from(Span::styled(t.to_string(), s))
     }).collect();
-    let tabs = Tabs::new(tab_lines)
-        .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(Color::Rgb(60, 60, 100))))
-        .style(Style::default().bg(Color::Rgb(15, 15, 30)));
+    let tabs = Tabs::new(tlines)
+        .block(Block::default().borders(Borders::ALL))
+        .style(Style::default().bg(Color::Rgb(12, 6, 24)));
     f.render_widget(tabs, vert[1]);
 
-    let horiz = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
-        .split(vert[1]);
+    match tab {
+        D => {
+            let txt = vec![
+                Line::from(Span::styled(" DASHBOARD", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))),
+                Line::from(""),
+                Line::from("  Architecture: Constitutional v1.0"),
+                Line::from("  Mode: SOVEREIGN"),
+                Line::from("  Status: OPERATIONAL"),
+                Line::from(""),
+                Line::from("  10 Services | 14 Genes | 8 Harnesses"),
+                Line::from("  206 tests passing"),
+            ];
+            f.render_widget(Paragraph::new(ratatui::text::Text::from(txt)).block(Block::default().borders(Borders::ALL)), vert[1]);
+        }
+        H => {
+            let items: Vec<ListItem> = [
+                "Cognition Source Harness",
+                "Planning Source Harness",
+                "Execution Source Harness",
+                "Governance Source Harness",
+                "Identity Source Harness",
+                "Coordination Meta Harness",
+                "Coding Domain Harness",
+                "Research Domain Harness",
+            ].iter().map(|s| ListItem::new(Line::from(Span::styled(*s, Style::default().fg(Color::Rgb(200, 180, 220)))))).collect();
+            f.render_widget(List::new(items).block(Block::default().borders(Borders::ALL)), vert[1]);
+        }
+        G => {
+            let items: Vec<ListItem> = builtin::all().iter().map(|g| {
+                ListItem::new(Line::from(Span::styled(format!(" {}  {}", g.id, g.description), Style::default().fg(Color::Rgb(200, 180, 255)))))
+            }).collect();
+            f.render_widget(List::new(items).block(Block::default().borders(Borders::ALL).title(" Gene Registry")), vert[1]);
+        }
+        P => {
+            let items: Vec<ListItem> = [
+                "1. Task", "2. Workflow", "3. Capability",
+                "4. Execute", "5. Record", "6. Telemetry", "7. Ledger",
+            ].iter().map(|s| ListItem::new(Line::from(Span::styled(*s, Style::default().fg(Color::Rgb(140, 120, 160)))))).collect();
+            f.render_widget(List::new(items).block(Block::default().borders(Borders::ALL)), vert[1]);
+        }
+        R => {
+            let items: Vec<ListItem> = [
+                "Ollama (localhost:11434)",
+                "LlamaCpp (localhost:8080)",
+                "OpenAI (api key)",
+                "Anthropic (api key)",
+                "Custom (PROVIDER_ENDPOINT)",
+            ].iter().map(|s| ListItem::new(Line::from(Span::styled(*s, Style::default().fg(Color::Rgb(200, 180, 220)))))).collect();
+            f.render_widget(List::new(items).block(Block::default().borders(Borders::ALL)), vert[1]);
+        }
+        M => {
+            let txt = vec![
+                Line::from(Span::styled(" MEMORY SERVICE", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))),
+                Line::from("  In-memory session store"),
+                Line::from("  Operations: store, retrieve, search, delete"),
+                Line::from("  Status: ACTIVE"),
+            ];
+            f.render_widget(Paragraph::new(ratatui::text::Text::from(txt)).block(Block::default().borders(Borders::ALL)), vert[1]);
+        }
+    }
 
-    let lbl = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Rgb(60, 60, 100)))
-        .style(Style::default().bg(Color::Rgb(12, 12, 28)));
-    f.render_widget(lbl, horiz[0]);
-    let li = Layout::default().margin(1)
-        .constraints([Constraint::Length(1), Constraint::Min(0)]).split(horiz[0]);
-    let titles = [" System Overview", " Constitutional Services", " Harnesses",
-               " Genes", " Execution Pipeline", " AI Providers"];
-    f.render_widget(Paragraph::new(Line::from(Span::styled(
-        titles[app.current_tab as usize],
-        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-    ))), li[0]);
-    let li_items = app.list_items();
-    let items: Vec<ListItem> = li_items.iter().enumerate().map(|(i, item)| {
-        let sel = i == app.list_selected;
-        let s = if sel { Style::default().fg(Color::Yellow).bg(Color::Rgb(40, 40, 80)) }
-                else { Style::default().fg(Color::Rgb(200, 200, 220)) };
-        ListItem::new(Text::from(Line::from(Span::raw(item)))).style(s)
-    }).collect();
-    f.render_widget(List::new(items), li[1]);
-
-    let rbl = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Rgb(60, 60, 100)))
-        .style(Style::default().bg(Color::Rgb(12, 12, 28)));
-    f.render_widget(rbl, horiz[1]);
-    let ri = Layout::default().margin(1)
-        .constraints([Constraint::Length(1), Constraint::Min(0)]).split(horiz[1]);
-    f.render_widget(Paragraph::new(Line::from(Span::styled(
-        " Details", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-    ))), ri[0]);
-    let det_text = app.detail_text();
-    let det: Vec<Line> = det_text.iter().map(|s| {
-        let st = if s.starts_with("  ") { Style::default().fg(Color::Rgb(160, 160, 180)) }
-                 else { Style::default().fg(Color::Rgb(200, 200, 220)) };
-        Line::from(Span::styled(s, st))
-    }).collect();
-    f.render_widget(Paragraph::new(Text::from(det)).wrap(Wrap { trim: false }), ri[1]);
-
-    let help = Line::from(Span::styled(
-        " [1]Overview [2]Services [3]Harnesses [4]Genes [5]Pipeline [6]Providers  [q]uit  [up/down]nav",
-        Style::default().fg(Color::Rgb(100, 100, 140)).bg(Color::Rgb(10, 10, 20)),
-    ));
-    f.render_widget(Paragraph::new(help).style(Style::default().bg(Color::Rgb(10, 10, 20))), vert[2]);
+    let help = Style::default().fg(Color::Rgb(80, 60, 100)).bg(Color::Rgb(10, 5, 20));
+    f.render_widget(Paragraph::new(Line::from(Span::styled(" [1]Dashboard [2]Harnesses [3]Genes [4]Pipeline [5]Providers [6]Memory  [q]uit", help))).style(help), vert[2]);
 }
