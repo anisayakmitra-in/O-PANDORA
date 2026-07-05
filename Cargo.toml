@@ -2,7 +2,6 @@
 resolver = "2"
 
 members = [
-    "crates/pandora-capability",
     "crates/pandora-contract",
     "crates/pandora-docker-sandbox",
     "crates/pandora-epistemic-sandbox",
@@ -23,7 +22,6 @@ members = [
     "crates/pandora-execution",
     "crates/pandora-telemetry",
     "crates/pandora-discovery",
-    "crates/pandora-runtime",
     "crates/pandora-services",
     "crates/pandora-tui",
     "crates/pandora-web",
