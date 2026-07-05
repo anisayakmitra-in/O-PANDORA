@@ -7,9 +7,17 @@ license.workspace = true
 
 [features]
 # Default features: none. The crate compiles as a pure contract crate.
-default = ["llamacpp"]
+default = ["llamacpp", "custom"]
 # TEMPORARY: enables the legacy Ollama HTTP client.
 # Will be removed when the plugin architecture lands.
+custom = [
+    "dep:reqwest",
+    "dep:serde_json",
+    "dep:futures-util",
+    "dep:toml",
+    "tokio/full",
+]
+
 llamacpp = [
     "dep:reqwest",
     "dep:serde_json",

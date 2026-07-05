@@ -34,6 +34,18 @@ impl CustomProvider {
             client: reqwest::Client::new(),
         }
     }
+
+    pub fn from_env() -> Option<Self> {
+        let endpoint = std::env::var("PROVIDER_ENDPOINT").ok()?;
+        let name = std::env::var("PROVIDER_NAME").unwrap_or_else(|_| "custom".into());
+        let model = std::env::var("PROVIDER_MODEL").unwrap_or_else(|_| "default".into());
+        let mut headers = std::collections::HashMap::new();
+        if let Ok(key) = std::env::var("PROVIDER_API_KEY") {
+            headers.insert("Authorization".into(), format!("Bearer {}", key));
+        }
+        headers.insert("Content-Type".into(), "application/json".into());
+        Some(Self { name, endpoint, headers, models: vec![model], client: reqwest::Client::new() })
+    }
 }
 
 #[async_trait]

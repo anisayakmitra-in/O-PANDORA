@@ -195,8 +195,11 @@ fn cmd_providers() {
     println!("  llamacpp Local LLM via llama.cpp (LLAMA_CPP_HOST={})", std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into()));
     println!("  openai   Cloud LLM (requires API key)");
     println!("  anthropic Cloud LLM (requires API key)");
+    println!("  custom   Any OpenAI-compatible endpoint (PROVIDER_ENDPOINT, PROVIDER_API_KEY)");
     println!();
-    println!("Set OLLAMA_HOST / LLAMA_CPP_HOST to change endpoints.");
+    println!();
+    println!("Set OLLAMA_HOST / LLAMA_CPP_HOST for local endpoints.");
+    println!("Set PROVIDER_ENDPOINT + PROVIDER_API_KEY for any custom provider.");
 }
 
 fn cmd_harnesses() {
@@ -245,6 +248,12 @@ fn cmd_doctor() {
     match std::process::Command::new("docker").arg("--version").output() {
         Ok(out) => println!("✅ {}", String::from_utf8_lossy(&out.stdout).trim()),
         Err(_) => println!("⚠️  not found (optional)"),
+    }
+    // Check custom provider endpoint
+    print!("Custom provider (PROVIDER_ENDPOINT)... ");
+    match std::env::var("PROVIDER_ENDPOINT") {
+        Ok(endpoint) => println!("✅ configured ({})", endpoint),
+        Err(_) => println!("⚠️  not configured (set PROVIDER_ENDPOINT)"),
     }
     // Check gh (GitHub CLI)
     print!("GitHub CLI... ");
