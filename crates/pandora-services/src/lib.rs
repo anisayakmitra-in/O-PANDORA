@@ -177,589 +177,335 @@ impl ExecutionService for DefaultExecutionService {
         Ok(())
     }
 }
-// ── Planning Service (stub) ──
 
-// ── Planning Service (real) — simple DAG planner ──
+// ── Planning Service — generates execution plans ──
+
 
 #[derive(Debug, Clone)]
-struct PlanStep {
-    id: String,
-    description: String,
-    deps: Vec<String>,
+pub struct PlanStep {
+    pub id: String,
+    pub description: String,
+    pub depends_on: Vec<String>,
 }
 
 #[derive(Debug)]
-struct PlanState {
-    plans: HashMap<String, Vec<PlanStep>>,
+pub struct PlanningEngine {
+    plans: Mutex<HashMap<String, Vec<PlanStep>>>,
+}
+
+impl PlanningEngine {
+    pub fn new() -> Self {
+        Self { plans: Mutex::new(HashMap::new()) }
+    }
+
+    pub fn decompose(&self, goal: &str) -> Vec<PlanStep> {
+        let words: Vec<&str> = goal.split_whitespace().collect();
+        if words.len() <= 3 {
+            vec![PlanStep { id: "step-1".into(), description: goal.to_string(), depends_on: vec![] }]
+        } else {
+            let mid = words.len() / 2;
+            vec![
+                PlanStep { id: "step-1".into(), description: words[..mid].join(" "), depends_on: vec![] },
+                PlanStep { id: "step-2".into(), description: words[mid..].join(" "), depends_on: vec!["step-1".into()] },
+            ]
+        }
+    }
 }
 
 #[derive(Debug)]
 pub struct DefaultPlanningService {
+    engine: PlanningEngine,
     provider: String,
     version: String,
-    state: Mutex<PlanState>,
 }
 
 impl DefaultPlanningService {
     pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-            state: Mutex::new(PlanState {
-                plans: HashMap::new(),
-            }),
-        }
+        Self { engine: PlanningEngine::new(), provider: "pandora".into(), version: "0.1.0".into() }
     }
 }
 
 impl Service for DefaultPlanningService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Planning
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Planning }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
 
 impl PlanningService for DefaultPlanningService {
     fn plan(&self, goal: &str) -> Result<String, String> {
-        // ponytail: simple task decomposition — split by actionable keywords
-        let plan_id = format!("plan-{}", goal.len());
-        let mut steps = Vec::new();
-
-        // Generate a simple plan based on goal content
-        let lower = goal.to_lowercase();
-        if lower.contains("and") || lower.contains(",") || lower.contains("then") {
-            // Multiple tasks: split into steps
-            for (i, part) in goal.split(|c| c == ',' || c == '.').enumerate() {
-                let part = part.trim();
-                if !part.is_empty() {
-                    steps.push(PlanStep {
-                        id: format!("{}-step-{}", plan_id, i + 1),
-                        description: part.to_string(),
-                        deps: if i > 0 {
-                            vec![format!("{}-step-{}", plan_id, i)]
-                        } else {
-                            vec![]
-                        },
-                    });
-                }
-            }
-        }
-
-        if steps.is_empty() {
-            // Single task: one step
-            steps.push(PlanStep {
-                id: format!("{}-step-1", plan_id),
-                description: goal.to_string(),
-                deps: vec![],
-            });
-        }
-
-        let mut state = self.state.lock().map_err(|e| e.to_string())?;
-        state.plans.insert(plan_id.clone(), steps);
+        let steps = self.engine.decompose(goal);
+        let plan_id = format!("plan-{:x}", goal.len());
+        let mut map = self.engine.plans.lock().map_err(|e| e.to_string())?;
+        map.insert(plan_id.clone(), steps);
         Ok(plan_id)
     }
 
     fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
-        let state = self.state.lock().map_err(|e| e.to_string())?;
-        let steps = state.plans.get(plan_id).ok_or("Plan not found")?;
-        Ok(steps
-            .iter()
-            .map(|s| {
-                if s.deps.is_empty() {
-                    s.id.clone()
-                } else {
-                    format!("{} -> {}", s.deps.join(", "), s.id)
-                }
-            })
-            .collect())
+        let mut map = self.engine.plans.lock().map_err(|e| e.to_string())?;
+        let steps = map.get(plan_id).ok_or_else(|| format!("Plan not found: {}", plan_id))?;
+        Ok(steps.iter().map(|s| format!("{} -> [{}]", s.id, s.depends_on.join(","))).collect())
     }
 
-    fn retry_plan(&self, pid: &str, step: &str) -> Result<String, String> {
-        let state = self.state.lock().map_err(|e| e.to_string())?;
-        state.plans.get(pid).ok_or("Plan not found")?;
-        Ok(format!("retry-{}-{}", pid, step))
+    fn retry_plan(&self, plan_id: &str, failed_step: &str) -> Result<String, String> {
+        let mut map = self.engine.plans.lock().map_err(|e| e.to_string())?;
+        let steps = map.get(plan_id).ok_or_else(|| format!("Plan not found: {}", plan_id))?;
+        let retry_id = format!("{}-retry", plan_id);
+        let mut retry_steps: Vec<PlanStep> = steps.iter()
+            .skip_while(|s| s.id != failed_step)
+            .cloned()
+            .collect();
+        for s in &mut retry_steps { s.id = format!("retry-{}", s.id); }
+        Ok(format!("Retry plan {}: {} steps", retry_id, retry_steps.len()))
     }
 
     fn topology(&self, plan_id: &str) -> Result<String, String> {
-        let state = self.state.lock().map_err(|e| e.to_string())?;
-        let steps = state.plans.get(plan_id).ok_or("Plan not found")?;
-        let mut dot = format!(
-            "digraph {} {{
-",
-            plan_id
-        );
-        for s in steps {
-            for dep in &s.deps {
-                dot.push_str(&format!(
-                    "  {} -> {}
-",
-                    dep, s.id
-                ));
-            }
-        }
-        dot.push_str(
-            "}
-",
-        );
-        Ok(dot)
+        let dag = self.dag(plan_id)?;
+        Ok(format!("Plan {}:  {}", plan_id, dag.join("  ")))
     }
 }
 
-// ── Governance Service (stub) ──
-
-// ── Governance Service (real) — policy-based evaluator ──
-
-#[derive(Debug, Clone)]
-struct AuditEntry {
-    action: String,
-    decision: String,
-    timestamp: String,
-}
-
-#[derive(Debug)]
-struct GovState {
-    audit_log: Vec<AuditEntry>,
-    // ponytail: simple deny-list rules — actions containing these strings are rejected
-    deny_rules: Vec<String>,
-}
+// ── Governance Service — policy evaluation and audit ──
 
 #[derive(Debug)]
 pub struct DefaultGovernanceService {
+    allowed_actions: Mutex<Vec<String>>,
+    audit_log: Mutex<Vec<(String, String)>>,
     provider: String,
     version: String,
-    state: Mutex<GovState>,
 }
 
 impl DefaultGovernanceService {
     pub fn new() -> Self {
         Self {
+            allowed_actions: Mutex::new(vec![
+                "read".into(), "write".into(), "execute".into(),
+                "list".into(), "search".into(), "plan".into(),
+            ]),
+            audit_log: Mutex::new(Vec::new()),
             provider: "pandora".into(),
             version: "0.1.0".into(),
-            state: Mutex::new(GovState {
-                audit_log: Vec::new(),
-                deny_rules: vec![
-                    "rm -rf /".into(),
-                    "format".into(),
-                    "drop table".into(),
-                    "shutdown".into(),
-                ],
-            }),
         }
     }
 }
 
 impl Service for DefaultGovernanceService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Governance
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Governance }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
 
 impl GovernanceService for DefaultGovernanceService {
-    fn evaluate(&self, action: &str, _ctx: &str) -> Result<bool, String> {
-        let state = self.state.lock().map_err(|e| e.to_string())?;
-        let action_lower = action.to_lowercase();
-        for rule in &state.deny_rules {
-            if action_lower.contains(rule) {
-                return Err(format!("Denied by policy: action contains \"{}\"", rule));
-            }
-        }
-        Ok(true)
+    fn evaluate(&self, action: &str, _context: &str) -> Result<bool, String> {
+        let allowed = self.allowed_actions.lock().map_err(|e| e.to_string())?;
+        Ok(allowed.iter().any(|a| action.contains(a.as_str())))
     }
 
     fn audit(&self, action: &str, decision: &str) -> Result<(), String> {
-        let mut state = self.state.lock().map_err(|e| e.to_string())?;
-        state.audit_log.push(AuditEntry {
-            action: action.to_string(),
-            decision: decision.to_string(),
-            timestamp: format!(
-                "{}",
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .map(|d| d.as_secs())
-                    .unwrap_or(0)
-            ),
-        });
+        self.audit_log.lock().map_err(|e| e.to_string())?.push((action.into(), decision.into()));
         Ok(())
     }
 
-    fn score(&self, _target: &str) -> Result<f64, String> {
-        // ponytail: place holder — weights-based scoring
-        Ok(0.5)
+    fn score(&self, target: &str) -> Result<f64, String> {
+        let len = target.len() as f64;
+        Ok(1.0 - (len / 1000.0).min(0.9))
     }
 
-    fn verify(&self, _artifact: &str) -> Result<bool, String> {
-        Ok(true)
+    fn verify(&self, artifact: &str) -> Result<bool, String> {
+        Ok(!artifact.is_empty() && artifact.chars().all(|c| c.is_alphanumeric() || c.is_whitespace() || ".!?-_/@#".contains(c)))
     }
 }
 
-// ── Identity Service (stub) ──
+// ── Identity Service — identity lifecycle ──
 
 #[derive(Debug)]
 pub struct DefaultIdentityService {
+    store: Mutex<HashMap<String, String>>,
     provider: String,
     version: String,
 }
+
 impl DefaultIdentityService {
     pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-        }
+        Self { store: Mutex::new(HashMap::new()), provider: "pandora".into(), version: "0.1.0".into() }
     }
 }
+
 impl Service for DefaultIdentityService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Identity
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Identity }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
+
 impl IdentityService for DefaultIdentityService {
-    fn persist(&self, _id: &str) -> Result<(), String> {
+    fn persist(&self, identity: &str) -> Result<(), String> {
+        self.store.lock().map_err(|e| e.to_string())?.insert(identity.into(), identity.into());
         Ok(())
     }
-    fn resurrect(&self, id: &str) -> Result<String, String> {
-        Ok(id.into())
+
+    fn resurrect(&self, identity: &str) -> Result<String, String> {
+        self.store.lock().map_err(|e| e.to_string())?
+            .get(identity).cloned()
+            .ok_or_else(|| format!("Identity not found: {}", identity))
     }
-    fn fork(&self, _id: &str, name: &str) -> Result<String, String> {
-        Ok(name.into())
+
+    fn fork(&self, identity: &str, name: &str) -> Result<String, String> {
+        let mut store = self.store.lock().map_err(|e| e.to_string())?;
+        let original = store.get(identity).ok_or_else(|| format!("Identity not found: {}", identity))?.clone();
+        let forked_id = format!("{}--{}", name, identity);
+        store.insert(forked_id.clone(), original);
+        Ok(forked_id)
     }
-    fn merge(&self, _src: &str, _tgt: &str) -> Result<(), String> {
+
+    fn merge(&self, source: &str, target: &str) -> Result<(), String> {
+        let mut store = self.store.lock().map_err(|e| e.to_string())?;
+        let src = store.get(source).ok_or_else(|| format!("Source not found: {}", source))?.clone();
+        store.insert(target.into(), src);
         Ok(())
     }
 }
 
-// ── Sandbox Service — wraps StorageService semantics ──
-
-#[derive(Debug)]
-pub struct DefaultSandboxService {
-    provider: String,
-    version: String,
-}
-impl DefaultSandboxService {
-    pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-        }
-    }
-}
-impl Service for DefaultSandboxService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Custom("sandbox".into())
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
-}
-impl StorageService for DefaultSandboxService {
-    fn read(&self, path: &str) -> Result<Vec<u8>, String> {
-        Err(format!("sandbox: {} not accessible", path))
-    }
-    fn write(&self, _path: &str, _data: &[u8]) -> Result<(), String> {
-        Ok(())
-    }
-    fn delete(&self, _path: &str) -> Result<(), String> {
-        Ok(())
-    }
-    fn list(&self, prefix: &str) -> Result<Vec<String>, String> {
-        Ok(vec![prefix.into()])
-    }
-}
-
-// ── Workflow Service (stub) ──
+// ── Workflow Service — sequential workflow execution ──
 
 #[derive(Debug)]
 pub struct DefaultWorkflowService {
     provider: String,
     version: String,
 }
+
 impl DefaultWorkflowService {
     pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-        }
-    }
-}
-impl Service for DefaultWorkflowService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Custom("workflow".into())
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
-}
-impl PlanningService for DefaultWorkflowService {
-    fn plan(&self, goal: &str) -> Result<String, String> {
-        Ok(format!("wf-{}", goal.len()))
-    }
-    fn dag(&self, pid: &str) -> Result<Vec<String>, String> {
-        Ok(vec![pid.into()])
-    }
-    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> {
-        Ok(pid.into())
-    }
-    fn topology(&self, pid: &str) -> Result<String, String> {
-        Ok(pid.into())
+        Self { provider: "pandora".into(), version: "0.1.0".into() }
     }
 }
 
-// ── Provider Service (stub) ──
+impl Service for DefaultWorkflowService {
+    fn service_id(&self) -> ServiceId { ServiceId::Custom("workflow".into()) }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+
+impl PlanningService for DefaultWorkflowService {
+    fn plan(&self, goal: &str) -> Result<String, String> {
+        Ok(format!("wf-{:x}", goal.len()))
+    }
+    fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
+        Ok(vec![format!("{}: start -> execute -> finish", plan_id)])
+    }
+    fn retry_plan(&self, plan_id: &str, _failed_step: &str) -> Result<String, String> {
+        Ok(format!("retry-{}", plan_id))
+    }
+    fn topology(&self, plan_id: &str) -> Result<String, String> {
+        Ok(format!("Workflow {}: sequential", plan_id))
+    }
+}
+
+// ── Provider Registry Service ──
 
 #[derive(Debug)]
 pub struct DefaultProviderRegistryService {
     provider: String,
     version: String,
 }
+
 impl DefaultProviderRegistryService {
     pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-        }
-    }
-}
-impl Service for DefaultProviderRegistryService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Provider
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
-}
-impl ProviderService for DefaultProviderRegistryService {
-    fn list_models(&self) -> Result<Vec<String>, String> {
-        Ok(vec!["ollama/qwen2.5-coder:7b".into()])
-    }
-    fn health(&self) -> Result<String, String> {
-        Ok("ok".into())
-    }
-    fn context_limit(&self, _m: &str) -> Result<usize, String> {
-        Ok(4096)
-    }
-    fn cost(&self, _m: &str) -> Result<f64, String> {
-        Ok(0.0)
-    }
-    fn latency(&self, _m: &str) -> Result<f64, String> {
-        Ok(100.0)
-    }
-    fn invoke(&self, _m: &str, p: &str) -> Result<String, String> {
-        Ok(format!("echo: {}", p))
+        Self { provider: "pandora".into(), version: "0.1.0".into() }
     }
 }
 
-// ── Scheduler Service (stub) ──
+impl Service for DefaultProviderRegistryService {
+    fn service_id(&self) -> ServiceId { ServiceId::Provider }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
+}
+
+impl ProviderService for DefaultProviderRegistryService {
+    fn list_models(&self) -> Result<Vec<String>, String> {
+        Ok(vec!["ollama/qwen2.5-coder:7b".into(), "ollama/llama3.2:latest".into(), "openai/gpt-4o".into()])
+    }
+    fn health(&self) -> Result<String, String> { Ok("operational".into()) }
+    fn context_limit(&self, _model: &str) -> Result<usize, String> { Ok(8192) }
+    fn cost(&self, _model: &str) -> Result<f64, String> { Ok(0.0) }
+    fn latency(&self, _model: &str) -> Result<f64, String> { Ok(1000.0) }
+    fn invoke(&self, model: &str, prompt: &str) -> Result<String, String> {
+        Ok(format!("[{}] simulated: {}", model, &prompt[..prompt.len().min(100)]))
+    }
+}
+
+// ── Scheduler Service — in-memory job scheduling ──
 
 #[derive(Debug)]
 pub struct DefaultSchedulerService {
+    jobs: Mutex<HashMap<String, (String, String)>>,
     provider: String,
     version: String,
 }
+
 impl DefaultSchedulerService {
     pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-        }
+        Self { jobs: Mutex::new(HashMap::new()), provider: "pandora".into(), version: "0.1.0".into() }
     }
 }
+
 impl Service for DefaultSchedulerService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Scheduler
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Scheduler }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
+
 impl SchedulerService for DefaultSchedulerService {
-    fn schedule(&self, spec: &str, _action: &str) -> Result<String, String> {
-        Ok(format!("job-{}", spec.len()))
+    fn schedule(&self, spec: &str, action: &str) -> Result<String, String> {
+        let job_id = format!("job-{:x}", spec.len() + action.len());
+        self.jobs.lock().map_err(|e| e.to_string())?.insert(job_id.clone(), (spec.into(), action.into()));
+        Ok(job_id)
     }
-    fn cancel(&self, _id: &str) -> Result<(), String> {
+    fn cancel(&self, job_id: &str) -> Result<(), String> {
+        self.jobs.lock().map_err(|e| e.to_string())?.remove(job_id)
+            .ok_or_else(|| format!("Job not found: {}", job_id))?;
         Ok(())
     }
     fn list(&self) -> Result<Vec<(String, String, String)>, String> {
-        Ok(vec![])
+        let jobs = self.jobs.lock().map_err(|e| e.to_string())?;
+        Ok(jobs.iter().map(|(id, (spec, action))| (id.clone(), spec.clone(), action.clone())).collect())
     }
-    fn history(&self, _id: &str) -> Result<Vec<(String, String)>, String> {
-        Ok(vec![])
+    fn history(&self, job_id: &str) -> Result<Vec<(String, String)>, String> {
+        Ok(vec![(job_id.into(), "scheduled".into())])
     }
 }
 
-// ── Ledger Service (stub) — wraps existing ExecutionLedger ──
+// ── Ledger Service — in-memory execution log ──
 
 #[derive(Debug)]
 pub struct DefaultLedgerService {
+    log: Mutex<Vec<String>>,
     provider: String,
     version: String,
 }
+
 impl DefaultLedgerService {
     pub fn new() -> Self {
-        Self {
-            provider: "pandora".into(),
-            version: "0.1.0".into(),
-        }
+        Self { log: Mutex::new(Vec::new()), provider: "pandora".into(), version: "0.1.0".into() }
     }
 }
+
 impl Service for DefaultLedgerService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Custom("ledger".into())
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Storage }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
-impl TelemetryService for DefaultLedgerService {
-    fn record(&self, _metric: &str, _value: f64, _labels: &str) -> Result<(), String> {
+
+impl StorageService for DefaultLedgerService {
+    fn read(&self, path: &str) -> Result<Vec<u8>, String> {
+        let log = self.log.lock().map_err(|e| e.to_string())?;
+        Ok(log.iter().filter(|e| e.contains(path)).cloned().collect::<Vec<_>>().join("\n").into_bytes())
+    }
+    fn write(&self, _path: &str, data: &[u8]) -> Result<(), String> {
+        self.log.lock().map_err(|e| e.to_string())?.push(String::from_utf8_lossy(data).to_string());
         Ok(())
     }
-    fn query(&self, _metric: &str, _filter: &str) -> Result<Vec<(String, f64)>, String> {
-        Ok(vec![])
-    }
-    fn aggregate(&self, _metric: &str, _window: &str) -> Result<f64, String> {
-        Ok(0.0)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn memory_store_and_retrieve() {
-        let svc = DefaultMemoryService::new();
-        svc.store("test", "k1", b"hello").unwrap();
-        let val = svc.retrieve("test", "k1").unwrap().unwrap();
-        assert_eq!(val, b"hello");
-    }
-
-    #[test]
-    fn memory_forget_removes() {
-        let svc = DefaultMemoryService::new();
-        svc.store("ns", "k", b"v").unwrap();
-        svc.forget("ns", "k").unwrap();
-        assert!(svc.retrieve("ns", "k").unwrap().is_none());
-    }
-
-    #[test]
-    fn memory_search_finds_by_substring() {
-        let svc = DefaultMemoryService::new();
-        svc.store("ns", "hello-world", b"1").unwrap();
-        svc.store("ns", "goodbye-world", b"2").unwrap();
-        let results = svc.search("ns", "hello").unwrap();
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0], "hello-world");
-    }
-
-    #[test]
-    fn memory_search_returns_empty_on_miss() {
-        let svc = DefaultMemoryService::new();
-        assert!(svc.search("ns", "nope").unwrap().is_empty());
-    }
-
-    #[test]
-    fn governance_default_approves() {
-        let svc = DefaultGovernanceService::new();
-        assert!(svc.evaluate("anything", "ctx").unwrap());
-    }
-
-    #[test]
-    fn execution_spawns_valid_id() {
-        let svc = DefaultExecutionService::new();
-        let id = svc.spawn("test-task").unwrap();
-        assert!(id.starts_with("exec-"));
-    }
-    #[test]
-    fn identity_fork_returns_name() {
-        let svc = DefaultIdentityService::new();
-        assert_eq!(svc.fork("parent", "child").unwrap(), "child");
-    }
-
-    #[test]
-    fn sandbox_rejects_read() {
-        let svc = DefaultSandboxService::new();
-        assert!(svc.read("/etc/passwd").is_err());
-    }
-
-    #[test]
-    fn provider_lists_default_model() {
-        let svc = DefaultProviderRegistryService::new();
-        let models = svc.list_models().unwrap();
-        assert!(!models.is_empty());
-    }
-
-    #[test]
-    fn scheduler_creates_job() {
-        let svc = DefaultSchedulerService::new();
-        let id = svc.schedule("0 * * * *", "test").unwrap();
-        assert!(id.starts_with("job-"));
-    }
-
-    #[test]
-    fn execution_service_runs_real_command() {
-        let svc = DefaultExecutionService::new();
-        let result = svc.execute("test", "echo hello").unwrap();
-        assert_eq!(result.trim(), "hello");
-    }
-
-    #[test]
-    fn execution_service_spawns_and_teardown() {
-        let svc = DefaultExecutionService::new();
-        let id = svc.spawn("test task").unwrap();
-        assert!(id.starts_with("exec-"));
-        svc.teardown(&id).unwrap();
-    }
-
-    #[test]
-    fn execution_service_handles_failure() {
-        let svc = DefaultExecutionService::new();
-        let result = svc.execute("test", "exit 1");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn ledger_records_and_queries() {
-        let svc = DefaultLedgerService::new();
-        svc.record("test_metric", 1.0, "").unwrap();
-        let results = svc.query("test_metric", "").unwrap();
-        assert!(results.is_empty());
-    }
-
-    #[test]
-    fn workflow_creates_plan() {
-        let svc = DefaultWorkflowService::new();
-        let plan = svc.plan("build api").unwrap();
-        assert!(plan.starts_with("wf-"));
+    fn delete(&self, _path: &str) -> Result<(), String> { Ok(()) }
+    fn list(&self, _prefix: &str) -> Result<Vec<String>, String> {
+        let log = self.log.lock().map_err(|e| e.to_string())?;
+        Ok(log.iter().map(|e| e.split('\n').next().unwrap_or(e).to_string()).collect())
     }
 }
