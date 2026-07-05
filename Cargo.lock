@@ -850,136 +850,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-acquisition-orchestrator"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-adaptive-orchestration"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-anubis"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-artifact-provenance"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-ast-engine"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-async-bus"
-version = "0.1.0"
-dependencies = [
- "serde",
- "tokio",
-]
-
-[[package]]
-name = "pandora-benchmark"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "pandora-parliament",
- "pandora-types",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "pandora-benchmark-runtime"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-capability"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-coding-engine"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-cognition-fabric"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-cognition-governance"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-cognition-mesh"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-cognition-swarm"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-config"
-version = "0.1.0"
-
-[[package]]
-name = "pandora-consensus"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-constitutional-autonomy"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-context-reset"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-context-router"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -993,45 +864,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-coordination"
-version = "0.1.0"
-dependencies = [
- "pandora-capability",
- "pandora-fitness",
- "pandora-gene",
- "pandora-registry",
- "pandora-runtime",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-core"
-version = "0.1.0"
-
-[[package]]
-name = "pandora-dependency-graph"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-discovery"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-distributed-bus"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-distributed-registry"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1046,51 +879,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-domain-registry"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-durable-queue"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-embedding-engine"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-entropy-collapse"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-epistemic-sandbox"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-event"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-evolution-parliament"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1103,21 +892,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
-]
-
-[[package]]
-name = "pandora-execution-archaeology"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-filesystem"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -1136,13 +910,6 @@ dependencies = [
  "pandora-types",
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "pandora-gene-orchestrator"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -1176,42 +943,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-harness-manifest"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-harnesses"
 version = "0.1.0"
 dependencies = [
  "pandora-services",
  "pandora-shadow-council",
  "pandora-types",
- "serde",
-]
-
-[[package]]
-name = "pandora-health"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-inference-router"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-intelligence"
-version = "0.1.0"
-dependencies = [
- "pandora-benchmark",
- "pandora-fitness",
  "serde",
 ]
 
@@ -1242,54 +979,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-lineage"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-llamacpp-provider"
-version = "0.1.0"
-dependencies = [
- "serde",
- "tokio",
-]
-
-[[package]]
-name = "pandora-long-context"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-manifest"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-memory"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "pandora-meta-evolution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-meta-harness-governor"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -1302,78 +996,6 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "tokio",
-]
-
-[[package]]
-name = "pandora-model-arbitration"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-mutation"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-mutation-operator"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-mutation-rollback"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-mutation-tournament"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-network-fabric"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-objective-evolution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-ollama-provider"
-version = "0.1.0"
-dependencies = [
- "reqwest 0.12.28",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-operational-identity"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-optimizer"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -1393,28 +1015,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-panoptes"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-parliament"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "pandora-shadow-council",
- "pandora-types",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "pandora-permission"
 version = "0.1.0"
 dependencies = [
@@ -1425,14 +1025,6 @@ dependencies = [
 name = "pandora-planner"
 version = "0.1.0"
 dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-plugin"
-version = "0.1.0"
-dependencies = [
- "libloading",
  "serde",
 ]
 
@@ -1453,86 +1045,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-provider-arbitration"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-provider-negotiation"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-reality-consensus"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-reality-simulation"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-reasoning-chain"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-recursive-planner"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-registry"
-version = "0.1.0"
-dependencies = [
- "pandora-contract",
- "pandora-runtime",
- "serde",
-]
-
-[[package]]
 name = "pandora-repair"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-repository-evolution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-repository-indexer"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-repository-memory-graph"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-reputation"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1554,39 +1067,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-runtime-registry"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-sandbox-governance"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-security"
-version = "0.1.0"
-dependencies = [
- "pandora-docker-sandbox",
- "pandora-epistemic-sandbox",
- "pandora-permission",
- "pandora-sandbox-governance",
- "serde",
-]
-
-[[package]]
-name = "pandora-self-healing"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-semantic-memory"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1610,207 +1091,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-sovereign-constitution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-state-synthesis"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-strategic-directive"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-survivability-constitution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-consciousness"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-dream"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-endocrine"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-evolution"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-genome"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-identity"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-immunity"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-intuition"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-lineage"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-memory"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-memory-consolidation"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-metabolism"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-negotiation"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-nervous"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-reflection"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-specialization"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-subconscious"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-swarm-will"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-task"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-task-spawner"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "pandora-telemetry"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
-]
-
-[[package]]
-name = "pandora-tool-cognition"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-topology-laboratory"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-topology-synthesis"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -1824,20 +1109,6 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "toml",
-]
-
-[[package]]
-name = "pandora-uncertainty-topology"
-version = "0.1.0"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "pandora-unified-graph"
-version = "0.1.0"
-dependencies = [
- "serde",
 ]
 
 [[package]]
