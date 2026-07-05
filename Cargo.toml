@@ -5,7 +5,6 @@ members = [
     "crates/pandora-contract",
     "crates/pandora-docker-sandbox",
     "crates/pandora-epistemic-sandbox",
-    "crates/pandora-fitness",
     "crates/pandora-genes",
     "crates/pandora-harness-loader",
     "crates/pandora-harnesses",

@@ -276,11 +276,29 @@ use pandora_types::decision::{Decision, DecisionLog};
 pub struct ExecutionController {
     pub decision_log: DecisionLog,
     max_retries: u32,
+    sandbox_level: u8, // 0=none, 1=docker, 2=epistemic
 }
 
 impl ExecutionController {
     pub fn new() -> Self {
-        Self { decision_log: DecisionLog::new(), max_retries: 3 }
+        Self { decision_log: DecisionLog::new(), max_retries: 3, sandbox_level: 0 }
+    }
+
+    /// Check if an action requires human approval via Governance service.
+    pub fn needs_approval(&self, action: &str) -> bool {
+        // ponytail: shell execution and provider writes require approval
+        action.contains("shell") || action.contains("write_file") || action.contains("provider")
+    }
+
+    /// Evaluate output and return control decision.
+    pub fn decide_next(&self, output: &str, attempt: u32) -> &str {
+        if self.should_retry(attempt, output) { return "retry"; }
+        match self.evaluate(output) {
+            Evaluation::Accept => "complete",
+            Evaluation::Retry(_) => "retry",
+            Evaluation::SwitchProvider(p) => "failover",
+            Evaluation::Escalate(_) => "escalate",
+        }
     }
 
     pub fn set_max_retries(&mut self, n: u32) { self.max_retries = n; }

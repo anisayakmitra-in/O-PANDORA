@@ -562,6 +562,38 @@ fn cmd_sessions() {
     }
 }
 
+
+
+fn cmd_replay(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora replay <id>"); process::exit(1); }
+    let id = &args[2];
+    let dir = pandora_types::gene_package::packages_dir()
+        .parent().map(|p| p.join("sessions"))
+        .unwrap_or_else(|| {
+            let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+        });
+    let path = dir.join(format!("{}.json", id));
+    let json = match std::fs::read_to_string(&path) {
+        Ok(j) => j, Err(_) => { eprintln!("Session not found: {}", id); process::exit(1); }
+    };
+    let s: pandora_types::Session = match serde_json::from_str(&json) {
+        Ok(s) => s, Err(e) => { eprintln!("Parse error: {}", e); process::exit(1); }
+    };
+    println!("Replay of session: {}", s.id);
+    println!("  Prompt: {}", s.prompt);
+    println!("  Status: {:?}", s.status);
+    println!("  Timeline:");
+    for (i, frame) in s.timeline.iter().enumerate() {
+        println!("    {}. {} via {}/{}", i + 1, frame.step_label, frame.provider, frame.model);
+    }
+    println!("  Decisions:");
+    for (k, v) in &s.metadata {
+        if k.contains("decision") || k.contains("harness") || k.contains("provider") {
+            println!("    {}: {}", k, v);
+        }
+    }
+}
 fn cmd_session(args: &[String]) {
     if args.len() < 3 { eprintln!("Usage: pandora session <id>"); process::exit(1); }
     let id = &args[2];
@@ -580,5 +612,12 @@ fn cmd_session(args: &[String]) {
     };
     println!("Session: {}", s.id);
     println!("  Prompt:  {}", s.prompt);
-    for (k, v) in &s.metadata { println!("  {}: {}", k, v); }
+    println!("  Decisions:");
+    for (k, v) in &s.metadata {
+        if k.contains("decision") || k == "selected_harness" || k == "domain" || k == "execution_id" {
+            println!("    {}: {}", k, v);
+        }
+    }
+    println!("  All metadata ({}):", s.metadata.len());
+    for (k, v) in &s.metadata { println!("    {}: {}", k, v); }
 }

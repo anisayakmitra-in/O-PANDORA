@@ -3,14 +3,11 @@
 //! Phase 1C consolidation: absorbs pandora-telemetry, pandora-recorder,
 //! pandora-replay, pandora-tracing micro-crates into a single subsystem.
 
-pub mod entropy;
-
 pub mod checkpoint;
 pub mod loop_detection;
 pub mod trace;
 pub mod windowed_telemetry;
 
-pub use entropy::{EntropyEngine, ToolCall};
 pub use loop_detection::LoopDetector;
 
 // Future modules (absorbed in subsequent commits):
