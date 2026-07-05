@@ -16,6 +16,7 @@ use pandora_provider::types::GenerationRequest;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
+use pandora_types::session::SessionStore;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
 use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::telemetry_engine::TelemetryEngine;
@@ -218,6 +219,7 @@ pub struct PandoraRuntime {
     pub ledger: ExecutionLedger,
     pub cap_resolution: CapabilityResolutionEngine,
     pub providers: ProviderRegistry,
+    pub sessions: SessionStore,
 }
 
 impl PandoraRuntime {
@@ -232,6 +234,7 @@ impl PandoraRuntime {
             failure_intel: FailureIntelligenceEngine::new(),
             knowledge: KnowledgeDistillationEngine::new(),
             ledger: ExecutionLedger::new(),
+            sessions: SessionStore::new(),
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
         }

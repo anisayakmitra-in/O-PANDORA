@@ -25,11 +25,13 @@
 
 pub mod harness;
 pub use error::PandoraError;
+pub use session::{Session, SessionStore, SessionStatus};
 pub use harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessSpec, SlashCommand,
 };
 
 pub mod error;
+pub mod session;
 pub mod gene;
 pub mod gene_package;
 pub mod harness_gene;
