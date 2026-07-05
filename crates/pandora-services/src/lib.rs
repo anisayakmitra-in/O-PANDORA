@@ -161,10 +161,25 @@ impl ExecutionService for DefaultExecutionService {
 }
 // ── Planning Service (stub) ──
 
+// ── Planning Service (real) — simple DAG planner ──
+
+#[derive(Debug, Clone)]
+struct PlanStep {
+    id: String,
+    description: String,
+    deps: Vec<String>,
+}
+
+#[derive(Debug)]
+struct PlanState {
+    plans: HashMap<String, Vec<PlanStep>>,
+}
+
 #[derive(Debug)]
 pub struct DefaultPlanningService {
     provider: String,
     version: String,
+    state: Mutex<PlanState>,
 }
 
 impl DefaultPlanningService {
@@ -172,34 +187,85 @@ impl DefaultPlanningService {
         Self {
             provider: "pandora".into(),
             version: "0.1.0".into(),
+            state: Mutex::new(PlanState { plans: HashMap::new() }),
         }
     }
 }
 
 impl Service for DefaultPlanningService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Planning
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Planning }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
 
 impl PlanningService for DefaultPlanningService {
     fn plan(&self, goal: &str) -> Result<String, String> {
-        Ok(format!("plan-{}", goal.len()))
+        // ponytail: simple task decomposition — split by actionable keywords
+        let plan_id = format!("plan-{}", goal.len());
+        let mut steps = Vec::new();
+
+        // Generate a simple plan based on goal content
+        let lower = goal.to_lowercase();
+        if lower.contains("and") || lower.contains(",") || lower.contains("then") {
+            // Multiple tasks: split into steps
+            for (i, part) in goal.split(|c| c == ',' || c == '.').enumerate() {
+                let part = part.trim();
+                if !part.is_empty() {
+                    steps.push(PlanStep {
+                        id: format!("{}-step-{}", plan_id, i + 1),
+                        description: part.to_string(),
+                        deps: if i > 0 { vec![format!("{}-step-{}", plan_id, i)] } else { vec![] },
+                    });
+                }
+            }
+        }
+
+        if steps.is_empty() {
+            // Single task: one step
+            steps.push(PlanStep {
+                id: format!("{}-step-1", plan_id),
+                description: goal.to_string(),
+                deps: vec![],
+            });
+        }
+
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        state.plans.insert(plan_id.clone(), steps);
+        Ok(plan_id)
     }
+
     fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
-        Ok(vec![plan_id.to_string()])
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        let steps = state.plans.get(plan_id).ok_or("Plan not found")?;
+        Ok(steps.iter().map(|s| {
+            if s.deps.is_empty() {
+                s.id.clone()
+            } else {
+                format!("{} -> {}", s.deps.join(", "), s.id)
+            }
+        }).collect())
     }
-    fn retry_plan(&self, pid: &str, _step: &str) -> Result<String, String> {
-        Ok(pid.to_string())
+
+    fn retry_plan(&self, pid: &str, step: &str) -> Result<String, String> {
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        state.plans.get(pid).ok_or("Plan not found")?;
+        Ok(format!("retry-{}-{}", pid, step))
     }
+
     fn topology(&self, plan_id: &str) -> Result<String, String> {
-        Ok(plan_id.to_string())
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        let steps = state.plans.get(plan_id).ok_or("Plan not found")?;
+        let mut dot = format!("digraph {} {{
+", plan_id);
+        for s in steps {
+            for dep in &s.deps {
+                dot.push_str(&format!("  {} -> {}
+", dep, s.id));
+            }
+        }
+        dot.push_str("}
+");
+        Ok(dot)
     }
 }
 
