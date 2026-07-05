@@ -19,6 +19,8 @@ fn main() {
         "providers" => cmd_providers(),
         "harnesses" => cmd_harnesses(),
         "doctor" => cmd_doctor(),
+        "graph" => cmd_graph(),
+        "lineage" => cmd_lineage(),
         "inspect" => cmd_inspect(),
         "architecture" => cmd_architecture(),
         "uninstall" => cmd_uninstall(&args),
@@ -86,7 +88,10 @@ fn cmd_run(args: &[String]) {
     }
     let task: String = args[2..].join(" ");
     println!("Task: {}", task);
-    let rt = tokio::runtime::Runtime::new().unwrap();
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(e) => { eprintln!("Failed to start runtime: {}", e); process::exit(1); }
+    };
     rt.block_on(async {
         let mut runtime = pandora_orchestrator::PandoraRuntime::new();
         match runtime.run(&task, "default").await {
@@ -264,6 +269,31 @@ fn cmd_doctor() {
     // Architecture check
     println!("\nArchitecture: v1.0 — frozen");
     println!("Runtime: {}", env!("CARGO_PKG_VERSION"));
+}
+
+fn cmd_graph() {
+    println!("=== Dependency/Capability Graph ===\n");
+    println!("Parliament");
+    println!("  Services -> Shadow Council");
+    println!("  Shadow Council -> Harnesses");
+    println!("  Harnesses -> Genes");
+    println!("  KUBER -> Skills");
+    println!();
+    println!("Dependency direction: Top-down");
+    println!("All crates depend on pandora-types");
+}
+
+fn cmd_lineage() {
+    println!("=== Gene Lineage ===\n");
+    let sc = pandora_shadow_council::ShadowCouncil::new();
+    let s = sc.summary();
+    println!("Installed genes: {}", s.genes);
+    println!("Enabled: {}", s.genes_enabled);
+    println!();
+    println!("Available first-party genes: {}", pandora_kuber::builtin::all().len());
+    for g in pandora_kuber::builtin::all() {
+        println!("  {} — {} v{} ({})", g.id, g.description, g.version, g.kind);
+    }
 }
 
 fn cmd_genes() {
