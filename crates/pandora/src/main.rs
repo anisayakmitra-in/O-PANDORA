@@ -62,9 +62,12 @@ fn cmd_install(args: &[String]) {
     }
     match k.install(&args[2]) {
         Ok(_) => println!("Installed: {}", args[2]),
-        Err(e) => {
-            eprintln!("{}", e);
-            process::exit(1);
+        Err(_) => {
+            let found = pandora_kuber::builtin::find(&args[2]);
+            match found {
+                Some(pkg) => println!("Available: {} ({}) — {} v{}", pkg.id, pkg.kind, pkg.description, pkg.version),
+                None => { eprintln!("Not found: {}. Try pandora search <query>", args[2]); process::exit(1); }
+            }
         }
     }
 }
@@ -105,11 +108,15 @@ fn cmd_search(args: &[String]) {
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
     let results = k.search(&args[2]);
-    if results.is_empty() {
+    let builtin_results: Vec<_> = pandora_kuber::builtin::all().into_iter().filter(|p| p.id.contains(&args[2]) || p.description.contains(&args[2])).collect();
+    if results.is_empty() && builtin_results.is_empty() {
         println!("No matches for: {}", args[2]);
     } else {
         for p in &results {
             println!("  {} v{} ({})", p.id, p.version, p.kind);
+        }
+        for p in &builtin_results {
+            println!("  {} v{} ({}) [built-in]", p.id, p.version, p.kind);
         }
     }
 }
@@ -119,7 +126,13 @@ fn cmd_list() {
     let k = pandora_kuber::Kuber::new(&mut sc);
     let installed = k.list_installed();
     if installed.is_empty() {
-        println!("Nothing installed.");
+        println!("Nothing installed. Available built-in genes:");
+        for p in pandora_kuber::builtin::all().iter().take(7) {
+            println!("  {} — {}", p.id, p.description);
+        }
+        println!("  ... and {} more", pandora_kuber::builtin::all().len() - 7);
+        println!("Install: pandora install <name>");
+        return;
     } else {
         for id in &installed {
             println!("  {}", id);

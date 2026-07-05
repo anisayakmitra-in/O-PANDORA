@@ -285,6 +285,7 @@ pub struct SkillGeneRef {
     pub version: Option<String>,
 }
 
+pub mod builtin;
 pub mod skill;
 #[cfg(test)]",
             ) || c.contains("#[test]")
@@ -426,6 +427,7 @@ pub struct SkillGeneRef {
     pub version: Option<String>,
 }
 
+pub mod builtin;
 pub mod skill;
 #[cfg(test)]
 mod tests {
