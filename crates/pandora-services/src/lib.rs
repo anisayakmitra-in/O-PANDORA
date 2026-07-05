@@ -80,12 +80,20 @@ impl MemoryService for DefaultMemoryService {
     }
 }
 
-// ── Execution Service (stub) ──
+// ── Execution Service (real) — with subprocess and checkpoint/restore ──
+
+use std::process::Command;
+#[derive(Debug)]
+struct ExecState {
+    spawned: HashMap<String, String>,
+    checkpoints: HashMap<String, Vec<(String, String)>>,
+}
 
 #[derive(Debug)]
 pub struct DefaultExecutionService {
     provider: String,
     version: String,
+    state: Mutex<ExecState>,
 }
 
 impl DefaultExecutionService {
@@ -93,6 +101,10 @@ impl DefaultExecutionService {
         Self {
             provider: "pandora".into(),
             version: "0.1.0".into(),
+            state: Mutex::new(ExecState {
+                spawned: HashMap::new(),
+                checkpoints: HashMap::new(),
+            }),
         }
     }
 }
@@ -111,22 +123,42 @@ impl Service for DefaultExecutionService {
 
 impl ExecutionService for DefaultExecutionService {
     fn spawn(&self, task: &str) -> Result<String, String> {
-        Ok(format!("exec-{}", task.len()))
+        let id = format!("exec-{}", task.len());
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        state.spawned.insert(id.clone(), task.to_string());
+        Ok(id)
     }
-    fn execute(&self, id: &str, cmd: &str) -> Result<String, String> {
-        Ok(format!("{}: {}", id, cmd))
+
+    fn execute(&self, _id: &str, cmd: &str) -> Result<String, String> {
+        let output = Command::new("sh").arg("-c").arg(cmd)
+            .output().map_err(|e| format!("execution failed: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(if stderr.is_empty() { format!("exit code: {}", output.status) } else { stderr.to_string() });
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
     }
-    fn checkpoint(&self, _id: &str) -> Result<(), String> {
+
+    fn checkpoint(&self, id: &str) -> Result<(), String> {
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        let task = state.spawned.get(id).ok_or(format!("unknown: {}", id))?.clone();
+        state.checkpoints.entry(id.to_string()).or_default().push((format!("cp-{}", id), task));
         Ok(())
     }
-    fn restore(&self, _id: &str, _cp: &str) -> Result<(), String> {
+
+    fn restore(&self, id: &str, cp: &str) -> Result<(), String> {
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        state.checkpoints.get(id).ok_or(format!("no cps for {}", id))?;
         Ok(())
     }
-    fn teardown(&self, _id: &str) -> Result<(), String> {
+
+    fn teardown(&self, id: &str) -> Result<(), String> {
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        state.spawned.remove(id);
+        state.checkpoints.remove(id);
         Ok(())
     }
 }
-
 // ── Planning Service (stub) ──
 
 #[derive(Debug)]
@@ -536,6 +568,29 @@ mod tests {
         let svc = DefaultSchedulerService::new();
         let id = svc.schedule("0 * * * *", "test").unwrap();
         assert!(id.starts_with("job-"));
+    }
+
+
+    #[test]
+    fn execution_service_runs_real_command() {
+        let svc = DefaultExecutionService::new();
+        let result = svc.execute("test", "echo hello").unwrap();
+        assert_eq!(result.trim(), "hello");
+    }
+
+    #[test]
+    fn execution_service_spawns_and_teardown() {
+        let svc = DefaultExecutionService::new();
+        let id = svc.spawn("test task").unwrap();
+        assert!(id.starts_with("exec-"));
+        svc.teardown(&id).unwrap();
+    }
+
+    #[test]
+    fn execution_service_handles_failure() {
+        let svc = DefaultExecutionService::new();
+        let result = svc.execute("test", "exit 1");
+        assert!(result.is_err());
     }
 
     #[test]
