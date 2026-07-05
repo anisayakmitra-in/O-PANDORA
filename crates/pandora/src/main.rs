@@ -16,6 +16,10 @@ fn main() {
         "list" => cmd_list(),
         "info" => cmd_info(&args),
         "genes" => cmd_genes(),
+        "providers" => cmd_providers(),
+        "harnesses" => cmd_harnesses(),
+        "doctor" => cmd_doctor(),
+        "inspect" => cmd_inspect(),
         "architecture" => cmd_architecture(),
         "uninstall" => cmd_uninstall(&args),
         "update" => cmd_update(&args),
@@ -38,6 +42,9 @@ fn usage() {
     eprintln!("  info <id>       Package details");
     eprintln!("  uninstall <id>  Remove an installed package");
     eprintln!("  update <id>     Check for updates");
+    eprintln!("  providers       List configured providers");
+    eprintln!("  harnesses       List installed harnesses");
+    eprintln!("  doctor          System health check");
     eprintln!("  genes           List available first-party genes");
     eprintln!(
         "  architecture    Show the Pandora architecture tree
@@ -182,6 +189,73 @@ fn cmd_update(args: &[String]) {
     }
 }
 
+fn cmd_providers() {
+    println!("Configured providers:");
+    println!("  ollama   Local LLM (OLLAMA_HOST={})", std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into()));
+    println!("  openai   Cloud LLM (requires API key)");
+    println!("  anthropic Cloud LLM (requires API key)");
+    println!();
+    println!("Set OLLAMA_HOST to change the Ollama endpoint.");
+}
+
+fn cmd_harnesses() {
+    let sc = pandora_shadow_council::ShadowCouncil::new();
+    let s = sc.summary();
+    println!("Installed Harnesses:");
+    println!("  Source: {} harnesses", s.source_count);
+    println!("  Meta:   {} harnesses", 0);
+    println!("  Domain: {} harnesses", 0);
+    println!();
+    println!("Genes: {} installed", s.genes);
+    println!("Enabled: {}", s.genes_enabled);
+}
+
+fn cmd_doctor() {
+    println!("=== Pandora Doctor ===\n");
+    // Check Ollama
+    let ollama_host = std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
+    print!("Ollama ({ollama_host})... ");
+    match std::process::Command::new("sh").arg("-c").arg(format!("curl -s {ollama_host}/api/tags > /dev/null 2>&1 && echo ok || echo fail")).output() {
+        Ok(out) => {
+            let result = String::from_utf8_lossy(&out.stdout);
+            if result.contains("ok") { println!("✅ reachable"); }
+            else { println!("❌ not reachable — start Ollama or set OLLAMA_HOST"); }
+        }
+        Err(_) => println!("❌ curl not available"),
+    }
+    // Check scrapling for BrowserGene
+    print!("Scrapling (BrowserGene)... ");
+    match std::process::Command::new("sh").arg("-c").arg("which scrapling 2>/dev/null || echo no").output() {
+        Ok(out) => {
+            let result = String::from_utf8_lossy(&out.stdout);
+            if result.trim() == "no" { println!("⚠️  not installed (needed for browser gene)"); }
+            else { println!("✅ installed"); }
+        }
+        Err(_) => println!("❌ check failed"),
+    }
+    // Check git
+    print!("Git... ");
+    match std::process::Command::new("git").arg("--version").output() {
+        Ok(out) => println!("✅ {}", String::from_utf8_lossy(&out.stdout).trim()), 
+        Err(_) => println!("❌ not found"),
+    }
+    // Check docker
+    print!("Docker... ");
+    match std::process::Command::new("docker").arg("--version").output() {
+        Ok(out) => println!("✅ {}", String::from_utf8_lossy(&out.stdout).trim()),
+        Err(_) => println!("⚠️  not found (optional)"),
+    }
+    // Check gh (GitHub CLI)
+    print!("GitHub CLI... ");
+    match std::process::Command::new("gh").arg("--version").output() {
+        Ok(_) => println!("✅ installed"),
+        Err(_) => println!("⚠️  not found (optional)"),
+    }
+    // Architecture check
+    println!("\nArchitecture: v1.0 — frozen");
+    println!("Runtime: {}", env!("CARGO_PKG_VERSION"));
+}
+
 fn cmd_genes() {
     println!("Available first-party genes:");
     println!("  filesystem   Read/write/list files");
@@ -193,6 +267,26 @@ fn cmd_genes() {
     println!("  workflow     Multi-step workflows");
     println!();
     println!("Install: pandora install <name>");
+}
+
+fn cmd_inspect() {
+    println!("=== Pandora Runtime Inspection ===\n");
+    println!("Parliament");
+    println!("  Services: Memory, Planning, Execution, Governance, Identity,");
+    println!("            Sandbox, Provider, Scheduler, Ledger, Telemetry");
+    println!();
+    println!("Shadow Council");
+    let sc = pandora_shadow_council::ShadowCouncil::new();
+    let s = sc.summary();
+    println!("  Harnesses: {} total ({} source, {} meta, {} domain)", s.total_harnesses, s.source_count, s.meta_count, s.domain_count);
+    println!("  Slash commands: {}", s.slash_commands);
+    println!("  Genes: {} installed, {} enabled", s.genes, s.genes_enabled);
+    println!();
+    println!("KUBER (distribution)");
+    println!("  Built-in genes: {}", pandora_kuber::builtin::all().len());
+    println!();
+    println!("Execution Pipeline: 9 stages");
+    println!("  Task -> Workflow -> Capability -> Target -> Execute -> Record -> Telemetry -> Intel -> Ledger");
 }
 
 fn cmd_architecture() {
