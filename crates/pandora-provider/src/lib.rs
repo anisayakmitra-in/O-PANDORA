@@ -8,6 +8,8 @@ pub mod capability;
 pub mod compat;
 pub mod constitutional;
 pub mod error;
+pub mod llamacpp;
+pub use llamacpp::LlamaCppProvider;
 pub mod manifest;
 pub mod registry;
 pub mod target;

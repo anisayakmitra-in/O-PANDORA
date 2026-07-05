@@ -192,10 +192,11 @@ fn cmd_update(args: &[String]) {
 fn cmd_providers() {
     println!("Configured providers:");
     println!("  ollama   Local LLM (OLLAMA_HOST={})", std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into()));
+    println!("  llamacpp Local LLM via llama.cpp (LLAMA_CPP_HOST={})", std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into()));
     println!("  openai   Cloud LLM (requires API key)");
     println!("  anthropic Cloud LLM (requires API key)");
     println!();
-    println!("Set OLLAMA_HOST to change the Ollama endpoint.");
+    println!("Set OLLAMA_HOST / LLAMA_CPP_HOST to change endpoints.");
 }
 
 fn cmd_harnesses() {
