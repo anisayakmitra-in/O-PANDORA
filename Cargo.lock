@@ -934,6 +934,7 @@ dependencies = [
  "pandora-orchestrator",
  "pandora-shadow-council",
  "pandora-types",
+ "serde_json",
  "tokio",
 ]
 

@@ -532,3 +532,53 @@ fn cmd_new(args: &[String]) {
         _ => eprintln!("Use: pandora new gene|skill <name>"),
     }
 }
+
+fn cmd_sessions() {
+    let dir = pandora_types::gene_package::packages_dir()
+        .parent().map(|p| p.join("sessions"))
+        .unwrap_or_else(|| {
+            let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+        });
+    if !dir.exists() { println!("No sessions yet."); return; }
+    let mut sessions: Vec<pandora_types::Session> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().map_or(true, |e| e != "json") || path.file_stem() == Some(std::ffi::OsStr::new("index")) { continue; }
+            if let Ok(json) = std::fs::read_to_string(&path) {
+                if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) { sessions.push(s); }
+            }
+        }
+    }
+    sessions.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    println!("Sessions ({}):", sessions.len());
+    for s in sessions.iter().take(10) {
+        let st = match s.status {
+            pandora_types::SessionStatus::Completed => "ok",
+            pandora_types::SessionStatus::Failed(_) => "err",
+            _ => "?", };
+        println!("  {} {}: {}", st, s.id, s.prompt.chars().take(60).collect::<String>());
+    }
+}
+
+fn cmd_session(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora session <id>"); process::exit(1); }
+    let id = &args[2];
+    let dir = pandora_types::gene_package::packages_dir()
+        .parent().map(|p| p.join("sessions"))
+        .unwrap_or_else(|| {
+            let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+        });
+    let path = dir.join(format!("{}.json", id));
+    let json = match std::fs::read_to_string(&path) {
+        Ok(j) => j, Err(_) => { eprintln!("Not found: {}", id); process::exit(1); }
+    };
+    let s: pandora_types::Session = match serde_json::from_str(&json) {
+        Ok(s) => s, Err(e) => { eprintln!("Parse: {}", e); process::exit(1); }
+    };
+    println!("Session: {}", s.id);
+    println!("  Prompt:  {}", s.prompt);
+    for (k, v) in &s.metadata { println!("  {}: {}", k, v); }
+}
