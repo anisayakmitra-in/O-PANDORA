@@ -94,6 +94,7 @@ fn cmd_run(args: &[String]) {
             }
             Err(e) => {
                 eprintln!("Pipeline failed: {}", e);
+                eprintln!("Suggestion: Is Ollama running? Set OLLAMA_HOST=http://localhost:11434");
                 process::exit(1);
             }
         }
