@@ -7,6 +7,12 @@ use pandora_types::gene_package::discover_gene_packages;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+/// Convert internal string errors to PandoraError.
+fn to_err(e: String) -> pandora_types::PandoraError {
+    pandora_types::PandoraError::Internal(e)
+}
+
+
 #[derive(Debug, Clone)]
 pub struct PackageSource {
     pub name: String,
@@ -150,7 +156,7 @@ impl Kuber {
         None
     }
 
-    pub fn install(&mut self, id: &str) -> Result<(), String> {
+    pub fn install(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         // 1. Check disk package sources
         let paths: Vec<String> = self.sources.iter().map(|s| s.path.clone()).collect();
         for path in &paths {
@@ -163,11 +169,11 @@ impl Kuber {
         if crate::builtin::find(id).is_some() {
             return Ok(());
         }
-        Err(format!("Package not found: {}", id))
+        Err(to_err(format!("Package not found: {}", id)))
     }
 
-    pub fn uninstall(&mut self, id: &str) -> Result<(), String> {
-        self.council_mut().genes.unregister(id)
+    pub fn uninstall(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
+        self.council_mut().genes.unregister(id).map_err(|e| pandora_types::PandoraError::Internal(e))
     }
 
     pub fn list_installed(&self) -> Vec<String> {
@@ -190,14 +196,14 @@ impl Kuber {
             .sum()
     }
 
-    pub fn score(&self, path: &str) -> Result<Score, String> {
+    pub fn score(&self, path: &str) -> Result<Score, pandora_types::PandoraError> {
         let dir = Path::new(path);
         if !dir.exists() {
-            return Err(format!("Path not found: {}", path));
+            return Err(pandora_types::PandoraError::not_found(format!("Path not found: {}", path)));
         }
         let packages = discover_gene_packages(path);
         if packages.is_empty() && !dir.join("gene.toml").exists() {
-            return Err(format!("No gene packages at: {}", path));
+            return Err(pandora_types::PandoraError::not_found(format!("No gene packages at: {}", path)));
         }
         let pid = if packages.is_empty() {
             ""

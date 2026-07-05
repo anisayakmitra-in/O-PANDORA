@@ -24,10 +24,12 @@
 //! registries that compose these canonical types.
 
 pub mod harness;
+pub use error::PandoraError;
 pub use harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessSpec, SlashCommand,
 };
 
+pub mod error;
 pub mod gene;
 pub mod gene_package;
 pub mod harness_gene;

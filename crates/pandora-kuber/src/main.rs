@@ -56,7 +56,7 @@ fn main() {
     }
 }
 
-fn cmd_install(args: &[String]) -> Result<(), String> {
+fn cmd_install(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber install <id>".into());
     }
@@ -69,7 +69,7 @@ fn cmd_install(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_uninstall(args: &[String]) -> Result<(), String> {
+fn cmd_uninstall(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber uninstall <id>".into());
     }
@@ -79,7 +79,7 @@ fn cmd_uninstall(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_search(args: &[String]) -> Result<(), String> {
+fn cmd_search(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber search <query>".into());
     }
@@ -96,7 +96,7 @@ fn cmd_search(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_info(args: &[String]) -> Result<(), String> {
+fn cmd_info(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber info <id>".into());
     }
@@ -128,7 +128,7 @@ fn cmd_info(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_list() -> Result<(), String> {
+fn cmd_list() -> Result<(), pandora_types::PandoraError> {
     let kuber = get_kuber();
     let list = kuber.list_installed();
     if list.is_empty() {
@@ -142,7 +142,7 @@ fn cmd_list() -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_available() -> Result<(), String> {
+fn cmd_available() -> Result<(), pandora_types::PandoraError> {
     let kuber = get_kuber();
     let list = kuber.list_available();
     if list.is_empty() {
@@ -159,7 +159,7 @@ fn cmd_available() -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_source(args: &[String]) -> Result<(), String> {
+fn cmd_source(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber source <add|remove|list> [...]".into());
     }
@@ -189,12 +189,12 @@ fn cmd_source(args: &[String]) -> Result<(), String> {
                 }
             }
         }
-        _ => return Err(format!("Unknown: {}", args[2])),
+        _ => return Err(pandora_types::PandoraError::Internal(format!("Unknown: {}", args[2]))),
     }
     Ok(())
 }
 
-fn cmd_skill(args: &[String]) -> Result<(), String> {
+fn cmd_skill(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber skill <install|scaffold|list> [...]".into());
     }
@@ -240,12 +240,12 @@ fn cmd_skill(args: &[String]) -> Result<(), String> {
                 }
             }
         }
-        _ => return Err(format!("Unknown: {}", args[2])),
+        _ => return Err(pandora_types::PandoraError::Internal(format!("Unknown: {}", args[2]))),
     }
     Ok(())
 }
 
-fn cmd_score(args: &[String]) -> Result<(), String> {
+fn cmd_score(args: &[String]) -> Result<(), pandora_types::PandoraError> {
     if args.len() < 3 {
         return Err("Usage: pandora-kuber score <path>".into());
     }
