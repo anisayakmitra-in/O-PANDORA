@@ -1528,8 +1528,14 @@ mod tests {
     #[test]
     fn slash_command_collision_rejects_duplicate() {
         let mut reg = SlashCommandRegistry::new();
-        let cmd1 = SlashCommand { command: "/test".into(), description: "first".into() };
-        let cmd2 = SlashCommand { command: "/test".into(), description: "second".into() };
+        let cmd1 = SlashCommand {
+            command: "/test".into(),
+            description: "first".into(),
+        };
+        let cmd2 = SlashCommand {
+            command: "/test".into(),
+            description: "second".into(),
+        };
         assert!(reg.register("harness-1", &cmd1).is_ok());
         assert!(reg.register("harness-2", &cmd2).is_err());
         // First-register-wins policy
@@ -1539,7 +1545,10 @@ mod tests {
     #[test]
     fn gene_lifecycle_install_enable_disable() {
         let mut sc = ShadowCouncil::new();
-        let gene = Box::new(TestGene::new("lifecycle-test", pandora_types::gene::GeneKind::Tool));
+        let gene = Box::new(TestGene::new(
+            "lifecycle-test",
+            pandora_types::gene::GeneKind::Tool,
+        ));
         assert!(sc.install_gene(gene).is_ok());
         assert!(sc.enable_gene("lifecycle-test").is_ok());
         assert!(sc.disable_gene("lifecycle-test").is_ok());
@@ -1549,9 +1558,11 @@ mod tests {
     #[test]
     fn gene_lifecycle_uninstall_removes() {
         let mut sc = ShadowCouncil::new();
-        let gene = Box::new(TestGene::new("remove-test", pandora_types::gene::GeneKind::Tool));
+        let gene = Box::new(TestGene::new(
+            "remove-test",
+            pandora_types::gene::GeneKind::Tool,
+        ));
         sc.install_gene(gene).unwrap();
         sc.uninstall_gene("remove-test").unwrap();
     }
-
 }

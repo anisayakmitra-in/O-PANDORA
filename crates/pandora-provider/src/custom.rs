@@ -44,7 +44,13 @@ impl CustomProvider {
             headers.insert("Authorization".into(), format!("Bearer {}", key));
         }
         headers.insert("Content-Type".into(), "application/json".into());
-        Some(Self { name, endpoint, headers, models: vec![model], client: reqwest::Client::new() })
+        Some(Self {
+            name,
+            endpoint,
+            headers,
+            models: vec![model],
+            client: reqwest::Client::new(),
+        })
     }
 }
 

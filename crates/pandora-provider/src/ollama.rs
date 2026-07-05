@@ -24,9 +24,13 @@ impl OllamaProvider {
 
     pub fn new_default() -> Self {
         // ponytail: check OLLAMA_HOST env var, fall back to default
-        let endpoint = std::env::var("OLLAMA_HOST")
-            .unwrap_or_else(|_| "http://localhost:11434".to_string());
-        let endpoint = if endpoint.starts_with("http") { endpoint } else { format!("http://{}", endpoint) };
+        let endpoint =
+            std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".to_string());
+        let endpoint = if endpoint.starts_with("http") {
+            endpoint
+        } else {
+            format!("http://{}", endpoint)
+        };
         Self::new(endpoint)
     }
 }
@@ -61,7 +65,12 @@ impl Provider for OllamaProvider {
             .json(&body)
             .send()
             .await
-            .map_err(|e| ProviderError::ProviderUnavailable(format!("Ollama at {}: {} — is it running? Try: OLLAMA_HOST={} ollama serve", self.endpoint, e, self.endpoint)))?;
+            .map_err(|e| {
+                ProviderError::ProviderUnavailable(format!(
+                    "Ollama at {}: {} — is it running? Try: OLLAMA_HOST={} ollama serve",
+                    self.endpoint, e, self.endpoint
+                ))
+            })?;
 
         let result: serde_json::Value = response
             .json()

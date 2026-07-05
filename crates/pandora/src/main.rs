@@ -429,50 +429,60 @@ fn cmd_new(args: &[String]) {
                 eprintln!("Already exists: {}", name);
                 process::exit(1);
             }
-            std::fs::create_dir_all(dir.join("src")).unwrap();
+            let _ = std::fs::create_dir_all(dir.join("src"));
             // Write gene.toml
             {
                 use std::io::Write;
-                let mut f = std::fs::File::create(dir.join("gene.toml")).unwrap();
-                writeln!(f, "id = \"{}\"", name).unwrap();
-                writeln!(f, "name = \"{}\"", name).unwrap();
-                writeln!(f, "kind = \"Tool\"").unwrap();
-                writeln!(f, "version = \"0.1.0\"").unwrap();
-                writeln!(f, "author = \"\"").unwrap();
-                writeln!(f, "description = \"\"").unwrap();
+                let mut f = match std::fs::File::create(dir.join("gene.toml")) {
+                    Ok(f) => f,
+                    Err(e) => {
+                        eprintln!("Failed: {}", e);
+                        return;
+                    }
+                };
+                let _ = writeln!(f, "id = \"{}\"", name);
+                let _ = writeln!(f, "name = \"{}\"", name);
+                let _ = writeln!(f, "kind = \"Tool\"");
+                let _ = writeln!(f, "version = \"0.1.0\"");
+                let _ = writeln!(f, "author = \"\"");
+                let _ = writeln!(f, "description = \"\"");
             }
             // Write src/lib.rs
             {
                 use std::io::Write;
-                let mut f = std::fs::File::create(dir.join("src").join("lib.rs")).unwrap();
-                writeln!(f, "use pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};").unwrap();
-                writeln!(f).unwrap();
-                writeln!(f, "#[derive(Debug)]").unwrap();
-                writeln!(f, "pub struct {}Gene {{ m: GeneManifest }}", safe_name).unwrap();
-                writeln!(f, "impl {}Gene {{", safe_name).unwrap();
-                writeln!(f, "    pub fn new() -> Self {{").unwrap();
-                writeln!(f, "        Self {{ m: GeneManifestBuilder::default()").unwrap();
-                writeln!(
+                let mut f = match std::fs::File::create(dir.join("src").join("lib.rs")) {
+                    Ok(f) => f,
+                    Err(e) => {
+                        eprintln!("Failed: {}", e);
+                        return;
+                    }
+                };
+                let _ = writeln!(f, "use pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};");
+                let _ = writeln!(f);
+                let _ = writeln!(f, "#[derive(Debug)]");
+                let _ = writeln!(f, "pub struct {}Gene {{ m: GeneManifest }}", safe_name);
+                let _ = writeln!(f, "impl {}Gene {{", safe_name);
+                let _ = writeln!(f, "    pub fn new() -> Self {{");
+                let _ = writeln!(f, "        Self {{ m: GeneManifestBuilder::default()");
+                let _ = writeln!(
                     f,
                     "            .id(\"{}\").name(\"{}\").kind(GeneKind::Tool)",
                     name, name
-                )
-                .unwrap();
-                writeln!(f, "            .version(\"0.1.0\").author(\"\")").unwrap();
-                writeln!(f, "            .description(\"{} gene\")", name).unwrap();
-                writeln!(f, "            .build().unwrap() }}").unwrap();
-                writeln!(f, "    }}").unwrap();
-                writeln!(f, "}}").unwrap();
-                writeln!(f, "impl Gene for {}Gene {{", safe_name).unwrap();
-                writeln!(f, "    fn manifest(&self) -> &GeneManifest {{ &self.m }}").unwrap();
-                writeln!(
+                );
+                let _ = writeln!(f, "            .version(\"0.1.0\").author(\"\")");
+                let _ = writeln!(f, "            .description(\"{} gene\")", name);
+                let _ = writeln!(f, "            .build(); }}");
+                let _ = writeln!(f, "    }}");
+                let _ = writeln!(f, "}}");
+                let _ = writeln!(f, "impl Gene for {}Gene {{", safe_name);
+                let _ = writeln!(f, "    fn manifest(&self) -> &GeneManifest {{ &self.m }}");
+                let _ = writeln!(
                     f,
                     "    fn execute(&self, input: &str) -> Result<String, String> {{"
-                )
-                .unwrap();
-                writeln!(f, "        Ok(format!(\"executed: {{}}\" , input))").unwrap();
-                writeln!(f, "    }}").unwrap();
-                writeln!(f, "}}").unwrap();
+                );
+                let _ = writeln!(f, "        Ok(format!(\"executed: {{}}\" , input))");
+                let _ = writeln!(f, "    }}");
+                let _ = writeln!(f, "}}");
             }
             println!("Created: {}/", name);
             println!("  {}/gene.toml", name);

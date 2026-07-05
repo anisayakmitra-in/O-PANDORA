@@ -130,25 +130,43 @@ impl ExecutionService for DefaultExecutionService {
     }
 
     fn execute(&self, _id: &str, cmd: &str) -> Result<String, String> {
-        let output = Command::new("sh").arg("-c").arg(cmd)
-            .output().map_err(|e| format!("execution failed: {}", e))?;
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(cmd)
+            .output()
+            .map_err(|e| format!("execution failed: {}", e))?;
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(if stderr.is_empty() { format!("exit code: {}", output.status) } else { stderr.to_string() });
+            return Err(if stderr.is_empty() {
+                format!("exit code: {}", output.status)
+            } else {
+                stderr.to_string()
+            });
         }
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     }
 
     fn checkpoint(&self, id: &str) -> Result<(), String> {
         let mut state = self.state.lock().map_err(|e| e.to_string())?;
-        let task = state.spawned.get(id).ok_or(format!("unknown: {}", id))?.clone();
-        state.checkpoints.entry(id.to_string()).or_default().push((format!("cp-{}", id), task));
+        let task = state
+            .spawned
+            .get(id)
+            .ok_or(format!("unknown: {}", id))?
+            .clone();
+        state
+            .checkpoints
+            .entry(id.to_string())
+            .or_default()
+            .push((format!("cp-{}", id), task));
         Ok(())
     }
 
-    fn restore(&self, id: &str, cp: &str) -> Result<(), String> {
+    fn restore(&self, id: &str, _cp: &str) -> Result<(), String> {
         let state = self.state.lock().map_err(|e| e.to_string())?;
-        state.checkpoints.get(id).ok_or(format!("no cps for {}", id))?;
+        state
+            .checkpoints
+            .get(id)
+            .ok_or(format!("no cps for {}", id))?;
         Ok(())
     }
 
@@ -187,15 +205,23 @@ impl DefaultPlanningService {
         Self {
             provider: "pandora".into(),
             version: "0.1.0".into(),
-            state: Mutex::new(PlanState { plans: HashMap::new() }),
+            state: Mutex::new(PlanState {
+                plans: HashMap::new(),
+            }),
         }
     }
 }
 
 impl Service for DefaultPlanningService {
-    fn service_id(&self) -> ServiceId { ServiceId::Planning }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Planning
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl PlanningService for DefaultPlanningService {
@@ -214,7 +240,11 @@ impl PlanningService for DefaultPlanningService {
                     steps.push(PlanStep {
                         id: format!("{}-step-{}", plan_id, i + 1),
                         description: part.to_string(),
-                        deps: if i > 0 { vec![format!("{}-step-{}", plan_id, i)] } else { vec![] },
+                        deps: if i > 0 {
+                            vec![format!("{}-step-{}", plan_id, i)]
+                        } else {
+                            vec![]
+                        },
                     });
                 }
             }
@@ -237,13 +267,16 @@ impl PlanningService for DefaultPlanningService {
     fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
         let state = self.state.lock().map_err(|e| e.to_string())?;
         let steps = state.plans.get(plan_id).ok_or("Plan not found")?;
-        Ok(steps.iter().map(|s| {
-            if s.deps.is_empty() {
-                s.id.clone()
-            } else {
-                format!("{} -> {}", s.deps.join(", "), s.id)
-            }
-        }).collect())
+        Ok(steps
+            .iter()
+            .map(|s| {
+                if s.deps.is_empty() {
+                    s.id.clone()
+                } else {
+                    format!("{} -> {}", s.deps.join(", "), s.id)
+                }
+            })
+            .collect())
     }
 
     fn retry_plan(&self, pid: &str, step: &str) -> Result<String, String> {
@@ -255,16 +288,24 @@ impl PlanningService for DefaultPlanningService {
     fn topology(&self, plan_id: &str) -> Result<String, String> {
         let state = self.state.lock().map_err(|e| e.to_string())?;
         let steps = state.plans.get(plan_id).ok_or("Plan not found")?;
-        let mut dot = format!("digraph {} {{
-", plan_id);
+        let mut dot = format!(
+            "digraph {} {{
+",
+            plan_id
+        );
         for s in steps {
             for dep in &s.deps {
-                dot.push_str(&format!("  {} -> {}
-", dep, s.id));
+                dot.push_str(&format!(
+                    "  {} -> {}
+",
+                    dep, s.id
+                ));
             }
         }
-        dot.push_str("}
-");
+        dot.push_str(
+            "}
+",
+        );
         Ok(dot)
     }
 }
@@ -313,9 +354,15 @@ impl DefaultGovernanceService {
 }
 
 impl Service for DefaultGovernanceService {
-    fn service_id(&self) -> ServiceId { ServiceId::Governance }
-    fn provider_name(&self) -> &str { &self.provider }
-    fn version(&self) -> &str { &self.version }
+    fn service_id(&self) -> ServiceId {
+        ServiceId::Governance
+    }
+    fn provider_name(&self) -> &str {
+        &self.provider
+    }
+    fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 impl GovernanceService for DefaultGovernanceService {
@@ -335,10 +382,13 @@ impl GovernanceService for DefaultGovernanceService {
         state.audit_log.push(AuditEntry {
             action: action.to_string(),
             decision: decision.to_string(),
-            timestamp: format!("{}", std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs())
-                .unwrap_or(0)),
+            timestamp: format!(
+                "{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0)
+            ),
         });
         Ok(())
     }
@@ -380,7 +430,7 @@ impl Service for DefaultIdentityService {
     }
 }
 impl IdentityService for DefaultIdentityService {
-    fn persist(&self, id: &str) -> Result<(), String> {
+    fn persist(&self, _id: &str) -> Result<(), String> {
         Ok(())
     }
     fn resurrect(&self, id: &str) -> Result<String, String> {
@@ -550,7 +600,7 @@ impl Service for DefaultSchedulerService {
     }
 }
 impl SchedulerService for DefaultSchedulerService {
-    fn schedule(&self, spec: &str, action: &str) -> Result<String, String> {
+    fn schedule(&self, spec: &str, _action: &str) -> Result<String, String> {
         Ok(format!("job-{}", spec.len()))
     }
     fn cancel(&self, _id: &str) -> Result<(), String> {
@@ -591,13 +641,13 @@ impl Service for DefaultLedgerService {
     }
 }
 impl TelemetryService for DefaultLedgerService {
-    fn record(&self, metric: &str, value: f64, labels: &str) -> Result<(), String> {
+    fn record(&self, _metric: &str, _value: f64, _labels: &str) -> Result<(), String> {
         Ok(())
     }
-    fn query(&self, metric: &str, filter: &str) -> Result<Vec<(String, f64)>, String> {
+    fn query(&self, _metric: &str, _filter: &str) -> Result<Vec<(String, f64)>, String> {
         Ok(vec![])
     }
-    fn aggregate(&self, metric: &str, _window: &str) -> Result<f64, String> {
+    fn aggregate(&self, _metric: &str, _window: &str) -> Result<f64, String> {
         Ok(0.0)
     }
 }
@@ -675,7 +725,6 @@ mod tests {
         let id = svc.schedule("0 * * * *", "test").unwrap();
         assert!(id.starts_with("job-"));
     }
-
 
     #[test]
     fn execution_service_runs_real_command() {
