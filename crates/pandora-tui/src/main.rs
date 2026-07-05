@@ -108,7 +108,7 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
         .split(area);
 
     // Top bar
-    let top_st = Style::default().fg(Color::Rgb(180, 160, 220)).bg(Color::Rgb(20, 10, 40));
+    let top_st = Style::default().fg(Color::Rgb(255, 200, 220)).bg(Color::Rgb(40, 10, 25));
     f.render_widget(Paragraph::new(Line::from(Span::styled(
         " PANDORA  v0.2  |  Architecture Control Plane  |  [1-0]nav [Tab]next [q]uit", top_st,
     ))).style(top_st), vert[0]);
@@ -119,13 +119,13 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
         .constraints([Constraint::Length(20), Constraint::Min(0)])
         .split(vert[1]);
 
-    f.render_widget(Block::default().borders(Borders::RIGHT).border_style(Style::default().fg(Color::Rgb(50, 30, 80))), horiz[0]);
+    f.render_widget(Block::default().borders(Borders::RIGHT).border_style(Style::default().fg(Color::Rgb(80, 20, 45))), horiz[0]);
 
     let items: Vec<ListItem> = nav_items().iter().map(|(name, p)| {
         let active = *p == *page;
         ListItem::new(Line::from(Span::styled(name.to_string(),
-            if active { Style::default().fg(Color::Yellow).bg(Color::Rgb(40, 20, 60)).add_modifier(Modifier::BOLD) }
-            else { Style::default().fg(Color::Rgb(120, 100, 150)) }
+            if active { Style::default().fg(Color::Yellow).bg(Color::Rgb(70, 18, 40)).add_modifier(Modifier::BOLD) }
+            else { Style::default().fg(Color::Rgb(200, 150, 170)) }
         )))
     }).collect();
     f.render_widget(List::new(items), horiz[0]);
@@ -136,13 +136,13 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
             let sc = ShadowCouncil::new();
             let s = sc.summary();
             vec![
-                sl(" PARLIAMENT", Color::Rgb(180, 140, 220), true),
-                sl(" Constitutional runtime layer", Color::Rgb(120, 100, 150), false),
+                sl(" PARLIAMENT", Color::Rgb(255, 150, 200), true),
+                sl(" Constitutional runtime layer", Color::Rgb(200, 150, 170), false),
                 sl("", Color::White, false),
-                sl(" ServiceRegistry  — manages service lifecycle", Color::Rgb(160, 140, 220), false),
-                sl(" ConstitutionEngine — policy evaluation", Color::Rgb(160, 140, 220), false),
-                sl(" LeaseManager   — capability lease tracking", Color::Rgb(160, 140, 220), false),
-                sl(" EventBus       — inter-service events", Color::Rgb(160, 140, 220), false),
+                sl(" ServiceRegistry  — manages service lifecycle", Color::Rgb(230, 170, 190), false),
+                sl(" ConstitutionEngine — policy evaluation", Color::Rgb(230, 170, 190), false),
+                sl(" LeaseManager   — capability lease tracking", Color::Rgb(230, 170, 190), false),
+                sl(" EventBus       — inter-service events", Color::Rgb(230, 170, 190), false),
                 sl("", Color::White, false),
                 sl(" Architecture Constitution v1.0", Color::Yellow, true),
                 sl("", Color::White, false),
@@ -155,8 +155,8 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
             let names = ["Memory", "Planning", "Execution", "Governance", "Identity",
                          "Sandbox", "Workflow", "Scheduler", "Ledger", "Provider", "Telemetry"];
             let mut v = vec![
-                sl(" CONSTITUTIONAL SERVICES", Color::Rgb(180, 140, 220), true),
-                sl(" All 10 services have real implementations", Color::Rgb(120, 100, 150), false),
+                sl(" CONSTITUTIONAL SERVICES", Color::Rgb(255, 150, 200), true),
+                sl(" All 10 services have real implementations", Color::Rgb(200, 150, 170), false),
                 sl("", Color::White, false),
             ];
             for n in &names {
@@ -164,25 +164,25 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
                 v.push(sl(&format!("  {}  {}  Service", check, n), Color::Rgb(160, 200, 160), false));
             }
             v.push(sl("", Color::White, false));
-            v.push(sl(" Owner: Parliament", Color::Rgb(120, 100, 150), false));
+            v.push(sl(" Owner: Parliament", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Council => {
             let sc = ShadowCouncil::new();
             let s = sc.summary();
             vec![
-                sl(" SHADOW COUNCIL", Color::Rgb(180, 140, 220), true),
-                sl(" Lifecycle, routing, capability resolution", Color::Rgb(120, 100, 150), false),
+                sl(" SHADOW COUNCIL", Color::Rgb(255, 150, 200), true),
+                sl(" Lifecycle, routing, capability resolution", Color::Rgb(200, 150, 170), false),
                 sl("", Color::White, false),
                 sl(&format!(" Harnesses: {} total", s.total_harnesses), Color::Cyan, false),
-                sl(&format!("  Source: {}  Meta: {}  Domain: {}", s.source_count, s.meta_count, s.domain_count), Color::Rgb(160, 140, 220), false),
+                sl(&format!("  Source: {}  Meta: {}  Domain: {}", s.source_count, s.meta_count, s.domain_count), Color::Rgb(230, 170, 190), false),
                 sl("", Color::White, false),
                 sl(&format!(" Genes: {} installed, {} enabled", s.genes, s.genes_enabled), Color::Cyan, false),
                 sl("", Color::White, false),
                 sl(&format!(" Slash commands: {}  Capabilities: {}", s.slash_commands, s.capabilities), Color::Cyan, false),
                 sl("", Color::White, false),
-                sl(" Routing: first-register-wins for slash commands", Color::Rgb(120, 100, 150), false),
-                sl(" Policy: capability-based resolution", Color::Rgb(120, 100, 150), false),
+                sl(" Routing: first-register-wins for slash commands", Color::Rgb(200, 150, 170), false),
+                sl(" Policy: capability-based resolution", Color::Rgb(200, 150, 170), false),
             ]
         }
         Page::Harnesses => {
@@ -200,21 +200,21 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
                     ("Research Domain Harness", ".search, .extract, .summarize"),
                 ][..]),
             ];
-            let mut v = vec![sl(" HARNESSES", Color::Rgb(180, 140, 220), true), sl("", Color::White, false)];
+            let mut v = vec![sl(" HARNESSES", Color::Rgb(255, 150, 200), true), sl("", Color::White, false)];
             for (title, items) in &h {
                 v.push(sl(title, Color::Cyan, true));
                 for &(name, cmds) in *items {
-                    v.push(sl(&format!("  {}  {}", name, cmds), Color::Rgb(160, 140, 180), false));
+                    v.push(sl(&format!("  {}  {}", name, cmds), Color::Rgb(220, 160, 180), false));
                 }
                 v.push(sl("", Color::White, false));
             }
-            v.push(sl(" Source + Meta + Domain = complete harness model", Color::Rgb(120, 100, 150), false));
+            v.push(sl(" Source + Meta + Domain = complete harness model", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Genes => {
             let genes = builtin::all();
             let mut v = vec![
-                sl(&format!(" GENE REGISTRY ({} first-party)", genes.len()), Color::Rgb(180, 140, 220), true),
+                sl(&format!(" GENE REGISTRY ({} first-party)", genes.len()), Color::Rgb(255, 150, 200), true),
                 sl("", Color::White, false),
             ];
             for g in &genes {
@@ -226,10 +226,10 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
                     _ => Color::Rgb(160, 200, 160),
                 };
                 v.push(sl(&format!("  {}  v{}  {}", g.id, g.version, g.description), kind_color, false));
-                v.push(sl(&format!("      kind: {}  caps: {:?}", g.kind, g.capabilities), Color::Rgb(100, 90, 120), false));
+                v.push(sl(&format!("      kind: {}  caps: {:?}", g.kind, g.capabilities), Color::Rgb(180, 120, 140), false));
             }
             v.push(sl("", Color::White, false));
-            v.push(sl(" Install: pandora install <name>", Color::Rgb(120, 100, 150), false));
+            v.push(sl(" Install: pandora install <name>", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Execution => {
@@ -247,8 +247,8 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
             ];
             let idx = *sel % stages.len();
             let mut v = vec![
-                sl(" EXECUTION PIPELINE (10 stages)", Color::Rgb(180, 140, 220), true),
-                sl(" Every execution flows through all stages", Color::Rgb(120, 100, 150), false),
+                sl(" EXECUTION PIPELINE (10 stages)", Color::Rgb(255, 150, 200), true),
+                sl(" Every execution flows through all stages", Color::Rgb(200, 150, 170), false),
                 sl("", Color::White, false),
             ];
             for (i, (name, desc)) in stages.iter().enumerate() {
@@ -257,7 +257,7 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
                 v.push(sl(&format!("{} {}  {}", arrow, name, desc), c, i == idx));
             }
             v.push(sl("", Color::White, false));
-            v.push(sl(" Active stage indicator via [up/down]", Color::Rgb(120, 100, 150), false));
+            v.push(sl(" Active stage indicator via [up/down]", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Providers => {
@@ -270,11 +270,11 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
                 ("Anthropic", "api.anthropic.com", "API key", Color::Rgb(255, 160, 100)),
                 ("Groq", "api.groq.com", "API key", Color::Rgb(255, 200, 100)),
                 ("OpenRouter", "openrouter.ai", "API key", Color::Rgb(200, 100, 255)),
-                ("Custom", "PROVIDER_ENDPOINT", "Bearer token", Color::Rgb(180, 140, 220)),
+                ("Custom", "PROVIDER_ENDPOINT", "Bearer token", Color::Rgb(255, 150, 200)),
             ];
             let mut v = vec![
-                sl(" AI PROVIDERS", Color::Rgb(180, 140, 220), true),
-                sl(" Provider-agnostic — models are interchangeable", Color::Rgb(120, 100, 150), false),
+                sl(" AI PROVIDERS", Color::Rgb(255, 150, 200), true),
+                sl(" Provider-agnostic — models are interchangeable", Color::Rgb(200, 150, 170), false),
                 sl("", Color::White, false),
             ];
             for (name, ep, cfg, clr) in &provs {
@@ -282,14 +282,14 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
             }
             v.push(sl("", Color::White, false));
             v.push(sl(" Resolution:", Color::Cyan, true));
-            v.push(sl("  1. Check ExecutionTarget (hints + policy)", Color::Rgb(120, 100, 150), false));
-            v.push(sl("  2. Fall back to env vars (OLLAMA_HOST, etc.)", Color::Rgb(120, 100, 150), false));
-            v.push(sl("  3. Scan local discovery endpoints", Color::Rgb(120, 100, 150), false));
+            v.push(sl("  1. Check ExecutionTarget (hints + policy)", Color::Rgb(200, 150, 170), false));
+            v.push(sl("  2. Fall back to env vars (OLLAMA_HOST, etc.)", Color::Rgb(200, 150, 170), false));
+            v.push(sl("  3. Scan local discovery endpoints", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Telemetry => vec![
-            sl(" TELEMETRY", Color::Rgb(180, 140, 220), true),
-            sl(" Execution observability and tracing", Color::Rgb(120, 100, 150), false),
+            sl(" TELEMETRY", Color::Rgb(255, 150, 200), true),
+            sl(" Execution observability and tracing", Color::Rgb(200, 150, 170), false),
             sl("", Color::White, false),
             sl(" Trace  — full execution trace", Color::Cyan, false),
             sl(" Span   — individual operation timing", Color::Cyan, false),
@@ -298,53 +298,53 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
             sl(" Errors — captured failures with context", Color::Cyan, false),
             sl("", Color::White, false),
             sl(" Components:", Color::Cyan, true),
-            sl("  TelemetryEngine — begin_trace / begin_span / add_span / end_trace", Color::Rgb(160, 140, 180), false),
-            sl("  Recorder — captures ExecutionFrames", Color::Rgb(160, 140, 180), false),
-            sl("  Ledger — records outcomes (Success/Failure)", Color::Rgb(160, 140, 180), false),
+            sl("  TelemetryEngine — begin_trace / begin_span / add_span / end_trace", Color::Rgb(220, 160, 180), false),
+            sl("  Recorder — captures ExecutionFrames", Color::Rgb(220, 160, 180), false),
+            sl("  Ledger — records outcomes (Success/Failure)", Color::Rgb(220, 160, 180), false),
             sl("", Color::White, false),
             sl(" Session model:", Color::Cyan, true),
-            sl("  Session -> Trace -> Spans -> Events -> Ledger", Color::Rgb(120, 100, 150), false),
-            sl("  Sessions are replayable from the Ledger", Color::Rgb(120, 100, 150), false),
+            sl("  Session -> Trace -> Spans -> Events -> Ledger", Color::Rgb(200, 150, 170), false),
+            sl("  Sessions are replayable from the Ledger", Color::Rgb(200, 150, 170), false),
         ],
         Page::Kuber => vec![
-            sl(" KUBER — Distribution", Color::Rgb(180, 140, 220), true),
-            sl(" Package registry and installation system", Color::Rgb(120, 100, 150), false),
+            sl(" KUBER — Distribution", Color::Rgb(255, 150, 200), true),
+            sl(" Package registry and installation system", Color::Rgb(200, 150, 170), false),
             sl("", Color::White, false),
             sl(&format!(" Built-in packages: {}", builtin::all().len()), Color::Cyan, false),
-            sl(" Install: pandora install <id>", Color::Rgb(160, 140, 220), false),
-            sl(" Search: pandora search <query>", Color::Rgb(160, 140, 220), false),
-            sl(" Update: pandora update <id>", Color::Rgb(160, 140, 220), false),
+            sl(" Install: pandora install <id>", Color::Rgb(230, 170, 190), false),
+            sl(" Search: pandora search <query>", Color::Rgb(230, 170, 190), false),
+            sl(" Update: pandora update <id>", Color::Rgb(230, 170, 190), false),
             sl("", Color::White, false),
-            sl(" Scoring: security, compatibility, capabilities,", Color::Rgb(120, 100, 150), false),
-            sl("  dependencies, tests, governance, trust, performance", Color::Rgb(120, 100, 150), false),
+            sl(" Scoring: security, compatibility, capabilities,", Color::Rgb(200, 150, 170), false),
+            sl("  dependencies, tests, governance, trust, performance", Color::Rgb(200, 150, 170), false),
             sl("", Color::White, false),
-            sl(" Sources: local filesystem, remote URLs, built-in", Color::Rgb(120, 100, 150), false),
+            sl(" Sources: local filesystem, remote URLs, built-in", Color::Rgb(200, 150, 170), false),
         ],
         Page::Skills => vec![
-            sl(" SKILLS", Color::Rgb(180, 140, 220), true),
-            sl(" Declarative bundles of genes and harnesses", Color::Rgb(120, 100, 150), false),
+            sl(" SKILLS", Color::Rgb(255, 150, 200), true),
+            sl(" Declarative bundles of genes and harnesses", Color::Rgb(200, 150, 170), false),
             sl("", Color::White, false),
-            sl(" Install: pandora new skill <name>", Color::Rgb(120, 100, 150), false),
-            sl(" Scaffold: creates skill.toml + template", Color::Rgb(120, 100, 150), false),
+            sl(" Install: pandora new skill <name>", Color::Rgb(200, 150, 170), false),
+            sl(" Scaffold: creates skill.toml + template", Color::Rgb(200, 150, 170), false),
         ],
         Page::Settings => vec![
-            sl(" SETTINGS", Color::Rgb(180, 140, 220), true),
+            sl(" SETTINGS", Color::Rgb(255, 150, 200), true),
             sl("", Color::White, false),
             sl(" Architecture: v1.0 (frozen)", Color::Cyan, false),
             sl(" Mode: SOVEREIGN", Color::Cyan, false),
             sl("", Color::White, false),
             sl(" Environment:", Color::Cyan, true),
-            sl("  OLLAMA_HOST      — Ollama endpoint", Color::Rgb(160, 140, 220), false),
-            sl("  LLAMA_CPP_HOST   — LlamaCpp endpoint", Color::Rgb(160, 140, 220), false),
-            sl("  PROVIDER_ENDPOINT — Custom API endpoint", Color::Rgb(160, 140, 220), false),
-            sl("  PROVIDER_API_KEY  — Bearer token", Color::Rgb(160, 140, 220), false),
-            sl("  PANDORA_WEB_PORT — Web dashboard port", Color::Rgb(160, 140, 220), false),
+            sl("  OLLAMA_HOST      — Ollama endpoint", Color::Rgb(230, 170, 190), false),
+            sl("  LLAMA_CPP_HOST   — LlamaCpp endpoint", Color::Rgb(230, 170, 190), false),
+            sl("  PROVIDER_ENDPOINT — Custom API endpoint", Color::Rgb(230, 170, 190), false),
+            sl("  PROVIDER_API_KEY  — Bearer token", Color::Rgb(230, 170, 190), false),
+            sl("  PANDORA_WEB_PORT — Web dashboard port", Color::Rgb(230, 170, 190), false),
             sl("", Color::White, false),
             sl(" Keyboard:", Color::Cyan, true),
-            sl("  [1-0]   Navigation tabs", Color::Rgb(120, 100, 150), false),
-            sl("  [Tab]   Next tab", Color::Rgb(120, 100, 150), false),
-            sl("  [up/dn] Stage selector", Color::Rgb(120, 100, 150), false),
-            sl("  [q/Esc] Quit", Color::Rgb(120, 100, 150), false),
+            sl("  [1-0]   Navigation tabs", Color::Rgb(200, 150, 170), false),
+            sl("  [Tab]   Next tab", Color::Rgb(200, 150, 170), false),
+            sl("  [up/dn] Stage selector", Color::Rgb(200, 150, 170), false),
+            sl("  [q/Esc] Quit", Color::Rgb(200, 150, 170), false),
         ],
     };
 
@@ -353,7 +353,7 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
         .wrap(Wrap { trim: false }), horiz[1]);
 
     // Bottom help
-    let bg = Style::default().fg(Color::Rgb(80, 60, 100)).bg(Color::Rgb(10, 5, 20));
+    let bg = Style::default().fg(Color::Rgb(80, 60, 100)).bg(Color::Rgb(30, 8, 18));
     f.render_widget(Paragraph::new(Line::from(Span::styled(
         " [1]Parl [2]Svc [3]Council [4]Harness [5]Genes [6]Exec [7]Prov [8]Tel [9]KUBER [0]Skills [Tab]next [q]uit", bg,
     ))).style(bg), vert[2]);
