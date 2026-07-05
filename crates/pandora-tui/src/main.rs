@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Gauge, Wrap},
     Frame, Terminal,
 };
 use crossterm::{
@@ -17,32 +17,22 @@ use pandora_shadow_council::ShadowCouncil;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Page {
-    Parliament,
-    Services,
-    Council,
-    Harnesses,
-    Genes,
-    Execution,
-    Providers,
-    Telemetry,
-    Kuber,
-    Skills,
-    Settings,
+    Parliament, Services, Council, Harnesses, Genes,
+    Execution, Providers, Telemetry, Kuber, Skills, Settings,
 }
 
 fn nav_items() -> &'static [(&'static str, Page)] {
     &[
-        (" Parliament", Page::Parliament),
-        (" Services", Page::Services),
-        (" Council", Page::Council),
-        (" Harnesses", Page::Harnesses),
-        (" Genes", Page::Genes),
-        (" Execution", Page::Execution),
-        (" Providers", Page::Providers),
-        (" Telemetry", Page::Telemetry),
-        (" KUBER", Page::Kuber),
-        (" Skills", Page::Skills),
-        (" Settings", Page::Settings),
+        ("  Parliament", Page::Parliament),
+        ("  Services", Page::Services),
+        ("  Council", Page::Council),
+        ("  Harnesses", Page::Harnesses),
+        ("  Genes", Page::Genes),
+        ("  Execution", Page::Execution),
+        ("  Providers", Page::Providers),
+        ("  Telemetry", Page::Telemetry),
+        ("  KUBER", Page::Kuber),
+        ("  Skills", Page::Skills),
     ]
 }
 
@@ -70,18 +60,17 @@ fn run<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Result<(
             if key.kind != KeyEventKind::Press { continue; }
             match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
-                KeyCode::Char('1') => { page = Page::Parliament; sel = 0; }
-                KeyCode::Char('2') => { page = Page::Services; sel = 0; }
-                KeyCode::Char('3') => { page = Page::Council; sel = 0; }
-                KeyCode::Char('4') => { page = Page::Harnesses; sel = 0; }
-                KeyCode::Char('5') => { page = Page::Genes; sel = 0; }
-                KeyCode::Char('6') => { page = Page::Execution; sel = 0; }
-                KeyCode::Char('7') => { page = Page::Providers; sel = 0; }
-                KeyCode::Char('8') => { page = Page::Telemetry; sel = 0; }
-                KeyCode::Char('9') => { page = Page::Kuber; sel = 0; }
-                KeyCode::Char('0') => { page = Page::Skills; sel = 0; }
-                KeyCode::Down => sel = sel.saturating_add(1),
+                KeyCode::Down => sel = sel.saturating_add(1).min(99),
                 KeyCode::Up => sel = sel.saturating_sub(1),
+                KeyCode::Enter | KeyCode::Right => {
+                    let items = nav_items();
+                    if sel < items.len() { page = items[sel].1; }
+                }
+                KeyCode::Left => {
+                    let items = nav_items();
+                    let idx = items.iter().position(|(_, p)| *p == page).unwrap_or(0);
+                    if idx > 0 { page = items[idx - 1].1; }
+                }
                 KeyCode::Tab => {
                     let items = nav_items();
                     let idx = items.iter().position(|(_, p)| *p == page).unwrap_or(0);
@@ -102,77 +91,148 @@ fn sl(s: &str, fg: Color, bold: bool) -> Line<'static> {
 
 fn draw(f: &mut Frame, page: &Page, sel: &usize) {
     let area = f.area();
-    let vert = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Min(0), Constraint::Length(1)])
+
+    // Hermes-style three-column layout
+    let cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(22), Constraint::Min(20), Constraint::Length(24)])
         .split(area);
 
-    // Top bar
-    let top_st = Style::default().fg(Color::Rgb(255, 200, 220)).bg(Color::Rgb(40, 10, 25));
+    // ── Left sidebar (Hermes: sessions list) ──
+    let left_bg = Style::default().bg(Color::Rgb(25, 8, 15));
+    let left_border = Block::default()
+        .borders(Borders::RIGHT)
+        .border_style(Style::default().fg(Color::Rgb(80, 20, 45)));
+    f.render_widget(left_border, cols[0]);
+
+    let sidebar = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)])
+        .split(cols[0]);
+
+    // Pandora logo/title in sidebar
     f.render_widget(Paragraph::new(Line::from(Span::styled(
-        " PANDORA  v0.2  |  Architecture Control Plane  |  [1-0]nav [Tab]next [q]uit", top_st,
-    ))).style(top_st), vert[0]);
+        " PANDORA",
+        Style::default().fg(Color::Rgb(255, 150, 200)).add_modifier(Modifier::BOLD),
+    ))).style(left_bg), sidebar[0]);
+    f.render_widget(Paragraph::new(Line::from(Span::styled(
+        " v0.2  Architecture",
+        Style::default().fg(Color::Rgb(180, 120, 140)),
+    ))).style(left_bg), sidebar[0]);
 
-    // Sidebar + content
-    let horiz = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(20), Constraint::Min(0)])
-        .split(vert[1]);
-
-    f.render_widget(Block::default().borders(Borders::RIGHT).border_style(Style::default().fg(Color::Rgb(80, 20, 45))), horiz[0]);
-
+    // Navigation list (Hermes: Skills & Tools, Messaging, Artifacts)
     let items: Vec<ListItem> = nav_items().iter().map(|(name, p)| {
         let active = *p == *page;
         ListItem::new(Line::from(Span::styled(name.to_string(),
-            if active { Style::default().fg(Color::Yellow).bg(Color::Rgb(70, 18, 40)).add_modifier(Modifier::BOLD) }
+            if active { Style::default().fg(Color::Rgb(255, 255, 255)).bg(Color::Rgb(70, 18, 40)).add_modifier(Modifier::BOLD) }
             else { Style::default().fg(Color::Rgb(200, 150, 170)) }
         )))
     }).collect();
-    f.render_widget(List::new(items), horiz[0]);
+    f.render_widget(List::new(items).style(left_bg), sidebar[1]);
 
-    // Content — build page text
-    let lines: Vec<Line<'static>> = match page {
-        Page::Parliament => {
-            let sc = ShadowCouncil::new();
-            let s = sc.summary();
-            vec![
-                sl(" PARLIAMENT", Color::Rgb(255, 150, 200), true),
-                sl(" Constitutional runtime layer", Color::Rgb(200, 150, 170), false),
-                sl("", Color::White, false),
-                sl(" ServiceRegistry  — manages service lifecycle", Color::Rgb(230, 170, 190), false),
-                sl(" ConstitutionEngine — policy evaluation", Color::Rgb(230, 170, 190), false),
-                sl(" LeaseManager   — capability lease tracking", Color::Rgb(230, 170, 190), false),
-                sl(" EventBus       — inter-service events", Color::Rgb(230, 170, 190), false),
-                sl("", Color::White, false),
-                sl(" Architecture Constitution v1.0", Color::Yellow, true),
-                sl("", Color::White, false),
-                sl(&format!(" Shadow Council: {} harnesses, {} genes", s.total_harnesses, s.genes), Color::Cyan, false),
-                sl(&format!("  Source: {}  Meta: {}  Domain: {}", s.source_count, s.meta_count, s.domain_count), Color::Cyan, false),
-                sl(&format!("  Slash commands: {}  Capabilities: {}", s.slash_commands, s.capabilities), Color::Cyan, false),
-            ]
-        }
+    // Bottom sidebar (Hermes: profiles)
+    let sc = ShadowCouncil::new();
+    let s = sc.summary();
+    f.render_widget(Paragraph::new(vec![
+        Line::from(Span::styled(" Status", Style::default().fg(Color::Rgb(180, 120, 140)))),
+        Line::from(Span::styled(format!(" {} harnesses", s.total_harnesses), Style::default().fg(Color::Rgb(200, 150, 170)))),
+        Line::from(Span::styled(format!(" {} genes", s.genes + builtin::all().len()), Style::default().fg(Color::Rgb(200, 150, 170)))),
+    ]).style(left_bg), sidebar[2]);
+
+    // ── Main content (Hermes: chat area) ──
+    let main_border = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Rgb(80, 20, 45)));
+    f.render_widget(main_border, cols[1]);
+
+    let main_inner = Layout::default()
+        .margin(1)
+        .constraints([Constraint::Min(0)])
+        .split(cols[1]);
+
+    let lines = build_content(page, sel);
+    f.render_widget(
+        Paragraph::new(Text::from(lines))
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(Color::Rgb(15, 5, 10))),
+        main_inner[0],
+    );
+
+    // ── Right panel (Hermes: gateway, agents, cron) ──
+    let right_bg = Style::default().bg(Color::Rgb(25, 8, 15));
+    let right_border = Block::default()
+        .borders(Borders::LEFT)
+        .border_style(Style::default().fg(Color::Rgb(80, 20, 45)));
+    f.render_widget(right_border, cols[2]);
+
+    let right = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([Constraint::Length(8), Constraint::Length(8), Constraint::Min(0)])
+        .split(cols[2]);
+
+    // Right panel: Services (Hermes: Gateway)
+    f.render_widget(Paragraph::new(vec![
+        Line::from(Span::styled(" Services", Style::default().fg(Color::Rgb(255, 150, 200)).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled("  Memory", Style::default().fg(Color::Rgb(0, 200, 100)))),
+        Line::from(Span::styled("  Planning", Style::default().fg(Color::Rgb(0, 200, 100)))),
+        Line::from(Span::styled("  Execution", Style::default().fg(Color::Rgb(0, 200, 100)))),
+        Line::from(Span::styled("  Governance", Style::default().fg(Color::Rgb(0, 200, 100)))),
+        Line::from(Span::styled("  +6 more", Style::default().fg(Color::Rgb(180, 120, 140)))),
+    ]).style(right_bg), right[0]);
+
+    // Right panel: Harnesses (Hermes: Agents)
+    f.render_widget(Paragraph::new(vec![
+        Line::from(Span::styled(" Harnesses", Style::default().fg(Color::Rgb(255, 150, 200)).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled(format!("  Source: {}", s.source_count), Style::default().fg(Color::Rgb(200, 150, 170)))),
+        Line::from(Span::styled(format!("  Meta: {}", s.meta_count), Style::default().fg(Color::Rgb(200, 150, 170)))),
+        Line::from(Span::styled(format!("  Domain: {}", s.domain_count), Style::default().fg(Color::Rgb(200, 150, 170)))),
+    ]).style(right_bg), right[1]);
+
+    // Right panel: Runtime (Hermes: Cron)
+    f.render_widget(Paragraph::new(vec![
+        Line::from(Span::styled(" Runtime", Style::default().fg(Color::Rgb(255, 150, 200)).add_modifier(Modifier::BOLD))),
+        Line::from(Span::styled("  Constitutional", Style::default().fg(Color::Rgb(0, 200, 100)))),
+        Line::from(Span::styled("  Architecture v1.0", Style::default().fg(Color::Rgb(200, 150, 170)))),
+        Line::from(Span::styled("  206 tests", Style::default().fg(Color::Rgb(200, 150, 170)))),
+    ]).style(right_bg), right[2]);
+}
+
+fn build_content(page: &Page, sel: &usize) -> Vec<Line<'static>> {
+    match page {
+        Page::Parliament => vec![
+            sl(" Parliament", Color::Rgb(255, 150, 200), true),
+            sl(" Constitutional runtime layer", Color::Rgb(180, 120, 140), false),
+            sl("", Color::White, false),
+            sl(" ServiceRegistry   — service lifecycle management", Color::Rgb(230, 170, 190), false),
+            sl(" ConstitutionEngine — policy evaluation", Color::Rgb(230, 170, 190), false),
+            sl(" LeaseManager     — capability lease tracking", Color::Rgb(230, 170, 190), false),
+            sl(" EventBus         — inter-service events", Color::Rgb(230, 170, 190), false),
+            sl("", Color::White, false),
+            sl(" Architecture Constitution v1.0", Color::Rgb(255, 200, 100), true),
+            sl("", Color::White, false),
+            sl("  Shadow Council -> Harnesses -> Genes -> Pipeline", Color::Rgb(180, 120, 140), false),
+        ],
         Page::Services => {
             let names = ["Memory", "Planning", "Execution", "Governance", "Identity",
                          "Sandbox", "Workflow", "Scheduler", "Ledger", "Provider", "Telemetry"];
             let mut v = vec![
-                sl(" CONSTITUTIONAL SERVICES", Color::Rgb(255, 150, 200), true),
-                sl(" All 10 services have real implementations", Color::Rgb(200, 150, 170), false),
+                sl(" Services", Color::Rgb(255, 150, 200), true),
+                sl(" 10 constitutional services", Color::Rgb(180, 120, 140), false),
                 sl("", Color::White, false),
             ];
-            for n in &names {
-                let check = "\u{2713}";
-                v.push(sl(&format!("  {}  {}  Service", check, n), Color::Rgb(160, 200, 160), false));
-            }
+            for n in &names { v.push(sl(&format!("  {}  Service", n), Color::Rgb(160, 200, 160), false)); }
             v.push(sl("", Color::White, false));
-            v.push(sl(" Owner: Parliament", Color::Rgb(200, 150, 170), false));
+            v.push(sl(" All services have real implementations", Color::Rgb(180, 120, 140), false));
             v
         }
         Page::Council => {
             let sc = ShadowCouncil::new();
             let s = sc.summary();
             vec![
-                sl(" SHADOW COUNCIL", Color::Rgb(255, 150, 200), true),
-                sl(" Lifecycle, routing, capability resolution", Color::Rgb(200, 150, 170), false),
+                sl(" Shadow Council", Color::Rgb(255, 150, 200), true),
+                sl(" Lifecycle, routing, capability resolution", Color::Rgb(180, 120, 140), false),
                 sl("", Color::White, false),
                 sl(&format!(" Harnesses: {} total", s.total_harnesses), Color::Cyan, false),
                 sl(&format!("  Source: {}  Meta: {}  Domain: {}", s.source_count, s.meta_count, s.domain_count), Color::Rgb(230, 170, 190), false),
@@ -181,180 +241,122 @@ fn draw(f: &mut Frame, page: &Page, sel: &usize) {
                 sl("", Color::White, false),
                 sl(&format!(" Slash commands: {}  Capabilities: {}", s.slash_commands, s.capabilities), Color::Cyan, false),
                 sl("", Color::White, false),
-                sl(" Routing: first-register-wins for slash commands", Color::Rgb(200, 150, 170), false),
-                sl(" Policy: capability-based resolution", Color::Rgb(200, 150, 170), false),
+                sl(" Routing: first-register-wins", Color::Rgb(180, 120, 140), false),
             ]
         }
         Page::Harnesses => {
-            let h = [
-                ("SOURCE (5)", &[
-                    ("Memory Source Harness", ".memory.search, .memory.graph"),
-                    ("Planning Source Harness", ".plan, .plan.review"),
-                    ("Execution Source Harness", ".execute, .profile"),
-                    ("Governance Source Harness", ".policy, .audit"),
-                    ("Identity Source Harness", ".identity, .fork"),
-                ][..]),
-                ("META (1)", &[("Coordination Meta Harness", ".delegate, .route, .orchestrate")][..]),
-                ("DOMAIN (2)", &[
-                    ("Coding Domain Harness", ".build, .test, .lint, .review"),
-                    ("Research Domain Harness", ".search, .extract, .summarize"),
-                ][..]),
+            let mut v = vec![
+                sl(" Harnesses", Color::Rgb(255, 150, 200), true),
+                sl(" Source | Meta | Domain", Color::Rgb(180, 120, 140), false),
+                sl("", Color::White, false),
+                sl(" Source (5)", Color::Cyan, true),
             ];
-            let mut v = vec![sl(" HARNESSES", Color::Rgb(255, 150, 200), true), sl("", Color::White, false)];
-            for (title, items) in &h {
-                v.push(sl(title, Color::Cyan, true));
-                for &(name, cmds) in *items {
-                    v.push(sl(&format!("  {}  {}", name, cmds), Color::Rgb(220, 160, 180), false));
-                }
-                v.push(sl("", Color::White, false));
+            for n in &["Memory", "Planning", "Execution", "Governance", "Identity"] {
+                v.push(sl(&format!("    {} Source Harness", n), Color::Rgb(160, 200, 160), false));
             }
-            v.push(sl(" Source + Meta + Domain = complete harness model", Color::Rgb(200, 150, 170), false));
+            v.push(sl("", Color::White, false));
+            v.push(sl(" Meta (1)", Color::Cyan, true));
+            v.push(sl("    Coordination Meta Harness", Color::Rgb(200, 180, 220), false));
+            v.push(sl("", Color::White, false));
+            v.push(sl(" Domain (2)", Color::Cyan, true));
+            v.push(sl("    Coding Domain Harness", Color::Rgb(200, 180, 100), false));
+            v.push(sl("    Research Domain Harness", Color::Rgb(200, 180, 100), false));
+            v.push(sl("", Color::White, false));
+            v.push(sl(" Source augments services | Meta coordinates", Color::Rgb(180, 120, 140), false));
+            v.push(sl(" Domain packages experiences", Color::Rgb(180, 120, 140), false));
             v
         }
         Page::Genes => {
             let genes = builtin::all();
             let mut v = vec![
-                sl(&format!(" GENE REGISTRY ({} first-party)", genes.len()), Color::Rgb(255, 150, 200), true),
+                sl(&format!(" Genes  ({} first-party)", genes.len()), Color::Rgb(255, 150, 200), true),
                 sl("", Color::White, false),
             ];
             for g in &genes {
-                let kind_color = match g.kind.as_str() {
+                let c = match g.kind.as_str() {
                     "Workflow" => Color::Rgb(200, 180, 100),
                     "MCP" => Color::Rgb(100, 200, 255),
                     "Benchmark" => Color::Rgb(255, 180, 100),
                     "Agent" => Color::Rgb(200, 150, 255),
                     _ => Color::Rgb(160, 200, 160),
                 };
-                v.push(sl(&format!("  {}  v{}  {}", g.id, g.version, g.description), kind_color, false));
-                v.push(sl(&format!("      kind: {}  caps: {:?}", g.kind, g.capabilities), Color::Rgb(180, 120, 140), false));
+                v.push(sl(&format!("  {}  v{}  {}", g.id, g.version, g.description), c, false));
             }
             v.push(sl("", Color::White, false));
-            v.push(sl(" Install: pandora install <name>", Color::Rgb(200, 150, 170), false));
+            v.push(sl(" pandora install <name>", Color::Rgb(180, 120, 140), false));
             v
         }
         Page::Execution => {
             let stages = [
-                ("1. TASK", "Receive user request and parse intent"),
-                ("2. INSTRUCTION", "Convert to structured instruction"),
-                ("3. WORKFLOW", "Generate execution plan via Planning Service"),
-                ("4. CAPABILITY", "Resolve required capabilities via Shadow Council"),
-                ("5. TARGET", "Select execution target via policy"),
-                ("6. EXECUTE", "Run via chosen provider"),
-                ("7. RECORD", "Capture execution frame via Recorder"),
-                ("8. TELEMETRY", "Trace and span via Telemetry Engine"),
-                ("9. KNOWLEDGE", "Distill insights via Knowledge Engine"),
-                ("10. LEDGER", "Persist outcome in Execution Ledger"),
+                "1. TASK", "2. INSTRUCTION", "3. WORKFLOW", "4. CAPABILITY",
+                "5. TARGET", "6. EXECUTE", "7. RECORD", "8. TELEMETRY", "9. LEDGER",
             ];
             let idx = *sel % stages.len();
             let mut v = vec![
-                sl(" EXECUTION PIPELINE (10 stages)", Color::Rgb(255, 150, 200), true),
-                sl(" Every execution flows through all stages", Color::Rgb(200, 150, 170), false),
+                sl(" Execution Pipeline", Color::Rgb(255, 150, 200), true),
+                sl(" 9 stages, selectable via [up/down]", Color::Rgb(180, 120, 140), false),
                 sl("", Color::White, false),
             ];
-            for (i, (name, desc)) in stages.iter().enumerate() {
-                let c = if i == 5 { Color::Rgb(255, 200, 0) } else { Color::Rgb(140, 120, 160) };
-                let arrow = if i == idx { " >" } else { "  " };
-                v.push(sl(&format!("{} {}  {}", arrow, name, desc), c, i == idx));
+            for (i, stage) in stages.iter().enumerate() {
+                let c = if i == idx { Color::Rgb(255, 200, 0) } else if i == 5 { Color::Rgb(255, 180, 100) } else { Color::Rgb(200, 150, 170) };
+                v.push(sl(&format!(" {}  {}", if i == idx { ">" } else { " " }, stage), c, i == idx));
             }
-            v.push(sl("", Color::White, false));
-            v.push(sl(" Active stage indicator via [up/down]", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Providers => {
-            let provs = [
-                ("Ollama", "localhost:11434", "OLLAMA_HOST", Color::Rgb(0, 200, 100)),
-                ("LlamaCpp", "localhost:8080", "LLAMA_CPP_HOST", Color::Rgb(0, 200, 100)),
-                ("LM Studio", "localhost:1234", "auto-detected", Color::Rgb(160, 200, 100)),
-                ("vLLM", "localhost:8000", "auto-detected", Color::Rgb(160, 200, 100)),
-                ("OpenAI", "api.openai.com", "API key", Color::Rgb(100, 160, 255)),
-                ("Anthropic", "api.anthropic.com", "API key", Color::Rgb(255, 160, 100)),
-                ("Groq", "api.groq.com", "API key", Color::Rgb(255, 200, 100)),
-                ("OpenRouter", "openrouter.ai", "API key", Color::Rgb(200, 100, 255)),
-                ("Custom", "PROVIDER_ENDPOINT", "Bearer token", Color::Rgb(255, 150, 200)),
-            ];
             let mut v = vec![
-                sl(" AI PROVIDERS", Color::Rgb(255, 150, 200), true),
-                sl(" Provider-agnostic — models are interchangeable", Color::Rgb(200, 150, 170), false),
+                sl(" Providers", Color::Rgb(255, 150, 200), true),
+                sl(" Provider-agnostic execution", Color::Rgb(180, 120, 140), false),
                 sl("", Color::White, false),
             ];
-            for (name, ep, cfg, clr) in &provs {
-                v.push(sl(&format!("  {}  {}  ({})", name, ep, cfg), *clr, false));
+            for (name, ep) in &[("Ollama", "localhost:11434"), ("LlamaCpp", "localhost:8080"),
+                ("LM Studio", "localhost:1234"), ("vLLM", "localhost:8000"),
+                ("OpenAI", "api.openai.com"), ("Anthropic", "api.anthropic.com"),
+                ("Groq", "api.groq.com"), ("OpenRouter", "openrouter.ai"),
+                ("Custom", "PROVIDER_ENDPOINT")] {
+                v.push(sl(&format!("  {}  {}", name, ep), Color::Rgb(200, 150, 170), false));
             }
-            v.push(sl("", Color::White, false));
-            v.push(sl(" Resolution:", Color::Cyan, true));
-            v.push(sl("  1. Check ExecutionTarget (hints + policy)", Color::Rgb(200, 150, 170), false));
-            v.push(sl("  2. Fall back to env vars (OLLAMA_HOST, etc.)", Color::Rgb(200, 150, 170), false));
-            v.push(sl("  3. Scan local discovery endpoints", Color::Rgb(200, 150, 170), false));
             v
         }
         Page::Telemetry => vec![
-            sl(" TELEMETRY", Color::Rgb(255, 150, 200), true),
-            sl(" Execution observability and tracing", Color::Rgb(200, 150, 170), false),
+            sl(" Telemetry", Color::Rgb(255, 150, 200), true),
+            sl(" Execution observability", Color::Rgb(180, 120, 140), false),
             sl("", Color::White, false),
-            sl(" Trace  — full execution trace", Color::Cyan, false),
-            sl(" Span   — individual operation timing", Color::Cyan, false),
-            sl(" Events — state transitions and decisions", Color::Cyan, false),
-            sl(" Timing — wall-clock + cpu per stage", Color::Cyan, false),
-            sl(" Errors — captured failures with context", Color::Cyan, false),
+            sl("  Trace  — full execution trace", Color::Cyan, false),
+            sl("  Span   — operation timing", Color::Cyan, false),
+            sl("  Events — state transitions", Color::Cyan, false),
+            sl("  Errors — captured failures", Color::Cyan, false),
             sl("", Color::White, false),
-            sl(" Components:", Color::Cyan, true),
-            sl("  TelemetryEngine — begin_trace / begin_span / add_span / end_trace", Color::Rgb(220, 160, 180), false),
-            sl("  Recorder — captures ExecutionFrames", Color::Rgb(220, 160, 180), false),
-            sl("  Ledger — records outcomes (Success/Failure)", Color::Rgb(220, 160, 180), false),
-            sl("", Color::White, false),
-            sl(" Session model:", Color::Cyan, true),
-            sl("  Session -> Trace -> Spans -> Events -> Ledger", Color::Rgb(200, 150, 170), false),
-            sl("  Sessions are replayable from the Ledger", Color::Rgb(200, 150, 170), false),
+            sl(" TelemetryEngine + Recorder + Ledger", Color::Rgb(200, 150, 170), false),
+            sl(" Session -> Trace -> Spans -> Ledger", Color::Rgb(200, 150, 170), false),
         ],
         Page::Kuber => vec![
-            sl(" KUBER — Distribution", Color::Rgb(255, 150, 200), true),
-            sl(" Package registry and installation system", Color::Rgb(200, 150, 170), false),
+            sl(" KUBER", Color::Rgb(255, 150, 200), true),
+            sl(" Package distribution", Color::Rgb(180, 120, 140), false),
             sl("", Color::White, false),
-            sl(&format!(" Built-in packages: {}", builtin::all().len()), Color::Cyan, false),
-            sl(" Install: pandora install <id>", Color::Rgb(230, 170, 190), false),
-            sl(" Search: pandora search <query>", Color::Rgb(230, 170, 190), false),
-            sl(" Update: pandora update <id>", Color::Rgb(230, 170, 190), false),
-            sl("", Color::White, false),
-            sl(" Scoring: security, compatibility, capabilities,", Color::Rgb(200, 150, 170), false),
-            sl("  dependencies, tests, governance, trust, performance", Color::Rgb(200, 150, 170), false),
-            sl("", Color::White, false),
-            sl(" Sources: local filesystem, remote URLs, built-in", Color::Rgb(200, 150, 170), false),
+            sl(&format!(" Built-in: {} packages", builtin::all().len()), Color::Cyan, false),
+            sl(" Install: pandora install <id>", Color::Rgb(200, 150, 170), false),
+            sl(" Search: pandora search <query>", Color::Rgb(200, 150, 170), false),
+            sl(" Scoring: 8 dimensions", Color::Rgb(200, 150, 170), false),
         ],
         Page::Skills => vec![
-            sl(" SKILLS", Color::Rgb(255, 150, 200), true),
-            sl(" Declarative bundles of genes and harnesses", Color::Rgb(200, 150, 170), false),
+            sl(" Skills", Color::Rgb(255, 150, 200), true),
+            sl(" Declarative gene/harness bundles", Color::Rgb(180, 120, 140), false),
             sl("", Color::White, false),
-            sl(" Install: pandora new skill <name>", Color::Rgb(200, 150, 170), false),
-            sl(" Scaffold: creates skill.toml + template", Color::Rgb(200, 150, 170), false),
+            sl(" pandora new skill <name>", Color::Rgb(200, 150, 170), false),
+            sl(" Creates skill.toml + template", Color::Rgb(200, 150, 170), false),
         ],
         Page::Settings => vec![
-            sl(" SETTINGS", Color::Rgb(255, 150, 200), true),
+            sl(" Settings", Color::Rgb(255, 150, 200), true),
             sl("", Color::White, false),
-            sl(" Architecture: v1.0 (frozen)", Color::Cyan, false),
-            sl(" Mode: SOVEREIGN", Color::Cyan, false),
+            sl(" OLLAMA_HOST     — Ollama endpoint", Color::Rgb(200, 150, 170), false),
+            sl(" LLAMA_CPP_HOST  — LlamaCpp endpoint", Color::Rgb(200, 150, 170), false),
+            sl(" PROVIDER_ENDPOINT — Custom API", Color::Rgb(200, 150, 170), false),
+            sl(" PROVIDER_API_KEY  — Bearer token", Color::Rgb(200, 150, 170), false),
             sl("", Color::White, false),
-            sl(" Environment:", Color::Cyan, true),
-            sl("  OLLAMA_HOST      — Ollama endpoint", Color::Rgb(230, 170, 190), false),
-            sl("  LLAMA_CPP_HOST   — LlamaCpp endpoint", Color::Rgb(230, 170, 190), false),
-            sl("  PROVIDER_ENDPOINT — Custom API endpoint", Color::Rgb(230, 170, 190), false),
-            sl("  PROVIDER_API_KEY  — Bearer token", Color::Rgb(230, 170, 190), false),
-            sl("  PANDORA_WEB_PORT — Web dashboard port", Color::Rgb(230, 170, 190), false),
-            sl("", Color::White, false),
-            sl(" Keyboard:", Color::Cyan, true),
-            sl("  [1-0]   Navigation tabs", Color::Rgb(200, 150, 170), false),
-            sl("  [Tab]   Next tab", Color::Rgb(200, 150, 170), false),
-            sl("  [up/dn] Stage selector", Color::Rgb(200, 150, 170), false),
-            sl("  [q/Esc] Quit", Color::Rgb(200, 150, 170), false),
+            sl(" [up/down] navigate  [Enter] select", Color::Rgb(180, 120, 140), false),
+            sl(" [Left/Right] prev/next page  [Tab] cycle", Color::Rgb(180, 120, 140), false),
+            sl(" [q/Esc] quit", Color::Rgb(180, 120, 140), false),
         ],
-    };
-
-    f.render_widget(Paragraph::new(Text::from(lines))
-        .block(Block::default().borders(Borders::ALL))
-        .wrap(Wrap { trim: false }), horiz[1]);
-
-    // Bottom help
-    let bg = Style::default().fg(Color::Rgb(80, 60, 100)).bg(Color::Rgb(30, 8, 18));
-    f.render_widget(Paragraph::new(Line::from(Span::styled(
-        " [1]Parl [2]Svc [3]Council [4]Harness [5]Genes [6]Exec [7]Prov [8]Tel [9]KUBER [0]Skills [Tab]next [q]uit", bg,
-    ))).style(bg), vert[2]);
+    }
 }
