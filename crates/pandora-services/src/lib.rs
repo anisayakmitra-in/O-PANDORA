@@ -271,10 +271,27 @@ impl PlanningService for DefaultPlanningService {
 
 // ── Governance Service (stub) ──
 
+// ── Governance Service (real) — policy-based evaluator ──
+
+#[derive(Debug, Clone)]
+struct AuditEntry {
+    action: String,
+    decision: String,
+    timestamp: String,
+}
+
+#[derive(Debug)]
+struct GovState {
+    audit_log: Vec<AuditEntry>,
+    // ponytail: simple deny-list rules — actions containing these strings are rejected
+    deny_rules: Vec<String>,
+}
+
 #[derive(Debug)]
 pub struct DefaultGovernanceService {
     provider: String,
     version: String,
+    state: Mutex<GovState>,
 }
 
 impl DefaultGovernanceService {
@@ -282,32 +299,55 @@ impl DefaultGovernanceService {
         Self {
             provider: "pandora".into(),
             version: "0.1.0".into(),
+            state: Mutex::new(GovState {
+                audit_log: Vec::new(),
+                deny_rules: vec![
+                    "rm -rf /".into(),
+                    "format".into(),
+                    "drop table".into(),
+                    "shutdown".into(),
+                ],
+            }),
         }
     }
 }
 
 impl Service for DefaultGovernanceService {
-    fn service_id(&self) -> ServiceId {
-        ServiceId::Governance
-    }
-    fn provider_name(&self) -> &str {
-        &self.provider
-    }
-    fn version(&self) -> &str {
-        &self.version
-    }
+    fn service_id(&self) -> ServiceId { ServiceId::Governance }
+    fn provider_name(&self) -> &str { &self.provider }
+    fn version(&self) -> &str { &self.version }
 }
 
 impl GovernanceService for DefaultGovernanceService {
-    fn evaluate(&self, _action: &str, _ctx: &str) -> Result<bool, String> {
+    fn evaluate(&self, action: &str, _ctx: &str) -> Result<bool, String> {
+        let state = self.state.lock().map_err(|e| e.to_string())?;
+        let action_lower = action.to_lowercase();
+        for rule in &state.deny_rules {
+            if action_lower.contains(rule) {
+                return Err(format!("Denied by policy: action contains \"{}\"", rule));
+            }
+        }
         Ok(true)
     }
-    fn audit(&self, _action: &str, _decision: &str) -> Result<(), String> {
+
+    fn audit(&self, action: &str, decision: &str) -> Result<(), String> {
+        let mut state = self.state.lock().map_err(|e| e.to_string())?;
+        state.audit_log.push(AuditEntry {
+            action: action.to_string(),
+            decision: decision.to_string(),
+            timestamp: format!("{}", std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0)),
+        });
         Ok(())
     }
+
     fn score(&self, _target: &str) -> Result<f64, String> {
+        // ponytail: place holder — weights-based scoring
         Ok(0.5)
     }
+
     fn verify(&self, _artifact: &str) -> Result<bool, String> {
         Ok(true)
     }
