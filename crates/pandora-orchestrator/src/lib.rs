@@ -250,6 +250,13 @@ impl PandoraRuntime {
         let execution_id = format!("exec-{}", chrono::Utc::now().timestamp_millis());
         let start = Instant::now();
 
+        // ── Session: first-class execution object ──
+        let mut session = pandora_types::Session::new(&execution_id, task);
+        session.metadata.insert("domain".to_string(), domain.to_string());
+        session.metadata.insert("execution_id".to_string(), execution_id.clone());
+        session.status = pandora_types::SessionStatus::Running;
+        let session_id = session.id.clone();
+
         // Stage 1: Instruction (task string IS instruction for now — Phase 3 concern)
         let _ctx = &self.ctx;
 
@@ -349,6 +356,7 @@ impl PandoraRuntime {
             .record_frame(&ReplayId(frame_id.clone()), frame)
             .ok();
         println!("[STAGE 5 - RECORDER] frame captured");
+        session.metadata.insert("replay_id".to_string(), frame_id.clone());
 
         let rec_out = RecorderStageOutput {
             replay_id: frame_id,
@@ -441,6 +449,24 @@ impl PandoraRuntime {
         println!("[PARLIAMENT] RuntimeDelta merged into context");
 
         let total = start.elapsed();
+
+        // ── Finalize session ──
+        session.status = if success {
+            pandora_types::SessionStatus::Completed
+        } else {
+            pandora_types::SessionStatus::Failed("empty response".into())
+        };
+        session.completed_at = Some(std::time::SystemTime::now());
+        session.workflow = Some("full-pipeline".into());
+        session.replay_id = Some(replay_id.clone());
+        // ponytail: store by execution_id for now; real session mgmt later
+        self.sessions.create(&execution_id, task);
+        if let Some(s) = self.sessions.get_mut(&execution_id) {
+            s.status = session.status.clone();
+            s.completed_at = session.completed_at;
+            s.replay_id = session.replay_id.clone();
+        }
+
         Ok(ExecutionReport {
             execution_id,
             output: response.text,
