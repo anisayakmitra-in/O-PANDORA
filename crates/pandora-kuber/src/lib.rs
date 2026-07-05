@@ -135,6 +135,7 @@ impl Kuber {
                 results.push(info_from(pkg, &source.name));
             }
         }
+        results.extend(crate::builtin::all());
         results
     }
 
@@ -150,13 +151,17 @@ impl Kuber {
     }
 
     pub fn install(&mut self, id: &str) -> Result<(), String> {
+        // 1. Check disk package sources
         let paths: Vec<String> = self.sources.iter().map(|s| s.path.clone()).collect();
         for path in &paths {
             let packages = discover_gene_packages(path);
             if packages.iter().any(|p| p.manifest.id == id) {
-                self.council_mut().load_gene_packages(path)?;
-                return Ok(());
+                self.council_mut().load_gene_packages(path).map(|_| ())?;
             }
+        }
+        // 2. Check built-in genes (always available, compiled into binary)
+        if crate::builtin::find(id).is_some() {
+            return Ok(());
         }
         Err(format!("Package not found: {}", id))
     }

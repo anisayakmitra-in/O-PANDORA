@@ -1,6 +1,6 @@
 use crate::PackageInfo;
 
-fn kind(id: &str) -> &'static str {
+pub fn kind(id: &str) -> &'static str {
     match id {
         "workflow" => "Workflow",
         "code-review" => "Agent",

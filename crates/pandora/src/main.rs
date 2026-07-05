@@ -9,6 +9,23 @@ fn main() {
         usage();
         process::exit(1);
     }
+
+fn cmd_package(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora package <name>");
+        process::exit(1);
+    }
+    let name = &args[2];
+    let dir = std::path::Path::new(name);
+    if dir.exists() {
+        eprintln!("Directory already exists: {}", name);
+        process::exit(1);
+    }
+    std::fs::create_dir_all(dir.join("src")).unwrap();
+    let m = format!("id = \"{}\"\nname = \"{}\"\nkind = Tool\nversion = 0.1.0\nauthor = you\ndescription = A {} gene\ncapabilities = []\ndependencies = []\n", name, name, name);
+    std::fs::write(dir.join("gene.toml"), m).unwrap();
+    println!("Created {}/gene.toml", name);
+}
     match args[1].as_str() {
         "install" => cmd_install(&args),
         "run" => cmd_run(&args),
@@ -16,6 +33,7 @@ fn main() {
         "list" => cmd_list(),
         "info" => cmd_info(&args),
         "genes" => cmd_genes(),
+        "package" => cmd_package(&args),
         "providers" => cmd_providers(),
         "harnesses" => cmd_harnesses(),
         "doctor" => cmd_doctor(),
@@ -48,6 +66,7 @@ fn usage() {
     eprintln!("  harnesses       List installed harnesses");
     eprintln!("  doctor          System health check");
     eprintln!("  genes           List available first-party genes");
+    eprintln!("  package <name>  Create a gene.toml package scaffold");
     eprintln!(
         "  architecture    Show the Pandora architecture tree
   new gene <n>    Scaffold a gene template"
@@ -71,18 +90,9 @@ fn cmd_install(args: &[String]) {
     }
     match k.install(&args[2]) {
         Ok(_) => println!("Installed: {}", args[2]),
-        Err(_) => {
-            let found = pandora_kuber::builtin::find(&args[2]);
-            match found {
-                Some(pkg) => println!(
-                    "Available: {} ({}) — {} v{}",
-                    pkg.id, pkg.kind, pkg.description, pkg.version
-                ),
-                None => {
-                    eprintln!("Not found: {}. Try pandora search <query>", args[2]);
-                    process::exit(1);
-                }
-            }
+        Err(e) => {
+            eprintln!("Not found: {} ({})", args[2], e);
+            process::exit(1);
         }
     }
 }
