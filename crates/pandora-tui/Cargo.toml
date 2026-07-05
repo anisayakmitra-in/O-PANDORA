@@ -1,0 +1,19 @@
+[package]
+name = "pandora-tui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
+pandora-shadow-council = { path = "../pandora-shadow-council" }
+pandora-kuber = { path = "../pandora-kuber" }
+pandora-services = { path = "../pandora-services" }
+pandora-harnesses = { path = "../pandora-harnesses" }
+pandora-genes = { path = "../pandora-genes" }
+pandora-orchestrator = { path = "../pandora-orchestrator" }
+ratatui = "0.29"
+crossterm = "0.28"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

@@ -25,6 +25,7 @@ members = [
     "crates/pandora-discovery",
     "crates/pandora-runtime",
     "crates/pandora-services",
+    "crates/pandora-tui",
     "test-runner",
     "dynamic_harness",
 ]
