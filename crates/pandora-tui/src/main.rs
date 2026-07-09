@@ -205,25 +205,18 @@ fn render_page(frame: &mut Frame, page: &Page, area: Rect) {
 }
 
 fn render_dashboard() -> Text<'static> {
+    let session_dir = std::env::var("PANDORA_HOME")
+        .map(|h| std::path::PathBuf::from(h).join("sessions"))
+        .unwrap_or_else(|_| {
+            let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+        });
+    let session_count = std::fs::read_dir(&session_dir)
+        .map(|d| d.filter_map(|e| e.ok()).filter(|e| e.path().extension().map_or(false, |ext| ext == "json")).count())
+        .unwrap_or(0);
     Text::from(
-        "\n\
-         Architecture: v1.0\n\n\
-         Pipeline\n\
-           Running:   1\n\
-           Completed: 214\n\
-           Failed:    3\n\n\
-         Sessions\n\
-           Stored:    215\n\n\
-         Providers\n\
-           Healthy:   3\n\n\
-         Genes\n\
-           Installed: 21\n\n\
-         Harnesses\n\
-           Loaded:    10\n\n\
-         Packages\n\
-           Installed: 17\n\n\
-         Type /help for runtime commands.\n\
-         ← → to navigate pages."
+        format!("\nArchitecture: v1.0\n\n         Pipeline\n           Running:   1\n           Completed: {}\n           Failed:    3\n\n         Sessions\n           Stored:    {}\n\n         Providers\n           Healthy:   3\n\n         Genes\n           Installed: 24\n\n         Harnesses\n           Loaded:    10\n\n         Packages\n           Installed: 17\n\n         Type /help for runtime commands.\n         ← → to navigate pages.",
+        session_count, session_count)
     )
 }
 
