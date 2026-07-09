@@ -371,6 +371,19 @@ impl ExecutionController {
         }
     }
 
+    /// Select a provider based on the plan's provider_policy.
+    /// Policies: fastest, cheapest, best, local_only, privacy, balanced
+    pub fn select_provider<'a>(&self, policy: &str, candidates: &[(&'a str, u64)]) -> Option<&'a str> {
+        if candidates.is_empty() { return None; }
+        match policy {
+            "local_only" => candidates.iter().find(|(name, _)| name.contains(&"ollama") || name.contains(&"llamacpp")).map(|(n, _)| *n),
+            "fastest" => candidates.iter().min_by_key(|(_, lat)| lat).map(|(n, _)| *n),
+            "cheapest" => candidates.first().map(|(n, _)| *n),
+            "privacy" => candidates.iter().find(|(name, _)| name.contains(&"ollama")).map(|(n, _)| *n),
+            "balanced" | _ => candidates.first().map(|(n, _)| *n),
+        }
+    }
+
     pub fn set_max_retries(&mut self, n: u32) {
         self.max_retries = n;
     }
