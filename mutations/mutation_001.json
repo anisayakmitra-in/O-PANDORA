@@ -1,9 +1,0 @@
-{
-  "mutation_id": "mutation_001",
-  "target_gene": "execution_gene",
-  "mutation_type": "optimization",
-  "reason": "Improve execution efficiency",
-  "proposed_by": "gepa_runtime",
-  "lineage_parent": "lineage_001",
-  "timestamp": "2026-05-22"
-}

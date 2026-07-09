@@ -1,1 +1,6 @@
 /target
+
+# llama.cpp (external project, 567MB)
+/llama.cpp
+# legacy/archive/root-files/
+/legacy/archive/root-files
