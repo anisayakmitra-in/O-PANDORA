@@ -2,6 +2,7 @@
 
 use pandora_shadow_council::ShadowCouncil;
 pub mod coding;
+pub mod security;
 pub mod coordination;
 pub mod research;
 use pandora_types::harness::{
@@ -254,6 +255,7 @@ mod tests {
     #[test]
     fn coding_domain_is_domain_kind() {
         let h = crate::coding::CodingDomainHarness::new();
+        sc.install(Box::new(crate::security::SecurityDomainHarness::new()));
         assert_eq!(
             h.manifest().kind,
             pandora_types::harness::HarnessKind::Domain
