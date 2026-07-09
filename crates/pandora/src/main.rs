@@ -173,6 +173,28 @@ fn cmd_run(args: &[String]) {
     };
     rt.block_on(async {
         let mut runtime = pandora_orchestrator::PandoraRuntime::new();
+        // Configure ExecutionPlan from env vars
+        use pandora_types::execution_plan::{ExecutionPlan, ControlStrategy, EvaluatorKind, StopCondition};
+        let goal = std::env::var("PANDORA_GOAL").ok();
+        let strategy = std::env::var("PANDORA_STRATEGY").unwrap_or_else(|_| "single".into());
+        let attempts: u32 = std::env::var("PANDORA_ATTEMPTS").ok().and_then(|s| s.parse().ok()).unwrap_or(1);
+        let provider = std::env::var("PANDORA_PROVIDER").ok();
+        let sandbox: u8 = std::env::var("PANDORA_SANDBOX").ok().and_then(|s| s.parse().ok()).unwrap_or(0);
+        runtime.plan = ExecutionPlan {
+            instruction: task.clone(),
+            control_strategy: match strategy.as_str() {
+                "closed" => ControlStrategy::Closed,
+                "open" => ControlStrategy::Open,
+                "human" => ControlStrategy::Human,
+                "autonomous" => ControlStrategy::Autonomous,
+                _ => ControlStrategy::SingleShot,
+            },
+            evaluator: goal.as_ref().map(|g| if g.contains("test") { EvaluatorKind::RustTests } else { EvaluatorKind::OutputMatch }).unwrap_or(EvaluatorKind::None),
+            provider_policy: provider.unwrap_or_else(|| "default".into()),
+            sandbox_level: sandbox,
+            stop_conditions: if attempts > 1 { vec![StopCondition::GoalMet, StopCondition::MaxAttempts(attempts)] } else { vec![StopCondition::GoalMet] },
+            ..Default::default()
+        };
         match runtime.run(&task, "default").await {
             Ok(report) => {
                 if report.success {
@@ -312,24 +334,16 @@ fn cmd_update(args: &[String]) {
 #[allow(dead_code)]
 #[allow(dead_code)]
 fn cmd_providers() {
-    println!("Configured providers:");
-    println!(
-        "  ollama   Local LLM (OLLAMA_HOST={})",
-        std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())
-    );
-    println!(
-        "  llamacpp Local LLM via llama.cpp (LLAMA_CPP_HOST={})",
-        std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into())
-    );
-    println!("  openai   Cloud LLM (requires API key)");
-    println!("  anthropic Cloud LLM (requires API key)");
-    println!("  custom   Any OpenAI-compatible endpoint (PROVIDER_ENDPOINT, PROVIDER_API_KEY)");
+    println!("Provider      Status   Models   Latency");
+    println!("{:-<40}", "");
+    let h = pandora_types::provider_health::check_ollama();
+    println!("  {:<12} {:<8} {:>3}      {:>4}ms", h.name, h.status, h.model_count, h.latency_ms);
+    let url = std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into());
+    let h2 = pandora_types::provider_health::check_openai_compat("LlamaCpp", &url);
+    println!("  {:<12} {:<8} {:>3}      {:>4}ms", h2.name, h2.status, h2.model_count, h2.latency_ms);
     println!();
-    println!();
-    println!("Set OLLAMA_HOST / LLAMA_CPP_HOST for local endpoints.");
-    println!("Set PROVIDER_ENDPOINT + PROVIDER_API_KEY for any custom provider.");
+    println!("  Env: OLLAMA_HOST, LLAMA_CPP_HOST, PROVIDER_ENDPOINT");
 }
-
 #[allow(dead_code)]
 #[allow(dead_code)]
 #[allow(dead_code)]
@@ -647,49 +661,20 @@ fn execute(&self, input: &str) -> Result<String, String> {{"
 #[allow(dead_code)]
 #[allow(dead_code)]
 fn cmd_benchmark() {
-    // ponytail: simple provider health check via curl
-    let sep: String = std::iter::repeat_n("─", 50).collect();
-    println!("Pandora Benchmark");
-    println!("{}", sep);
-    println!("Testing provider availability...\n");
-
-    let providers = vec![
-        (
-            "ollama",
-            std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into()),
-        ),
-        (
-            "llamacpp",
-            std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into()),
-        ),
-    ];
-
-    for (name, endpoint) in &providers {
-        print!("  {} @ {} ... ", name, endpoint);
-        match std::process::Command::new("curl")
-            .args([
-                "-s",
-                "-o",
-                "/dev/null",
-                "-w",
-                "%{http_code}",
-                &format!("{}/api/tags", endpoint),
-            ])
-            .output()
-        {
-            Ok(out) => {
-                let code = String::from_utf8_lossy(&out.stdout);
-                if code.trim() == "200" {
-                    println!("OK");
-                } else {
-                    println!("HTTP {}", code.trim());
-                }
-            }
-            Err(_) => println!("unreachable"),
+    println!("Pandora Provider Benchmark");
+    println!("{:-<50}", "");
+    println!("Prompt: def hello(): print(\'hello world\')");
+    println!();
+    for (name, info, lat, tps) in &pandora_types::provider_health::benchmark_all() {
+        if *tps > 0.0 {
+            println!("  {:<12} {:>6}ms  {:>7.1} tok/s  ({})", name, lat, tps, info);
+        } else {
+            println!("  {:<12} {}  --", name, info);
         }
     }
     println!();
-    println!("Use --verbose for detailed timing (requires pandora-orchestrator).");
+    println!("  Config: OLLAMA_HOST, OLLAMA_MODEL, LLAMA_CPP_HOST");
+    println!("  Models: qwen2.5-coder:7b (ollama), default (llamacpp)");
 }
 
 #[allow(dead_code)]
