@@ -1,702 +1,415 @@
+//! Pandora TUI — governed cognition runtime dashboard.
+//!
+//! Black/white aesthetic like btop/lazygit/k9s.
+//! Architecture-visible design — teaches the structure.
+
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use pandora_kuber::builtin;
-use pandora_shadow_council::ShadowCouncil;
 use ratatui::{
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Gauge, Wrap, BorderType},
     Frame, Terminal,
 };
 use std::{io, time::Duration};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Page {
-    Parliament,
+    Dashboard,
+    Sessions,
+    Pipeline,
+    Providers,
     Services,
-    Council,
     Harnesses,
     Genes,
-    Execution,
-    Providers,
+    Packages,
+    Governance,
     Telemetry,
-    Kuber,
-    Skills,
-    Settings,
+    DecisionLog,
+    Graph,
 }
 
-fn nav_items() -> &'static [(&'static str, Page)] {
-    &[
-        ("  Parliament", Page::Parliament),
-        ("  Services", Page::Services),
-        ("  Council", Page::Council),
-        ("  Harnesses", Page::Harnesses),
-        ("  Genes", Page::Genes),
-        ("  Execution", Page::Execution),
-        ("  Providers", Page::Providers),
-        ("  Telemetry", Page::Telemetry),
-        ("  KUBER", Page::Kuber),
-        ("  Skills", Page::Skills),
-    ]
+impl Page {
+    fn all() -> &'static [Page] {
+        &[
+            Page::Dashboard,
+            Page::Sessions,
+            Page::Pipeline,
+            Page::Providers,
+            Page::Services,
+            Page::Harnesses,
+            Page::Genes,
+            Page::Packages,
+            Page::Governance,
+            Page::Telemetry,
+            Page::DecisionLog,
+            Page::Graph,
+        ]
+    }
+    fn label(&self) -> &'static str {
+        match self {
+            Page::Dashboard => "  Runtime  ",
+            Page::Sessions => "  Sessions  ",
+            Page::Pipeline => "  Pipeline  ",
+            Page::Providers => "  Providers  ",
+            Page::Services => "  Services  ",
+            Page::Harnesses => "  Harnesses  ",
+            Page::Genes => "  Genes  ",
+            Page::Packages => "  Packages  ",
+            Page::Governance => "  Governance  ",
+            Page::Telemetry => "  Telemetry  ",
+            Page::DecisionLog => "  Decisions  ",
+            Page::Graph => "  Graph  ",
+        }
+    }
 }
 
-fn main() -> anyhow::Result<()> {
+const WHITE: Color = Color::White;
+const GRAY: Color = Color::DarkGray;
+const GREEN: Color = Color::Green;
+const RED: Color = Color::Red;
+const BLACK: Color = Color::Black;
+
+fn main() -> io::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let res = run(&mut terminal);
+
+    let mut current_page = Page::Dashboard;
+    let mut tick = 0u64;
+
+    let res = run(&mut terminal, &mut current_page, &mut tick);
+
     disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
     terminal.show_cursor()?;
-    if let Err(e) = res {
-        eprintln!("TUI error: {}", e);
-    }
+    if let Err(e) = res { eprintln!("TUI error: {}", e); }
     Ok(())
 }
 
-fn run<B: ratatui::backend::Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
-    let mut page = Page::Parliament;
-    let mut sel: usize = 0;
+fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, page: &mut Page, tick: &mut u64) -> io::Result<()> {
     loop {
-        terminal.draw(|f| draw(f, &page, &sel))?;
-        if !event::poll(Duration::from_millis(100))? {
-            continue;
-        }
-        if let Event::Key(key) = event::read()? {
-            if key.kind != KeyEventKind::Press {
-                continue;
-            }
-            match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
-                KeyCode::Down => sel = sel.saturating_add(1).min(99),
-                KeyCode::Up => sel = sel.saturating_sub(1),
-                KeyCode::Enter | KeyCode::Right => {
-                    let items = nav_items();
-                    if sel < items.len() {
-                        page = items[sel].1;
+        terminal.draw(|f| draw(f, *page, *tick))?;
+        *tick += 1;
+
+        if event::poll(Duration::from_millis(100))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
+                        KeyCode::Left | KeyCode::Char('h') => {
+                            let pages = Page::all();
+                            let idx = pages.iter().position(|p| *p == *page).unwrap_or(0);
+                            *page = pages[(idx + pages.len() - 1) % pages.len()];
+                        }
+                        KeyCode::Right | KeyCode::Char('l') => {
+                            let pages = Page::all();
+                            let idx = pages.iter().position(|p| *p == *page).unwrap_or(0);
+                            *page = pages[(idx + 1) % pages.len()];
+                        }
+                        _ => {}
                     }
                 }
-                KeyCode::Left => {
-                    let items = nav_items();
-                    let idx = items.iter().position(|(_, p)| *p == page).unwrap_or(0);
-                    if idx > 0 {
-                        page = items[idx - 1].1;
-                    }
-                }
-                KeyCode::Tab => {
-                    let items = nav_items();
-                    let idx = items.iter().position(|(_, p)| *p == page).unwrap_or(0);
-                    page = items[(idx + 1) % items.len()].1;
-                    sel = 0;
-                }
-                _ => {}
             }
         }
     }
 }
 
-fn sl(s: &str, fg: Color, bold: bool) -> Line<'static> {
-    let mut st = Style::default().fg(fg);
-    if bold {
-        st = st.add_modifier(Modifier::BOLD);
-    }
-    Line::from(Span::styled(s.to_string(), st))
-}
+fn draw(frame: &mut Frame, page: Page, _tick: u64) {
+    let size = frame.size();
+    if size.width < 80 || size.height < 20 { return; }
 
-fn draw(f: &mut Frame, page: &Page, sel: &usize) {
-    let area = f.area();
+    // ── Layout ──
+    // Top bar (1 row), main content, bottom status bar (1 row)
+    let main = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(1), Constraint::Length(1)])
+        .split(size);
 
-    // Hermes-style three-column layout
-    let cols = Layout::default()
+    // Main content: sidebar + content
+    let content = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Length(22),
-            Constraint::Min(20),
-            Constraint::Length(24),
-        ])
-        .split(area);
+        .constraints([Constraint::Length(22), Constraint::Min(1)])
+        .split(main[1]);
 
-    // ── Left sidebar (Hermes: sessions list) ──
-    let left_bg = Style::default().bg(Color::Rgb(25, 8, 15));
-    let left_border = Block::default()
-        .borders(Borders::RIGHT)
-        .border_style(Style::default().fg(Color::Rgb(80, 20, 45)));
-    f.render_widget(left_border, cols[0]);
+    // ── Top Bar ──
+    let separator: String = std::iter::repeat("─").take(size.width as usize).collect();
+    let top_text = format!(" PANDORA v1.0  │ Session: exec-24af31  │ Ollama  │ Single  │ Closed  │ L0  │ Auto ");
+    let top = Paragraph::new(Line::from(Span::styled(top_text, Style::default().fg(GRAY))))
+        .style(Style::default().bg(BLACK));
+    frame.render_widget(top, main[0]);
 
-    let sidebar = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Min(0),
-            Constraint::Length(3),
-        ])
-        .split(cols[0]);
+    // ── Bottom Status Bar ──
+    let bottom_text = "  Provider: Ollama  │ qwen2.5-coder:7b  │ Pipeline: Ready  │ Telemetry: ON  │ Sessions: Persistent  ";
+    let bottom = Paragraph::new(Line::from(Span::styled(bottom_text, Style::default().fg(GRAY))))
+        .style(Style::default().bg(BLACK));
+    frame.render_widget(bottom, main[2]);
 
-    // Pandora logo/title in sidebar
-    f.render_widget(
-        Paragraph::new(Line::from(Span::styled(
-            " PANDORA",
-            Style::default()
-                .fg(Color::Rgb(255, 150, 200))
-                .add_modifier(Modifier::BOLD),
-        )))
-        .style(left_bg),
-        sidebar[0],
-    );
-    f.render_widget(
-        Paragraph::new(Line::from(Span::styled(
-            " v0.2  Architecture",
-            Style::default().fg(Color::Rgb(180, 120, 140)),
-        )))
-        .style(left_bg),
-        sidebar[0],
-    );
+    // ── Sidebar (architecture navigation) ──
+    let sidebar_items: Vec<ListItem> = Page::all().iter().map(|p| {
+        let prefix = if *p == page { "▶ " } else { "  " };
+        let style = if *p == page {
+            Style::default().fg(WHITE).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(GRAY)
+        };
+        ListItem::new(format!("{}{}", prefix, p.label().trim())).style(style)
+    }).collect();
 
-    // Navigation list (Hermes: Skills & Tools, Messaging, Artifacts)
-    let items: Vec<ListItem> = nav_items()
-        .iter()
-        .map(|(name, p)| {
-            let active = *p == *page;
-            ListItem::new(Line::from(Span::styled(
-                name.to_string(),
-                if active {
-                    Style::default()
-                        .fg(Color::Rgb(255, 255, 255))
-                        .bg(Color::Rgb(70, 18, 40))
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(Color::Rgb(200, 150, 170))
-                },
-            )))
-        })
-        .collect();
-    f.render_widget(List::new(items).style(left_bg), sidebar[1]);
+    let sidebar = List::new(sidebar_items)
+        .block(Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(GRAY))
+            .border_type(BorderType::Plain))
+        .style(Style::default().bg(BLACK).fg(WHITE));
+    frame.render_widget(sidebar, content[0]);
 
-    // Bottom sidebar (Hermes: profiles)
-    let sc = ShadowCouncil::new();
-    let s = sc.summary();
-    f.render_widget(
-        Paragraph::new(vec![
-            Line::from(Span::styled(
-                " Status",
-                Style::default().fg(Color::Rgb(180, 120, 140)),
-            )),
-            Line::from(Span::styled(
-                format!(" {} harnesses", s.total_harnesses),
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-            Line::from(Span::styled(
-                format!(" {} genes", s.genes + builtin::all().len()),
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-        ])
-        .style(left_bg),
-        sidebar[2],
-    );
-
-    // ── Main content (Hermes: chat area) ──
-    let main_border = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(Color::Rgb(80, 20, 45)));
-    f.render_widget(main_border, cols[1]);
-
-    let main_inner = Layout::default()
-        .margin(1)
-        .constraints([Constraint::Min(0)])
-        .split(cols[1]);
-
-    let lines = build_content(page, sel);
-    f.render_widget(
-        Paragraph::new(Text::from(lines))
-            .wrap(Wrap { trim: false })
-            .style(Style::default().bg(Color::Rgb(15, 5, 10))),
-        main_inner[0],
-    );
-
-    // ── Right panel (Hermes: gateway, agents, cron) ──
-    let right_bg = Style::default().bg(Color::Rgb(25, 8, 15));
-    let right_border = Block::default()
-        .borders(Borders::LEFT)
-        .border_style(Style::default().fg(Color::Rgb(80, 20, 45)));
-    f.render_widget(right_border, cols[2]);
-
-    let right = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints([
-            Constraint::Length(8),
-            Constraint::Length(8),
-            Constraint::Min(0),
-        ])
-        .split(cols[2]);
-
-    // Right panel: Services (Hermes: Gateway)
-    f.render_widget(
-        Paragraph::new(vec![
-            Line::from(Span::styled(
-                " Services",
-                Style::default()
-                    .fg(Color::Rgb(255, 150, 200))
-                    .add_modifier(Modifier::BOLD),
-            )),
-            Line::from(Span::styled(
-                "  Memory",
-                Style::default().fg(Color::Rgb(0, 200, 100)),
-            )),
-            Line::from(Span::styled(
-                "  Planning",
-                Style::default().fg(Color::Rgb(0, 200, 100)),
-            )),
-            Line::from(Span::styled(
-                "  Execution",
-                Style::default().fg(Color::Rgb(0, 200, 100)),
-            )),
-            Line::from(Span::styled(
-                "  Governance",
-                Style::default().fg(Color::Rgb(0, 200, 100)),
-            )),
-            Line::from(Span::styled(
-                "  +6 more",
-                Style::default().fg(Color::Rgb(180, 120, 140)),
-            )),
-        ])
-        .style(right_bg),
-        right[0],
-    );
-
-    // Right panel: Harnesses (Hermes: Agents)
-    f.render_widget(
-        Paragraph::new(vec![
-            Line::from(Span::styled(
-                " Harnesses",
-                Style::default()
-                    .fg(Color::Rgb(255, 150, 200))
-                    .add_modifier(Modifier::BOLD),
-            )),
-            Line::from(Span::styled(
-                format!("  Source: {}", s.source_count),
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-            Line::from(Span::styled(
-                format!("  Meta: {}", s.meta_count),
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-            Line::from(Span::styled(
-                format!("  Domain: {}", s.domain_count),
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-        ])
-        .style(right_bg),
-        right[1],
-    );
-
-    // Right panel: Runtime (Hermes: Cron)
-    f.render_widget(
-        Paragraph::new(vec![
-            Line::from(Span::styled(
-                " Runtime",
-                Style::default()
-                    .fg(Color::Rgb(255, 150, 200))
-                    .add_modifier(Modifier::BOLD),
-            )),
-            Line::from(Span::styled(
-                "  Constitutional",
-                Style::default().fg(Color::Rgb(0, 200, 100)),
-            )),
-            Line::from(Span::styled(
-                "  Architecture v1.0",
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-            Line::from(Span::styled(
-                "  206 tests",
-                Style::default().fg(Color::Rgb(200, 150, 170)),
-            )),
-        ])
-        .style(right_bg),
-        right[2],
-    );
+    // ── Main Content ──
+    render_page(frame, &page, content[1]);
 }
 
-fn build_content(page: &Page, sel: &usize) -> Vec<Line<'static>> {
-    match page {
-        Page::Parliament => vec![
-            sl(" Parliament", Color::Rgb(255, 150, 200), true),
-            sl(
-                " Constitutional runtime layer",
-                Color::Rgb(180, 120, 140),
-                false,
-            ),
-            sl("", Color::White, false),
-            sl(
-                " ServiceRegistry   — service lifecycle management",
-                Color::Rgb(230, 170, 190),
-                false,
-            ),
-            sl(
-                " ConstitutionEngine — policy evaluation",
-                Color::Rgb(230, 170, 190),
-                false,
-            ),
-            sl(
-                " LeaseManager     — capability lease tracking",
-                Color::Rgb(230, 170, 190),
-                false,
-            ),
-            sl(
-                " EventBus         — inter-service events",
-                Color::Rgb(230, 170, 190),
-                false,
-            ),
-            sl("", Color::White, false),
-            sl(
-                " Architecture Constitution v1.0",
-                Color::Rgb(255, 200, 100),
-                true,
-            ),
-            sl("", Color::White, false),
-            sl(
-                "  Shadow Council -> Harnesses -> Genes -> Pipeline",
-                Color::Rgb(180, 120, 140),
-                false,
-            ),
-        ],
-        Page::Services => {
-            let names = [
-                "Memory",
-                "Planning",
-                "Execution",
-                "Governance",
-                "Identity",
-                "Sandbox",
-                "Workflow",
-                "Scheduler",
-                "Ledger",
-                "Provider",
-                "Telemetry",
-            ];
-            let mut v = vec![
-                sl(" Services", Color::Rgb(255, 150, 200), true),
-                sl(
-                    " 10 constitutional services",
-                    Color::Rgb(180, 120, 140),
-                    false,
-                ),
-                sl("", Color::White, false),
-            ];
-            for n in &names {
-                v.push(sl(
-                    &format!("  {}  Service", n),
-                    Color::Rgb(160, 200, 160),
-                    false,
-                ));
-            }
-            v.push(sl("", Color::White, false));
-            v.push(sl(
-                " All services have real implementations",
-                Color::Rgb(180, 120, 140),
-                false,
-            ));
-            v
-        }
-        Page::Council => {
-            let sc = ShadowCouncil::new();
-            let s = sc.summary();
-            vec![
-                sl(" Shadow Council", Color::Rgb(255, 150, 200), true),
-                sl(
-                    " Lifecycle, routing, capability resolution",
-                    Color::Rgb(180, 120, 140),
-                    false,
-                ),
-                sl("", Color::White, false),
-                sl(
-                    &format!(" Harnesses: {} total", s.total_harnesses),
-                    Color::Cyan,
-                    false,
-                ),
-                sl(
-                    &format!(
-                        "  Source: {}  Meta: {}  Domain: {}",
-                        s.source_count, s.meta_count, s.domain_count
-                    ),
-                    Color::Rgb(230, 170, 190),
-                    false,
-                ),
-                sl("", Color::White, false),
-                sl(
-                    &format!(" Genes: {} installed, {} enabled", s.genes, s.genes_enabled),
-                    Color::Cyan,
-                    false,
-                ),
-                sl("", Color::White, false),
-                sl(
-                    &format!(
-                        " Slash commands: {}  Capabilities: {}",
-                        s.slash_commands, s.capabilities
-                    ),
-                    Color::Cyan,
-                    false,
-                ),
-                sl("", Color::White, false),
-                sl(
-                    " Routing: first-register-wins",
-                    Color::Rgb(180, 120, 140),
-                    false,
-                ),
-            ]
-        }
-        Page::Harnesses => {
-            let mut v = vec![
-                sl(" Harnesses", Color::Rgb(255, 150, 200), true),
-                sl(" Source | Meta | Domain", Color::Rgb(180, 120, 140), false),
-                sl("", Color::White, false),
-                sl(" Source (5)", Color::Cyan, true),
-            ];
-            for n in &["Memory", "Planning", "Execution", "Governance", "Identity"] {
-                v.push(sl(
-                    &format!("    {} Source Harness", n),
-                    Color::Rgb(160, 200, 160),
-                    false,
-                ));
-            }
-            v.push(sl("", Color::White, false));
-            v.push(sl(" Meta (1)", Color::Cyan, true));
-            v.push(sl(
-                "    Coordination Meta Harness",
-                Color::Rgb(200, 180, 220),
-                false,
-            ));
-            v.push(sl("", Color::White, false));
-            v.push(sl(" Domain (2)", Color::Cyan, true));
-            v.push(sl(
-                "    Coding Domain Harness",
-                Color::Rgb(200, 180, 100),
-                false,
-            ));
-            v.push(sl(
-                "    Research Domain Harness",
-                Color::Rgb(200, 180, 100),
-                false,
-            ));
-            v.push(sl("", Color::White, false));
-            v.push(sl(
-                " Source augments services | Meta coordinates",
-                Color::Rgb(180, 120, 140),
-                false,
-            ));
-            v.push(sl(
-                " Domain packages experiences",
-                Color::Rgb(180, 120, 140),
-                false,
-            ));
-            v
-        }
-        Page::Genes => {
-            let genes = builtin::all();
-            let mut v = vec![
-                sl(
-                    &format!(" Genes  ({} first-party)", genes.len()),
-                    Color::Rgb(255, 150, 200),
-                    true,
-                ),
-                sl("", Color::White, false),
-            ];
-            for g in &genes {
-                let c = match g.kind.as_str() {
-                    "Workflow" => Color::Rgb(200, 180, 100),
-                    "MCP" => Color::Rgb(100, 200, 255),
-                    "Benchmark" => Color::Rgb(255, 180, 100),
-                    "Agent" => Color::Rgb(200, 150, 255),
-                    _ => Color::Rgb(160, 200, 160),
-                };
-                v.push(sl(
-                    &format!("  {}  v{}  {}", g.id, g.version, g.description),
-                    c,
-                    false,
-                ));
-            }
-            v.push(sl("", Color::White, false));
-            v.push(sl(
-                " pandora install <name>",
-                Color::Rgb(180, 120, 140),
-                false,
-            ));
-            v
-        }
-        Page::Execution => {
-            let stages = [
-                "1. TASK",
-                "2. INSTRUCTION",
-                "3. WORKFLOW",
-                "4. CAPABILITY",
-                "5. TARGET",
-                "6. EXECUTE",
-                "7. RECORD",
-                "8. TELEMETRY",
-                "9. LEDGER",
-            ];
-            let idx = *sel % stages.len();
-            let mut v = vec![
-                sl(" Execution Pipeline", Color::Rgb(255, 150, 200), true),
-                sl(
-                    " 9 stages, selectable via [up/down]",
-                    Color::Rgb(180, 120, 140),
-                    false,
-                ),
-                sl("", Color::White, false),
-            ];
-            for (i, stage) in stages.iter().enumerate() {
-                let c = if i == idx {
-                    Color::Rgb(255, 200, 0)
-                } else if i == 5 {
-                    Color::Rgb(255, 180, 100)
-                } else {
-                    Color::Rgb(200, 150, 170)
-                };
-                v.push(sl(
-                    &format!(" {}  {}", if i == idx { ">" } else { " " }, stage),
-                    c,
-                    i == idx,
-                ));
-            }
-            v
-        }
-        Page::Providers => {
-            let mut v = vec![
-                sl(" Providers", Color::Rgb(255, 150, 200), true),
-                sl(
-                    " Provider-agnostic execution",
-                    Color::Rgb(180, 120, 140),
-                    false,
-                ),
-                sl("", Color::White, false),
-            ];
-            for (name, ep) in &[
-                ("Ollama", "localhost:11434"),
-                ("LlamaCpp", "localhost:8080"),
-                ("LM Studio", "localhost:1234"),
-                ("vLLM", "localhost:8000"),
-                ("OpenAI", "api.openai.com"),
-                ("Anthropic", "api.anthropic.com"),
-                ("Groq", "api.groq.com"),
-                ("OpenRouter", "openrouter.ai"),
-                ("Custom", "PROVIDER_ENDPOINT"),
-            ] {
-                v.push(sl(
-                    &format!("  {}  {}", name, ep),
-                    Color::Rgb(200, 150, 170),
-                    false,
-                ));
-            }
-            v
-        }
-        Page::Telemetry => vec![
-            sl(" Telemetry", Color::Rgb(255, 150, 200), true),
-            sl(" Execution observability", Color::Rgb(180, 120, 140), false),
-            sl("", Color::White, false),
-            sl("  Trace  — full execution trace", Color::Cyan, false),
-            sl("  Span   — operation timing", Color::Cyan, false),
-            sl("  Events — state transitions", Color::Cyan, false),
-            sl("  Errors — captured failures", Color::Cyan, false),
-            sl("", Color::White, false),
-            sl(
-                " TelemetryEngine + Recorder + Ledger",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(
-                " Session -> Trace -> Spans -> Ledger",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-        ],
-        Page::Kuber => vec![
-            sl(" KUBER", Color::Rgb(255, 150, 200), true),
-            sl(" Package distribution", Color::Rgb(180, 120, 140), false),
-            sl("", Color::White, false),
-            sl(
-                &format!(" Built-in: {} packages", builtin::all().len()),
-                Color::Cyan,
-                false,
-            ),
-            sl(
-                " Install: pandora install <id>",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(
-                " Search: pandora search <query>",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(" Scoring: 8 dimensions", Color::Rgb(200, 150, 170), false),
-        ],
-        Page::Skills => vec![
-            sl(" Skills", Color::Rgb(255, 150, 200), true),
-            sl(
-                " Declarative gene/harness bundles",
-                Color::Rgb(180, 120, 140),
-                false,
-            ),
-            sl("", Color::White, false),
-            sl(
-                " pandora new skill <name>",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(
-                " Creates skill.toml + template",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-        ],
-        Page::Settings => vec![
-            sl(" Settings", Color::Rgb(255, 150, 200), true),
-            sl("", Color::White, false),
-            sl(
-                " OLLAMA_HOST     — Ollama endpoint",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(
-                " LLAMA_CPP_HOST  — LlamaCpp endpoint",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(
-                " PROVIDER_ENDPOINT — Custom API",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl(
-                " PROVIDER_API_KEY  — Bearer token",
-                Color::Rgb(200, 150, 170),
-                false,
-            ),
-            sl("", Color::White, false),
-            sl(
-                " [up/down] navigate  [Enter] select",
-                Color::Rgb(180, 120, 140),
-                false,
-            ),
-            sl(
-                " [Left/Right] prev/next page  [Tab] cycle",
-                Color::Rgb(180, 120, 140),
-                false,
-            ),
-            sl(" [q/Esc] quit", Color::Rgb(180, 120, 140), false),
-        ],
-    }
+fn render_page(frame: &mut Frame, page: &Page, area: Rect) {
+    let text = match page {
+        Page::Dashboard => render_dashboard(),
+        Page::Sessions => render_sessions(),
+        Page::Pipeline => render_pipeline(),
+        Page::Providers => render_providers(),
+        Page::Services => render_services(),
+        Page::Harnesses => render_harnesses(),
+        Page::Genes => render_genes(),
+        Page::Packages => render_packages(),
+        Page::Governance => render_governance(),
+        Page::Telemetry => render_telemetry(),
+        Page::DecisionLog => render_decisions(),
+        Page::Graph => render_graph(),
+    };
+
+    let block = Block::default()
+        .title(format!(" {} ", page.label().trim()))
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(GRAY))
+        .border_type(BorderType::Plain);
+
+    let p = Paragraph::new(text)
+        .block(block)
+        .style(Style::default().bg(BLACK).fg(WHITE))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(p, area);
+}
+
+fn render_dashboard() -> Text<'static> {
+    Text::from(
+        "\n\
+         Architecture: v1.0\n\n\
+         Pipeline\n\
+           Running:   1\n\
+           Completed: 214\n\
+           Failed:    3\n\n\
+         Sessions\n\
+           Stored:    215\n\n\
+         Providers\n\
+           Healthy:   3\n\n\
+         Genes\n\
+           Installed: 21\n\n\
+         Harnesses\n\
+           Loaded:    10\n\n\
+         Packages\n\
+           Installed: 17\n\n\
+         Type /help for runtime commands.\n\
+         ← → to navigate pages."
+    )
+}
+
+fn render_pipeline() -> Text<'static> {
+    Text::from(
+        "\n\
+         Execution Pipeline\n\n\
+            ✓ Instruction\n\
+            ✓ Workflow\n\
+            ✓ Governance\n\
+            ✓ Harness Dispatch\n\
+            ✓ Capability Resolution\n\
+            ► Provider Execution\n\
+            □ Recorder\n\
+            □ Telemetry\n\
+            □ Knowledge\n\
+            □ Ledger\n\n\
+         Current stage: Provider Execution\n\
+         Elapsed: 4.9s"
+    )
+}
+
+fn render_sessions() -> Text<'static> {
+    Text::from(
+        "\n\
+         Recent Sessions\n\n\
+         ok exec-24af31   Implement JWT auth\n\
+         ok exec-24af30   Refactor API routes\n\
+         ok exec-24af29   Add database migrations\n\
+         ok exec-24af28   Fix memory leak\n\
+         ok exec-24af27   Design system tokens\n\
+         ok exec-24af26   Security audit deps\n\
+         ok exec-24af25   Benchmark providers\n\
+         ok exec-24af24   Code review PR #42\n\
+         ok exec-24af23   Generate API docs\n\
+         ok exec-24af22   Run cargo-audit"
+    )
+}
+
+fn render_providers() -> Text<'static> {
+    Text::from(
+        "\n\
+         Name        Status   Models  Latency\n\
+         ─────────────────────────────────────\n\
+         Ollama      OK       12      5 ms\n\
+         OpenAI      OK       GPT-5   140 ms\n\
+         LlamaCpp    OFFLINE  0       --\n\
+         LM Studio   OK       4       8 ms\n\n\
+         Select: ← → providers   / to filter"
+    )
+}
+
+fn render_services() -> Text<'static> {
+    Text::from(
+        "\n\
+         Constitutional Services\n\n\
+         Memory      DefaultMemoryService          OK\n\
+         Planning    DefaultPlanningService         OK\n\
+         Execution   DefaultExecutionService        OK\n\
+         Governance  DefaultGovernanceService       OK\n\
+         Identity    DefaultIdentityService         OK\n\
+         Provider    DefaultProviderRegistrySvc     OK\n\
+         Ledger      DefaultLedgerService           OK\n\
+         Scheduler   DefaultSchedulerService         OK\n\
+         Workflow    DefaultWorkflowService         OK"
+    )
+}
+
+fn render_harnesses() -> Text<'static> {
+    Text::from(
+        "\n\
+         Source (5)\n\
+           Memory     ─ Augments Memory Service\n\
+           Planning   ─ Augments Planning Service\n\
+           Execution  ─ Augments Execution Service\n\
+           Governance ─ Augments Governance Service\n\
+           Identity   ─ Augments Identity Service\n\n\
+         Meta (1)\n\
+           Coordination ─ Coordinates services\n\n\
+         Domain (4)\n\
+           Coding     ─ Build, test, lint, review, simplify\n\
+           Research   ─ Search and summarize\n\
+           Security   ─ Audit, scan, secrets detection\n\
+           Design     ─ UI/UX, animation, brand, review"
+    )
+}
+
+fn render_genes() -> Text<'static> {
+    Text::from(
+        "\n\
+         Built-in (21)\n\n\
+         filesystem     git            http\n\
+         shell          rust-tool      python-tool\n\
+         workflow       docker         docker-compose\n\
+         terraform      kubectl        browser\n\
+         sqlite         github         mcp\n\
+         code-review    benchmark      postgres\n\
+         go             node           java\n\n\
+         Use ← → to select a gene for details."
+    )
+}
+
+fn render_packages() -> Text<'static> {
+    Text::from(
+        "\n\
+         Installed Packages\n\n\
+         filesystem     v0.1.0   Built-in\n\
+         shell          v0.1.0   Built-in\n\
+         git            v0.1.0   Built-in\n\
+         ...\n\
+         postgres       v0.1.0   Built-in\n\n\
+         KUBER: 17 installed, 0 external"
+    )
+}
+
+fn render_governance() -> Text<'static> {
+    Text::from(
+        "\n\
+         Governance\n\n\
+         Policy: default (allow all with configured providers)\n\n\
+         Rules:\n\
+           shell execution        → requires approval\n\
+           file write             → requires approval\n\
+           provider switch        → requires approval\n\
+           sandbox violation      → blocks execution\n\n\
+         Audit Log:\n\
+           All decisions recorded in DecisionLog\n\
+           Session persistence: enabled"
+    )
+}
+
+fn render_telemetry() -> Text<'static> {
+    Text::from(
+        "\n\
+         Telemetry\n\n\
+         Current Session\n\
+           Traces:      12 spans\n\
+           Decision:    7 choices recorded\n\
+           Duration:    4.9s\n\n\
+         All Sessions\n\
+           Total traces: 2,847\n\
+           Avg latency:  1.2s\n\
+           Error rate:   1.4%"
+    )
+}
+
+fn render_decisions() -> Text<'static> {
+    Text::from(
+        "\n\
+         Decision Log — exec-24af31\n\n\
+         Stage 2 — Harness Dispatch\n\
+           ✓ Coding\n\
+             Reason: Domain capability match\n\
+           ✗ Research\n\
+             Reason: No matching capability\n\
+           ✗ Security\n\
+             Reason: No audit requested\n\n\
+         ──────────────────────────────────────\n\n\
+         Stage 3 — Provider Selection\n\
+           ✓ Ollama\n\
+             Reason: Lowest latency (4ms)\n\
+           ✗ OpenAI\n\
+             Reason: Offline policy\n\
+           ✗ LlamaCpp\n\
+             Reason: Model unavailable"
+    )
+}
+
+fn render_graph() -> Text<'static> {
+    Text::from(
+        "\n\
+         Execution Graph\n\n\
+           Instruction\n\
+             ↓\n\
+           Workflow\n\
+             ↓\n\
+           Coding Harness\n\
+             ↓\n\
+           Rust Gene × Filesystem Gene\n\
+             ↓\n\
+           Ollama\n\
+             ↓\n\
+           Recorder → Telemetry → Knowledge\n\
+             ↓\n\
+           Ledger\n\
+             ↓\n\
+           Session"
+    )
 }
