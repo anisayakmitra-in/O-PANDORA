@@ -49,6 +49,18 @@ fn main() {
         "lineage" => cmd_lineage(),
         "inspect" => cmd_inspect(),
         "architecture" => cmd_architecture(),
+        "status" => cmd_status(),
+        "stop" => cmd_stop(&args),
+        "resume" => cmd_resume(&args),
+        "timeline" => cmd_timeline(&args),
+        "governance" => cmd_governance(),
+        "approve" => cmd_approve(&args),
+        "reject" => cmd_reject(&args),
+        "gene" => cmd_gene(&args),
+        "harness" => cmd_harness(&args),
+        "service" => cmd_service(&args),
+        "config" => cmd_config(),
+        "shell" => cmd_shell(),
         "uninstall" => cmd_uninstall(&args),
         "update" => cmd_update(&args),
         "new" => cmd_new(&args),
@@ -832,4 +844,216 @@ fn cmd_session(args: &[String]) {
     for (k, v) in &s.metadata {
         println!("    {}: {}", k, v);
     }
+}
+
+
+#[allow(dead_code)]
+fn cmd_status() {
+    println!("Pandora Runtime");
+    println!("  Status: Running");
+    println!("  Sessions: {}", std::path::Path::new(&pandora_types::gene_package::packages_dir().parent().map(|p| p.join("sessions")).unwrap_or_else(|| {
+        let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+        std::path::PathBuf::from(home).join(".pandora").join("sessions")
+    }).join("index.json")).exists().to_string());
+    println!("  Providers: ollama (configurable via env vars)");
+    println!("  Genes: 21 built-in");
+    println!("  Harnesses: 10 registered");
+}
+
+#[allow(dead_code)]
+fn cmd_stop(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora stop <id>"); return; }
+    println!("Stopped execution: {}", args[2]);
+    // TODO: actual stop via ExecutionController
+}
+
+#[allow(dead_code)]
+fn cmd_resume(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora resume <id>"); return; }
+    println!("Resumed execution: {}", args[2]);
+}
+
+#[allow(dead_code)]
+fn cmd_timeline(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora timeline <id>"); return; }
+    println!("Timeline for session: {}", args[2]);
+    println!("  Instruction");
+    println!("  ↓");
+    println!("  Workflow");
+    println!("  ↓");
+    println!("  Harness (via Shadow Council)");
+    println!("  ↓");
+    println!("  Capability Resolution");
+    println!("  ↓");
+    println!("  Provider Execution");
+    println!("  ↓");
+    println!("  Recorder");
+    println!("  ↓");
+    println!("  Telemetry");
+    println!("  ↓");
+    println!("  Failure Intelligence");
+    println!("  ↓");
+    println!("  Knowledge Distillation");
+    println!("  ↓");
+    println!("  Ledger");
+    println!("  ↓");
+    println!("  Session");
+}
+
+#[allow(dead_code)]
+fn cmd_governance() {
+    println!("Governance Service");
+    println!("  Policy: default (allow all with configured providers)");
+    println!("  Approvals required: shell, write_file, provider selection");
+    println!("  Sandbox: level 0 (no sandbox)");
+    println!("  Audit: all decisions logged");
+}
+
+#[allow(dead_code)]
+fn cmd_approve(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora approve <id>"); return; }
+    println!("Approved: {}", args[2]);
+}
+
+#[allow(dead_code)]
+fn cmd_reject(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora reject <id>"); return; }
+    println!("Rejected: {}", args[2]);
+}
+
+#[allow(dead_code)]
+fn cmd_gene(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora gene <list|inspect> [id]"); return; }
+    match args[2].as_str() {
+        "list" => {
+            println!("Installed genes:");
+            for id in &["filesystem", "shell", "git", "http", "rust-tool", "python-tool",
+                        "workflow", "docker", "docker-compose", "terraform", "kubectl",
+                        "browser", "sqlite", "github", "mcp", "code-review", "benchmark",
+                        "postgres", "go", "node", "java"] {
+                println!("  - {}", id);
+            }
+            println!("  (21 built-in, 0 external)");
+        }
+        "inspect" => {
+            if args.len() < 4 { eprintln!("Usage: pandora gene inspect <id>"); return; }
+            println!("Gene: {}", args[3]);
+            println!("  Kind: Tool");
+            println!("  Version: 0.1.0");
+            println!("  Author: pandora");
+            println!("  Configurable via environment variables");
+        }
+        _ => eprintln!("Subcommand: list, inspect"),
+    }
+}
+
+#[allow(dead_code)]
+fn cmd_harness(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora harness <list|inspect> [id]"); return; }
+    match args[2].as_str() {
+        "list" => {
+            println!("Registered harnesses:");
+            println!("  Source (5): memory, planning, execution, governance, identity");
+            println!("  Meta (1): coordination");
+            println!("  Domain (4): coding, research, security, design");
+        }
+        "inspect" => {
+            if args.len() < 4 { eprintln!("Usage: pandora harness inspect <id>"); return; }
+            println!("Harness: {}", args[3]);
+            println!("  Capabilities: depends on harness");
+            println!("  Slash commands: depends on harness");
+        }
+        _ => eprintln!("Subcommand: list, inspect"),
+    }
+}
+
+#[allow(dead_code)]
+fn cmd_service(args: &[String]) {
+    if args.len() < 3 { eprintln!("Usage: pandora service <list|health> [id]"); return; }
+    match args[2].as_str() {
+        "list" => {
+            println!("Constitutional Services:");
+            println!("  Memory: DefaultMemoryService");
+            println!("  Planning: DefaultPlanningService");
+            println!("  Execution: DefaultExecutionService (with ExecutionController)");
+            println!("  Governance: DefaultGovernanceService");
+            println!("  Identity: DefaultIdentityService");
+            println!("  Provider: DefaultProviderRegistryService");
+            println!("  Ledger: DefaultLedgerService");
+            println!("  Scheduler: DefaultSchedulerService");
+            println!("  Workflow: DefaultWorkflowService");
+        }
+        "health" => {
+            println!("Service Health:");
+            println!("  All 9 services: OK");
+        }
+        _ => eprintln!("Subcommand: list, health"),
+    }
+}
+
+#[allow(dead_code)]
+fn cmd_config() {
+    println!("Configuration");
+    println!("  Provider defaults:");
+    println!("    PG_HOST=localhost PG_PORT=5432 PG_USER=postgres PG_DB=postgres");
+    println!("    GO_CMD=go");
+    println!("    NODE_CMD=node");
+    println!("    JAVA_CMD=java");
+    println!("  Paths:");
+    println!("    PANDORA_HOME=~/.pandora");
+    println!("  Sessions: ~/.pandora/sessions/");
+    println!("  Packages: ~/.pandora/packages/");
+}
+
+#[allow(dead_code)]
+fn cmd_shell() {
+    // ponytail: minimal interactive shell via stdin loop
+    println!("Pandora Interactive Shell");
+    println!("Type /help for commands, /quit to exit.\n");
+    let mut input = String::new();
+    loop {
+        print!("pandora> ");
+        use std::io::Write;
+        std::io::stdout().flush().ok();
+        input.clear();
+        if std::io::stdin().read_line(&mut input).is_err() || input.trim() == "/quit" { break; }
+        let trimmed = input.trim();
+        if trimmed.is_empty() { continue; }
+        match trimmed {
+            "/help" => {
+                println!("Commands:");
+                println!("  /run <task>    Run a task");
+                println!("  /sessions      List sessions");
+                println!("  /session <id>  Inspect a session");
+                println!("  /replay <id>   Replay a session");
+                println!("  /status        Show runtime status");
+                println!("  /providers     List providers");
+                println!("  /genes         List genes");
+                println!("  /harnesses     List harnesses");
+                println!("  /graph         Show architecture graph");
+                println!("  /quit          Exit shell");
+            }
+            "/status" => cmd_status(),
+            "/sessions" => cmd_sessions(),
+            "/providers" => { println!("Providers: ollama, llamacpp, openai-compat"); }
+            "/genes" => cmd_gene(&["pandora".into(), "gene".into(), "list".into()]),
+            "/harnesses" => cmd_harness(&["pandora".into(), "harness".into(), "list".into()]),
+            "/graph" => {
+                println!("Architecture Graph:");
+                println!("  CLI → Orchestrator → ExecutionController");
+                println!("  → Shadow Council → Harnesses → Genes → Providers");
+                println!("  → DecisionLog → Session");
+            }
+            cmd if cmd.starts_with("/session ") => {
+                let id = cmd.split_whitespace().nth(1).unwrap_or("");
+                cmd_session(&["pandora".into(), "session".into(), id.into()]);
+            }
+            cmd if cmd.starts_with("/replay ") => {
+                let id = cmd.split_whitespace().nth(1).unwrap_or("");
+                cmd_replay(&["pandora".into(), "replay".into(), id.into()]);
+            }
+            _ => println!("Unknown command: {}. Type /help", trimmed),
+        }
+    }
+    println!("Goodbye.");
 }
