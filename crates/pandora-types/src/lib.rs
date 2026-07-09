@@ -33,6 +33,7 @@ pub use session::{Session, SessionStatus, SessionStore};
 
 pub mod decision;
 pub mod error;
+pub mod execution_plan;
 pub mod gene;
 pub mod gene_package;
 pub mod harness_gene;
@@ -53,7 +54,6 @@ pub use harness_gene::HarnessGene;
 pub mod capability_leasing;
 pub mod capability_resolution;
 pub mod constitutional;
-pub mod evolution_runtime;
 pub mod execution;
 pub mod execution_memory;
 pub mod failure_intelligence;

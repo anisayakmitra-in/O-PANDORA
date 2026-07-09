@@ -93,12 +93,6 @@ pub trait GovernanceService: Service {
 }
 
 // --- Evolution Service ---
-pub trait EvolutionService: Service {
-    fn mutate(&self, gene: &str) -> Result<String, String>;
-    fn crossover(&self, parent_a: &str, parent_b: &str) -> Result<String, String>;
-    fn select(&self, population: &[String], scores: &[f64]) -> Result<String, String>;
-    fn promote(&self, gene: &str) -> Result<(), String>;
-}
 
 // --- Identity Service ---
 pub trait IdentityService: Service {

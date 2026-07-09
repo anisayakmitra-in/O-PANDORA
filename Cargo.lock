@@ -238,10 +238,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dynamic_harness"
-version = "0.1.0"
-
-[[package]]
 name = "either"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -977,16 +973,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pandora-gene"
-version = "0.1.0"
-dependencies = [
- "pandora-memory",
- "pandora-types",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "pandora-genes"
 version = "0.1.0"
 dependencies = [
@@ -1032,14 +1018,6 @@ dependencies = [
 
 [[package]]
 name = "pandora-ledger"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "pandora-memory"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1738,16 +1716,6 @@ dependencies = [
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "test-runner"
-version = "0.1.0"
-dependencies = [
- "pandora-gene",
- "pandora-memory",
- "pandora-types",
- "tokio",
 ]
 
 [[package]]

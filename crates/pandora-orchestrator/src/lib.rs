@@ -15,6 +15,7 @@ use pandora_provider::traits::Provider;
 use pandora_provider::types::GenerationRequest;
 use pandora_services::ExecutionController;
 use pandora_shadow_council::ShadowCouncil;
+use pandora_types::execution_plan::ExecutionPlan;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
 use pandora_types::harness::HarnessKind;
@@ -225,6 +226,7 @@ pub struct PandoraRuntime {
     pub sessions: SessionStore,
     pub council: ShadowCouncil,
     pub controller: ExecutionController,
+    pub plan: ExecutionPlan,
 }
 
 impl PandoraRuntime {
@@ -242,6 +244,7 @@ impl PandoraRuntime {
             sessions: SessionStore::new(),
             council: ShadowCouncil::new(),
             controller: ExecutionController::new(),
+            plan: ExecutionPlan::default(),
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
         }
