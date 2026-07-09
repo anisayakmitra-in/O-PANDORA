@@ -532,7 +532,7 @@ mod tests {
 
     #[test]
     fn all_have_ids() {
-        let genes: [&dyn Gene; 14] = [
+        let genes: [&dyn Gene; 17] = [
             &FilesystemGene::new(),
             &ShellGene::new(),
             &GitGene::new(),

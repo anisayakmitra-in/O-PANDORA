@@ -126,6 +126,7 @@ impl Default for ContextWindowStrategy {
 pub struct ExecutionProperties {
     pub memory_mode: MemoryMode,
     pub exec_mode: ExecutionMode,
+    pub control: ControlStrategy,
     pub safety_level: SafetyLevel,
     pub execution_backend: ExecutionBackend,
     pub approval_mode: ApprovalMode,
@@ -147,6 +148,7 @@ impl Default for ExecutionProperties {
         Self {
             memory_mode: MemoryMode::default(),
             exec_mode: ExecutionMode::default(),
+            control: ControlStrategy::default(),
             safety_level: SafetyLevel::default(),
             execution_backend: ExecutionBackend::default(),
             approval_mode: ApprovalMode::default(),
@@ -354,7 +356,7 @@ mod tests {
     fn execution_properties_defaults() {
         let props = ExecutionProperties::default();
         assert_eq!(props.memory_mode, MemoryMode::Local);
-        assert_eq!(props.exec_mode, LoopMode::Closed);
+        assert_eq!(props.exec_mode, ExecutionMode::Single);
         assert_eq!(props.safety_level, SafetyLevel::Medium);
     }
 
@@ -379,13 +381,14 @@ mod tests {
     #[test]
     fn custom_properties_override() {
         let props = ExecutionProperties {
-            exec_mode: ExecutionMode::Open,
+            exec_mode: ExecutionMode::Single,
+            control: ControlStrategy::Open,
             reasoning_depth: 5,
             ..Default::default()
         };
         let session = Session::new("s", "p");
         let ctx = session.create_execution(Some(props));
-        assert_eq!(ctx.properties.loop_mode, LoopMode::Open);
+        assert_eq!(ctx.properties.exec_mode, ExecutionMode::Single);
         assert_eq!(ctx.properties.reasoning_depth, 5);
     }
 
