@@ -220,6 +220,75 @@ impl Gene for WorkflowGene {
     }
 }
 
+
+/// Execute docker-compose commands.
+#[derive(Debug)]
+pub struct DockerComposeGene { m: GeneManifest }
+
+impl DockerComposeGene {
+    pub fn new() -> Self { Self { m: mk("docker-compose", GeneKind::Tool) } }
+}
+
+impl Gene for DockerComposeGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: docker-compose <args>".into()); }
+        let out = std::process::Command::new("docker-compose").args(input.split_whitespace()).output()
+            .map_err(|e| format!("docker-compose not found: {}", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() { return Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }); }
+        Ok(stdout)
+    }
+}
+
+
+/// Execute terraform commands.
+#[derive(Debug)]
+pub struct TerraformGene { m: GeneManifest }
+
+impl TerraformGene {
+    pub fn new() -> Self { Self { m: mk("terraform", GeneKind::Tool) } }
+}
+
+impl Gene for TerraformGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: terraform <args>".into()); }
+        let out = std::process::Command::new("terraform").args(input.split_whitespace()).output()
+            .map_err(|e| format!("terraform not found: {}", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() { return Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }); }
+        Ok(stdout)
+    }
+}
+
+
+/// Execute kubectl commands.
+#[derive(Debug)]
+pub struct KubectlGene { m: GeneManifest }
+
+impl KubectlGene {
+    pub fn new() -> Self { Self { m: mk("kubectl", GeneKind::Tool) } }
+}
+
+impl Gene for KubectlGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: kubectl <args>".into()); }
+        let out = std::process::Command::new("kubectl").args(input.split_whitespace()).output()
+            .map_err(|e| format!("kubectl not found: {}", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if !out.status.success() { return Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }); }
+        Ok(stdout)
+    }
+}
+
 #[derive(Debug)]
 pub struct DockerGene {
     m: GeneManifest,
@@ -472,6 +541,9 @@ mod tests {
             &PythonToolGene::new(),
             &WorkflowGene::new(),
             &DockerGene::new(),
+            &DockerComposeGene::new(),
+            &TerraformGene::new(),
+            &KubectlGene::new(),
             &BrowserGene::new(),
             &SQLiteGene::new(),
             &GitHubGene::new(),

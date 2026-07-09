@@ -533,6 +533,36 @@ fn cmd_new(args: &[String]) {
     }
 }
 
+
+
+fn cmd_benchmark() {
+    // ponytail: simple provider health check via curl
+    let sep: String = std::iter::repeat("─").take(50).collect();
+    println!("Pandora Benchmark");
+    println!("{}", sep);
+    println!("Testing provider availability...\n");
+
+    let providers = vec![
+        ("ollama", std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())),
+        ("llamacpp", std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into())),
+    ];
+
+    for (name, endpoint) in &providers {
+        print!("  {} @ {} ... ", name, endpoint);
+        match std::process::Command::new("curl").args(["-s", "-o", "/dev/null", "-w", "%{http_code}", &format!("{}/api/tags", endpoint)]).output() {
+            Ok(out) => {
+                let code = String::from_utf8_lossy(&out.stdout);
+                if code.trim() == "200" { println!("OK"); }
+                else { println!("HTTP {}", code.trim()); }
+            }
+            Err(_) => println!("unreachable"),
+        }
+    }
+    println!();
+    println!("Use --verbose for detailed timing (requires pandora-orchestrator).");
+}
+
+
 fn cmd_sessions() {
     let dir = pandora_types::gene_package::packages_dir()
         .parent().map(|p| p.join("sessions"))
