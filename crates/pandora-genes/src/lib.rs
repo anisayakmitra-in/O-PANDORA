@@ -787,6 +787,92 @@ impl Gene for JavaGene {
     }
 }
 
+// ── Evaluator Genes ──
+
+
+pub trait Evaluator: Gene {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String>;
+}
+
+// ── Rust Tests Evaluator ──
+#[derive(Debug)]
+pub struct RustTestsEvaluator { m: GeneManifest }
+impl Default for RustTestsEvaluator { fn default() -> Self { Self::new() } }
+impl RustTestsEvaluator {
+    pub fn new() -> Self { Self { m: mk("evaluator-rust-tests", GeneKind::Tool) } }
+}
+impl Gene for RustTestsEvaluator {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        let dir = if input.trim().is_empty() { "." } else { input.trim() };
+        {
+        let out = std::process::Command::new("cargo")
+            .args(&["test", "--manifest-path", &format!("{}/Cargo.toml", dir)])
+            .output()
+            .map_err(|e| format!("cargo: {}", e))?;
+        if out.status.success() { Ok("Tests pass".into()) }
+        else { Err(String::from_utf8_lossy(&out.stderr).to_string()) }
+    }
+    }
+}
+impl Evaluator for RustTestsEvaluator {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String> {
+        if output.contains("test result: ok") { Ok(format!("Goal met: {}", goal)) }
+        else { Err(format!("Goal NOT met: {}", goal)) }
+    }
+}
+
+// ── Python Tests Evaluator ──
+#[derive(Debug)]
+pub struct PythonTestsEvaluator { m: GeneManifest }
+impl Default for PythonTestsEvaluator { fn default() -> Self { Self::new() } }
+impl PythonTestsEvaluator {
+    pub fn new() -> Self { Self { m: mk("evaluator-python-tests", GeneKind::Tool) } }
+}
+impl Gene for PythonTestsEvaluator {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        let dir = if input.trim().is_empty() { "." } else { input.trim() };
+        {
+        let out = std::process::Command::new("pytest")
+            .args(&[&format!("{}/tests", dir)])
+            .output()
+            .map_err(|e| format!("pytest: {}", e))?;
+        if out.status.success() { Ok("Tests pass".into()) }
+        else { Err(String::from_utf8_lossy(&out.stderr).to_string()) }
+    }
+    }
+}
+impl Evaluator for PythonTestsEvaluator {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String> {
+        if output.contains("passed") { Ok(format!("Goal met: {}", goal)) }
+        else { Err(format!("Goal NOT met: {}", goal)) }
+    }
+}
+
+// ── Output Match Evaluator ──
+#[derive(Debug)]
+pub struct OutputMatchEvaluator { m: GeneManifest }
+impl Default for OutputMatchEvaluator { fn default() -> Self { Self::new() } }
+impl OutputMatchEvaluator {
+    pub fn new() -> Self { Self { m: mk("evaluator-output-match", GeneKind::Tool) } }
+}
+impl Gene for OutputMatchEvaluator {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        Ok(format!("Will check output contains: {}", input))
+    }
+}
+impl Evaluator for OutputMatchEvaluator {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String> {
+        if output.contains(goal) { Ok(format!("Output matches: {}", goal)) }
+        else { Err(format!("Output does NOT contain: {}", goal)) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -812,7 +898,7 @@ mod tests {
 
     #[test]
     fn all_have_ids() {
-        let genes: [&dyn Gene; 21] = [
+        let genes: [&dyn Gene; 24] = [
             &FilesystemGene::new(),
             &ShellGene::new(),
             &GitGene::new(),
@@ -834,6 +920,9 @@ mod tests {
             &GoGene::new(),
             &NodeGene::new(),
             &JavaGene::new(),
+            &RustTestsEvaluator::new(),
+            &PythonTestsEvaluator::new(),
+            &OutputMatchEvaluator::new(),
         ];
         for g in &genes {
             assert!(!g.id().is_empty());
