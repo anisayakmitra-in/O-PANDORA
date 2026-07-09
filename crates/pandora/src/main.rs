@@ -992,53 +992,85 @@ fn cmd_config() {
 
 #[allow(dead_code)]
 fn cmd_shell() {
-    // ponytail: minimal interactive shell via stdin loop
-    println!("Pandora Interactive Shell");
-    println!("Type /help for commands, /quit to exit.\n");
+    let history_path = std::env::var("PANDORA_HOME")
+        .map(|h| std::path::PathBuf::from(h).join("shell_history"))
+        .unwrap_or_else(|_| {
+            let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+            std::path::PathBuf::from(home).join(".pandora").join("shell_history")
+        });
+    let _ = std::fs::create_dir_all(history_path.parent().unwrap());
+    let mut history: Vec<String> = std::fs::read_to_string(&history_path)
+        .map(|s| s.lines().rev().take(100).map(String::from).collect())
+        .unwrap_or_default();
+    history.reverse();
+    println!("PANDORA v1.0 Interactive Shell");
+    println!("Commands: /run, /sessions, /session, /replay, /providers, /genes, /harnesses");
+    println!("         /services, /graph, /benchmark, /status, /inspect, /help, /quit");
     let mut input = String::new();
     loop {
         print!("pandora> ");
         use std::io::Write;
         std::io::stdout().flush().ok();
         input.clear();
-        if std::io::stdin().read_line(&mut input).is_err() || input.trim() == "/quit" { break; }
-        let trimmed = input.trim();
+        if std::io::stdin().read_line(&mut input).is_err() { break; }
+        let trimmed = input.trim().to_string();
         if trimmed.is_empty() { continue; }
-        match trimmed {
+        if trimmed == "/quit" || trimmed == "/exit" { break; }
+        history.push(trimmed.clone());
+        let _ = std::fs::write(&history_path, history.join("
+"));
+        let parts: Vec<&str> = trimmed.split_whitespace().collect();
+        let cmd = parts[0];
+        let rest = parts.get(1..).unwrap_or(&[]).join(" ");
+        match cmd {
             "/help" => {
-                println!("Commands:");
-                println!("  /run <task>    Run a task");
-                println!("  /sessions      List sessions");
-                println!("  /session <id>  Inspect a session");
-                println!("  /replay <id>   Replay a session");
-                println!("  /status        Show runtime status");
-                println!("  /providers     List providers");
-                println!("  /genes         List genes");
-                println!("  /harnesses     List harnesses");
-                println!("  /graph         Show architecture graph");
-                println!("  /quit          Exit shell");
+                println!("  /run <task>       Run a task");
+                println!("  /sessions         List recent sessions");
+                println!("  /session <id>     Inspect a session");
+                println!("  /replay <id>      Replay a session");
+                println!("  /inspect          Show architecture");
+                println!("  /providers        List provider health");
+                println!("  /benchmark        Run provider benchmark");
+                println!("  /genes            List installed genes");
+                println!("  /harnesses        List loaded harnesses");
+                println!("  /services         List constitutional services");
+                println!("  /graph            Show architecture graph");
+                println!("  /status           Show runtime status");
+                println!("  /history          Show command history");
+                println!("  /quit             Exit shell");
             }
-            "/status" => cmd_status(),
+            "/run" => {
+                if rest.is_empty() { println!("Usage: /run <task>"); continue; }
+                cmd_run(&["pandora".into(), "run".into(), rest]);
+            }
             "/sessions" => cmd_sessions(),
-            "/providers" => { println!("Providers: ollama, llamacpp, openai-compat"); }
+            "/providers" => cmd_providers(),
+            "/benchmark" => cmd_benchmark(),
             "/genes" => cmd_gene(&["pandora".into(), "gene".into(), "list".into()]),
             "/harnesses" => cmd_harness(&["pandora".into(), "harness".into(), "list".into()]),
+            "/services" => cmd_service(&["pandora".into(), "service".into(), "list".into()]),
+            "/status" => cmd_status(),
+            "/history" => {
+                for (i, h) in history.iter().rev().take(20).enumerate() {
+                    println!("  {:>2}. {}", i + 1, h);
+                }
+            }
             "/graph" => {
                 println!("Architecture Graph:");
-                println!("  CLI → Orchestrator → ExecutionController");
-                println!("  → Shadow Council → Harnesses → Genes → Providers");
-                println!("  → DecisionLog → Session");
+                println!("  CLI / Shell");
+                println!("  ↓");
+                println!("  Orchestrator -> ExecutionController -> ExecutionPlan");
+                println!("  ↓");
+                println!("  Shadow Council -> Harnesses -> Genes -> Providers");
+                println!("  ↓");
+                println!("  DecisionLog -> Session");
             }
-            cmd if cmd.starts_with("/session ") => {
-                let id = cmd.split_whitespace().nth(1).unwrap_or("");
-                cmd_session(&["pandora".into(), "session".into(), id.into()]);
-            }
-            cmd if cmd.starts_with("/replay ") => {
-                let id = cmd.split_whitespace().nth(1).unwrap_or("");
-                cmd_replay(&["pandora".into(), "replay".into(), id.into()]);
-            }
-            _ => println!("Unknown command: {}. Type /help", trimmed),
+            _ if cmd.starts_with("/session") => cmd_session(&["pandora".into(), "session".into(), rest]),
+            _ if cmd.starts_with("/replay") => cmd_replay(&["pandora".into(), "replay".into(), rest]),
+            _ if cmd.starts_with("/inspect") => cmd_inspect(),
+            _ => println!("Unknown: {}. Type /help", trimmed),
         }
     }
     println!("Goodbye.");
 }
+
