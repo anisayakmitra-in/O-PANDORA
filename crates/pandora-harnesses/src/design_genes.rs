@@ -16,7 +16,7 @@ fn mk(id: &str, kind: GeneKind, desc: &str) -> GeneManifest {
 
 // ── Design Review Gene (impeccable-inspired) ──
 // impeccable: 46 deterministic detector rules, 23 commands, live browser iteration
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DesignReviewGene { m: GeneManifest }
 impl DesignReviewGene {
     pub fn new() -> Self { Self { m: mk("design-review", GeneKind::Tool,
@@ -65,7 +65,7 @@ Impeccable-inspired polish commands available:
 
 // ── Brand Identity Gene (taste-skill inspired) ──
 // taste-skill: brand kits, anti-slop frontend, premium design direction
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct BrandIdentityGene { m: GeneManifest }
 impl BrandIdentityGene {
     pub fn new() -> Self { Self { m: mk("brand-identity", GeneKind::Tool,
@@ -110,7 +110,7 @@ Brand Kit Deliverables:
 // ── UI Patterns Gene (UI UX Pro Max + emilkowalski inspired) ──
 // UI UX Pro Max: 161 reasoning rules, 67 UI styles, 20+ stacks
 // emilkowalski: design engineer experience from Vercel/Linear
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct UiPatternsGene { m: GeneManifest }
 impl UiPatternsGene {
     pub fn new() -> Self { Self { m: mk("ui-patterns", GeneKind::Tool,
@@ -160,7 +160,7 @@ Design Engineer Notes (emilkowalski):
 // ── Animation Gene (GSAP + Motion.dev inspired) ──
 // GSAP: core API, timelines, ScrollTrigger, performance (11k★)
 // Motion.dev: 120fps spring physics, GPU-accelerated (10M+/month)
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct AnimationGene { m: GeneManifest }
 impl AnimationGene {
     pub fn new() -> Self { Self { m: mk("animation", GeneKind::Tool,
@@ -226,7 +226,7 @@ Performance Rules (GSAP):
 }
 
 // ── Color Theory Gene (UI UX Pro Max + design systems) ──
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ColorTheoryGene { m: GeneManifest }
 impl ColorTheoryGene {
     pub fn new() -> Self { Self { m: mk("color-theory", GeneKind::Tool,
@@ -271,7 +271,7 @@ Color Usage Rules:
 }
 
 // ── Typography Gene ──
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TypographyGene { m: GeneManifest }
 impl TypographyGene {
     pub fn new() -> Self { Self { m: mk("typography", GeneKind::Tool,
@@ -314,7 +314,7 @@ Common Mistakes:
 }
 
 // ── Accessibility Design Gene ──
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct A11yDesignGene { m: GeneManifest }
 impl A11yDesignGene {
     pub fn new() -> Self { Self { m: mk("a11y-design", GeneKind::Tool,
@@ -377,7 +377,7 @@ Anti-Patterns:
 }
 
 // ── Motion Design Gene (Seedance/motion inspired) ──
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MotionDesignGene { m: GeneManifest }
 impl MotionDesignGene {
     pub fn new() -> Self { Self { m: mk("motion-design", GeneKind::Tool,

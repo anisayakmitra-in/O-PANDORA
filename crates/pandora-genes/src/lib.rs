@@ -695,6 +695,98 @@ impl Gene for BenchmarkGene {
     }
 }
 
+// ── Postgres Gene ──
+// Config: PG_HOST, PG_PORT, PG_USER, PG_DB (default: localhost:5432/postgres)
+#[derive(Debug)]
+pub struct PostgresGene { m: GeneManifest }
+impl Default for PostgresGene { fn default() -> Self { Self::new() } }
+impl PostgresGene { pub fn new() -> Self { Self { m: mk("postgres", GeneKind::Tool) } } }
+impl Gene for PostgresGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: postgres <SQL query>".into()); }
+        let host = std::env::var("PG_HOST").unwrap_or_else(|_| "localhost".into());
+        let port = std::env::var("PG_PORT").unwrap_or_else(|_| "5432".into());
+        let user = std::env::var("PG_USER").unwrap_or_else(|_| "postgres".into());
+        let db = std::env::var("PG_DB").unwrap_or_else(|_| "postgres".into());
+        let out = std::process::Command::new("psql").args(&["-h", &host, "-p", &port, "-U", &user, "-d", &db, "-c", input]).output().map_err(|e| e.to_string())?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if out.status.success() { Ok(stdout) } else { Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }) }
+    }
+}
+
+// ── Go Gene ──
+// Config: GO_CMD (default: go), GO_FLAGS
+#[derive(Debug)]
+pub struct GoGene { m: GeneManifest }
+impl Default for GoGene { fn default() -> Self { Self::new() } }
+impl GoGene { pub fn new() -> Self { Self { m: mk("go", GeneKind::Tool) } } }
+impl Gene for GoGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: go <subcommand> [args]".into()); }
+        let mut go = std::env::var("GO_CMD").unwrap_or_else(|_| "go".into());
+        if let Ok(flags) = std::env::var("GO_FLAGS") { go.push(' '); go.push_str(&flags); }
+        let mut cmd = go.split_whitespace().map(String::from).collect::<Vec<_>>();
+        cmd.extend(input.split_whitespace().map(String::from));
+        let refs: Vec<&str> = cmd.iter().map(String::as_str).collect();
+        let out = std::process::Command::new(refs[0]).args(&refs[1..]).output().map_err(|e| format!("{} not found: {}", refs[0], e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if out.status.success() { Ok(stdout) } else { Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }) }
+    }
+}
+
+// ── Node Gene ──
+// Config: NODE_CMD (default: node), NODE_FLAGS
+#[derive(Debug)]
+pub struct NodeGene { m: GeneManifest }
+impl Default for NodeGene { fn default() -> Self { Self::new() } }
+impl NodeGene { pub fn new() -> Self { Self { m: mk("node", GeneKind::Tool) } } }
+impl Gene for NodeGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: node <script.js> [args]".into()); }
+        let mut node = std::env::var("NODE_CMD").unwrap_or_else(|_| "node".into());
+        if let Ok(flags) = std::env::var("NODE_FLAGS") { node.push(' '); node.push_str(&flags); }
+        let mut cmd = node.split_whitespace().map(String::from).collect::<Vec<_>>();
+        cmd.extend(input.split_whitespace().map(String::from));
+        let refs: Vec<&str> = cmd.iter().map(String::as_str).collect();
+        let out = std::process::Command::new(refs[0]).args(&refs[1..]).output().map_err(|e| format!("{} not found: {}", refs[0], e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if out.status.success() { Ok(stdout) } else { Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }) }
+    }
+}
+
+// ── Java Gene ──
+// Config: JAVA_CMD (default: java), JAVA_FLAGS, JAVA_CLASSPATH
+#[derive(Debug)]
+pub struct JavaGene { m: GeneManifest }
+impl Default for JavaGene { fn default() -> Self { Self::new() } }
+impl JavaGene { pub fn new() -> Self { Self { m: mk("java", GeneKind::Tool) } } }
+impl Gene for JavaGene {
+    fn id(&self) -> &str { &self.m.id }
+    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn execute(&self, input: &str) -> Result<String, String> {
+        if input.trim().is_empty() { return Err("Usage: java <class> [args]".into()); }
+        let mut java = std::env::var("JAVA_CMD").unwrap_or_else(|_| "java".into());
+        if let Ok(flags) = std::env::var("JAVA_FLAGS") { java.push(' '); java.push_str(&flags); }
+        let mut cmd = java.split_whitespace().map(String::from).collect::<Vec<_>>();
+        if let Ok(cp) = std::env::var("JAVA_CLASSPATH") { cmd.push("-cp".into()); cmd.push(cp); }
+        cmd.extend(input.split_whitespace().map(String::from));
+        let refs: Vec<&str> = cmd.iter().map(String::as_str).collect();
+        let out = std::process::Command::new(refs[0]).args(&refs[1..]).output().map_err(|e| format!("{} not found: {}", refs[0], e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+        if out.status.success() { Ok(stdout) } else { Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -720,7 +812,7 @@ mod tests {
 
     #[test]
     fn all_have_ids() {
-        let genes: [&dyn Gene; 17] = [
+        let genes: [&dyn Gene; 21] = [
             &FilesystemGene::new(),
             &ShellGene::new(),
             &GitGene::new(),
@@ -738,6 +830,10 @@ mod tests {
             &MCPGene::new(),
             &CodeReviewGene::new(),
             &BenchmarkGene::new(),
+            &PostgresGene::new(),
+            &GoGene::new(),
+            &NodeGene::new(),
+            &JavaGene::new(),
         ];
         for g in &genes {
             assert!(!g.id().is_empty());
