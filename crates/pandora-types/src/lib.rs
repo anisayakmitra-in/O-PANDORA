@@ -33,6 +33,7 @@ pub use session::{Session, SessionStatus, SessionStore};
 
 pub mod decision;
 pub mod error;
+pub mod events;
 pub mod provider_health;
 pub mod execution_plan;
 pub mod gene;

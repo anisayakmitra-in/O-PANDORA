@@ -16,6 +16,7 @@ use pandora_provider::types::GenerationRequest;
 use pandora_services::ExecutionController;
 use pandora_shadow_council::ShadowCouncil;
 use pandora_types::execution_plan::ExecutionPlan;
+use pandora_types::events::PipelineEvent;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
 use pandora_types::harness::HarnessKind;
@@ -227,6 +228,7 @@ pub struct PandoraRuntime {
     pub council: ShadowCouncil,
     pub controller: ExecutionController,
     pub plan: ExecutionPlan,
+    pub events: tokio::sync::broadcast::Sender<PipelineEvent>,
 }
 
 impl PandoraRuntime {
@@ -245,6 +247,7 @@ impl PandoraRuntime {
             council: ShadowCouncil::new(),
             controller: ExecutionController::new(),
             plan: ExecutionPlan::default(),
+            events: tokio::sync::broadcast::channel(256).0,
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
         }
