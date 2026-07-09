@@ -1,0 +1,7 @@
+[coding]
+provider = "balanced"
+strategy = "closed"
+sandbox = 1
+goal = "all tests pass"
+evaluator = "rust-tests"
+max_attempts = 5

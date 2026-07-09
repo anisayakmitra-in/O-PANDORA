@@ -1,0 +1,7 @@
+[security]
+provider = "local_only"
+strategy = "single"
+sandbox = 2
+goal = "no vulnerabilities found"
+evaluator = "security"
+max_attempts = 1

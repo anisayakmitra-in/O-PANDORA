@@ -681,6 +681,25 @@ fn cmd_benchmark() {
 #[allow(dead_code)]
 #[allow(dead_code)]
 #[allow(dead_code)]
+fn cmd_profiles() {
+    match pandora_types::profile::list_profiles() {
+        Ok(profiles) => {
+            println!("Available profiles:");
+            for p in &profiles {
+                println!("  {}", p);
+                if let Ok(profile) = pandora_types::profile::load_profile(p) {
+                    if let Some(s) = &profile.strategy { println!("    strategy: {}", s); }
+                    if let Some(g) = &profile.goal { println!("    goal: {}", g); }
+                    if let Some(pv) = &profile.provider { println!("    provider: {}", pv); }
+                    if let Some(sb) = profile.sandbox { println!("    sandbox: {}", sb); }
+                }
+            }
+            if profiles.is_empty() { println!("  (no profiles found in ~/.pandora/profiles/)"); }
+        }
+        Err(e) => eprintln!("Error: {}", e),
+    }
+}
+
 fn cmd_sessions() {
     let dir = pandora_types::gene_package::packages_dir()
         .parent()
