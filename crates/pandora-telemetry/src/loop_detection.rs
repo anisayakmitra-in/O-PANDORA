@@ -6,7 +6,9 @@ pub struct LoopDetector;
 
 impl LoopDetector {
     pub fn detect_repetition(calls: &[String], threshold: usize) -> bool {
-        if calls.len() < threshold { return false; }
+        if calls.len() < threshold {
+            return false;
+        }
         let recent = &calls[calls.len() - threshold..];
         let first = &recent[0];
         recent.iter().all(|c| c == first)

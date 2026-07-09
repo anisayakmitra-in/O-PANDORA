@@ -7,6 +7,12 @@ pub struct ResearchDomainHarness {
     manifest: HarnessManifest,
 }
 
+impl Default for ResearchDomainHarness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResearchDomainHarness {
     pub fn new() -> Self {
         Self {

@@ -2,12 +2,10 @@
 
 use pandora_shadow_council::ShadowCouncil;
 pub mod coding;
-pub mod security;
 pub mod coordination;
 pub mod research;
-use pandora_types::harness::{
-    Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, SlashCommand,
-};
+pub mod security;
+use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder};
 use pandora_types::services::*;
 use std::sync::Arc;
 

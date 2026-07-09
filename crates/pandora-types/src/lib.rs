@@ -26,17 +26,17 @@
 pub mod harness;
 pub use decision::{Decision, DecisionLog, RejectedOption};
 pub use error::PandoraError;
-pub use session::{Session, SessionStore, SessionStatus};
 pub use harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessSpec, SlashCommand,
 };
+pub use session::{Session, SessionStatus, SessionStore};
 
-pub mod error;
 pub mod decision;
-pub mod session;
+pub mod error;
 pub mod gene;
 pub mod gene_package;
 pub mod harness_gene;
+pub mod session;
 pub use gene::{
     Gene, GeneKind, GeneLineage, GeneLineageEntry, GeneManifest, GeneManifestBuilder,
     SlashCommandOwner,

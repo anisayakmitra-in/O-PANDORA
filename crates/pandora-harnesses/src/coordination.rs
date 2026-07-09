@@ -7,6 +7,12 @@ pub struct CoordinationMetaHarness {
     manifest: HarnessManifest,
 }
 
+impl Default for CoordinationMetaHarness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoordinationMetaHarness {
     pub fn new() -> Self {
         Self {

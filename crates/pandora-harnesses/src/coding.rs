@@ -29,25 +29,44 @@ pub struct CodingDomainHarness {
 
 /// Execute a command and return stdout or a formatted error.
 fn run(cmd: &str, args: &[&str]) -> Result<String, String> {
-    let out = Command::new(cmd).args(args).output()
+    let out = Command::new(cmd)
+        .args(args)
+        .output()
         .map_err(|e| format!("{} not found: {}. Install it.", cmd, e))?;
     if out.status.success() {
         Ok(String::from_utf8_lossy(&out.stdout).to_string())
     } else {
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-        Err(if stderr.is_empty() { format!("{} exit {}", cmd, out.status) } else { stderr.trim().to_string() })
+        Err(if stderr.is_empty() {
+            format!("{} exit {}", cmd, out.status)
+        } else {
+            stderr.trim().to_string()
+        })
     }
 }
 
 /// Run a shell command and return stdout.
 fn sh(cmd: &str) -> Result<String, String> {
-    let out = Command::new("sh").arg("-c").arg(cmd).output()
+    let out = Command::new("sh")
+        .arg("-c")
+        .arg(cmd)
+        .output()
         .map_err(|e| format!("shell failed: {}", e))?;
     if out.status.success() {
         Ok(String::from_utf8_lossy(&out.stdout).to_string())
     } else {
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-        Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() })
+        Err(if stderr.is_empty() {
+            format!("exit {}", out.status)
+        } else {
+            stderr.trim().to_string()
+        })
+    }
+}
+
+impl Default for CodingDomainHarness {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -128,7 +147,10 @@ impl CodingDomainHarness {
             "rust" => {
                 let manifest = format!("{}/Cargo.toml", dir);
                 let mut args: Vec<&str> = vec!["test", "--manifest-path", &manifest];
-                if let Some(f) = filter { args.push("--"); args.push(f); }
+                if let Some(f) = filter {
+                    args.push("--");
+                    args.push(f);
+                }
                 run("cargo", &args)
             }
             "python" => run("python3", &["-m", "pytest", dir]),
@@ -145,7 +167,18 @@ impl CodingDomainHarness {
         match lang {
             "rust" => {
                 let manifest = format!("{}/Cargo.toml", dir);
-                run("cargo", &["clippy", "--workspace", "--manifest-path", &manifest, "--", "-D", "warnings"])
+                run(
+                    "cargo",
+                    &[
+                        "clippy",
+                        "--workspace",
+                        "--manifest-path",
+                        &manifest,
+                        "--",
+                        "-D",
+                        "warnings",
+                    ],
+                )
             }
             "python" => run("ruff", &["check", dir]),
             "node" => run("npx", &["eslint", dir]),
@@ -155,7 +188,10 @@ impl CodingDomainHarness {
 
     /// Code review via git diff. Returns findings or empty string.
     pub fn review(&self, base: &str) -> Result<String, String> {
-        sh(&format!("git diff {} 2>/dev/null || git diff --staged", base))
+        sh(&format!(
+            "git diff {} 2>/dev/null || git diff --staged",
+            base
+        ))
     }
 
     /// ponytail: check for common over-engineering patterns.
@@ -167,8 +203,16 @@ impl CodingDomainHarness {
             let content = std::fs::read_to_string(&cargo_toml)
                 .map_err(|e| format!("Cannot read {}: {}", cargo_toml, e))?;
             // ponytail: serde is worth it, many others aren't
-            for dep in &["chrono", "regex", "lazy_static", "once_cell", "thiserror", "anyhow"] {
-                if content.contains(&format!("{} ", dep)) || content.contains(&format!("{}/", dep)) {
+            for dep in &[
+                "chrono",
+                "regex",
+                "lazy_static",
+                "once_cell",
+                "thiserror",
+                "anyhow",
+            ] {
+                if content.contains(&format!("{} ", dep)) || content.contains(&format!("{}/", dep))
+                {
                     let replacement = match *dep {
                         "chrono" => "std::time::SystemTime",
                         "regex" => "string methods (contains, starts_with, split)",
@@ -178,7 +222,10 @@ impl CodingDomainHarness {
                         "anyhow" => "concrete error type",
                         _ => "stdlib equivalent",
                     };
-                    findings.push(format!("  {}: replace with {} (ponytail)", dep, replacement));
+                    findings.push(format!(
+                        "  {}: replace with {} (ponytail)",
+                        dep, replacement
+                    ));
                 }
             }
         }
@@ -210,9 +257,15 @@ impl CodingDomainHarness {
 
         // Check file count
         report.push('\n');
-        let file_count = sh(&format!("find {} -name '*.rs' -not -path '*/target/*' 2>/dev/null | wc -l", dir))
-            .unwrap_or_default();
-        report.push_str(&format!(" Rust source files: {} (consider if all are needed)\n", file_count.trim()));
+        let file_count = sh(&format!(
+            "find {} -name '*.rs' -not -path '*/target/*' 2>/dev/null | wc -l",
+            dir
+        ))
+        .unwrap_or_default();
+        report.push_str(&format!(
+            " Rust source files: {} (consider if all are needed)\n",
+            file_count.trim()
+        ));
 
         Ok(report)
     }
@@ -248,7 +301,10 @@ mod tests {
     #[test]
     fn detect_rust_project() {
         let h = CodingDomainHarness::new();
-        let dir = std::env::current_dir().unwrap().to_string_lossy().to_string();
+        let dir = std::env::current_dir()
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
         // The harness crate itself is a Rust project
         let lang = h.detect_language(&dir);
         assert_eq!(lang, "rust");

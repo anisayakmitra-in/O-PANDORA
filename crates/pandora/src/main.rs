@@ -3,6 +3,10 @@
 use std::env;
 use std::process;
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -10,22 +14,26 @@ fn main() {
         process::exit(1);
     }
 
-fn cmd_package(args: &[String]) {
-    if args.len() < 3 {
-        eprintln!("Usage: pandora package <name>");
-        process::exit(1);
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    fn cmd_package(args: &[String]) {
+        if args.len() < 3 {
+            eprintln!("Usage: pandora package <name>");
+            process::exit(1);
+        }
+        let name = &args[2];
+        let dir = std::path::Path::new(name);
+        if dir.exists() {
+            eprintln!("Directory already exists: {}", name);
+            process::exit(1);
+        }
+        std::fs::create_dir_all(dir.join("src")).unwrap();
+        let m = format!("id = \"{}\"\nname = \"{}\"\nkind = Tool\nversion = 0.1.0\nauthor = you\ndescription = A {} gene\ncapabilities = []\ndependencies = []\n", name, name, name);
+        std::fs::write(dir.join("gene.toml"), m).unwrap();
+        println!("Created {}/gene.toml", name);
     }
-    let name = &args[2];
-    let dir = std::path::Path::new(name);
-    if dir.exists() {
-        eprintln!("Directory already exists: {}", name);
-        process::exit(1);
-    }
-    std::fs::create_dir_all(dir.join("src")).unwrap();
-    let m = format!("id = \"{}\"\nname = \"{}\"\nkind = Tool\nversion = 0.1.0\nauthor = you\ndescription = A {} gene\ncapabilities = []\ndependencies = []\n", name, name, name);
-    std::fs::write(dir.join("gene.toml"), m).unwrap();
-    println!("Created {}/gene.toml", name);
-}
     match args[1].as_str() {
         "install" => cmd_install(&args),
         "run" => cmd_run(&args),
@@ -52,6 +60,10 @@ fn cmd_package(args: &[String]) {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn usage() {
     eprintln!("Pandora — AI agent runtime");
     eprintln!("Usage:");
@@ -74,10 +86,18 @@ fn usage() {
     eprintln!("  new skill <n>   Scaffold a skill");
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn get_sc() -> pandora_shadow_council::ShadowCouncil {
     pandora_shadow_council::ShadowCouncil::new()
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_install(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora install <id>");
@@ -121,6 +141,10 @@ dependencies = []
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_run(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora run <task>");
@@ -156,6 +180,10 @@ fn cmd_run(args: &[String]) {
     });
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_search(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora search <q>");
@@ -180,6 +208,10 @@ fn cmd_search(args: &[String]) {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_list() {
     let mut sc = get_sc();
     let k = pandora_kuber::Kuber::new(&mut sc);
@@ -191,7 +223,6 @@ fn cmd_list() {
         }
         println!("  ... and {} more", pandora_kuber::builtin::all().len() - 7);
         println!("Install: pandora install <name>");
-        return;
     } else {
         for id in &installed {
             println!("  {}", id);
@@ -199,6 +230,10 @@ fn cmd_list() {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_info(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora info <id>");
@@ -215,6 +250,10 @@ fn cmd_info(args: &[String]) {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_uninstall(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora uninstall <id>");
@@ -231,6 +270,10 @@ fn cmd_uninstall(args: &[String]) {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_update(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora update <id>");
@@ -252,6 +295,10 @@ fn cmd_update(args: &[String]) {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_providers() {
     println!("Configured providers:");
     println!(
@@ -271,6 +318,10 @@ fn cmd_providers() {
     println!("Set PROVIDER_ENDPOINT + PROVIDER_API_KEY for any custom provider.");
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_harnesses() {
     let sc = pandora_shadow_council::ShadowCouncil::new();
     let s = sc.summary();
@@ -283,6 +334,10 @@ fn cmd_harnesses() {
     println!("Enabled: {}", s.genes_enabled);
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_doctor() {
     println!("=== Pandora Doctor ===\n");
     // Check Ollama
@@ -355,6 +410,10 @@ fn cmd_doctor() {
     println!("Runtime: {}", env!("CARGO_PKG_VERSION"));
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_graph() {
     println!("=== Dependency/Capability Graph ===\n");
     println!("Parliament");
@@ -367,6 +426,10 @@ fn cmd_graph() {
     println!("All crates depend on pandora-types");
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_lineage() {
     println!("=== Gene Lineage ===\n");
     let sc = pandora_shadow_council::ShadowCouncil::new();
@@ -383,6 +446,10 @@ fn cmd_lineage() {
     }
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_genes() {
     println!("Available first-party genes:");
     println!("  filesystem   Read/write/list files");
@@ -396,6 +463,10 @@ fn cmd_genes() {
     println!("Install: pandora install <name>");
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_inspect() {
     println!("=== Pandora Runtime Inspection ===\n");
     println!("Parliament");
@@ -422,6 +493,10 @@ fn cmd_inspect() {
     println!("  Task -> Workflow -> Capability -> Target -> Execute -> Record -> Telemetry -> Intel -> Ledger");
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_architecture() {
     println!("Parliament");
     println!("├── Constitutional Services");
@@ -449,6 +524,10 @@ fn cmd_architecture() {
     );
 }
 
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_new(args: &[String]) {
     if args.len() < 4 {
         eprintln!("Usage: pandora new gene|skill <name>");
@@ -496,7 +575,14 @@ fn cmd_new(args: &[String]) {
                 let _ = writeln!(f, "#[derive(Debug)]");
                 let _ = writeln!(f, "pub struct {}Gene {{ m: GeneManifest }}", safe_name);
                 let _ = writeln!(f, "impl {}Gene {{", safe_name);
-                let _ = writeln!(f, "    pub fn new() -> Self {{");
+                let _ = writeln!(
+                    f,
+                    "    pub #[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+fn new() -> Self {{"
+                );
                 let _ = writeln!(f, "        Self {{ m: GeneManifestBuilder::default()");
                 let _ = writeln!(
                     f,
@@ -509,10 +595,21 @@ fn cmd_new(args: &[String]) {
                 let _ = writeln!(f, "    }}");
                 let _ = writeln!(f, "}}");
                 let _ = writeln!(f, "impl Gene for {}Gene {{", safe_name);
-                let _ = writeln!(f, "    fn manifest(&self) -> &GeneManifest {{ &self.m }}");
                 let _ = writeln!(
                     f,
-                    "    fn execute(&self, input: &str) -> Result<String, String> {{"
+                    "    #[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+fn manifest(&self) -> &GeneManifest {{ &self.m }}"
+                );
+                let _ = writeln!(
+                    f,
+                    "    #[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+fn execute(&self, input: &str) -> Result<String, String> {{"
                 );
                 let _ = writeln!(f, "        Ok(format!(\"executed: {{}}\" , input))");
                 let _ = writeln!(f, "    }}");
@@ -533,27 +630,48 @@ fn cmd_new(args: &[String]) {
     }
 }
 
-
-
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_benchmark() {
     // ponytail: simple provider health check via curl
-    let sep: String = std::iter::repeat("─").take(50).collect();
+    let sep: String = std::iter::repeat_n("─", 50).collect();
     println!("Pandora Benchmark");
     println!("{}", sep);
     println!("Testing provider availability...\n");
 
     let providers = vec![
-        ("ollama", std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())),
-        ("llamacpp", std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into())),
+        (
+            "ollama",
+            std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into()),
+        ),
+        (
+            "llamacpp",
+            std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into()),
+        ),
     ];
 
     for (name, endpoint) in &providers {
         print!("  {} @ {} ... ", name, endpoint);
-        match std::process::Command::new("curl").args(["-s", "-o", "/dev/null", "-w", "%{http_code}", &format!("{}/api/tags", endpoint)]).output() {
+        match std::process::Command::new("curl")
+            .args([
+                "-s",
+                "-o",
+                "/dev/null",
+                "-w",
+                "%{http_code}",
+                &format!("{}/api/tags", endpoint),
+            ])
+            .output()
+        {
             Ok(out) => {
                 let code = String::from_utf8_lossy(&out.stdout);
-                if code.trim() == "200" { println!("OK"); }
-                else { println!("HTTP {}", code.trim()); }
+                if code.trim() == "200" {
+                    println!("OK");
+                } else {
+                    println!("HTTP {}", code.trim());
+                }
             }
             Err(_) => println!("unreachable"),
         }
@@ -562,22 +680,37 @@ fn cmd_benchmark() {
     println!("Use --verbose for detailed timing (requires pandora-orchestrator).");
 }
 
-
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_sessions() {
     let dir = pandora_types::gene_package::packages_dir()
-        .parent().map(|p| p.join("sessions"))
+        .parent()
+        .map(|p| p.join("sessions"))
         .unwrap_or_else(|| {
             let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+            std::path::PathBuf::from(home)
+                .join(".pandora")
+                .join("sessions")
         });
-    if !dir.exists() { println!("No sessions yet."); return; }
+    if !dir.exists() {
+        println!("No sessions yet.");
+        return;
+    }
     let mut sessions: Vec<pandora_types::Session> = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map_or(true, |e| e != "json") || path.file_stem() == Some(std::ffi::OsStr::new("index")) { continue; }
+            if path.extension().is_none_or(|e| e != "json")
+                || path.file_stem() == Some(std::ffi::OsStr::new("index"))
+            {
+                continue;
+            }
             if let Ok(json) = std::fs::read_to_string(&path) {
-                if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) { sessions.push(s); }
+                if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) {
+                    sessions.push(s);
+                }
             }
         }
     }
@@ -587,35 +720,63 @@ fn cmd_sessions() {
         let st = match s.status {
             pandora_types::SessionStatus::Completed => "ok",
             pandora_types::SessionStatus::Failed(_) => "err",
-            _ => "?", };
-        println!("  {} {}: {}", st, s.id, s.prompt.chars().take(60).collect::<String>());
+            _ => "?",
+        };
+        println!(
+            "  {} {}: {}",
+            st,
+            s.id,
+            s.prompt.chars().take(60).collect::<String>()
+        );
     }
 }
 
-
-
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_replay(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora replay <id>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora replay <id>");
+        process::exit(1);
+    }
     let id = &args[2];
     let dir = pandora_types::gene_package::packages_dir()
-        .parent().map(|p| p.join("sessions"))
+        .parent()
+        .map(|p| p.join("sessions"))
         .unwrap_or_else(|| {
             let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+            std::path::PathBuf::from(home)
+                .join(".pandora")
+                .join("sessions")
         });
     let path = dir.join(format!("{}.json", id));
     let json = match std::fs::read_to_string(&path) {
-        Ok(j) => j, Err(_) => { eprintln!("Session not found: {}", id); process::exit(1); }
+        Ok(j) => j,
+        Err(_) => {
+            eprintln!("Session not found: {}", id);
+            process::exit(1);
+        }
     };
     let s: pandora_types::Session = match serde_json::from_str(&json) {
-        Ok(s) => s, Err(e) => { eprintln!("Parse error: {}", e); process::exit(1); }
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Parse error: {}", e);
+            process::exit(1);
+        }
     };
     println!("Replay of session: {}", s.id);
     println!("  Prompt: {}", s.prompt);
     println!("  Status: {:?}", s.status);
     println!("  Timeline:");
     for (i, frame) in s.timeline.iter().enumerate() {
-        println!("    {}. {} via {}/{}", i + 1, frame.step_label, frame.provider, frame.model);
+        println!(
+            "    {}. {} via {}/{}",
+            i + 1,
+            frame.step_label,
+            frame.provider,
+            frame.model
+        );
     }
     println!("  Decisions:");
     for (k, v) in &s.metadata {
@@ -624,30 +785,51 @@ fn cmd_replay(args: &[String]) {
         }
     }
 }
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
+#[allow(dead_code)]
 fn cmd_session(args: &[String]) {
-    if args.len() < 3 { eprintln!("Usage: pandora session <id>"); process::exit(1); }
+    if args.len() < 3 {
+        eprintln!("Usage: pandora session <id>");
+        process::exit(1);
+    }
     let id = &args[2];
     let dir = pandora_types::gene_package::packages_dir()
-        .parent().map(|p| p.join("sessions"))
+        .parent()
+        .map(|p| p.join("sessions"))
         .unwrap_or_else(|| {
             let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-            std::path::PathBuf::from(home).join(".pandora").join("sessions")
+            std::path::PathBuf::from(home)
+                .join(".pandora")
+                .join("sessions")
         });
     let path = dir.join(format!("{}.json", id));
     let json = match std::fs::read_to_string(&path) {
-        Ok(j) => j, Err(_) => { eprintln!("Not found: {}", id); process::exit(1); }
+        Ok(j) => j,
+        Err(_) => {
+            eprintln!("Not found: {}", id);
+            process::exit(1);
+        }
     };
     let s: pandora_types::Session = match serde_json::from_str(&json) {
-        Ok(s) => s, Err(e) => { eprintln!("Parse: {}", e); process::exit(1); }
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Parse: {}", e);
+            process::exit(1);
+        }
     };
     println!("Session: {}", s.id);
     println!("  Prompt:  {}", s.prompt);
     println!("  Decisions:");
     for (k, v) in &s.metadata {
-        if k.contains("decision") || k == "selected_harness" || k == "domain" || k == "execution_id" {
+        if k.contains("decision") || k == "selected_harness" || k == "domain" || k == "execution_id"
+        {
             println!("    {}: {}", k, v);
         }
     }
     println!("  All metadata ({}):", s.metadata.len());
-    for (k, v) in &s.metadata { println!("    {}: {}", k, v); }
+    for (k, v) in &s.metadata {
+        println!("    {}: {}", k, v);
+    }
 }

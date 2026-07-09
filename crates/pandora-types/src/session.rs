@@ -4,8 +4,8 @@
 //! timeline, telemetry, artifacts, and the ledger. They are persisted
 //! in the SessionStore and can be replayed.
 
-use crate::PandoraError;
 use crate::recorder::ExecutionFrame;
+use crate::PandoraError;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
@@ -59,7 +59,7 @@ impl Session {
             status: SessionStatus::Pending,
             workflow: None,
             timeline: Vec::new(),
-            
+
             ledger: Vec::new(),
             artifacts: Vec::new(),
             metadata: HashMap::new(),
@@ -68,14 +68,13 @@ impl Session {
     }
 
     pub fn duration(&self) -> Option<std::time::Duration> {
-        self.completed_at.map(|end| end.duration_since(self.created_at).unwrap_or_default())
+        self.completed_at
+            .map(|end| end.duration_since(self.created_at).unwrap_or_default())
     }
 
     pub fn add_frame(&mut self, frame: ExecutionFrame) {
         self.timeline.push(frame);
     }
-
-
 
     pub fn add_artifact(&mut self, path: impl Into<String>) {
         self.artifacts.push(path.into());
@@ -100,7 +99,9 @@ fn sessions_dir() -> std::path::PathBuf {
 
 impl SessionStore {
     pub fn new() -> Self {
-        let mut store = Self { sessions: HashMap::new() };
+        let mut store = Self {
+            sessions: HashMap::new(),
+        };
         // ponytail: load existing sessions silently; don't fail if none
         if let Err(e) = store.load() {
             // first run — no sessions yet
@@ -115,7 +116,8 @@ impl SessionStore {
         std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create sessions dir: {}", e))?;
         for session in self.sessions.values() {
             let path = dir.join(format!("{}.json", session.id));
-            let json = serde_json::to_string_pretty(session).map_err(|e| format!("Serialize: {}", e))?;
+            let json =
+                serde_json::to_string_pretty(session).map_err(|e| format!("Serialize: {}", e))?;
             // ponytail: atomic write via tempfile rename
             let tmp = dir.join(format!("{}.tmp", session.id));
             std::fs::write(&tmp, &json).map_err(|e| format!("Write: {}", e))?;
@@ -124,8 +126,11 @@ impl SessionStore {
         // Save index (ordered list of session IDs)
         let index: Vec<String> = self.sessions.keys().cloned().collect();
         let index_path = dir.join("index.json");
-        std::fs::write(&index_path, serde_json::to_string_pretty(&index).map_err(|e| format!("Index: {}", e))?)
-            .map_err(|e| format!("Write index: {}", e))?;
+        std::fs::write(
+            &index_path,
+            serde_json::to_string_pretty(&index).map_err(|e| format!("Index: {}", e))?,
+        )
+        .map_err(|e| format!("Write index: {}", e))?;
         Ok(())
     }
 
@@ -133,18 +138,24 @@ impl SessionStore {
     pub fn load(&mut self) -> Result<(), String> {
         let dir = sessions_dir();
         if !dir.exists() {
-            return Ok(());  // first run
+            return Ok(()); // first run
         }
         // Load index first for ordering
         let index_path = dir.join("index.json");
         if index_path.exists() {
-            let content = std::fs::read_to_string(&index_path).map_err(|e| format!("Read index: {}", e))?;
-            let ids: Vec<String> = serde_json::from_str(&content).map_err(|e| format!("Parse index: {}", e))?;
+            let content =
+                std::fs::read_to_string(&index_path).map_err(|e| format!("Read index: {}", e))?;
+            let ids: Vec<String> =
+                serde_json::from_str(&content).map_err(|e| format!("Parse index: {}", e))?;
             for id in &ids {
                 let path = dir.join(format!("{}.json", id));
-                if !path.exists() { continue; }
-                let json = std::fs::read_to_string(&path).map_err(|e| format!("Read {}: {}", id, e))?;
-                let session: Session = serde_json::from_str(&json).map_err(|e| format!("Parse {}: {}", id, e))?;
+                if !path.exists() {
+                    continue;
+                }
+                let json =
+                    std::fs::read_to_string(&path).map_err(|e| format!("Read {}: {}", id, e))?;
+                let session: Session =
+                    serde_json::from_str(&json).map_err(|e| format!("Parse {}: {}", id, e))?;
                 self.sessions.insert(id.clone(), session);
             }
         } else {
@@ -152,7 +163,9 @@ impl SessionStore {
             for entry in std::fs::read_dir(&dir).map_err(|e| format!("Read dir: {}", e))? {
                 let entry = entry.map_err(|e| format!("Entry: {}", e))?;
                 let path = entry.path();
-                if path.extension().map_or(true, |e| e != "json") || path.file_stem() == Some(std::ffi::OsStr::new("index")) {
+                if path.extension().is_none_or(|e| e != "json")
+                    || path.file_stem() == Some(std::ffi::OsStr::new("index"))
+                {
                     continue;
                 }
                 let json = std::fs::read_to_string(&path).map_err(|e| format!("Read: {}", e))?;
@@ -168,7 +181,8 @@ impl SessionStore {
         let id = id.into();
         let prompt = prompt.into();
         if !self.sessions.contains_key(&id) {
-            self.sessions.insert(id.clone(), Session::new(id.clone(), prompt));
+            self.sessions
+                .insert(id.clone(), Session::new(id.clone(), prompt));
             // ponytail: persist immediately so sessions survive crashes
             let _ = self.save();
         }
@@ -195,18 +209,24 @@ impl SessionStore {
     }
 
     pub fn by_status(&self, status: &SessionStatus) -> Vec<&Session> {
-        self.sessions.values().filter(|s| s.status == *status).collect()
+        self.sessions
+            .values()
+            .filter(|s| s.status == *status)
+            .collect()
     }
 
     pub fn search(&self, query: &str) -> Vec<&Session> {
         let q = query.to_lowercase();
-        self.sessions.values()
+        self.sessions
+            .values()
             .filter(|s| s.prompt.to_lowercase().contains(&q) || s.id.contains(&q))
             .collect()
     }
 
     pub fn remove(&mut self, id: &str) -> Result<(), PandoraError> {
-        self.sessions.remove(id).ok_or_else(|| PandoraError::not_found(format!("Session not found: {}", id)))?;
+        self.sessions
+            .remove(id)
+            .ok_or_else(|| PandoraError::not_found(format!("Session not found: {}", id)))?;
         let _ = self.save();
         // Also remove the file
         let path = sessions_dir().join(format!("{}.json", id));
@@ -220,12 +240,16 @@ impl SessionStore {
 
     /// Replay a session by creating a new session seeded with the originals timeline.
     pub fn replay(&mut self, id: &str) -> Result<Session, PandoraError> {
-        let original = self.get(id).ok_or_else(|| PandoraError::not_found(format!("Session not found: {}", id)))?;
+        let original = self
+            .get(id)
+            .ok_or_else(|| PandoraError::not_found(format!("Session not found: {}", id)))?;
         let mut replayed = Session::new(
             format!("replay-{}", id),
             format!("[REPLAY] {}", original.prompt),
         );
-        replayed.metadata.insert("original_session".to_string(), id.to_string());
+        replayed
+            .metadata
+            .insert("original_session".to_string(), id.to_string());
         replayed.replay_id = original.replay_id.clone();
         Ok(replayed)
     }

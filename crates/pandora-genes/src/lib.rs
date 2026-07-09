@@ -17,6 +17,12 @@ fn mk(id: &str, kind: GeneKind) -> GeneManifest {
 pub struct FilesystemGene {
     m: GeneManifest,
 }
+impl Default for FilesystemGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FilesystemGene {
     pub fn new() -> Self {
         Self {
@@ -57,6 +63,12 @@ impl Gene for FilesystemGene {
 pub struct ShellGene {
     m: GeneManifest,
 }
+impl Default for ShellGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShellGene {
     pub fn new() -> Self {
         Self {
@@ -86,6 +98,12 @@ impl Gene for ShellGene {
 pub struct GitGene {
     m: GeneManifest,
 }
+impl Default for GitGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GitGene {
     pub fn new() -> Self {
         Self {
@@ -113,6 +131,12 @@ impl Gene for GitGene {
 pub struct HTTPGene {
     m: GeneManifest,
 }
+impl Default for HTTPGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HTTPGene {
     pub fn new() -> Self {
         Self {
@@ -138,6 +162,12 @@ impl Gene for HTTPGene {
 pub struct RustToolGene {
     m: GeneManifest,
 }
+impl Default for RustToolGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RustToolGene {
     pub fn new() -> Self {
         Self {
@@ -166,6 +196,12 @@ impl Gene for RustToolGene {
 pub struct PythonToolGene {
     m: GeneManifest,
 }
+impl Default for PythonToolGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PythonToolGene {
     pub fn new() -> Self {
         Self {
@@ -191,6 +227,12 @@ impl Gene for PythonToolGene {
 pub struct WorkflowGene {
     m: GeneManifest,
 }
+impl Default for WorkflowGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkflowGene {
     pub fn new() -> Self {
         Self {
@@ -220,71 +262,146 @@ impl Gene for WorkflowGene {
     }
 }
 
-
 /// Execute docker-compose commands.
 #[derive(Debug)]
-pub struct DockerComposeGene { m: GeneManifest }
+pub struct DockerComposeGene {
+    m: GeneManifest,
+}
+
+impl Default for DockerComposeGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DockerComposeGene {
-    pub fn new() -> Self { Self { m: mk("docker-compose", GeneKind::Tool) } }
+    pub fn new() -> Self {
+        Self {
+            m: mk("docker-compose", GeneKind::Tool),
+        }
+    }
 }
 
 impl Gene for DockerComposeGene {
-    fn id(&self) -> &str { &self.m.id }
-    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn id(&self) -> &str {
+        &self.m.id
+    }
+    fn manifest(&self) -> &GeneManifest {
+        &self.m
+    }
     fn execute(&self, input: &str) -> Result<String, String> {
-        if input.trim().is_empty() { return Err("Usage: docker-compose <args>".into()); }
-        let out = std::process::Command::new("docker-compose").args(input.split_whitespace()).output()
+        if input.trim().is_empty() {
+            return Err("Usage: docker-compose <args>".into());
+        }
+        let out = std::process::Command::new("docker-compose")
+            .args(input.split_whitespace())
+            .output()
             .map_err(|e| format!("docker-compose not found: {}", e))?;
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-        if !out.status.success() { return Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }); }
+        if !out.status.success() {
+            return Err(if stderr.is_empty() {
+                format!("exit {}", out.status)
+            } else {
+                stderr.trim().to_string()
+            });
+        }
         Ok(stdout)
     }
 }
-
 
 /// Execute terraform commands.
 #[derive(Debug)]
-pub struct TerraformGene { m: GeneManifest }
+pub struct TerraformGene {
+    m: GeneManifest,
+}
+
+impl Default for TerraformGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl TerraformGene {
-    pub fn new() -> Self { Self { m: mk("terraform", GeneKind::Tool) } }
+    pub fn new() -> Self {
+        Self {
+            m: mk("terraform", GeneKind::Tool),
+        }
+    }
 }
 
 impl Gene for TerraformGene {
-    fn id(&self) -> &str { &self.m.id }
-    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn id(&self) -> &str {
+        &self.m.id
+    }
+    fn manifest(&self) -> &GeneManifest {
+        &self.m
+    }
     fn execute(&self, input: &str) -> Result<String, String> {
-        if input.trim().is_empty() { return Err("Usage: terraform <args>".into()); }
-        let out = std::process::Command::new("terraform").args(input.split_whitespace()).output()
+        if input.trim().is_empty() {
+            return Err("Usage: terraform <args>".into());
+        }
+        let out = std::process::Command::new("terraform")
+            .args(input.split_whitespace())
+            .output()
             .map_err(|e| format!("terraform not found: {}", e))?;
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-        if !out.status.success() { return Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }); }
+        if !out.status.success() {
+            return Err(if stderr.is_empty() {
+                format!("exit {}", out.status)
+            } else {
+                stderr.trim().to_string()
+            });
+        }
         Ok(stdout)
     }
 }
 
-
 /// Execute kubectl commands.
 #[derive(Debug)]
-pub struct KubectlGene { m: GeneManifest }
+pub struct KubectlGene {
+    m: GeneManifest,
+}
+
+impl Default for KubectlGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl KubectlGene {
-    pub fn new() -> Self { Self { m: mk("kubectl", GeneKind::Tool) } }
+    pub fn new() -> Self {
+        Self {
+            m: mk("kubectl", GeneKind::Tool),
+        }
+    }
 }
 
 impl Gene for KubectlGene {
-    fn id(&self) -> &str { &self.m.id }
-    fn manifest(&self) -> &GeneManifest { &self.m }
+    fn id(&self) -> &str {
+        &self.m.id
+    }
+    fn manifest(&self) -> &GeneManifest {
+        &self.m
+    }
     fn execute(&self, input: &str) -> Result<String, String> {
-        if input.trim().is_empty() { return Err("Usage: kubectl <args>".into()); }
-        let out = std::process::Command::new("kubectl").args(input.split_whitespace()).output()
+        if input.trim().is_empty() {
+            return Err("Usage: kubectl <args>".into());
+        }
+        let out = std::process::Command::new("kubectl")
+            .args(input.split_whitespace())
+            .output()
             .map_err(|e| format!("kubectl not found: {}", e))?;
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-        if !out.status.success() { return Err(if stderr.is_empty() { format!("exit {}", out.status) } else { stderr.trim().to_string() }); }
+        if !out.status.success() {
+            return Err(if stderr.is_empty() {
+                format!("exit {}", out.status)
+            } else {
+                stderr.trim().to_string()
+            });
+        }
         Ok(stdout)
     }
 }
@@ -293,6 +410,12 @@ impl Gene for KubectlGene {
 pub struct DockerGene {
     m: GeneManifest,
 }
+impl Default for DockerGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DockerGene {
     pub fn new() -> Self {
         Self {
@@ -309,12 +432,18 @@ impl Gene for DockerGene {
             return Err("Usage: docker <args>\nExample: docker ps\nExample: docker images".into());
         }
         let args: Vec<&str> = input.split_whitespace().collect();
-        let out = std::process::Command::new("docker").args(&args).output()
+        let out = std::process::Command::new("docker")
+            .args(&args)
+            .output()
             .map_err(|e| format!("docker not found: {}. Install Docker first.", e))?;
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
         if !out.status.success() {
-            return Err(if stderr.is_empty() { format!("docker exit {}", out.status) } else { stderr.trim().to_string() });
+            return Err(if stderr.is_empty() {
+                format!("docker exit {}", out.status)
+            } else {
+                stderr.trim().to_string()
+            });
         }
         Ok(stdout)
     }
@@ -324,6 +453,12 @@ impl Gene for DockerGene {
 pub struct BrowserGene {
     m: GeneManifest,
 }
+impl Default for BrowserGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BrowserGene {
     pub fn new() -> Self {
         Self {
@@ -352,6 +487,12 @@ impl Gene for BrowserGene {
 pub struct SQLiteGene {
     m: GeneManifest,
 }
+impl Default for SQLiteGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SQLiteGene {
     pub fn new() -> Self {
         Self {
@@ -381,6 +522,12 @@ impl Gene for SQLiteGene {
 pub struct GitHubGene {
     m: GeneManifest,
 }
+impl Default for GitHubGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GitHubGene {
     pub fn new() -> Self {
         Self {
@@ -394,15 +541,28 @@ impl Gene for GitHubGene {
     }
     fn execute(&self, input: &str) -> Result<String, String> {
         if input.trim().is_empty() {
-            return Err("Usage: gh <command>\nExample: gh pr list\nExample: gh issue view 123".into());
+            return Err(
+                "Usage: gh <command>\nExample: gh pr list\nExample: gh issue view 123".into(),
+            );
         }
         let args: Vec<&str> = input.split_whitespace().collect();
-        let out = std::process::Command::new("gh").args(&args).output()
-            .map_err(|e| format!("gh not found: {}. Install GitHub CLI (https://cli.github.com).", e))?;
+        let out = std::process::Command::new("gh")
+            .args(&args)
+            .output()
+            .map_err(|e| {
+                format!(
+                    "gh not found: {}. Install GitHub CLI (https://cli.github.com).",
+                    e
+                )
+            })?;
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
         if !out.status.success() {
-            return Err(if stderr.is_empty() { format!("gh exit {}", out.status) } else { stderr.trim().to_string() });
+            return Err(if stderr.is_empty() {
+                format!("gh exit {}", out.status)
+            } else {
+                stderr.trim().to_string()
+            });
         }
         Ok(stdout)
     }
@@ -412,6 +572,12 @@ impl Gene for GitHubGene {
 pub struct MCPGene {
     m: GeneManifest,
 }
+impl Default for MCPGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MCPGene {
     pub fn new() -> Self {
         Self {
@@ -430,13 +596,20 @@ impl Gene for MCPGene {
         let args: Vec<&str> = input.split_whitespace().collect();
         let mut cmd = std::process::Command::new("npx");
         cmd.arg("-y");
-        for a in &args { cmd.arg(a); }
-        let out = cmd.output()
+        for a in &args {
+            cmd.arg(a);
+        }
+        let out = cmd
+            .output()
             .map_err(|e| format!("npx not found: {}. Install Node.js.", e))?;
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();
         let stderr = String::from_utf8_lossy(&out.stderr).to_string();
         if !out.status.success() {
-            return Err(if stderr.is_empty() { format!("npx exit {}", out.status) } else { stderr.trim().to_string() });
+            return Err(if stderr.is_empty() {
+                format!("npx exit {}", out.status)
+            } else {
+                stderr.trim().to_string()
+            });
         }
         Ok(stdout)
     }
@@ -446,6 +619,12 @@ impl Gene for MCPGene {
 pub struct CodeReviewGene {
     m: GeneManifest,
 }
+impl Default for CodeReviewGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CodeReviewGene {
     pub fn new() -> Self {
         Self {
@@ -478,6 +657,12 @@ impl Gene for CodeReviewGene {
 pub struct BenchmarkGene {
     m: GeneManifest,
 }
+impl Default for BenchmarkGene {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BenchmarkGene {
     pub fn new() -> Self {
         Self {
@@ -495,7 +680,10 @@ impl Gene for BenchmarkGene {
         if input.trim().is_empty() {
             return Err("Usage: benchmark <command>\nExample: benchmark curl -s http://localhost:11434/api/tags".into());
         }
-        let out = std::process::Command::new("sh").arg("-c").arg(input).output()
+        let out = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(input)
+            .output()
             .map_err(|e| format!("Failed: {}", e))?;
         let elapsed = start.elapsed();
         let stdout = String::from_utf8_lossy(&out.stdout).to_string();

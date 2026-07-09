@@ -13,15 +13,15 @@ use pandora_ledger::{ExecutionLedger, LedgerEntry, LedgerOutcome};
 use pandora_provider::ollama::OllamaProvider;
 use pandora_provider::traits::Provider;
 use pandora_provider::types::GenerationRequest;
+use pandora_services::ExecutionController;
+use pandora_shadow_council::ShadowCouncil;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
-use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
-use pandora_types::session::SessionStore;
 use pandora_types::harness::HarnessKind;
-use pandora_shadow_council::ShadowCouncil;
-use pandora_services::ExecutionController;
+use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
 use pandora_types::runtime_context::RuntimeContext;
+use pandora_types::session::SessionStore;
 use pandora_types::telemetry_engine::TelemetryEngine;
 use pandora_types::workflow_engine::{ExecutionGraph, StepKind, WorkflowStep};
 use std::collections::HashMap;
@@ -259,10 +259,14 @@ impl PandoraRuntime {
 
         // ── Session: first-class execution object ──
         let mut session = pandora_types::Session::new(&execution_id, task);
-        session.metadata.insert("domain".to_string(), domain.to_string());
-        session.metadata.insert("execution_id".to_string(), execution_id.clone());
+        session
+            .metadata
+            .insert("domain".to_string(), domain.to_string());
+        session
+            .metadata
+            .insert("execution_id".to_string(), execution_id.clone());
         session.status = pandora_types::SessionStatus::Running;
-        let session_id = session.id.clone();
+        let _session_id = session.id.clone();
 
         // Stage 1: Instruction (task string IS instruction for now — Phase 3 concern)
         let _ctx = &self.ctx;
@@ -288,9 +292,14 @@ impl PandoraRuntime {
         // Stage 2b: Shadow Council — route through architecture
         let domain_harnesses = self.council.dispatch(&HarnessKind::Domain);
         if !domain_harnesses.is_empty() {
-            let harness_names: Vec<&str> = domain_harnesses.iter().map(|h| h.manifest().id.as_str()).collect();
+            let harness_names: Vec<&str> = domain_harnesses
+                .iter()
+                .map(|h| h.manifest().id.as_str())
+                .collect();
             println!("[STAGE 2b - COUNCIL] domain harnesses: {:?}", harness_names);
-            session.metadata.insert("selected_harness".to_string(), harness_names.join(","));
+            session
+                .metadata
+                .insert("selected_harness".to_string(), harness_names.join(","));
         } else {
             println!("[STAGE 2b - COUNCIL] no domain harnesses registered");
         }
@@ -302,14 +311,28 @@ impl PandoraRuntime {
         } else if let Some(target) = self.providers.resolve(None, None, None) {
             (target.provider, target.model)
         } else {
-            self.controller.decide("provider-selection", "none", "no provider available", vec![]);
+            self.controller.decide(
+                "provider-selection",
+                "none",
+                "no provider available",
+                vec![],
+            );
             return Err(anyhow::anyhow!(
                 "No provider available - configure a default"
             ));
         };
         // Record decision
-        let rejected: Vec<(&str, &str)> = candidates.iter().skip(1).map(|c| (c.provider.as_str(), "lower priority")).collect();
-        self.controller.decide("provider-selection", &format!("{}/{}", provider_name, model), "highest priority candidate", rejected);
+        let rejected: Vec<(&str, &str)> = candidates
+            .iter()
+            .skip(1)
+            .map(|c| (c.provider.as_str(), "lower priority"))
+            .collect();
+        self.controller.decide(
+            "provider-selection",
+            &format!("{}/{}", provider_name, model),
+            "highest priority candidate",
+            rejected,
+        );
         println!(
             "[STAGE 3 - RESOLUTION] {} candidates -> {}/{}",
             candidates.len(),
@@ -377,7 +400,9 @@ impl PandoraRuntime {
             .record_frame(&ReplayId(frame_id.clone()), frame)
             .ok();
         println!("[STAGE 5 - RECORDER] frame captured");
-        session.metadata.insert("replay_id".to_string(), frame_id.clone());
+        session
+            .metadata
+            .insert("replay_id".to_string(), frame_id.clone());
 
         let rec_out = RecorderStageOutput {
             replay_id: frame_id,
@@ -482,8 +507,21 @@ impl PandoraRuntime {
         session.replay_id = Some(replay_id.clone());
         // Store decision log
         let decision_count = self.controller.decision_log.len();
-        session.metadata.insert("decisions".to_string(), decision_count.to_string());
-        session.metadata.insert("decision_log".to_string(), format!("{:?}", self.controller.decision_log.decisions.iter().map(|d| &d.stage).collect::<Vec<_>>()));
+        session
+            .metadata
+            .insert("decisions".to_string(), decision_count.to_string());
+        session.metadata.insert(
+            "decision_log".to_string(),
+            format!(
+                "{:?}",
+                self.controller
+                    .decision_log
+                    .decisions
+                    .iter()
+                    .map(|d| &d.stage)
+                    .collect::<Vec<_>>()
+            ),
+        );
         // ponytail: store by execution_id for now; real session mgmt later
         self.sessions.create(&execution_id, task);
         if let Some(s) = self.sessions.get_mut(&execution_id) {
@@ -510,7 +548,12 @@ impl PandoraRuntime {
 
     /// Multi-agent execution — split task into sub-tasks, run concurrently, merge results.
     /// ponytail: simple sentence splitting; real decomposition would use PlanningService.
-    pub async fn run_multi(&mut self, task: &str, domain: &str, max_workers: usize) -> Result<ExecutionReport> {
+    pub async fn run_multi(
+        &mut self,
+        task: &str,
+        domain: &str,
+        max_workers: usize,
+    ) -> Result<ExecutionReport> {
         let start = std::time::Instant::now();
         let execution_id = format!("multi-{}", chrono::Utc::now().timestamp_millis());
 
@@ -519,7 +562,7 @@ impl PandoraRuntime {
             task.lines().filter(|l| !l.trim().is_empty()).collect()
         } else {
             // Split on sentence boundaries
-            task.split(|c| c == '.' || c == '!' || c == '?')
+            task.split(['.', '!', '?'])
                 .map(|s| s.trim())
                 .filter(|s| !s.is_empty())
                 .collect()
@@ -531,7 +574,11 @@ impl PandoraRuntime {
         }
 
         let workers = sub_tasks.len().min(max_workers).max(1);
-        println!("[MULTI-AGENT] {} sub-tasks, {} workers", sub_tasks.len(), workers);
+        println!(
+            "[MULTI-AGENT] {} sub-tasks, {} workers",
+            sub_tasks.len(),
+            workers
+        );
 
         // Spawn workers concurrently — each is a normal run() call
         let mut handles = Vec::new();
@@ -557,7 +604,9 @@ impl PandoraRuntime {
                 Ok(report) => {
                     outputs.push(report.output.clone());
                     total_ms += report.duration_ms;
-                    if !report.success { all_success = false; }
+                    if !report.success {
+                        all_success = false;
+                    }
                 }
                 Err(e) => {
                     outputs.push(format!("[ERROR] {}", e));
@@ -566,10 +615,12 @@ impl PandoraRuntime {
             }
         }
 
-        let merged = outputs.join("
+        let merged = outputs.join(
+            "
 ---
-");
-        let elapsed = start.elapsed();
+",
+        );
+        let _elapsed = start.elapsed();
 
         Ok(ExecutionReport {
             execution_id: execution_id.clone(),

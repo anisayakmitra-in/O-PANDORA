@@ -189,7 +189,12 @@ fn cmd_source(args: &[String]) -> Result<(), pandora_types::PandoraError> {
                 }
             }
         }
-        _ => return Err(pandora_types::PandoraError::Internal(format!("Unknown: {}", args[2]))),
+        _ => {
+            return Err(pandora_types::PandoraError::Internal(format!(
+                "Unknown: {}",
+                args[2]
+            )))
+        }
     }
     Ok(())
 }
@@ -240,7 +245,12 @@ fn cmd_skill(args: &[String]) -> Result<(), pandora_types::PandoraError> {
                 }
             }
         }
-        _ => return Err(pandora_types::PandoraError::Internal(format!("Unknown: {}", args[2]))),
+        _ => {
+            return Err(pandora_types::PandoraError::Internal(format!(
+                "Unknown: {}",
+                args[2]
+            )))
+        }
     }
     Ok(())
 }

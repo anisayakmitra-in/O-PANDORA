@@ -4,7 +4,6 @@
 //! This enables programmatic error handling, structured context, and display-friendly messages.
 
 use std::fmt;
-use std::path::PathBuf;
 
 /// The canonical error type for all Pandora operations.
 #[derive(Debug, Clone)]
@@ -49,17 +48,34 @@ impl std::error::Error for PandoraError {}
 
 // Helper constructors
 impl PandoraError {
-    pub fn not_found(msg: impl Into<String>) -> Self { PandoraError::NotFound(msg.into()) }
-    pub fn already_exists(msg: impl Into<String>) -> Self { PandoraError::AlreadyExists(msg.into()) }
-    pub fn config(msg: impl Into<String>) -> Self { PandoraError::Config(msg.into()) }
-    pub fn provider(msg: impl Into<String>) -> Self { PandoraError::Provider(msg.into()) }
-    pub fn harness(msg: impl Into<String>) -> Self { PandoraError::Harness(msg.into()) }
-    pub fn gene(msg: impl Into<String>) -> Self { PandoraError::Gene(msg.into()) }
-    pub fn io(msg: impl Into<String>) -> Self { PandoraError::Io(msg.into()) }
-    pub fn validation(msg: impl Into<String>) -> Self { PandoraError::Validation(msg.into()) }
-    pub fn internal(msg: impl Into<String>) -> Self { PandoraError::Internal(msg.into()) }
+    pub fn not_found(msg: impl Into<String>) -> Self {
+        PandoraError::NotFound(msg.into())
+    }
+    pub fn already_exists(msg: impl Into<String>) -> Self {
+        PandoraError::AlreadyExists(msg.into())
+    }
+    pub fn config(msg: impl Into<String>) -> Self {
+        PandoraError::Config(msg.into())
+    }
+    pub fn provider(msg: impl Into<String>) -> Self {
+        PandoraError::Provider(msg.into())
+    }
+    pub fn harness(msg: impl Into<String>) -> Self {
+        PandoraError::Harness(msg.into())
+    }
+    pub fn gene(msg: impl Into<String>) -> Self {
+        PandoraError::Gene(msg.into())
+    }
+    pub fn io(msg: impl Into<String>) -> Self {
+        PandoraError::Io(msg.into())
+    }
+    pub fn validation(msg: impl Into<String>) -> Self {
+        PandoraError::Validation(msg.into())
+    }
+    pub fn internal(msg: impl Into<String>) -> Self {
+        PandoraError::Internal(msg.into())
+    }
 }
-
 
 impl From<String> for PandoraError {
     fn from(msg: String) -> Self {

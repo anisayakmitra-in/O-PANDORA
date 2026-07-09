@@ -6,7 +6,7 @@
 //! This enables introspection: `pandora inspect <id>` prints the
 //! decision log without reverse-engineering anything.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// A single runtime decision.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +31,11 @@ pub struct RejectedOption {
 }
 
 impl Decision {
-    pub fn new(stage: impl Into<String>, chosen: impl Into<String>, reason: impl Into<String>) -> Self {
+    pub fn new(
+        stage: impl Into<String>,
+        chosen: impl Into<String>,
+        reason: impl Into<String>,
+    ) -> Self {
         Self {
             stage: stage.into(),
             chosen: chosen.into(),
@@ -42,7 +46,10 @@ impl Decision {
     }
 
     pub fn reject(mut self, name: impl Into<String>, reason: impl Into<String>) -> Self {
-        self.rejected.push(RejectedOption { name: name.into(), reason: reason.into() });
+        self.rejected.push(RejectedOption {
+            name: name.into(),
+            reason: reason.into(),
+        });
         self
     }
 }
@@ -54,9 +61,18 @@ pub struct DecisionLog {
 }
 
 impl DecisionLog {
-    pub fn new() -> Self { Self { decisions: Vec::new() } }
+    pub fn new() -> Self {
+        Self {
+            decisions: Vec::new(),
+        }
+    }
 
-    pub fn record(&mut self, decision: Decision) { self.decisions.push(decision); }
+    pub fn record(&mut self, decision: Decision) {
+        self.decisions.push(decision);
+    }
 
     pub fn len(&self) -> usize { self.decisions.len() }
+    pub fn is_empty(&self) -> bool { self.decisions.is_empty() }
+        self.decisions.len()
+    }
 }

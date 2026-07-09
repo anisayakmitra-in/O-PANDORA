@@ -49,7 +49,6 @@ pub struct SlashCommandDef {
 
 /// Scans a directory for gene packages (directories containing gene.toml).
 
-
 /// Standard packages directory: $PANDORA_HOME/packages/ or ~/.pandora/packages/
 pub fn packages_dir() -> std::path::PathBuf {
     let base = std::env::var("PANDORA_HOME")

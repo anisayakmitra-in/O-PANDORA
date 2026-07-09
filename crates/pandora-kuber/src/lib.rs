@@ -12,7 +12,6 @@ fn to_err(e: String) -> pandora_types::PandoraError {
     pandora_types::PandoraError::Internal(e)
 }
 
-
 #[derive(Debug, Clone)]
 pub struct PackageSource {
     pub name: String,
@@ -179,7 +178,10 @@ impl Kuber {
     }
 
     pub fn uninstall(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
-        self.council_mut().genes.unregister(id).map_err(|e| pandora_types::PandoraError::Internal(e))
+        self.council_mut()
+            .genes
+            .unregister(id)
+            .map_err(pandora_types::PandoraError::Internal)
     }
 
     pub fn list_installed(&self) -> Vec<String> {
@@ -205,11 +207,17 @@ impl Kuber {
     pub fn score(&self, path: &str) -> Result<Score, pandora_types::PandoraError> {
         let dir = Path::new(path);
         if !dir.exists() {
-            return Err(pandora_types::PandoraError::not_found(format!("Path not found: {}", path)));
+            return Err(pandora_types::PandoraError::not_found(format!(
+                "Path not found: {}",
+                path
+            )));
         }
         let packages = discover_gene_packages(path);
         if packages.is_empty() && !dir.join("gene.toml").exists() {
-            return Err(pandora_types::PandoraError::not_found(format!("No gene packages at: {}", path)));
+            return Err(pandora_types::PandoraError::not_found(format!(
+                "No gene packages at: {}",
+                path
+            )));
         }
         let pid = if packages.is_empty() {
             ""

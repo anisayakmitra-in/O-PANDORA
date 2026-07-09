@@ -2,13 +2,14 @@
 
 mod dashboard;
 
-use tiny_http::{Server, Response, Header};
 use std::time::Instant;
+use tiny_http::{Header, Response, Server};
 
 fn main() -> anyhow::Result<()> {
     let port = std::env::var("PANDORA_WEB_PORT").unwrap_or_else(|_| "6789".into());
     let addr = format!("0.0.0.0:{}", port);
-    let server = Server::http(&addr).map_err(|e| anyhow::anyhow!("Failed to bind {}: {}", addr, e))?;
+    let server =
+        Server::http(&addr).map_err(|e| anyhow::anyhow!("Failed to bind {}: {}", addr, e))?;
     let start = Instant::now();
 
     eprintln!("🌐 Pandora Dashboard: http://localhost:{}", port);
@@ -20,8 +21,12 @@ fn main() -> anyhow::Result<()> {
             let html = build_dashboard(start);
             let len = html.len();
             let response = Response::from_string(html)
-                .with_header(Header::from_bytes("Content-Type", "text/html; charset=utf-8").unwrap())
-                .with_header(Header::from_bytes("Content-Length", len.to_string().as_bytes()).unwrap());
+                .with_header(
+                    Header::from_bytes("Content-Type", "text/html; charset=utf-8").unwrap(),
+                )
+                .with_header(
+                    Header::from_bytes("Content-Length", len.to_string().as_bytes()).unwrap(),
+                );
             let _ = request.respond(response);
         } else {
             let response = Response::from_string("404 Not Found").with_status_code(404);
@@ -32,8 +37,8 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn build_dashboard(start: Instant) -> String {
-    use pandora_shadow_council::ShadowCouncil;
     use pandora_kuber::builtin;
+    use pandora_shadow_council::ShadowCouncil;
 
     let sc = ShadowCouncil::new();
     let s = sc.summary();
@@ -41,8 +46,10 @@ fn build_dashboard(start: Instant) -> String {
 
     let uptime = {
         let secs = start.elapsed().as_secs();
-        let d = secs / 86400; let h = (secs % 86400) / 3600;
-        let m = (secs % 3600) / 60; let s2 = secs % 60;
+        let d = secs / 86400;
+        let h = (secs % 86400) / 3600;
+        let m = (secs % 3600) / 60;
+        let s2 = secs % 60;
         format!("{}d {:02}h {:02}m {:02}s", d, h, m, s2)
     };
 
@@ -67,12 +74,21 @@ fn build_dashboard(start: Instant) -> String {
 
 fn build_harness_list() -> String {
     let names = [
-        ("Cognition Source", "Handles cognition ingress and semantic intake"),
+        (
+            "Cognition Source",
+            "Handles cognition ingress and semantic intake",
+        ),
         ("Planning Source", "Decomposition, strategy, orchestration"),
-        ("Execution Source", "Execution lifecycle and sandbox control"),
+        (
+            "Execution Source",
+            "Execution lifecycle and sandbox control",
+        ),
         ("Governance Source", "Policy, trust scoring, and governance"),
         ("Identity Source", "Identity management and lineage"),
-        ("Coordination Meta", "Inter-harness coordination and routing"),
+        (
+            "Coordination Meta",
+            "Inter-harness coordination and routing",
+        ),
         ("Coding Domain", "Developer workflows and build automation"),
         ("Research Domain", "Search, browse, summarize, extract"),
     ];
