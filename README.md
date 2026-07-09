@@ -101,8 +101,4 @@ cargo run -- package my-gene
 | `docs/tutorials/BUILD_META_HARNESS.md` | Meta harness template |
 | `docs/tutorials/BUILD_DOMAIN_HARNESS.md` | Domain harness template |
 
-## Project status
 
-Architecture is frozen. The framework is complete. What's left is content — more harnesses, genes, and ecosystem. The project is stable enough for v1.0.
-
-**22 crates, 0 clippy warnings, ~60 passing tests, 0 stub services, 0 dead engines.**
