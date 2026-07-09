@@ -5,6 +5,8 @@ pub mod coding;
 pub mod coordination;
 pub mod research;
 pub mod security;
+pub mod design_genes;
+pub mod design;
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder};
 use pandora_types::services::*;
 use std::sync::Arc;
