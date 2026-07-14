@@ -47,3 +47,4 @@ mod tests {
     #[test] fn governance_policy() { let h = GovernanceSourceHarness::new(Arc::new(pandora_services::DefaultGovernanceService::new())); assert!(h.manifest().capabilities.contains(&"governance".to_string())); }
 }
 pub mod computer_use;
+pub mod android_use;

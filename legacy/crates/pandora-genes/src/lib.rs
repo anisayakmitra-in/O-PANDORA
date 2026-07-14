@@ -205,3 +205,4 @@ mod tests {
     #[test] fn workflow_steps() { let r = WorkflowGene::new().execute("echo a\necho b").unwrap(); assert!(r.contains("step 1: a") && r.contains("step 2: b")); }
     #[test] fn all_have_ids() { let genes: [&dyn Gene; 27] = [ &FilesystemGene::new(), &ShellGene::new(), &GitGene::new(), &HTTPGene::new(), &RustToolGene::new(), &PythonToolGene::new(), &WorkflowGene::new(), &DockerGene::new(), &DockerComposeGene::new(), &TerraformGene::new(), &KubectlGene::new(), &BrowserGene::new(), &SQLiteGene::new(), &GitHubGene::new(), &MCPGene::new(), &CodeReviewGene::new(), &BenchmarkGene::new(), &PostgresGene::new(), &GoGene::new(), &NodeGene::new(), &JavaGene::new(), &RustTestsEvaluator::new(), &PythonTestsEvaluator::new(), &OutputMatchEvaluator::new(), &DockerfileEvaluator::new(), &ShellCheckEvaluator::new(), &MarkdownLintEvaluator::new() ]; for g in &genes { assert!(!g.id().is_empty()); } }
 }
+pub mod code_graph;
