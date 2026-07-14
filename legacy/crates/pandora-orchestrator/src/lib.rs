@@ -478,7 +478,7 @@ ShadowCouncil::new()
             self.failure_intel.ingest(record);
             self.failure_intel.cluster();
         }
-        let root_causes = self.failure_intel.root_cause_count();
+        let root_causes = if success { 0 } else { self.failure_intel.root_cause_count() };
         println!("[STAGE 7 - INTEL] {} root causes", root_causes);
 
         // Stage 8: Knowledge Distillation
