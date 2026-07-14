@@ -163,6 +163,10 @@ fn cmd_run(args: &[String]) { if args.len() < 3 { eprintln!("Usage: pandora run 
             runtime.council.install(Box::new(pandora_harnesses::design::DesignDomainHarness::new())).ok();
             runtime.council.install(Box::new(pandora_harnesses::computer_use::ComputerUseHarness::new())).ok();
             runtime.council.install(Box::new(pandora_harnesses::android_use::AndroidUseHarness::new())).ok();
+            runtime.council.install(Box::new(pandora_harnesses::coding::CodingDomainHarness::new())).ok();
+            runtime.council.install(Box::new(pandora_harnesses::cybersecurity::CybersecurityDomainHarness::new())).ok();
+            runtime.council.install(Box::new(pandora_harnesses::research::ResearchDomainHarness::new())).ok();
+            runtime.council.install(Box::new(pandora_harnesses::security::SecurityDomainHarness::new())).ok();
             use pandora_types::execution_plan::*; runtime.plan = ExecutionPlan { instruction: task.clone(), control_strategy: ControlStrategy::SingleShot, evaluator: EvaluatorKind::None, provider_policy: "default".into(), budget: ExecutionBudget::default(), stop_conditions: vec![StopCondition::GoalMet], ..Default::default() }; match runtime.run(&task, "default").await { Ok(r) if r.success => println!("{}", r.output.chars().take(2000).collect::<String>()), Ok(_) => { eprintln!("Pipeline returned empty — this is normal for short inputs"); } Err(e) => { eprintln!("Pipeline failed: {e}\nSuggestion: Is Ollama running?"); process::exit(1); } } }), Err(e) => { eprintln!("Failed to start runtime: {e}"); process::exit(1); } } }
 
 fn cmd_list(_args: &[String]) { let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new())); let k = pandora_kuber::Kuber::new(sc.clone()); let i = k.list_installed(); if i.is_empty() { println!("Nothing installed. Use: pandora install <name>"); return; } for id in i { println!("  {id}"); } }

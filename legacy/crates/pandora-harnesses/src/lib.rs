@@ -6,6 +6,7 @@ use pandora_types::services::*;
 use std::sync::Arc;
 
 pub mod coding; pub mod coordination; pub mod research; pub mod security; pub mod design_genes; pub mod design;
+pub mod cybersecurity;
 
 fn sm(id: &str, name: &str, caps: &[&str], cmds: &[(&str, &str)]) -> HarnessManifest {
     let mut b = HarnessManifestBuilder::default().id(id).name(name).version("0.1.0").author("pandora").kind(HarnessKind::Source).description(format!("{name} Source Harness — augments the {name} service"));
