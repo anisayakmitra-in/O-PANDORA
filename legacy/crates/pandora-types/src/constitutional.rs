@@ -155,7 +155,7 @@ impl ManifestRelationship { pub fn new(kind: impl Into<String>, target: impl Int
 pub struct ManifestRelationshipSet { pub relationships: Vec<ManifestRelationship> }
 impl ManifestRelationshipSet {
     pub fn new() -> Self { Self::default() }
-    pub fn add(mut self, r: ManifestRelationship) -> Self { self.relationships.push(r); self }
+    pub fn push(mut self, r: ManifestRelationship) -> Self { self.relationships.push(r); self }
 }
 
 // ── Trust / Health / Telemetry / Provenance ──
@@ -363,7 +363,7 @@ pub trait ManifestLoader: Send + Sync { fn loader_name(&self) -> &str; fn load(&
 pub struct InMemoryManifestLoader { name: String, manifests: Vec<ConstitutionalManifest> }
 impl InMemoryManifestLoader {
     pub fn new(name: impl Into<String>) -> Self { Self { name: name.into(), manifests: Vec::new() } }
-    pub fn add(mut self, m: ConstitutionalManifest) -> Self { self.manifests.push(m); self }
+    pub fn push(mut self, m: ConstitutionalManifest) -> Self { self.manifests.push(m); self }
 }
 impl ManifestLoader for InMemoryManifestLoader {
     fn loader_name(&self) -> &str { &self.name }

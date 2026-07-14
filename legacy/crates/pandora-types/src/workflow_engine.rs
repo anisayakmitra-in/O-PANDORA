@@ -83,9 +83,7 @@ impl ExecutionGraph {
         while let Some(id) = stack.pop() {
             if visited.contains(&id) { continue; }
             if let Some(step) = self.steps.iter().find(|s| s.id == id) {
-                if step.depends_on.iter().all(|dep| visited.contains(dep)) {
-                    visited.insert(id.clone()); order.push(id);
-                } else if deferred.contains(&id) {
+                if step.depends_on.iter().all(|dep| visited.contains(dep)) || deferred.contains(&id) {
                     visited.insert(id.clone()); order.push(id);
                 } else {
                     deferred.insert(id.clone()); stack.push(id);

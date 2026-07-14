@@ -1,3 +1,4 @@
+#![allow(clippy::empty_line_after_doc_comments)]
 //! # pandora-types
 #![allow(clippy::unnecessary_sort_by)]
 //!

@@ -37,4 +37,5 @@ impl ExecutionLedger {
     pub fn new() -> Self { Self { entries: Vec::new() } }
     pub fn append(&mut self, entry: LedgerEntry) -> &mut Self { self.entries.push(entry); self }
     pub fn len(&self) -> usize { self.entries.len() }
+    pub fn is_empty(&self) -> bool { self.entries.is_empty() }
 }

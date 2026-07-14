@@ -169,6 +169,8 @@ impl ExecutionProvenanceGraph {
     }
 
     /// Number of nodes in the graph.
+    /// Number of nodes in the graph.
+
 
     /// Blast radius from Gortex — all nodes downstream of this one.
     pub fn blast_radius(&self, node_id: &str) -> Vec<&str> {

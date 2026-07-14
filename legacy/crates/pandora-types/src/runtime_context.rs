@@ -22,7 +22,6 @@ pub enum MemoryMode {
 }
 
 /// How the execution is scheduled.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 #[allow(dead_code)]
 pub enum ExecutionMode {
@@ -289,7 +288,6 @@ struct Session {
     pub context: RuntimeContext,
 }
 
-#[allow(dead_code)]
 #[allow(dead_code)]
 impl Session {
     pub fn new(session_id: impl Into<String>, project_id: impl Into<String>) -> Self {
