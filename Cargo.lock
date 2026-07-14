@@ -1010,6 +1010,7 @@ name = "pandora"
 version = "0.1.0"
 dependencies = [
  "pandora-api",
+ "pandora-harnesses",
  "pandora-kuber",
  "pandora-orchestrator",
  "pandora-shadow-council",
