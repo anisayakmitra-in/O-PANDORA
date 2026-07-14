@@ -232,6 +232,7 @@ pub struct PandoraRuntime {
     pub providers: ProviderRegistry,
     pub sessions: SessionStore,
     pub council: ShadowCouncil,
+    pub parliament: pandora_types::parliament::Parliament,
     pub controller: ExecutionController,
     pub plan: ExecutionPlan,
     pub events: Box<dyn EventSink>,
@@ -264,6 +265,7 @@ impl PandoraRuntime {
             council: {
 ShadowCouncil::new()
         },
+            parliament: pandora_types::parliament::Parliament::new(),
             controller: ExecutionController::new(),
             plan: ExecutionPlan::default(),
             events: Box::new(BroadcastSink::new(256).0),
