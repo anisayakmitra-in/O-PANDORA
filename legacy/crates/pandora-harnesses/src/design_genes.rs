@@ -3,6 +3,7 @@
 
 use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
 
+#[allow(clippy::panic)]
 fn g(id: &str, name: &str, kind: GeneKind, _caps: &[&str]) -> GeneManifest { GeneManifestBuilder::default().id(id).name(name).kind(kind).version("0.1.0").author("pandora").description(format!("{name} design gene")).build().unwrap_or_else(|_| panic!("{id}")) }
 
 // ── DesignReviewGene ──

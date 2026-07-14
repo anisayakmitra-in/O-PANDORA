@@ -545,7 +545,8 @@ ShadowCouncil::new()
             success,
         };
         delta.merge_into(&mut self.ctx);
-        println!("[PARLIAMENT] RuntimeDelta merged into context");
+        let _pw = self.parliament.post_flight(&self.ctx.session_id, &response);
+        println!("[PARLIAMENT] governance — {} warnings", _pw.len());
 
         let total = start.elapsed();
 
