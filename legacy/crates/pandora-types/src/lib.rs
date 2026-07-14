@@ -85,3 +85,4 @@ pub mod telemetry_engine;
 pub mod universal;
 pub mod workflow_engine;
 pub mod ledger;
+pub mod parliament;
