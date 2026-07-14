@@ -1,3 +1,4 @@
+#![allow(clippy::new_without_default)]
 //! Coding Domain Harness — ponytail-inspired code quality tools.
 //! Skills: review, audit, simplify, debt, gain, help.
 //! Pattern from: https://github.com/DietrichGebert/ponytail

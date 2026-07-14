@@ -1,3 +1,4 @@
+#![allow(clippy::new_without_default)]
 //! Research Domain Harness — scientific research, literature, experiments.
 //! Skills from: Orchestra-Research/AI-Research-SKILLs, agent-research-skills, K-Dense-AI
 

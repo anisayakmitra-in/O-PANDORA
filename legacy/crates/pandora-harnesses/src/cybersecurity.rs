@@ -1,3 +1,4 @@
+#![allow(clippy::new_without_default)]
 //! Cybersecurity Domain Harness — offensive/defensive security genes.
 //! Skills from: https://github.com/mukul975/Anthropic-Cybersecurity-Skills
 
