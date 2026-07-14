@@ -5,7 +5,7 @@ use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder};
 
 #[derive(Debug)]
-#[derive(Default)]
+
 pub struct ResearchDomainHarness { manifest: HarnessManifest }
 
 impl ResearchDomainHarness {
