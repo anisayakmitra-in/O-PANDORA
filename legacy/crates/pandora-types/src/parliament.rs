@@ -42,11 +42,11 @@ pub struct GovernanceService;
 
 impl ParliamentService for GovernanceService {
     fn name(&self) -> &str { "governance" }
-    fn pre_flight(&self, session: &str, task: &str) -> Result<(), String> {
+    fn pre_flight(&self, _session: &str, task: &str) -> Result<(), String> {
         if task.is_empty() { return Err("empty task".into()); }
         Ok(())
     }
-    fn post_flight(&self, session: &str, outcome: &str) -> Result<(), String> {
+    fn post_flight(&self, _session: &str, outcome: &str) -> Result<(), String> {
         if outcome.is_empty() { return Err("empty outcome — possible pipeline failure".into()); }
         Ok(())
     }
