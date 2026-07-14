@@ -1,7 +1,0 @@
-{
-  "name": "panoptes-meta-h-gene",
-  "namespace": "@pandora",
-  "version": "0.1.0",
-  "gene_type": "meta_harness",
-  "entry": "main.rs"
-}

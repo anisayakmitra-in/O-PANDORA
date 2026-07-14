@@ -1,7 +1,0 @@
-[package]
-name = "pandora-context-router"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
-serde = { version = "1", features = ["derive"] }
