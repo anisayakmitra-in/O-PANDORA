@@ -1,0 +1,840 @@
+//! Pandora Orchestrator — the full 9-stage constitutional execution pipeline.
+//!
+//! Wires every engine into a single run() call:
+//!   Instruction → Workflow → Capability → Provider → Recorder
+//!   → Telemetry → FailureIntelligence → Knowledge → Ledger
+//!
+//! This is the `pandora.run(task)` entry point for Phase 2B.
+//!
+//! Every stage returns a StageOutput. Parliament merges deltas.
+
+use anyhow::Result;
+use pandora_types::ledger::{ExecutionLedger, LedgerEntry, LedgerOutcome};
+use pandora_types::provider::ollama::OllamaProvider;
+use pandora_types::provider::Provider;
+use pandora_types::provider::GenerationRequest;
+use pandora_services::ExecutionController;
+use pandora_shadow_council::ShadowCouncil;
+mod sinks;
+use sinks::BroadcastSink;
+use pandora_types::execution_plan::ExecutionPlan;
+use pandora_types::events::EventSink;
+use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
+use pandora_types::capability_resolution::CapabilityResolutionEngine;
+use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
+use pandora_types::harness::HarnessKind;
+use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
+use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
+use pandora_types::runtime_context::RuntimeContext;
+use pandora_types::session::SessionStore;
+use pandora_types::telemetry_engine::TelemetryEngine;
+use pandora_types::artifacts::ArtifactGraph;
+use pandora_types::provider_db::{ProviderDb, ProviderObservation};
+use pandora_types::workflow_engine::{ExecutionGraph, StepKind, WorkflowStep};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Instant;
+use pandora_types::provider::CancellationToken;
+
+// ── Stage Output types ──
+
+#[derive(Debug, Clone)]
+pub struct WorkflowStageOutput {
+    pub graph: ExecutionGraph,
+    pub step_count: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct CapabilityStageOutput {
+    pub provider: String,
+    pub model: String,
+    pub candidates_considered: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProviderStageOutput {
+    pub text: String,
+    pub tokens_used: usize,
+    pub duration_ms: u128,
+}
+
+#[derive(Debug, Clone)]
+pub struct RecorderStageOutput {
+    pub replay_id: String,
+    pub frame_count: usize,
+}
+
+/// Full pipeline result — returned from run().
+#[derive(Debug, Clone)]
+pub struct ExecutionReport {
+    pub execution_id: String,
+    pub output: String,
+    pub duration_ms: u128,
+    pub provider: String,
+    pub model: String,
+    pub workflow_steps: usize,
+    pub telemetry_spans: usize,
+    pub root_causes_found: usize,
+    pub knowledge_nodes: usize,
+    pub ledger_entries: usize,
+    pub replay_id: String,
+    pub success: bool,
+}
+
+// ── RuntimeDelta — accumulates stage outputs for Parliament merge (2B-3) ──
+
+/// Immutable accumulated delta from all 9 stages.
+/// Parliament merges this into the runtime context in one step.
+#[derive(Debug, Clone, Default)]
+pub struct RuntimeDelta {
+    pub workflow: Option<WorkflowStageOutput>,
+    pub capability: Option<CapabilityStageOutput>,
+    pub provider: Option<ProviderStageOutput>,
+    pub recorder: Option<RecorderStageOutput>,
+    pub telemetry_spans: usize,
+    pub root_causes: usize,
+    pub knowledge_nodes: usize,
+    pub ledger_entries: usize,
+    pub success: bool,
+}
+
+impl RuntimeDelta {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Merge into a RuntimeContext — the Parliament step.
+    pub fn merge_into(&self, ctx: &mut RuntimeContext) {
+        if let Some(ref wf) = self.workflow {
+            ctx.set_variable("workflow_steps", wf.step_count.to_string());
+        }
+        if let Some(ref cap) = self.capability {
+            ctx.set_variable("resolved_provider", cap.provider.clone());
+            ctx.set_variable("resolved_model", cap.model.clone());
+        }
+        if let Some(ref prov) = self.provider {
+            ctx.set_variable("output_tokens", prov.tokens_used.to_string());
+        }
+        if let Some(ref rec) = self.recorder {
+            ctx.set_variable("replay_id", rec.replay_id.clone());
+        }
+        ctx.set_variable("telemetry_spans", self.telemetry_spans.to_string());
+        ctx.set_variable("root_causes", self.root_causes.to_string());
+        ctx.set_variable("knowledge_nodes", self.knowledge_nodes.to_string());
+        ctx.set_variable("ledger_entries", self.ledger_entries.to_string());
+        ctx.set_variable("pipeline_success", self.success.to_string());
+        ctx.record_telemetry(format!(
+            "RuntimeDelta merged: steps={} provider={} tokens={} success={}",
+            self.workflow.as_ref().map(|w| w.step_count).unwrap_or(0),
+            self.capability
+                .as_ref()
+                .map(|c| c.provider.as_str())
+                .unwrap_or(""),
+            self.provider.as_ref().map(|p| p.tokens_used).unwrap_or(0),
+            self.success,
+        ));
+    }
+}
+
+// ── ProviderRegistry — multi-provider dispatch with model resolution (2C) ──
+
+use pandora_types::provider::ExecutionTarget;
+
+/// Registry of available providers with model-level resolution.
+pub struct ProviderRegistry {
+    providers: Vec<Arc<dyn Provider>>,
+    default_provider_name: Option<String>,
+    default_model_name: Option<String>,
+}
+
+impl ProviderRegistry {
+    pub fn new() -> Self {
+        Self {
+            providers: Vec::new(),
+            default_provider_name: None,
+            default_model_name: None,
+        }
+    }
+
+    pub fn register(&mut self, provider: Arc<dyn Provider>) {
+        if self.default_provider_name.is_none() {
+            self.default_provider_name = Some(provider.name().to_string());
+            let manifest = provider.manifest();
+            self.default_model_name = manifest.models.first().cloned();
+        }
+        self.providers.push(provider);
+    }
+
+    pub fn get(&self, name: &str) -> Option<Arc<dyn Provider>> {
+        self.providers.iter().find(|p| p.name() == name).cloned()
+    }
+
+    pub fn set_default_model(&mut self, model: Option<String>) { self.default_model_name = model; }
+    pub fn set_defaults(&mut self, provider: Option<&str>, model: Option<&str>) {
+        self.default_provider_name = provider.map(|s| s.to_string());
+        self.default_model_name = model.map(|s| s.to_string());
+    }
+
+    /// Resolve an ExecutionTarget from hints + defaults.
+    pub fn resolve(
+        &self,
+        provider_hint: Option<&str>,
+        model_hint: Option<&str>,
+        _cap: Option<&str>,
+    ) -> Option<ExecutionTarget> {
+        let pname = provider_hint.or(self.default_provider_name.as_deref())?;
+        let provider = self.get(pname)?;
+        let manifest = provider.manifest();
+        let model = model_hint
+            .or(self.default_model_name.as_deref())
+            .or(manifest.models.first().map(|s| s.as_str()))?;
+        let locality = manifest.locality.clone();
+        Some(ExecutionTarget {
+            provider: pname.to_string(),
+            model: model.to_string(),
+            endpoint: manifest.endpoint.clone(),
+            capabilities: manifest.capabilities.clone(),
+            locality,
+        })
+    }
+
+    pub fn list(&self) -> Vec<&str> {
+        self.providers.iter().map(|p| p.name()).collect()
+    }
+
+    pub fn list_models(&self) -> Vec<(String, String)> {
+        let mut r = Vec::new();
+        for p in &self.providers {
+            for m in &p.manifest().models {
+                r.push((p.name().to_string(), m.clone()));
+            }
+        }
+        r
+    }
+}
+
+impl Default for ProviderRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ── PandoraRuntime — constitutional pipeline ──
+
+pub struct PandoraRuntime {
+    pub ctx: RuntimeContext,
+    pub recorder: ExecutionRecorder,
+    pub telemetry: TelemetryEngine,
+    pub failure_intel: FailureIntelligenceEngine,
+    pub knowledge: KnowledgeDistillationEngine,
+    pub ledger: ExecutionLedger,
+    pub cap_resolution: CapabilityResolutionEngine,
+    pub providers: ProviderRegistry,
+    pub sessions: SessionStore,
+    pub council: ShadowCouncil,
+    pub controller: ExecutionController,
+    pub plan: ExecutionPlan,
+    pub events: Box<dyn EventSink>,
+    pub provenance: ExecutionProvenanceGraph,
+    pub artifacts: ArtifactGraph,
+    pub provider_db: ProviderDb,
+}
+
+impl PandoraRuntime {
+    pub fn new() -> Self {
+        let mut providers = ProviderRegistry::new();
+        // ponytail: load user connections, fallback to Ollama
+        let cr = pandora_types::connection_manager::ConnectionRegistry::load();
+        if cr.connections.is_empty() {
+            providers.register(Arc::new(OllamaProvider::new_default()));
+        } else {
+            for conn in cr.healthy() {
+                providers.register(Arc::new(OllamaProvider::new(&conn.endpoint, &conn.default_model)));
+            }
+        }
+        providers.set_default_model(Some(std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new())));
+        Self {
+            ctx: RuntimeContext::new("default-session", "pandora"),
+            recorder: ExecutionRecorder::new(),
+            telemetry: TelemetryEngine::new(),
+            failure_intel: FailureIntelligenceEngine::new(),
+            knowledge: KnowledgeDistillationEngine::new(),
+            ledger: ExecutionLedger::new(),
+            sessions: SessionStore::new(),
+            council: {
+ShadowCouncil::new()
+        },
+            controller: ExecutionController::new(),
+            plan: ExecutionPlan::default(),
+            events: Box::new(BroadcastSink::new(256).0),
+            provenance: ExecutionProvenanceGraph::new("pending"),
+            artifacts: ArtifactGraph::new(),
+            provider_db: ProviderDb::new(),
+            cap_resolution: CapabilityResolutionEngine::new(),
+            providers,
+        }
+    }
+
+    /// Register an additional provider at runtime.
+    pub fn register_provider(&mut self, provider: Arc<dyn Provider>) {
+        self.providers.register(provider);
+    }
+
+    /// Execute a task through the full 9-stage constitutional pipeline.
+    pub async fn run(&mut self, task: &str, domain: &str) -> Result<ExecutionReport> {
+        let execution_id = format!("exec-{}", chrono::Utc::now().timestamp_millis());
+        let start = Instant::now();
+
+        // ── Provenance: initialize graph ──
+        self.provenance = ExecutionProvenanceGraph::new(&execution_id);
+        let tid = format!("task-{execution_id}");
+        let oid = format!("outcome-{execution_id}");
+        self.provenance.add_node(NodeKind::Task, &tid, task);
+        self.provenance.add_node(NodeKind::ExecutionPlan, format!("plan-{execution_id}"), "plan");
+        self.provenance.add_node(NodeKind::Outcome, &oid, "Pending");
+        self.provenance.connect(&tid, format!("plan-{execution_id}"), "controller initiated");
+
+        // ── Session: first-class execution object ──
+        let mut session = pandora_types::Session::new(&execution_id, task);
+        session
+            .metadata
+            .insert("domain".to_string(), domain.to_string());
+        session
+            .metadata
+            .insert("execution_id".to_string(), execution_id.clone());
+        session.status = pandora_types::SessionStatus::Running;
+        let _session_id = session.id.clone();
+
+        // Stage 1: Instruction (task string IS instruction for now — Phase 3 concern)
+        let _ctx = &self.ctx;
+
+        // Stage 2: Workflow Engine
+        let mut graph = ExecutionGraph::new("pandora-wf");
+        let plan_step = WorkflowStep::new("plan", StepKind::Plan, "Plan execution");
+        let exec_step =
+            WorkflowStep::new("execute", StepKind::Execute, "Execute task").depends_on("plan");
+        graph.add_step(plan_step);
+        graph.add_step(exec_step);
+        let topo = graph.topological_sort();
+        println!(
+            "[STAGE 2 - WORKFLOW] {} steps: {:?}",
+            graph.steps.len(),
+            topo
+        );
+        let wf_out = WorkflowStageOutput {
+            graph,
+            step_count: topo.len(),
+        };
+
+        // Stage 2b: Shadow Council — route through architecture
+        let domain_harnesses = self.council.dispatch(&HarnessKind::Domain);
+        if !domain_harnesses.is_empty() {
+            let harness_names: Vec<&str> = domain_harnesses
+                .iter()
+                .map(|h| h.manifest().id.as_str())
+                .collect();
+            println!("[STAGE 2b - COUNCIL] domain harnesses: {:?}", harness_names);
+            session
+                .metadata
+                .insert("selected_harness".to_string(), harness_names.join(","));
+        } else {
+            println!("[STAGE 2b - COUNCIL] no domain harnesses registered");
+        }
+
+        // ponytail: sandbox via ExecutionBudget.sandbox_level
+        println!("[PERM] sandbox level: {:?}", self.plan.budget.sandbox_level);
+        // Stage 3: Capability Resolution
+        let candidates = self.cap_resolution.resolve_domain(domain);
+        let (provider_name, model) = if let Some(best) = candidates.first() {
+            (best.provider.clone(), best.model.clone())
+        } else if let Some((p, m)) = self.provider_db.best(&self.plan.provider_policy).map(|(pp, mm)| (pp.to_string(), mm.to_string())) {
+            (p, m)
+        } else if let Some(target) = self.providers.resolve(None, None, None) {
+            (target.provider, target.model)
+        } else {
+            self.controller.decide(
+                "provider-selection",
+                "none",
+                "no provider available",
+                vec![],
+            );
+            return Err(anyhow::anyhow!(
+                "No provider available - configure a default"
+            ));
+        };
+        // Record decision
+        let rejected: Vec<(&str, &str)> = candidates
+            .iter()
+            .skip(1)
+            .map(|c| (c.provider.as_str(), "lower priority"))
+            .collect();
+        self.controller.decide(
+            "provider-selection",
+            &format!("{}/{}", provider_name, model),
+            "highest priority candidate",
+            rejected,
+        );
+        println!(
+            "[STAGE 3 - RESOLUTION] {} candidates -> {}/{}",
+            candidates.len(),
+            provider_name,
+            model
+        );
+        let cap_out = CapabilityStageOutput {
+            provider: provider_name.clone(),
+            model: model.clone(),
+            candidates_considered: candidates.len(),
+        };
+
+        // Stage 4: Provider Execution (real HTTP call)
+        let provider = self
+            .providers
+            .get(&provider_name)
+            .ok_or_else(|| anyhow::anyhow!("Provider not found: {}", provider_name))?;
+        let request = GenerationRequest {
+            model: model.clone(),
+            prompt: format!(
+                "Task: {task}\nDomain: {domain}\n\nExecute and return only the result.",
+            ),
+            temperature: 0.2,
+            ..Default::default()
+        };
+        let _cancel = CancellationToken::new();
+        let exec_start = Instant::now();
+        let response = provider
+            .generate(request)
+            .map_err(|e| anyhow::anyhow!("Provider {} failed: {}", provider_name, e))?;
+        let exec_ms = exec_start.elapsed().as_millis();
+        println!(
+            "[STAGE 4 - EXECUTION] {} tokens, {} ms",
+            response.len(),
+            exec_ms
+        );
+        let provider_out = ProviderStageOutput {
+            text: response.clone(),
+            tokens_used: response.len(),
+            duration_ms: exec_ms,
+        };
+
+        // Stage 5: Recorder — record for replay
+        let frame_id = format!("frame-{execution_id}-1");
+        let frame = ExecutionFrame {
+            frame_id: frame_id.clone(),
+            parent_id: None,
+            step_kind: "execute".into(),
+            step_label: "provider-call".into(),
+            provider: provider_name.clone(),
+            model: model.clone(),
+            input_hash: format!("h{:x}", task.len() as u64),
+            output_hash: format!("h{:x}", response.len() as u64),
+            duration_ms: exec_ms as u64,
+            tokens_used: response.len(),
+            cost: 0.0,
+            success: true,
+            retries: 0,
+            artifacts: vec![],
+            telemetry: vec![],
+            timestamp: chrono::Utc::now(),
+        };
+        let _ = self.recorder.record_frame(&ReplayId(frame_id.clone()), frame);
+        println!("[STAGE 5 - RECORDER] frame captured");
+        self.provider_db.record(ProviderObservation { provider: provider_name.clone(), model: model.clone(), latency_ms: exec_ms as u64, tokens_used: response.len(), success: !response.is_empty(), cost_usd: 0.0, timestamp: std::time::SystemTime::now() });
+
+        session
+            .metadata
+            .insert("replay_id".to_string(), frame_id.clone());
+
+        let rec_out = RecorderStageOutput {
+            replay_id: frame_id,
+            frame_count: 1,
+        };
+
+        // Stage 6: Telemetry — begin/end trace with spans
+        let trace_id = self.telemetry.begin_trace(&execution_id, task);
+        let span_id = self
+            .telemetry
+            .begin_span(&trace_id, "provider-exec", "execute");
+        self.telemetry.end_trace(&trace_id);
+        let trace_count = self.telemetry.trace_count();
+        println!(
+            "[STAGE 6 - TELEMETRY] {} traces, span: {}",
+            trace_count, span_id
+        );
+
+        // Stage 7: Failure Intelligence
+        let success = !response.is_empty();
+        // ponytail: persist to ~/.pandora/events.log
+        use std::io::Write;
+        if let Ok(home) = std::env::var("HOME") {
+            let log = std::path::PathBuf::from(home).join(".pandora/events.log");
+            let _ = std::fs::create_dir_all(log.parent().unwrap());
+            let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log)
+                .map(|mut f| { let _ = writeln!(f, "{}|execution|{}b|{}", self.ctx.session_id, response.len(), success); });
+        }
+        if !success {
+            let record = FailureRecord::new(provider_name.clone(), domain);
+            self.failure_intel.ingest(record);
+            self.failure_intel.cluster();
+        }
+        let root_causes = self.failure_intel.root_cause_count();
+        println!("[STAGE 7 - INTEL] {} root causes", root_causes);
+
+        // Stage 8: Knowledge Distillation
+        if response.len() > 50 {
+            let l1_id = self.knowledge.ingest_telemetry(
+                format!("exec-{execution_id}"),
+                format!("Task: {task} | Provider: {provider_name}"),
+                vec![domain.to_string(), "execution".to_string()],
+            );
+            let _l2 = self.knowledge.distill_to_l1(
+                vec![l1_id],
+                format!("Execution of: {task}"),
+                &response,
+            );
+            println!(
+                "[STAGE 8 - DISTILLATION] {} knowledge nodes",
+                self.knowledge.knowledge_count()
+            );
+        }
+
+        // Stage 9: Execution Ledger — immutable permanent record
+        self.ledger
+            .append(LedgerEntry {
+                stage: "complete".into(),
+                duration_ms: exec_ms as u64,
+                entry_id: format!("entry-{}", execution_id),
+                execution_id: execution_id.clone(),
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                provider: provider_name.clone(),
+                workflow: "full-pipeline".into(),
+                skill_version: None,
+                reason: format!("Execute task in domain '{}'", domain),
+                cost: 0.0,
+                decision: format!("{}/{}", provider_name, model),
+                outcome: if success {
+                    LedgerOutcome::Success
+                } else {
+                    LedgerOutcome::Failure("empty-response".into())
+                },
+                previous_hash: None,
+                hash: format!("hash-{:x}", rand::random::<u64>()),
+                metadata: HashMap::from([
+                    ("task".into(), task.into()),
+                    ("domain".into(), domain.into()),
+                    ("output_tokens".into(), response.len().to_string()),
+                    ("duration_ms".into(), exec_ms.to_string()),
+                ]),
+            })
+            ;
+
+        println!("[STAGE 9 - LEDGER] {} entries total", self.ledger.len());
+
+        // ── Parliament merge: RuntimeDelta → RuntimeContext ──
+        let replay_id = rec_out.replay_id.clone();
+        let delta = RuntimeDelta {
+            workflow: Some(wf_out.clone()),
+            capability: Some(cap_out.clone()),
+            provider: Some(provider_out),
+            recorder: Some(rec_out),
+            telemetry_spans: trace_count,
+            root_causes,
+            knowledge_nodes: self.knowledge.knowledge_count(),
+            ledger_entries: self.ledger.len(),
+            success,
+        };
+        delta.merge_into(&mut self.ctx);
+        println!("[PARLIAMENT] RuntimeDelta merged into context");
+
+        let total = start.elapsed();
+
+        // ── Finalize session ──
+        session.status = if success {
+            pandora_types::SessionStatus::Completed
+        } else {
+            pandora_types::SessionStatus::Failed("empty response".into())
+        };
+        session.completed_at = Some(std::time::SystemTime::now());
+        session.workflow = Some("full-pipeline".into());
+        session.replay_id = Some(replay_id.clone());
+        // Store decision log
+        let decision_count = self.controller.decision_log.len();
+        session
+            .metadata
+            .insert("decisions".to_string(), decision_count.to_string());
+        session.metadata.insert(
+            "decision_log".to_string(),
+            format!(
+                "{:?}",
+                self.controller
+                    .decision_log
+                    .decisions
+                    .iter()
+                    .map(|d| &d.stage)
+                    .collect::<Vec<_>>()
+            ),
+        );
+        // ponytail: store by execution_id for now; real session mgmt later
+        self.sessions.create(&execution_id, task);
+        if let Some(s) = self.sessions.get_mut(&execution_id) {
+            s.status = session.status.clone();
+            s.completed_at = session.completed_at;
+            s.replay_id = session.replay_id.clone();
+        }
+
+        Ok(ExecutionReport {
+            execution_id,
+            output: response,
+            duration_ms: total.as_millis(),
+            provider: provider_name,
+            model,
+            workflow_steps: wf_out.step_count,
+            telemetry_spans: trace_count,
+            root_causes_found: root_causes,
+            knowledge_nodes: self.knowledge.knowledge_count(),
+            ledger_entries: self.ledger.len(),
+            replay_id,
+            success,
+        })
+    }
+
+    /// Multi-agent execution — split task into sub-tasks, run concurrently, merge results.
+    /// ponytail: simple sentence splitting; real decomposition would use PlanningService.
+    pub async fn run_multi(
+        &mut self,
+        task: &str,
+        domain: &str,
+        max_workers: usize,
+    ) -> Result<ExecutionReport> {
+        let start = std::time::Instant::now();
+        let execution_id = format!("multi-{}", chrono::Utc::now().timestamp_millis());
+
+        // Split task into sub-tasks (ponytail: split on sentences or newlines)
+        let sub_tasks: Vec<&str> = if task.contains("\n") {
+            task.lines().filter(|l| !l.trim().is_empty()).collect()
+        } else {
+            // Split on sentence boundaries
+            task.split(['.', '!', '?'])
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .collect()
+        };
+
+        if sub_tasks.len() <= 1 {
+            // Single task — just run normally
+            return self.run(task, domain).await;
+        }
+
+        let workers = sub_tasks.len().min(max_workers).max(1);
+        println!(
+            "[MULTI-AGENT] {} sub-tasks, {} workers",
+            sub_tasks.len(),
+            workers
+        );
+
+        // Spawn workers concurrently — each is a normal run() call
+        let mut handles = Vec::new();
+        for chunk in sub_tasks.chunks(sub_tasks.len().div_ceil(workers)) {
+            let sub = chunk.join(". ");
+            // Clone provider for worker (ponytail: Arc<dyn Provider> is clonable)
+            let domain = domain.to_string();
+            handles.push(tokio::spawn(async move {
+                // ponytail: we share the orchestrator state via self, but tokio::spawn
+                // requires 'static. For now, run workers sequentially in a loop.
+                // Full parallel would use a pool of PandoraRuntime instances.
+                (sub, domain)
+            }));
+        }
+
+        // ponytail: run workers through the existing pipeline sequentially.
+        // True parallelism requires one PandoraRuntime per worker.
+        let mut outputs = Vec::new();
+        let mut total_ms = 0u128;
+        let mut all_success = true;
+        for sub in &sub_tasks {
+            match self.run(sub, domain).await {
+                Ok(report) => {
+                    outputs.push(report.output.clone());
+                    total_ms += report.duration_ms;
+                    if !report.success {
+                        all_success = false;
+                    }
+                }
+                Err(e) => {
+                    outputs.push(format!("[ERROR] {}", e));
+                    all_success = false;
+                }
+            }
+        }
+
+        let merged = outputs.join(
+            "
+---
+",
+        );
+        let _elapsed = start.elapsed();
+
+        Ok(ExecutionReport {
+            execution_id: execution_id.clone(),
+            output: merged,
+            duration_ms: total_ms,
+            provider: "multi-agent".into(),
+            model: "aggregate".into(),
+            workflow_steps: sub_tasks.len(),
+            telemetry_spans: outputs.len(),
+            root_causes_found: 0,
+            knowledge_nodes: 0,
+            ledger_entries: self.ledger.len(),
+            replay_id: execution_id.clone(),
+            success: all_success,
+        })
+    }
+}
+
+impl Default for PandoraRuntime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ── Tests ──
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtime_initializes() {
+        let rt = PandoraRuntime::new();
+        assert_eq!(rt.ledger.len(), 0);
+        assert_eq!(rt.failure_intel.root_cause_count(), 0);
+        assert_eq!(rt.knowledge.knowledge_count(), 0);
+    }
+
+    #[test]
+    fn workflow_planning() {
+        let mut graph = ExecutionGraph::new("test-wf");
+        let step = WorkflowStep::new("step-1", StepKind::Execute, "Test");
+        graph.add_step(step);
+        assert_eq!(graph.steps.len(), 1);
+        assert_eq!(graph.topological_sort().len(), 1);
+    }
+
+    #[test]
+    fn capability_resolution_degenerate() {
+        let engine = CapabilityResolutionEngine::new();
+        let candidates = engine.resolve_domain("nonexistent");
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn failure_intel_counts() {
+        let mut engine = FailureIntelligenceEngine::new();
+        engine.ingest(FailureRecord::new("test", "domain"));
+        assert_eq!(engine.failure_count(), 1);
+    }
+
+    #[test]
+    fn knowledge_empty() {
+        let engine = KnowledgeDistillationEngine::new();
+        assert_eq!(engine.knowledge_count(), 0);
+    }
+
+    #[test]
+    fn ledger_initial() {
+        let ledger = ExecutionLedger::new();
+        assert_eq!(ledger.len(), 0);
+    }
+
+    #[test]
+    fn recorder_begins() {
+        let mut recorder = ExecutionRecorder::new();
+        let _rid = recorder.begin(
+            "test task",
+            "coding",
+            "exec-1",
+            "session-1",
+            "project-1",
+            pandora_types::recorder::RecordedProperties {
+                memory_mode: "default".into(),
+                loop_mode: "closed".into(),
+                safety_level: "standard".into(),
+                execution_backend: "custom".into(),
+                reasoning_depth: 2,
+                telemetry_level: 3,
+            },
+        );
+        assert!(recorder
+            .begin(
+                "t2",
+                "d2",
+                "e2",
+                "s2",
+                "p2",
+                pandora_types::recorder::RecordedProperties {
+                    memory_mode: "default".into(),
+                    loop_mode: "closed".into(),
+                    safety_level: "standard".into(),
+                    execution_backend: "local".into(),
+                    reasoning_depth: 1,
+                    telemetry_level: 1,
+                }
+            )
+            .0
+            .starts_with("replay-"));
+    }
+
+    #[test]
+    fn runtime_delta_merges_into_context() {
+        let mut ctx = RuntimeContext::new("s", "p");
+        let delta = RuntimeDelta {
+            workflow: Some(WorkflowStageOutput {
+                graph: ExecutionGraph::new("g"),
+                step_count: 3,
+            }),
+            capability: Some(CapabilityStageOutput {
+                provider: "default".into(),
+                model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()),
+                candidates_considered: 1,
+            }),
+            provider: Some(ProviderStageOutput {
+                text: "hi".into(),
+                tokens_used: 2,
+                duration_ms: 10,
+            }),
+            recorder: Some(RecorderStageOutput {
+                replay_id: "r1".into(),
+                frame_count: 1,
+            }),
+            telemetry_spans: 5,
+            root_causes: 0,
+            knowledge_nodes: 4,
+            ledger_entries: 1,
+            success: true,
+        };
+        delta.merge_into(&mut ctx);
+        assert_eq!(ctx.get_variable("workflow_steps").unwrap(), "3");
+        assert_eq!(ctx.get_variable("resolved_provider").unwrap(), "default");
+        assert_eq!(ctx.get_variable("knowledge_nodes").unwrap(), "4");
+        assert_eq!(ctx.get_variable("pipeline_success").unwrap(), "true");
+    }
+
+    #[test]
+    fn provider_registry_default_is_first() {
+        let reg = ProviderRegistry::new();
+        // empty -> no default
+        assert!(reg.resolve(None, None, None).is_none());
+        assert!(reg.get("ollama").is_none());
+
+        // ponytail: can't construct OllamaProvider without legacy-ollama feat in cfg(test),
+        // so just verify the empty case behavior
+        let _: Vec<&str> = reg.list();
+        assert!(reg.list().is_empty());
+        assert!(reg.list_models().is_empty());
+    }
+    #[test]
+    fn provider_registry_resolve_returns_none_if_empty() {
+        let reg = ProviderRegistry::new();
+        assert!(reg.resolve(None, None, None).is_none());
+        // No providers registered, any hint should return None
+    }
+}

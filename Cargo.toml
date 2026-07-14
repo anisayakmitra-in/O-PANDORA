@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "legacy/crates/pandora-types",
+    "legacy/crates/pandora-services",
+    "legacy/crates/pandora-orchestrator",
+    "legacy/crates/pandora-shadow-council",
+    "legacy/crates/pandora-genes",
+    "legacy/crates/pandora-harnesses",
+    "legacy/crates/pandora-kuber",
+    "legacy/crates/pandora",
+    "legacy/crates/pandora-tui",
+    "legacy/crates/pandora-fleet",
+    "legacy/crates/pandora-palace",
+    "legacy/crates/pandora-api",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Arka <arka@pandora.local>"]
+license = "MIT"
+
+[profile.release]
+opt-level = 3
+lto = true

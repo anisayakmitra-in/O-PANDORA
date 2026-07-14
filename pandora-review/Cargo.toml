@@ -1,0 +1,35 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "crates/anubis-memory",
+    "crates/pandora-cli",
+    "crates/pandora-events",
+    "crates/pandora-gene",
+    "crates/pandora-governance",
+    "crates/pandora-harness",
+    "crates/pandora-memory",
+    "crates/pandora-model",
+    "crates/pandora-panoptikon",
+    "crates/pandora-policy",
+    "crates/pandora-provider",
+    "crates/pandora-runtime",
+    "crates/pandora-sandbox",
+    "crates/pandora-scheduler",
+    "crates/pandora-signal",
+    "crates/pandora-tools",
+    "crates/pandora-tui",
+    "crates/pandora-types",
+    "test-runner",
+    "dynamic_harness",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Arka <arka@pandora.local>"]
+license = "MIT"
+
+[profile.release]
+opt-level = 3
+lto = true

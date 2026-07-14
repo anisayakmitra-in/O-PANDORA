@@ -1,0 +1,21 @@
+{
+  "name": "coding",
+  "gene_id": "coding-v3",
+  "parent_gene": "coding-v2",
+  "generation": 3,
+  "domains": [
+    "rust",
+    "systems"
+  ],
+  "avg_score": 1.9,
+  "total_runs": 10,
+  "supports_tools": true,
+  "supports_memory": true,
+  "supports_subagents": false,
+  "tags": [
+    "fast",
+    "local",
+    "mutated",
+    "mutated"
+  ]
+}

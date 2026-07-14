@@ -1,0 +1,13 @@
+[package]
+name = "pandora"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-kuber = { path = "../pandora-kuber" }
+pandora-orchestrator = { path = "../pandora-orchestrator" }
+pandora-shadow-council = { path = "../pandora-shadow-council" }
+tokio = { version = "1", features = ["full"] }
+pandora-types = { path = "../pandora-types" }
+serde_json = "1"
+pandora-api = { path = "../pandora-api" }

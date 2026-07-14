@@ -1,0 +1,8 @@
+[package]
+name = "pandora-shadow-council"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
+serde = { version = "1", features = ["derive"] }

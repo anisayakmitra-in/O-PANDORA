@@ -1,0 +1,21 @@
+[plan]
+instruction = "Complete this objective overnight"
+control_strategy = "SingleShot"
+provider_policy = "cheapest"
+
+[budget]
+max_duration_secs = 28800
+max_tokens = 1000000
+max_retries = 10
+
+[[milestones]]
+name = "Phase 1: Research and plan"
+
+[[milestones]]
+name = "Phase 2: Implementation"
+
+[[milestones]]
+name = "Phase 3: Testing and fixes"
+
+[[milestones]]
+name = "Phase 4: Final review"

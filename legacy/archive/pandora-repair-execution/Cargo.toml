@@ -1,0 +1,8 @@
+[package]
+name = "pandora-repair-execution"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+pandora-runtime = { path = "../pandora-runtime" }

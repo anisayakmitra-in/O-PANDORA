@@ -1,0 +1,8 @@
+[package]
+name = "pandora-semantic-memory"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+

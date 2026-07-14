@@ -1,0 +1,4 @@
+[package]
+name = "pandora-config"
+version.workspace = true
+edition.workspace = true

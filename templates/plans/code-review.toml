@@ -1,0 +1,21 @@
+[plan]
+instruction = "Review and audit this codebase"
+control_strategy = "SingleShot"
+provider_policy = "reliable"
+
+[budget]
+max_duration_secs = 600
+max_tokens = 200000
+max_retries = 2
+
+[[milestones]]
+name = "Scan for security issues"
+done_when = "Security report generated"
+
+[[milestones]]
+name = "Audit dependency tree"
+done_when = "Dependency issues listed"
+
+[[milestones]]
+name = "Suggest simplifications"
+done_when = "Simplification suggestions written"

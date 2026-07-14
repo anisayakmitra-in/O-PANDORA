@@ -1,0 +1,21 @@
+[plan]
+instruction = "Build a REST API"
+control_strategy = "SingleShot"
+provider_policy = "fastest"
+
+[budget]
+max_duration_secs = 300
+max_tokens = 100000
+max_retries = 3
+
+[[milestones]]
+name = "Design routes and data model"
+done_when = "API endpoints documented"
+
+[[milestones]]
+name = "Implement handlers"
+done_when = "All endpoints return 200"
+
+[[milestones]]
+name = "Add error handling and tests"
+done_when = "Tests pass"

@@ -1,0 +1,10 @@
+[package]
+name = "pandora-harnesses"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+pandora-types = { path = "../pandora-types" }
+pandora-shadow-council = { path = "../pandora-shadow-council" }
+pandora-services = { path = "../pandora-services" }
+serde = { version = "1", features = ["derive"] }
