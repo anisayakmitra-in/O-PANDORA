@@ -340,7 +340,7 @@ ShadowCouncil::new()
                 .metadata
                 .insert("selected_harness".to_string(), harness_names.join(","));
         } else {
-            println!("[STAGE 2b - COUNCIL] no domain harnesses registered");
+            println!("[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)");
         }
 
         // ponytail: sandbox via ExecutionBudget.sandbox_level

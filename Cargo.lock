@@ -1041,6 +1041,7 @@ dependencies = [
  "pandora-orchestrator",
  "pandora-types",
  "rand",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio",
