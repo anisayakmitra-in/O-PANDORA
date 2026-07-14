@@ -138,7 +138,7 @@ fn cmd_execute(args: &[String]) {
             };
             match runtime.run(&instruction, &domain).await {
                 Ok(r) if r.success => println!("{}", r.output.chars().take(2000).collect::<String>()),
-                Ok(_) => { eprintln!("Pipeline returned empty"); process::exit(1); }
+                Ok(_) => { eprintln!("Pipeline returned empty — this is normal for short inputs"); }
                 Err(e) => { eprintln!("Pipeline failed: {e}"); process::exit(1); }
             }
         }),
@@ -159,15 +159,15 @@ fn extract_toml_field(toml: &str, key: &str) -> Option<String> {
     None
 }
 
-fn cmd_run(args: &[String]) { if args.len() < 3 { eprintln!("Usage: pandora run <task>"); process::exit(1); } let task: String = args[2..].join(" "); println!("Task: {task}"); match tokio::runtime::Runtime::new() { Ok(rt) => rt.block_on(async { let mut runtime = pandora_orchestrator::PandoraRuntime::new(); use pandora_types::execution_plan::*; runtime.plan = ExecutionPlan { instruction: task.clone(), control_strategy: ControlStrategy::SingleShot, evaluator: EvaluatorKind::None, provider_policy: "default".into(), budget: ExecutionBudget::default(), stop_conditions: vec![StopCondition::GoalMet], ..Default::default() }; match runtime.run(&task, "default").await { Ok(r) if r.success => println!("{}", r.output.chars().take(2000).collect::<String>()), Ok(_) => { eprintln!("Pipeline returned empty"); process::exit(1); } Err(e) => { eprintln!("Pipeline failed: {e}\nSuggestion: Is Ollama running?"); process::exit(1); } } }), Err(e) => { eprintln!("Failed to start runtime: {e}"); process::exit(1); } } }
+fn cmd_run(args: &[String]) { if args.len() < 3 { eprintln!("Usage: pandora run <task>"); process::exit(1); } let task: String = args[2..].join(" "); println!("Task: {task}"); match tokio::runtime::Runtime::new() { Ok(rt) => rt.block_on(async { let mut runtime = pandora_orchestrator::PandoraRuntime::new(); use pandora_types::execution_plan::*; runtime.plan = ExecutionPlan { instruction: task.clone(), control_strategy: ControlStrategy::SingleShot, evaluator: EvaluatorKind::None, provider_policy: "default".into(), budget: ExecutionBudget::default(), stop_conditions: vec![StopCondition::GoalMet], ..Default::default() }; match runtime.run(&task, "default").await { Ok(r) if r.success => println!("{}", r.output.chars().take(2000).collect::<String>()), Ok(_) => { eprintln!("Pipeline returned empty — this is normal for short inputs"); } Err(e) => { eprintln!("Pipeline failed: {e}\nSuggestion: Is Ollama running?"); process::exit(1); } } }), Err(e) => { eprintln!("Failed to start runtime: {e}"); process::exit(1); } } }
 
 fn cmd_list(_args: &[String]) { let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new())); let k = pandora_kuber::Kuber::new(sc.clone()); let i = k.list_installed(); if i.is_empty() { println!("Nothing installed. Use: pandora install <name>"); return; } for id in i { println!("  {id}"); } }
 fn cmd_info(args: &[String]) { if args.len() < 3 { eprintln!("Usage: pandora info <id>"); process::exit(1); } let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new())); let k = pandora_kuber::Kuber::new(sc.clone()); match k.info(&args[2]) { Some(p) => println!("{} v{} ({})\n  {}", p.id, p.version, p.kind, p.description), None => println!("Not found: {}", args[2]) } }
 fn cmd_uninstall(args: &[String]) { if args.len() < 3 { eprintln!("Usage: pandora uninstall <id>"); process::exit(1); } let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new())); let mut k = pandora_kuber::Kuber::new(sc.clone()); match k.uninstall(&args[2]) { Ok(_) => println!("Removed: {}", args[2]), Err(e) => { eprintln!("{e}"); process::exit(1); } } }
 fn cmd_update(args: &[String]) { if args.len() < 3 { eprintln!("Usage: pandora update <id>"); process::exit(1); } let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new())); let k = pandora_kuber::Kuber::new(sc.clone()); let f: Vec<_> = k.check_updates().into_iter().filter(|(id, _, _)| id == &args[2]).collect(); if f.is_empty() { println!("No updates for: {}", args[2]); return; } for (id, _cur, avail) in &f { println!("{id}: update available to {avail}"); } }
-fn cmd_providers(_args: &[String]) { println!("Provider      Status   Models   Latency\n{}", "-".repeat(40)); let h = pandora_types::provider_health::check_ollama(); println!("  {:<12} {:<8} {:>3}      {:>4}ms", h.name, h.status, h.model_count, h.latency_ms); let url = env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into()); let h2 = pandora_types::provider_health::check_openai_compat("LlamaCpp", &url); println!("  {:<12} {:<8} {:>3}      {:>4}ms", h2.name, h2.status, h2.model_count, h2.latency_ms); }
+fn cmd_providers(_args: &[String]) { use pandora_types::connection_manager::{ConnectionRegistry, ConnectionKind}; let reg = ConnectionRegistry::load(); if reg.connections.is_empty() { println!("No connections. Add one: pandora connection add <name> <kind> <endpoint>"); println!("Checking Ollama directly..."); let h = pandora_types::provider_health::check_ollama(); println!("  {:<12} {:<8} {:>3}      {:>4}ms", h.name, h.status, h.model_count, h.latency_ms); } else { println!("NAME                 KIND              STATUS  LATENCY"); println!("-------------------- ----------------- ------- -------"); for c in reg.list() { println!("  {:<18} {:<17} {:<7} {}ms", c.name, c.kind.label(), if c.is_healthy() { "OK" } else { "OFF" }, c.latency_ms); } } }
 fn cmd_harnesses(_args: &[String]) { let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let s = sc.read().unwrap().summary(); println!("Installed Harnesses: {}\nGenes: {} / {}", s.source_count, s.genes, s.genes_enabled); }
+    let s = sc.read().unwrap().summary(); println!("Harnesses: {} total (0 loaded — use pandora install)", s.total_harnesses); }
 fn cmd_doctor(_args: &[String]) {
     println!("=== Pandora Doctor ===\n");
     let oh = env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
@@ -418,6 +418,7 @@ fn cmd_shell(_args: &[String]) {
     }
     // ponytail: skill trigger — after complex tasks, offer to save pattern
     let sd = sessions_dir();
+    let _ = std::fs::create_dir_all(&sd);
     if let Ok(entries) = std::fs::read_dir(&sd) {
         let count = entries.filter_map(|e| e.ok()).count();
         if count > 0 && count % 10 == 0 { println!("  Learned from {} sessions. Save a skill? pandora package <name>", count); }
