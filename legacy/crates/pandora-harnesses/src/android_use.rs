@@ -9,6 +9,12 @@ use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManif
 #[derive(Debug)]
 pub struct AndroidUseHarness { manifest: HarnessManifest }
 
+impl Default for AndroidUseHarness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AndroidUseHarness {
     pub fn new() -> Self {
         Self { manifest: HarnessManifestBuilder::default()

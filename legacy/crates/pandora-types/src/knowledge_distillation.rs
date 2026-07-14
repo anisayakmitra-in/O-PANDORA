@@ -179,10 +179,10 @@ impl KnowledgeDistillationEngine {
     pub fn query(&self, q: &KnowledgeQuery) -> Vec<&KnowledgeNode> {
         let mut results: Vec<&KnowledgeNode> = self.graph.nodes.iter()
             .filter(|n| {
-                q.tier.map_or(true, |t| n.tier == t)
+                q.tier.is_none_or(|t| n.tier == t)
                     && (q.tags.is_empty() || q.tags.iter().any(|t| n.tags.contains(t)))
                     && (q.session_ids.is_empty() || q.session_ids.iter().any(|s| n.source_sessions.contains(s)))
-                    && q.min_confidence.map_or(true, |c| n.confidence >= c)
+                    && q.min_confidence.is_none_or(|c| n.confidence >= c)
             })
             .collect();
         results.sort_by(|a, b| b.created_at.cmp(&a.created_at));

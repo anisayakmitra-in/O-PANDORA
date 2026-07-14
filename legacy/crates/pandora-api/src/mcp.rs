@@ -12,6 +12,7 @@ use tokio::sync::Mutex;
 
 // ── MCP Protocol Types ──
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct McpRequest { jsonrpc: String, id: Option<u64>, method: String, #[serde(default)] params: Value }
 

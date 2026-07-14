@@ -43,7 +43,7 @@ pub struct ProviderManifest {
 
 impl Default for ProviderManifest {
     fn default() -> Self {
-        Self { name: "ollama".into(), endpoint: "http://localhost:11434".into(), models: vec![std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()).into()], capabilities: vec!["text".into()], locality: "local".into() }
+        Self { name: "ollama".into(), endpoint: "http://localhost:11434".into(), models: vec![std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into())], capabilities: vec!["text".into()], locality: "local".into() }
     }
 }
 
@@ -78,7 +78,7 @@ pub mod ollama {
             Self { endpoint: endpoint.to_string(), model: model.to_string() }
         }
         pub fn new_default() -> Self {
-            Self { endpoint: "http://localhost:11434".into(), model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()).into() }
+            Self { endpoint: "http://localhost:11434".into(), model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()) }
         }
     }
 
@@ -107,6 +107,12 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct CancellationToken { cancelled: Arc<Mutex<bool>> }
+
+impl Default for CancellationToken {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl CancellationToken {
     pub fn new() -> Self { Self { cancelled: Arc::new(Mutex::new(false)) } }

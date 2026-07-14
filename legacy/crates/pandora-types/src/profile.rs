@@ -65,7 +65,7 @@ pub fn list_profiles() -> Result<Vec<String>, String> {
     })? {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
-        if path.extension().map_or(false, |ext| ext == "toml") {
+        if path.extension().is_some_and(|ext| ext == "toml") {
             if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
                 profiles.push(name.to_string());
             }

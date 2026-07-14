@@ -5,6 +5,12 @@ use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManif
 #[derive(Debug)]
 pub struct ComputerUseHarness { manifest: HarnessManifest }
 
+impl Default for ComputerUseHarness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ComputerUseHarness {
     pub fn new() -> Self {
         Self { manifest: HarnessManifestBuilder::default()

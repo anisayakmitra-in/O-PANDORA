@@ -37,7 +37,7 @@ fn main() -> io::Result<()> {
 
 fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
     loop {
-        terminal.draw(|f| ui(f))?;
+        terminal.draw(ui)?;
         if let Event::Key(key) = event::read()? {
             if key.code == KeyCode::Char('q') || key.code == KeyCode::Esc {
                 return Ok(());

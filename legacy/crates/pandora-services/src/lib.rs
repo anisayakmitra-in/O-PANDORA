@@ -93,6 +93,12 @@ pub struct PlanStep { pub id: String, pub description: String, pub depends_on: V
 
 #[derive(Debug)]
 pub struct PlanningEngine { plans: Mutex<HashMap<String, Vec<PlanStep>>> }
+impl Default for PlanningEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PlanningEngine {
     pub fn new() -> Self { Self { plans: Mutex::new(HashMap::new()) } }
     pub fn decompose(&self, goal: &str) -> Vec<PlanStep> {

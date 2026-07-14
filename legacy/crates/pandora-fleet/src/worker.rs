@@ -8,7 +8,7 @@ use std::sync::Arc;
 pub struct WorkerCapability { pub provider: String, pub models: Vec<String>, pub sandbox_level: u8, pub max_concurrency: usize }
 
 impl Default for WorkerCapability {
-    fn default() -> Self { Self { provider: "ollama".into(), models: vec![std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "ollama/default".into()).into()], sandbox_level: 0, max_concurrency: 4 } }
+    fn default() -> Self { Self { provider: "ollama".into(), models: vec![std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "ollama/default".into())], sandbox_level: 0, max_concurrency: 4 } }
 }
 
 #[derive(Debug, Clone, Serialize)]

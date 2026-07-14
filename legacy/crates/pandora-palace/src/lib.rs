@@ -27,6 +27,12 @@ pub struct PalaceState {
     pub tokens: Arc<RwLock<HashMap<String, String>>>, // token -> user_id
 }
 
+impl Default for PalaceState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PalaceState {
     pub fn new() -> Self { Self { packages: Arc::new(RwLock::new(HashMap::new())), users: Arc::new(RwLock::new(HashMap::new())), tokens: Arc::new(RwLock::new(HashMap::new())) } }
 }

@@ -129,7 +129,7 @@ pub fn benchmark_all() -> Vec<(String, String, u64, f64)> {
 
     let host = ollama_host();
     let model = std::env::var("OLLAMA_MODEL")
-        .unwrap_or_else(|_| std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new()).into());
+        .unwrap_or_else(|_| std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new()));
     match benchmark_provider("Ollama", &host, &model, prompt) {
         Ok((lat, tps)) => results.push(("Ollama".into(), model, lat, tps)),
         Err(e) => results.push(("Ollama".into(), format!("error: {e}"), 0, 0.0)),

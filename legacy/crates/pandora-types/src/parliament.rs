@@ -27,11 +27,11 @@ impl Parliament {
     }
 
     pub fn pre_flight(&self, session: &str, task: &str) -> Vec<String> {
-        self.services.iter().filter_map(|(_, s)| s.pre_flight(session, task).err()).collect()
+        self.services.values().filter_map(|s| s.pre_flight(session, task).err()).collect()
     }
 
     pub fn post_flight(&self, session: &str, outcome: &str) -> Vec<String> {
-        self.services.iter().filter_map(|(_, s)| s.post_flight(session, outcome).err()).collect()
+        self.services.values().filter_map(|s| s.post_flight(session, outcome).err()).collect()
     }
 
     pub fn service_count(&self) -> usize { self.services.len() }

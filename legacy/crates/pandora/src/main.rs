@@ -84,7 +84,7 @@ fn cmd_execute(args: &[String]) {
     let path = &args[2];
     let toml = match std::fs::read_to_string(path) { Ok(t) => t, Err(e) => { eprintln!("Cannot read {path}: {e}"); process::exit(1); } };
     
-    let instruction = extract_toml_field(&toml, "goal").unwrap_or_else(|| "".to_string());
+    let instruction = extract_toml_field(&toml, "goal").unwrap_or_default();
     let strategy = extract_toml_field(&toml, "strategy").unwrap_or_else(|| "single_shot".to_string());
     let mode = extract_toml_field(&toml, "mode").unwrap_or_else(|| "single".to_string());
     let evaluator = extract_toml_field(&toml, "evaluator").unwrap_or_else(|| "none".to_string());
@@ -151,7 +151,7 @@ fn extract_toml_field(toml: &str, key: &str) -> Option<String> {
     for line in toml.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with(&format!("{key} = ")) || trimmed.starts_with(&format!("{key}=")) {
-            let rest = trimmed.splitn(2, '=').nth(1)?;
+            let rest = trimmed.split_once('=')?.1;
             let val = rest.trim().trim_matches('"').trim_matches('\'');
             if !val.is_empty() { return Some(val.to_string()); }
         }
@@ -188,7 +188,7 @@ fn cmd_doctor(_args: &[String]) {
     println!("Runtime: {}", env!("CARGO_PKG_VERSION"));
     // Check config env vars
     for var in &["OLLAMA_HOST", "LLAMA_CPP_HOST", "PROVIDER_ENDPOINT", "PG_HOST", "GO_CMD", "NODE_CMD", "JAVA_CMD"] {
-        match env::var(var) { Ok(v) => println!("  {var}={v}"), Err(_) => {} }
+        if let Ok(v) = env::var(var) { println!("  {var}={v}") }
     }
 }
 fn cmd_genes(_args: &[String]) { let all = pandora_kuber::builtin::all(); println!("{} built-in genes:", all.len()); for p in &all { println!("  {} — {}", p.id, p.description); } }
@@ -200,7 +200,7 @@ fn cmd_inspect(args: &[String]) {
     println!("  Genes: {} installed, {} enabled", s.genes, s.genes_enabled);
     println!("  Built-in: {}", pandora_kuber::builtin::all().len());
     println!("  Slash commands: {}", s.slash_commands);
-    println!("\nSessions: {}", sessions_dir().exists().then_some("active").unwrap_or("none"));
+    println!("\nSessions: {}", if sessions_dir().exists() { "active" } else { "none" });
     if args.len() >= 3 {
         let path = sessions_dir().join(format!("{}.json", args[2]));
         match std::fs::read_to_string(&path) {
@@ -231,25 +231,22 @@ fn cmd_config(_args: &[String]) { println!("Configuration\n  PG_HOST=localhost  
 fn cmd_graph(args: &[String]) {
     if args.len() >= 3 {
         let path = sessions_dir().join(format!("{}.json", args[2]));
-        match std::fs::read_to_string(&path) {
-            Ok(json) => {
-                if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) {
-                    let mut g = pandora_types::provenance::ExecutionProvenanceGraph::new(&s.id);
-                    g.add_node(pandora_types::provenance::NodeKind::Task, format!("task-{}", s.id), &s.prompt);
-                    if let Some(r) = &s.replay_id {
-                        g.add_node(pandora_types::provenance::NodeKind::Session, r, &s.id);
-                        g.connect(format!("task-{}", s.id), r, "completed");
-                    }
-                    for (i, frame) in s.timeline.iter().enumerate() {
-                        let fid = format!("frame-{}", i);
-                        g.add_node(pandora_types::provenance::NodeKind::Gene, &fid, &frame.step_label);
-                        g.connect(format!("task-{}", s.id), fid, &format!("step {} via {}", i+1, frame.provider));
-                    }
-                    println!("{}", g.render());
-                    return;
+        if let Ok(json) = std::fs::read_to_string(&path) {
+            if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) {
+                let mut g = pandora_types::provenance::ExecutionProvenanceGraph::new(&s.id);
+                g.add_node(pandora_types::provenance::NodeKind::Task, format!("task-{}", s.id), &s.prompt);
+                if let Some(r) = &s.replay_id {
+                    g.add_node(pandora_types::provenance::NodeKind::Session, r, &s.id);
+                    g.connect(format!("task-{}", s.id), r, "completed");
                 }
+                for (i, frame) in s.timeline.iter().enumerate() {
+                    let fid = format!("frame-{}", i);
+                    g.add_node(pandora_types::provenance::NodeKind::Gene, &fid, &frame.step_label);
+                    g.connect(format!("task-{}", s.id), fid, format!("step {} via {}", i+1, frame.provider));
+                }
+                println!("{}", g.render());
+                return;
             }
-            Err(_) => {}
         }
     }
     println!("Execution Graph: pandora run <task> to generate one\n  Provenance: pandora graph <session-id>");
@@ -340,7 +337,7 @@ fn cmd_explain(args: &[String]) {
         _ => "Unknown",
     };
     println!("\n  {}\n", status_str);
-    if session.timeline.len() > 0 {
+    if !session.timeline.is_empty() {
         let last = &session.timeline[session.timeline.len() - 1];
         println!("  Final action: {} via {}/{}\n", last.step_label, last.provider, last.model);
     }
@@ -429,24 +426,21 @@ fn cmd_shell(_args: &[String]) {
 fn cmd_artifacts(args: &[String]) {
     if args.len() < 3 { eprintln!("Usage: pandora artifacts <session-id>"); return; }
     let path = sessions_dir().join(format!("{}.json", args[2]));
-    match std::fs::read_to_string(&path) {
-        Ok(json) => {
-            if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) {
-                println!("Artifacts for session: {}\n", args[2]);
-                println!("  Timeline: {} frames", s.timeline.len());
-                for (i, f) in s.timeline.iter().enumerate() {
-                    println!("    {}. {} via {}/{}", i + 1, f.step_label, f.provider, f.model);
-                }
-                println!("\n  Metadata: {} keys", s.metadata.len());
-                for (k, v) in &s.metadata {
-                    if k.starts_with("artifact") || k.contains("file") || k == "replay_id" {
-                        println!("    {k}: {v}");
-                    }
-                }
-                return;
+    if let Ok(json) = std::fs::read_to_string(&path) {
+        if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) {
+            println!("Artifacts for session: {}\n", args[2]);
+            println!("  Timeline: {} frames", s.timeline.len());
+            for (i, f) in s.timeline.iter().enumerate() {
+                println!("    {}. {} via {}/{}", i + 1, f.step_label, f.provider, f.model);
             }
+            println!("\n  Metadata: {} keys", s.metadata.len());
+            for (k, v) in &s.metadata {
+                if k.starts_with("artifact") || k.contains("file") || k == "replay_id" {
+                    println!("    {k}: {v}");
+                }
+            }
+            return;
         }
-        Err(_) => {}
     }
     eprintln!("Session not found: {}", args[2]);
 }

@@ -58,6 +58,7 @@ impl GeneKind {
 /// Rich metadata for a Gene — used by KUBER for display, search, and publishing.
 /// Not part of the runtime execution path.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct GeneMetadata {
     pub description: String,
     pub homepage: Option<String>,
@@ -71,22 +72,6 @@ pub struct GeneMetadata {
     pub permissions: Vec<String>,
 }
 
-impl Default for GeneMetadata {
-    fn default() -> Self {
-        Self {
-            description: String::new(),
-            homepage: None,
-            license: None,
-            repository: None,
-            tags: Vec::new(),
-            documentation: None,
-            icon: None,
-            examples: Vec::new(),
-            custom: HashMap::new(),
-            permissions: Vec::new(),
-        }
-    }
-}
 
 // ── Gene Manifest — minimalist runtime record ──
 

@@ -55,6 +55,7 @@ impl HarnessManifest {
 
 /// Rich metadata for display and distribution — not used at runtime.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct HarnessMetadata {
     pub description: String,
     pub homepage: Option<String>,
@@ -62,16 +63,6 @@ pub struct HarnessMetadata {
     pub tags: Vec<String>,
 }
 
-impl Default for HarnessMetadata {
-    fn default() -> Self {
-        Self {
-            description: String::new(),
-            homepage: None,
-            license: None,
-            tags: Vec::new(),
-        }
-    }
-}
 
 // ── Harness Manifest Builder ──
 

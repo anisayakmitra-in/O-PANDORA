@@ -80,9 +80,8 @@ impl PermissionSet {
                 Permission::ShellExecute | Permission::ShellPipe => {
                     if sandbox_level == 0 { violations.push(format!("{} requires sandbox", p.name())); }
                 }
-                Permission::NetworkRaw | Permission::NetworkBind => {
-                    if sandbox_level < 2 { violations.push(format!("{} requires isolated sandbox", p.name())); }
-                }
+                Permission::NetworkRaw | Permission::NetworkBind
+                    if sandbox_level < 2 => { violations.push(format!("{} requires isolated sandbox", p.name())); }
                 _ => {}
             }
         }

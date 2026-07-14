@@ -27,6 +27,12 @@ impl Default for LedgerEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionLedger { pub entries: Vec<LedgerEntry> }
 
+impl Default for ExecutionLedger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExecutionLedger {
     pub fn new() -> Self { Self { entries: Vec::new() } }
     pub fn append(&mut self, entry: LedgerEntry) -> &mut Self { self.entries.push(entry); self }
