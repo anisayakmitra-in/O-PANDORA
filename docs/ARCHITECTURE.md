@@ -1,176 +1,145 @@
-# Pandora Architecture
+# Architecture
 
-## Overview
+Pandora is a governed execution runtime. You give it a task, it runs through a pipeline, and tells you what it did and why.
 
-Pandora is a **constitutional cognition runtime** — an architecture for governing, routing, and executing AI agent tasks through a layered pipeline of services, harnesses, and genes.
+## How it works
 
 ```
-User/Prompt
-    │
-    ▼
-┌─────────────┐
-│  CLI/TUI    │  pandora run, install, search
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Orchestrator│  9-stage constitutional pipeline
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  Parliament │  ServiceRegistry, ConstitutionEngine,
-│             │  LeaseManager, EventBus
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ShadowCouncil│  Routing, lifecycle, capability resolution
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  Harnesses  │  Source | Meta | Domain
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│   Genes     │  Atomic capabilities (14 built-in)
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│  Providers  │  Ollama, LlamaCpp, OpenAI, Custom
-└─────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    PANDORA SYSTEMS                       │
+│              Governed Execution Runtime                  │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│   User / CLI / API / MCP                                │
+│         │                                               │
+│         ▼                                               │
+│   ExecutionPlan ──► what to do, how, when to stop       │
+│         │                                               │
+│         ▼                                               │
+│   Parliament ──► constitutional services (governance)   │
+│         │                                               │
+│         ▼                                               │
+│   ExecutionController ──► retry, failover, approval     │
+│         │                                               │
+│         ▼                                               │
+│   Shadow Council ──► routes to harnesses and genes      │
+│         │                                               │
+│    ┌────┴────┬─────────┬──────────┐                    │
+│    ▼         ▼         ▼          ▼                    │
+│  Source   Meta    Domain     Providers                 │
+│  Harnesses Harness  Harnesses  (12 kinds)               │
+│    │         │         │          │                    │
+│    └────┬────┴─────────┴──────────┘                    │
+│         ▼                                               │
+│      Genes (22 built-in)                                │
+│         │                                               │
+│         ▼                                               │
+│   ExecutionOutcome ──► result + decision log            │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Layers
+Every execution flows through all layers. There's no shortcut from CLI to provider — the pipeline runs every time.
+
+## The layers
 
 ### Parliament
-Constitutional runtime layer. Owns service lifecycle, policy evaluation, lease tracking, and inter-service events.
-- `ServiceRegistry` — register/resolve/unregister constitutional services
-- `ConstitutionEngine` — evaluate policies against the constitution
-- `LeaseManager` — acquire/renew/release/review capability leases
-- `EventBus` — pub/sub for inter-service events
 
-### Constitutional Services (10)
-Core cognitive capabilities provided by Parliament:
-- Memory, Planning, Execution, Governance, Identity
-- Sandbox, Workflow, Scheduler, Ledger, Provider
+Constitutional services that own the runtime. Before execution, Parliament checks governance policies. After execution, it validates outcomes. Think of it as the runtime's immune system — it doesn't do work, it makes sure work is done right.
+
+Current services: Governance (validates inputs/outputs, enforces policy).
 
 ### Shadow Council
-Lifecycle management, routing, capability resolution, and coordination. The dispatch layer.
-- `CapabilityRegistry` — what capabilities exist
-- `HarnessRegistry` — what harnesses are installed
-- `GeneRegistry` — what genes are registered
-- `SlashCommandRouter` — command dispatch with collision detection
+
+The routing layer. Shadow Council knows every harness, gene, and slash command. When execution reaches it, the council dispatches to the right domain harness based on the task.
+
+Currently empty on startup — harnesses register when loaded. Built-in genes are always available.
+
+### ExecutionController
+
+Decides retry, failover, approval, and escalation. Records every decision with reasoning: what was chosen, what was rejected, and why.
 
 ### Harnesses
-Pluggable execution modules that wrap genes into coherent capabilities:
-- **Source** (5): Memory, Planning, Execution, Governance, Identity
-- **Meta** (1): Coordination
-- **Domain** (2): Coding (with ponytail audit), Research
 
-### Genes (14 built-in)
-Atomic reusable capabilities. Each implements `Gene` trait.
-- **Tool**: filesystem, shell, git, http, rust-tool, python-tool, sqlite, docker
-- **Workflow**: workflow
-- **Agent**: code-review
-- **MCP**: mcp
-- **Benchmark**: benchmark
-- **Browser**: browser
-- **GitHub**: github
+Three types of harnesses:
 
-### Pipeline (9 stages)
-1. **Task** — receive instruction
-2. **Instruction** — parse and validate
-3. **Workflow** — plan execution steps
-4. **Capability** — resolve capability to provider
-5. **Target** — select execution target
-6. **Execute** — invoke provider LLM
-7. **Record** — capture frame for replay
-8. **Telemetry** — trace + spans
-9. **Ledger** — immutable audit record
+**Source Harnesses** — system infrastructure. Memory, Planning, Execution, Governance, Identity. These don't handle user tasks directly; they provide services the runtime needs.
 
-## Session Model
+**Meta Harnesses** — coordination between other harnesses. One meta harness (Coordination) handles delegation and routing between harnesses.
 
-Every execution produces a `Session` — a first-class object linking prompt, timeline, artifacts, telemetry, and the ledger.
+**Domain Harnesses** — actual work. Coding, Design, Security, Research, Computer Use. These contain domain-specific logic and wrap related genes.
+
+### Genes
+
+Atomic tools. Each gene does one thing: `shell` runs commands, `git` handles version control, `http` makes requests, `browser` opens pages. 22 built-in.
+
+### Providers
+
+LLM backends. 12 types supported: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom. Pandora auto-discovers models from healthy connections.
+
+### KUBER Palace
+
+Package registry. Discover, install, and publish genes and harnesses. Free — monetization comes later.
+
+## CLI interface
 
 ```
-Session {
-    id, label, prompt,
-    created_at, completed_at,
-    status (Pending|Running|Completed|Failed),
-    workflow, timeline (ExecutionFrames),
-    artifacts, metadata, replay_id
-}
+pandora run "build a REST API"
 ```
 
-Sessions are stored in `SessionStore` and support replay.
-
-## Error Types
-
-```rust
-pub enum PandoraError {
-    NotFound(String),
-    AlreadyExists(String),
-    Config(String),
-    Provider(String),
-    Harness(String),
-    Gene(String),
-    Io(String),
-    Validation(String),
-    Internal(String),
-}
+```
+Task: build a REST API
+[STAGE 2 - WORKFLOW] 2 steps: ["plan", "execute"]
+[STAGE 2b - COUNCIL] dispatched to coding-domain
+[PERM] sandbox level: None
+[STAGE 3 - RESOLUTION] 3 candidates -> ollama/llama3.2:3b
+[STAGE 4 - EXECUTION] 1250 tokens, 218 ms
+[STAGE 5 - RECORDER] frame captured
+[STAGE 6 - TELEMETRY] 1 traces
+[STAGE 7 - INTEL] 0 root causes
+[STAGE 9 - LEDGER] 1 entries total
+[PARLIAMENT] governance OK
 ```
 
-## Providers
+## TUI dashboard
 
-| Provider | Status | Endpoint |
-|----------|--------|----------|
-| Ollama | ✅ Real | `OLLAMA_HOST` (default localhost:11434) |
-| LlamaCpp | ✅ Real | `LLAMA_CPP_HOST` (default localhost:8080) |
-| OpenAI | ✅ Adapter | `PROVIDER_ENDPOINT` + `PROVIDER_API_KEY` |
-| Custom | ✅ Adapter | `PROVIDER_ENDPOINT` + `PROVIDER_API_KEY` |
+```
+╔══════════════════════════════════════════════════════════╗
+║                 PANDORA SYSTEMS                          ║
+║           Governed Execution Runtime                      ║
+╠══════════════════════════════════════════════════════════╣
+║  Runtime │ Genes │ Harnesses │ Plans │ Palace │ Exit     ║
+╠══════════════════════════════════════════════════════════╣
+║  Runtime: Running    Providers: 1 active                 ║
+║  Session: exec-123   Model: ollama/default               ║
+║  Profile: coding     Workers: 0                          ║
+╠══════════════════════════════════════════════════════════╣
+║  Built-in Genes (22)           │  Marketplace            ║
+║  filesystem   shell    git     │  ★ pandora/coding       ║
+║  http         docker   kubectl │   42k installs          ║
+║  browser      youtube  scrape  │  ★ sayak/eda-skill      ║
+║  rss          github   mcp     │   2.1k installs         ║
+║  code-review  benchmrk sqlite  │                         ║
+╠══════════════════════════════════════════════════════════╣
+║  [q] Quit  [tab] Switch  [enter] Select                 ║
+╚══════════════════════════════════════════════════════════╝
+```
 
-## Getting Started
+## Accessing
 
+Start the dashboard:
 ```bash
-# Install a built-in gene
-pandora install filesystem
-
-# Run a task
-pandora run "list all rust files" coding
-
-# Scaffold a new gene package
-pandora package my-gene
-
-# Show architecture
-pandora architecture
-
-# TUI dashboard
-cargo run -p pandora-tui
-
-# Web dashboard
-cargo run -p pandora-web
+pandora-tui
 ```
 
-## Key Files
+Capture a screenshot of your terminal:
+```bash
+# Linux
+import -window root screenshot.png
 
-| File | Purpose |
-|------|---------|
-| `docs/ARCHITECTURE_CONSTITUTION.md` | Architecture freeze v1.0 |
-| `docs/OWNERSHIP.md` | Canonical ownership boundaries |
-| `docs/examples/hello-gene.rs` | Minimal gene example |
-| `crates/pandora-orchestrator/src/lib.rs` | 9-stage pipeline |
-| `crates/pandora-shadow-council/src/lib.rs` | Routing + lifecycle |
-| `crates/pandora-types/src/session.rs` | Session model |
-| `crates/pandora-types/src/error.rs` | PandoraError |
+# macOS
+screencapture screenshot.png
 
-## Ponytail Philosophy
-
-The Coding Domain Harness embodies ponytail principles:
-- **Stdlib-first** — prefer `std::time::SystemTime` over `chrono`
-- **YAGNI** — no speculative abstractions
-- **Measure before optimizing** — every simplification backed by evidence
-- **Minimal deps** — detect and flag unnecessary dependencies
+# Run a quick demo
+pandora run "hello" && pandora-tui
+```
