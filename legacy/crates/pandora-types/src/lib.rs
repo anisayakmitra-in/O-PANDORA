@@ -98,3 +98,4 @@ pub mod checkpoint;
 pub mod verifier;
 pub mod lifecycle;
 pub mod compatibility;
+pub mod package_health;
