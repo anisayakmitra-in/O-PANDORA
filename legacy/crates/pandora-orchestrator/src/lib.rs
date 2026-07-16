@@ -35,6 +35,7 @@ use sinks::BroadcastSink;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
+use tracing::{info, warn, debug};
 
 // ── Stage Output types ──
 
@@ -345,7 +346,7 @@ impl PandoraRuntime {
                 .iter()
                 .map(|h| h.manifest().id.as_str())
                 .collect();
-            println!("[STAGE 2b - COUNCIL] domain harnesses: {:?}", harness_names);
+            info!("[STAGE 2b - COUNCIL] domain harnesses: {:?}", harness_names);
             session
                 .metadata
                 .insert("selected_harness".to_string(), harness_names.join(","));
@@ -356,7 +357,7 @@ impl PandoraRuntime {
         }
 
         // ponytail: sandbox via ExecutionBudget.sandbox_level
-        println!("[PERM] sandbox level: {:?}", self.plan.budget.sandbox_level);
+        debug!("[PERM] sandbox level: {:?}", self.plan.budget.sandbox_level);
         // Stage 3: Capability Resolution
         let candidates = self.cap_resolution.resolve_domain(domain);
         let (provider_name, model) = if let Some(best) = candidates.first() {
@@ -457,7 +458,7 @@ impl PandoraRuntime {
         let _ = self
             .recorder
             .record_frame(&ReplayId(frame_id.clone()), frame);
-        println!("[STAGE 5 - RECORDER] frame captured");
+        info!("[STAGE 5 - RECORDER] frame captured");
         self.provider_db.record(ProviderObservation {
             provider: provider_name.clone(),
             model: model.clone(),
@@ -520,7 +521,7 @@ impl PandoraRuntime {
         } else {
             self.failure_intel.root_cause_count()
         };
-        println!("[STAGE 7 - INTEL] {} root causes", root_causes);
+        info!("[STAGE 7 - INTEL] {} root causes", root_causes);
 
         // Stage 8: Knowledge Distillation
         if response.len() > 50 {
@@ -568,7 +569,7 @@ impl PandoraRuntime {
             ]),
         });
 
-        println!("[STAGE 9 - LEDGER] {} entries total", self.ledger.len());
+        info!("[STAGE 9 - LEDGER] {} entries total", self.ledger.len());
 
         // ── Parliament merge: RuntimeDelta → RuntimeContext ──
         let replay_id = rec_out.replay_id.clone();
@@ -585,7 +586,7 @@ impl PandoraRuntime {
         };
         delta.merge_into(&mut self.ctx);
         let _pw = self.parliament.post_flight(&self.ctx.session_id, &response);
-        println!("[PARLIAMENT] governance — {} warnings", _pw.len());
+        info!("[PARLIAMENT] governance — {} warnings", _pw.len());
 
         let total = start.elapsed();
 

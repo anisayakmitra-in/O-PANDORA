@@ -4,6 +4,8 @@ use std::sync::{Arc, RwLock};
 use std::{env, process};
 
 fn main() {
+    // Initialize structured logging — fallback to println if subscriber fails
+    let _ = tracing_subscriber::fmt().try_init();
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         usage();
@@ -529,7 +531,9 @@ fn cmd_doctor(_args: &[String]) {
     let oh = env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
     let ck = |label: &str, cmd: &str| {
         print!("{label}... ");
-        match std::process::Command::new("sh").arg("-c").arg(cmd).output() {
+        let shell = if cfg!(windows) { "cmd" } else { "sh" };
+        let flag = if cfg!(windows) { "/c" } else { "-c" };
+        match std::process::Command::new(shell).arg(flag).arg(cmd).output() {
             Ok(o) if o.status.success() => println!("OK"),
             _ => println!("FAIL"),
         }

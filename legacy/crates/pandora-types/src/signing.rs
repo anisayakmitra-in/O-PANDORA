@@ -22,11 +22,11 @@ pub struct PackageSignature {
 }
 
 fn rand_key() -> String {
-    let t = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    format!("pk-{:x}", t)
+    // Use rand crate for cryptographic-quality randomness (already in dep tree)
+    use rand::Rng;
+    let mut buf = [0u8; 16];
+    rand::thread_rng().fill(&mut buf);
+    format!("pk-{}", buf.iter().map(|b| format!("{:02x}", b)).collect::<String>())
 }
 
 pub fn generate_keypair() -> PublisherKeyPair {

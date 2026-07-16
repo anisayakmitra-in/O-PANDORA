@@ -12,3 +12,4 @@ pandora-types = { path = "../pandora-types" }
 serde_json = "1"
 pandora-api = { path = "../pandora-api" }
 pandora-harnesses = { path = "../pandora-harnesses" }
+tracing-subscriber = "0.3"
