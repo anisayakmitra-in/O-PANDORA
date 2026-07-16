@@ -35,7 +35,7 @@ use sinks::BroadcastSink;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use tracing::{info, warn, debug};
+use tracing::{info, debug};
 
 // ── Stage Output types ──
 
