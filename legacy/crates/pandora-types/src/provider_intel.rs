@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 /// Per-provider intelligence snapshot.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,7 +122,7 @@ impl ProviderIntelligenceEngine {
     }
 
     /// Record a failure with category.
-    pub fn record_failure(&mut self, provider: &str, model: &str, latency_ms: u64, error: &str) {
+    pub fn record_failure(&mut self, provider: &str, model: &str, _latency_ms: u64, error: &str) {
         let intel = self.ensure(provider, model);
         intel.total_requests += 1;
         intel.consecutive_failures += 1;
@@ -132,7 +132,7 @@ impl ProviderIntelligenceEngine {
     }
 
     /// Score a provider for the given requirements. Higher is better.
-    pub fn score(&self, provider: &str, model: &str, prefer_speed: bool, require_reliability: bool) -> f64 {
+    pub fn score(&self, provider: &str, model: &str, _prefer_speed: bool, require_reliability: bool) -> f64 {
         let intel = match self.providers.get(&format!("{}:{}", provider, model)) {
             Some(i) => i,
             None => return 0.0, // Unknown provider

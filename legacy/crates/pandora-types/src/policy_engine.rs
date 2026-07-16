@@ -136,9 +136,9 @@ fn evaluate_condition(
 ) -> bool {
     match cond.operator {
         ConditionOp::Exists => field_value.is_some(),
-        ConditionOp::Empty => field_value.map_or(true, |v| v.is_null() || v.as_str().map_or(false, |s| s.is_empty())),
-        ConditionOp::Equals => field_value.map_or(false, |v| v == &cond.value),
-        ConditionOp::NotEquals => field_value.map_or(true, |v| v != &cond.value),
+        ConditionOp::Empty => field_value.is_none_or(|v| v.is_null() || v.as_str().is_some_and(|s| s.is_empty())),
+        ConditionOp::Equals => field_value == Some(&cond.value),
+        ConditionOp::NotEquals => field_value != Some(&cond.value),
         ConditionOp::GreaterThan => {
             match (field_value.and_then(|v| v.as_f64()), cond.value.as_f64()) {
                 (Some(actual), Some(expected)) => actual > expected,
@@ -158,8 +158,8 @@ fn evaluate_condition(
             }
         }
         ConditionOp::In => {
-            cond.value.as_array().map_or(false, |arr| {
-                field_value.map_or(false, |v| arr.contains(v))
+            cond.value.as_array().is_some_and(|arr| {
+                field_value.is_some_and(|v| arr.contains(v))
             })
         }
     }
