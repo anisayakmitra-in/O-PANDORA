@@ -509,7 +509,7 @@ impl PandoraRuntime {
         use std::io::Write;
         if let Ok(home) = std::env::var("HOME") {
             let log = std::path::PathBuf::from(home).join(".pandora/events.log");
-            let _ = std::fs::create_dir_all(log.parent().unwrap());
+            let _ = std::fs::create_dir_all(log.parent().unwrap_or_else(|| std::path::Path::new("/tmp")));
             let _ = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)

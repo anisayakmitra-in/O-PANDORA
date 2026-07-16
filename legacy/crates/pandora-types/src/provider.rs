@@ -156,9 +156,9 @@ impl CancellationToken {
         }
     }
     pub fn cancel(&self) {
-        *self.cancelled.lock().unwrap() = true;
+        *self.cancelled.lock().expect("cancel lock") = true;
     }
     pub fn is_cancelled(&self) -> bool {
-        *self.cancelled.lock().unwrap()
+        *self.cancelled.lock().expect("cancel lock")
     }
 }

@@ -82,10 +82,10 @@ impl Kuber {
         s
     }
     fn council_read(&self) -> std::sync::RwLockReadGuard<'_, ShadowCouncil> {
-        self.council.read().unwrap()
+        self.council.read().expect("council lock read")
     }
     fn council_write(&self) -> std::sync::RwLockWriteGuard<'_, ShadowCouncil> {
-        self.council.write().unwrap()
+        self.council.write().expect("council lock write")
     }
 
     pub fn add_source(&mut self, name: &str, path: &str) {

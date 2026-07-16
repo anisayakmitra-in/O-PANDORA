@@ -1171,11 +1171,13 @@ dependencies = [
 name = "pandora-types"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "chrono",
  "hex",
  "petgraph",
  "rand",
  "reqwest",
+ "ring",
  "serde",
  "serde_json",
  "thiserror",

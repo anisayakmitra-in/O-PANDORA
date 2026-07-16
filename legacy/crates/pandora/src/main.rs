@@ -582,7 +582,7 @@ fn cmd_genes(_args: &[String]) {
 }
 fn cmd_inspect(args: &[String]) {
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let s = sc.read().unwrap().summary();
+    let s = sc.read().expect("council lock read").summary();
     println!("=== Pandora Runtime Inspection ===\n");
     println!("Shadow Council:");
     println!("  Harnesses: {} total", s.total_harnesses);
@@ -621,7 +621,7 @@ fn cmd_architecture(_args: &[String]) {
 fn cmd_status(_args: &[String]) {
     let built = pandora_kuber::builtin::all().len();
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let s = sc.read().unwrap().summary();
+    let s = sc.read().expect("council lock read").summary();
     println!("Pandora Runtime: Running");
     println!("  Built-in: {built}");
     println!("  Installed harnesses: {}", s.total_harnesses);
@@ -690,7 +690,7 @@ fn cmd_harness(args: &[String]) {
     match args[2].as_str() {
         "list" => {
             let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let s = sc.read().unwrap().summary();
+            let s = sc.read().expect("council lock read").summary();
             println!(
                 "{} total ({} source, {} meta, {} domain)",
                 s.total_harnesses, s.source_count, s.meta_count, s.domain_count
@@ -776,7 +776,7 @@ fn cmd_package(args: &[String]) {
         eprintln!("Directory already exists: {name}");
         process::exit(1);
     }
-    std::fs::create_dir_all(dir.join("src")).unwrap();
+    let _ = std::fs::create_dir_all(dir.join("src"));
     std::fs::write(
         dir.join("pandora.toml"),
         format!(
@@ -812,7 +812,7 @@ fn cmd_new(args: &[String]) {
                 eprintln!("Already exists: {name}");
                 process::exit(1);
             }
-            std::fs::create_dir_all(dir.join("src")).unwrap();
+            let _ = std::fs::create_dir_all(dir.join("src"));
             std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.1.0\nauthor = \"\"\ndescription = \"\"\n")).unwrap();
             std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.1.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).unwrap();
             println!("Created: {name}/");
@@ -1068,7 +1068,7 @@ fn cmd_shell(_args: &[String]) {
                 .join(".pandora")
                 .join("shell_history")
         });
-    let _ = std::fs::create_dir_all(hp.parent().unwrap());
+            let _ = std::fs::create_dir_all(hp.parent().unwrap_or_else(|| std::path::Path::new("/tmp")));
     let mut history: Vec<String> = std::fs::read_to_string(&hp)
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
