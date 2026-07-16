@@ -91,3 +91,4 @@ pub mod config;
 pub mod resource;
 pub mod provider_intel;
 pub mod lock;
+pub mod scheduler;

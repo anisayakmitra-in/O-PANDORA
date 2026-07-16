@@ -242,6 +242,7 @@ pub struct PandoraRuntime {
     pub plan: ExecutionPlan,
     pub events: Box<dyn EventSink>,
     pub provenance: ExecutionProvenanceGraph,
+    pub cancel_token: pandora_types::provider::CancellationToken,
     pub artifacts: ArtifactGraph,
     pub provider_db: ProviderDb,
     pub provider_intel: ProviderIntelligenceEngine,
@@ -281,6 +282,7 @@ impl PandoraRuntime {
             events: Box::new(BroadcastSink::new(256).0),
             provenance: ExecutionProvenanceGraph::new("pending"),
             artifacts: ArtifactGraph::new(),
+            cancel_token: pandora_types::provider::CancellationToken::new(),
             provider_db: ProviderDb::new(),
             provider_intel: ProviderIntelligenceEngine::new(),
             policy_engine: PolicyEngine::new(),
@@ -468,6 +470,7 @@ impl PandoraRuntime {
         let _ = self
             .recorder
             .record_frame(&ReplayId(frame_id.clone()), frame);
+        if self.cancel_token.is_cancelled() { return Err(anyhow::anyhow!("Execution cancelled")); }
         info!("[STAGE 5 - RECORDER] frame captured");
         self.provider_db.record(ProviderObservation {
             provider: provider_name.clone(),
@@ -579,6 +582,7 @@ impl PandoraRuntime {
             ]),
         });
 
+        if self.cancel_token.is_cancelled() { return Err(anyhow::anyhow!("Execution cancelled")); }
         info!("[STAGE 9 - LEDGER] {} entries total", self.ledger.len());
 
         // ── Parliament merge: RuntimeDelta → RuntimeContext ──
