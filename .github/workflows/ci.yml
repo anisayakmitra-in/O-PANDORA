@@ -1,5 +1,6 @@
 name: CI
 on: [push, pull_request]
+
 jobs:
   test:
     strategy:
@@ -12,6 +13,7 @@ jobs:
       - run: cargo check --workspace
       - run: cargo test --workspace
       - run: cargo clippy --workspace -- -D warnings
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -21,13 +23,19 @@ jobs:
       - run: cargo fmt --all -- --check
 
   release:
-    runs-on: ubuntu-latest
-    needs: test
+    runs-on: ${{ matrix.os }}
+    needs: [test, fmt]
     if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release -p pandora
-      - uses: softprops/action-gh-release@v1
+      - run: cargo build --release -p pandora -p pandora-tui
+      - name: Upload pandora
+        uses: softprops/action-gh-release@v1
         with:
-          files: target/release/pandora
+          files: |
+            target/release/pandora
+            target/release/pandora-tui
