@@ -98,6 +98,7 @@ pub struct Connection {
 impl Default for Connection {
     fn default() -> Self {
         Self {
+            meta: crate::resource::ResourceMeta::default(),
             name: "local-ollama".into(), category: ConnectionCategory::Local, kind: ConnectionKind::Ollama,
             endpoint: ConnectionKind::Ollama.default_endpoint().into(), default_model: String::new(),
             api_key: None, priority: 100, tags: vec!["local".into()], fallback_connections: vec![], metadata: std::collections::HashMap::new(), timeout_secs: 30, max_retries: 3,
@@ -114,7 +115,7 @@ impl Connection {
             ConnectionKind::Custom => ConnectionCategory::Local,
             _ => ConnectionCategory::Cloud,
         };
-        Self { name: name.into(), category, kind, endpoint: endpoint.into(), ..Default::default() }
+        Self { meta: crate::resource::ResourceMeta::default(), name: name.into(), category, kind, endpoint: endpoint.into(), ..Default::default() }
     }
 
     pub fn with_model(mut self, model: &str) -> Self { self.default_model = model.into(); self }
