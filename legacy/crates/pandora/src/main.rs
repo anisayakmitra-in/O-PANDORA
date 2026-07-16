@@ -803,9 +803,9 @@ fn cmd_new(args: &[String]) {
         eprintln!("Usage: pandora new gene|skill <name>");
         process::exit(1);
     }
+    let name = &args[3];
     match args[2].as_str() {
         "gene" => {
-            let name = &args[3];
             let sn = name.replace("-", "_");
             let dir = std::path::Path::new(".").join(name);
             if dir.exists() {
@@ -817,11 +817,95 @@ fn cmd_new(args: &[String]) {
             std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.1.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
             println!("Created: {name}/");
         }
+        "harness" => {
+            let dir = std::path::Path::new(".").join(name);
+            let _ = std::fs::create_dir_all(dir.join("src"));
+            std::fs::write(dir.join("harness.toml"), format!("id = "{name}"
+name = "{name}"
+kind = Domain
+version = 0.1.0
+")).expect("CLI I/O");
+            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} harness
+use pandora_types::harness::{{Harness, HarnessManifest}};
+pub struct {n}Harness {{ m: HarnessManifest }}
+impl {n}Harness {{ pub fn new() -> Self {{ Self {{ m: HarnessManifest::new("{name}", "0.1.0") }} }} }}
+impl Harness for {n}Harness {{ fn manifest(&self) -> &HarnessManifest {{ &self.m }} }}
+", n=name.replace("-", "_"))).expect("CLI I/O");
+            println!("Created: {name}/");
+        }
+        "package" => {
+            let dir = std::path::Path::new(".").join(name);
+            let _ = std::fs::create_dir_all(&dir);
+            std::fs::write(dir.join("pandora.toml"), format!("[package]
+id = "{name}"
+name = "{name}"
+version = "0.1.0"
+kind = "gene"
+author = ""
+description = ""
+
+[compatibility]
+pandora = ">=0.2.0"
+os = ["linux", "macos", "windows"]
+")).expect("CLI I/O");
+            println!("Created: {name}/");
+        }
+        "evaluator" => {
+            let dir = std::path::Path::new(".").join(name);
+            let _ = std::fs::create_dir_all(dir.join("src"));
+            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} evaluator
+pub fn evaluate(output: &str, expected: &str) -> f64 {{
+    if output.contains(expected) {{ 1.0 }} else {{ 0.0 }}
+}}
+")).expect("CLI I/O");
+            println!("Created: {name}/");
+        }
+        "policy" => {
+            let dir = std::path::Path::new(".").join(name);
+            let _ = std::fs::create_dir_all(&dir);
+            std::fs::write(dir.join("policy.toml"), format!("[policy]
+id = "{name}"
+name = "{name}"
+priority = 50
+
+[[conditions]]
+field = "execution.task"
+operator = "Exists"
+
+[actions]
+type = "Allow"
+reason = "Auto-generated policy"
+")).expect("CLI I/O");
+            println!("Created: {name}/");
+        }
+        "workflow" => {
+            let dir = std::path::Path::new(".").join(name);
+            let _ = std::fs::create_dir_all(&dir);
+            std::fs::write(dir.join("workflow.toml"), format!("[workflow]
+id = "{name}"
+name = "{name}"
+steps = ["plan", "execute"]
+")).expect("CLI I/O");
+            println!("Created: {name}/");
+        }
+        "provider" => {
+            let dir = std::path::Path::new(".").join(name);
+            let _ = std::fs::create_dir_all(dir.join("src"));
+            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} provider
+use pandora_types::provider::Provider;
+pub struct {n}Provider;
+impl Provider for {n}Provider {{
+    fn name(&self) -> &str {{ "{name}" }}
+    fn execute(&self, prompt: &str) -> Result<String, String> {{ Ok(format!("response: {{prompt}}")) }}
+}}
+", n=name.replace("-", "_"))).expect("CLI I/O");
+            println!("Created: {name}/");
+        }
         "skill" => match pandora_kuber::skill::scaffold(&args[3], ".") {
             Ok(p) => println!("Created: {p}"),
             Err(e) => eprintln!("{e}"),
         },
-        _ => eprintln!("Use: pandora new gene|skill <name>"),
+        _ => eprintln!("Use: pandora new gene|harness|package|skill|evaluator|policy|workflow|provider <name>"),
     }
 }
 

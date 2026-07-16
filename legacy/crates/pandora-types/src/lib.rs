@@ -96,3 +96,5 @@ pub mod scheduler;
 pub mod artifact_store;
 pub mod checkpoint;
 pub mod verifier;
+pub mod lifecycle;
+pub mod compatibility;
