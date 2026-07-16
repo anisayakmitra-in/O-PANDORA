@@ -90,3 +90,4 @@ pub mod workflow_engine;
 pub mod config;
 pub mod resource;
 pub mod provider_intel;
+pub mod lock;
