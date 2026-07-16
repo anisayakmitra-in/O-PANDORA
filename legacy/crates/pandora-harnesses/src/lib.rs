@@ -29,7 +29,7 @@ fn sm(id: &str, name: &str, caps: &[&str], cmds: &[(&str, &str)]) -> HarnessMani
     for (c, d) in cmds {
         b = b.slash_command(*c, *d);
     }
-    b.build().unwrap()
+    b.build().expect("harness build")
 }
 
 macro_rules! source_harness {
@@ -180,7 +180,7 @@ mod tests {
     fn execution_spawns() {
         let h =
             ExecutionSourceHarness::new(Arc::new(pandora_services::DefaultExecutionService::new()));
-        assert_eq!(h.service.spawn("test").unwrap(), "exec-4");
+        assert_eq!(h.service.spawn("test").expect("harness build"), "exec-4");
     }
     #[test]
     fn governance_policy() {

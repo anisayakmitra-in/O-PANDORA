@@ -353,7 +353,7 @@ mod tests {
         assert!(r
             .record_frame(&rid, ExecutionFrame::new("plan", "Initial plan"))
             .is_ok());
-        assert_eq!(r.get(&rid).unwrap().frames.len(), 1);
+        assert_eq!(r.get(&rid).expect("recorder").frames.len(), 1);
     }
     #[test]
     fn finalize_recording() {
@@ -373,8 +373,8 @@ mod tests {
                 telemetry_level: 2,
             },
         );
-        r.finalize(&rid, 1500, 500, 0.05, 2, true).unwrap();
-        assert_eq!(r.get(&rid).unwrap().total_duration_ms, 1500);
+        r.finalize(&rid, 1500, 500, 0.05, 2, true).expect("recorder");
+        assert_eq!(r.get(&rid).expect("recorder").total_duration_ms, 1500);
     }
     #[test]
     fn search_by_query() {
@@ -415,11 +415,11 @@ mod tests {
             },
         );
         r.record_frame(&rid, ExecutionFrame::new("plan", "Architecture"))
-            .unwrap();
+            .expect("recorder");
         r.record_frame(&rid, ExecutionFrame::new("execute", "Implementation"))
-            .unwrap();
-        r.finalize(&rid, 5000, 1000, 0.10, 1, true).unwrap();
-        assert!(ReplayEngine::trace(r.get(&rid).unwrap()).contains("plan"));
+            .expect("recorder");
+        r.finalize(&rid, 5000, 1000, 0.10, 1, true).expect("recorder");
+        assert!(ReplayEngine::trace(r.get(&rid).expect("recorder")).contains("plan"));
     }
     #[test]
     fn invalid_replay_id_returns_error() {

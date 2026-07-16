@@ -198,7 +198,7 @@ impl SessionStore {
             // ponytail: persist immediately so sessions survive crashes
             let _ = self.save();
         }
-        self.sessions.get_mut(&id).unwrap()
+        self.sessions.get_mut(&id).expect("session store")
     }
 
     /// Get a session by id.

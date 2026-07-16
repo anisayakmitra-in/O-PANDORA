@@ -792,7 +792,7 @@ pandora_version = \">=1.0\"
 "
         ),
     )
-    .unwrap();
+    .expect("CLI I/O");
     println!("Created {name}/pandora.toml");
     println!("  tar czf {name}.pandora.tar.gz {name}/");
     println!("  pandora login && pandora publish {name}/");
@@ -813,8 +813,8 @@ fn cmd_new(args: &[String]) {
                 process::exit(1);
             }
             let _ = std::fs::create_dir_all(dir.join("src"));
-            std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.1.0\nauthor = \"\"\ndescription = \"\"\n")).unwrap();
-            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.1.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).unwrap();
+            std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.1.0\nauthor = \"\"\ndescription = \"\"\n")).expect("CLI I/O");
+            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.1.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
             println!("Created: {name}/");
         }
         "skill" => match pandora_kuber::skill::scaffold(&args[3], ".") {

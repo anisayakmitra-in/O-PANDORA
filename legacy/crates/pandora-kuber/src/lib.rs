@@ -412,7 +412,7 @@ mod tests {
             "ktest-{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
+                .expect("kuber")
                 .as_nanos()
         ))
     }
@@ -439,21 +439,21 @@ mod tests {
         let sc = Arc::new(RwLock::new(ShadowCouncil::new()));
         let k = Kuber::new(sc.clone());
         let d = tmp();
-        std::fs::create_dir_all(d.join("g1").join("src")).unwrap();
+        std::fs::create_dir_all(d.join("g1").join("src")).expect("kuber");
         std::fs::write(
             d.join("g1").join("gene.toml"),
             "id = \"g1\"\nname = \"G1\"\nkind = \"tool\"\nversion = \"1.0\"\nauthor = \"me\"\n",
         )
-        .unwrap();
+        .expect("kuber");
         std::fs::write(
             d.join("g1").join("src").join("lib.rs"),
             "// g1\npub fn f() {}\n#[test]\nfn t() { f(); }\n",
         )
-        .unwrap();
-        let s = k.score(d.to_str().unwrap()).unwrap();
+        .expect("kuber");
+        let s = k.score(d.to_str().expect("kuber")).expect("kuber");
         assert!(s.overall() >= 5);
         assert!(s.tests >= 5);
-        std::fs::remove_dir_all(d).unwrap();
+        std::fs::remove_dir_all(d).expect("kuber");
     }
     #[test]
     fn scoring_missing_path() {
@@ -479,16 +479,16 @@ mod tests {
     #[test]
     fn skill_scaffold() {
         let d = tmp();
-        let path = crate::skill::scaffold("test-skill", d.to_str().unwrap()).unwrap();
+        let path = crate::skill::scaffold("test-skill", d.to_str().expect("kuber")).expect("kuber");
         assert!(std::path::Path::new(&path).join("skill.toml").exists());
-        std::fs::remove_dir_all(d).unwrap();
+        std::fs::remove_dir_all(d).expect("kuber");
     }
     #[test]
     fn skill_discover_empty() {
         let d = tmp();
-        std::fs::create_dir_all(&d).unwrap();
-        assert!(crate::skill::discover(d.to_str().unwrap()).is_empty());
-        std::fs::remove_dir_all(d).unwrap();
+        std::fs::create_dir_all(&d).expect("kuber");
+        assert!(crate::skill::discover(d.to_str().expect("kuber")).is_empty());
+        std::fs::remove_dir_all(d).expect("kuber");
     }
 }
 pub mod resolver;

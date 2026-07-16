@@ -530,8 +530,8 @@ mod tests {
             retry_policy: RetryPolicy::default(),
             budget: WorkflowBudget::default(),
         };
-        let j = serde_json::to_string(&m).unwrap();
-        let _: WorkflowManifest = serde_json::from_str(&j).unwrap();
+        let j = serde_json::to_string(&m).expect("serialization");
+        let _: WorkflowManifest = serde_json::from_str(&j).expect("serialization");
     }
     #[test]
     fn capability_serde() {
@@ -545,8 +545,8 @@ mod tests {
             execution_profile: ExecutionProfile::Stateless,
             evolution: EvolutionConfig::enabled(),
         };
-        let j = serde_json::to_string(&m).unwrap();
-        let _: CapabilityManifest = serde_json::from_str(&j).unwrap();
+        let j = serde_json::to_string(&m).expect("serialization");
+        let _: CapabilityManifest = serde_json::from_str(&j).expect("serialization");
     }
     #[test]
     fn gene_execution_modes() {
@@ -566,7 +566,7 @@ mod tests {
             timestamp_ms: 0,
             trust_score: 1.0,
         };
-        let j = serde_json::to_string(&d).unwrap();
-        let _: ShadowCouncilDecision = serde_json::from_str(&j).unwrap();
+        let j = serde_json::to_string(&d).expect("serialization");
+        let _: ShadowCouncilDecision = serde_json::from_str(&j).expect("serialization");
     }
 }
