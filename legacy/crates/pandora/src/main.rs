@@ -1650,122 +1650,12 @@ fn cmd_connections(_args: &[String]) {
 }
 
 fn cmd_connection(args: &[String]) {
-    use pandora_types::connection_manager::{Connection, ConnectionKind, ConnectionRegistry, ConnectionCategory};
-    if args.len() < 3 {
-        eprintln!("Usage: pandora connection <add|test|remove|wizard|export|import> ...");
-        eprintln!("       pandora connection add                  (interactive wizard)");
-        eprintln!("       pandora connection add <name> <kind> <endpoint> [model]");
-        eprintln!("       pandora connection test <name>         (detailed health check)");
-        eprintln!("       pandora connection remove <name>");
-        eprintln!("       pandora connection export              (export without keys)");
-        eprintln!("       pandora connection import <file>");
+    use pandora_types::connection_manager::{Connection, ConnectionKind, ConnectionRegistry};
+    if args.len() < 4 {
+        eprintln!("Usage: pandora connection <add|test|remove> ...");
         return;
     }
     match args[2].as_str() {
-        "wizard" | "add" if args.len() == 3 => {
-            // Interactive wizard
-            println!("\n╔══════════════════════════════════════════╗");
-            println!("║     Add Connection — Interactive Wizard  ║");
-            println!("╚══════════════════════════════════════════╝\n");
-            println!("Category:");
-            println!("  1  Local (Ollama, llama.cpp, LM Studio, vLLM)");
-            println!("  2  Cloud (OpenAI, Anthropic, Gemini, Groq, etc.)");
-            println!("  3  Enterprise (Azure, Self-Hosted, Company Gateway)");
-            print!("Choose [1-3]: ");
-            let _ = std::io::Write::flush(&mut std::io::stdout());
-            let mut cat_input = String::new();
-            std::io::stdin().read_line(&mut cat_input).ok();
-            let category = match cat_input.trim() {
-                "2" => ConnectionCategory::Cloud,
-                "3" => ConnectionCategory::Enterprise,
-                _ => ConnectionCategory::Local,
-            };
-            println!();
-            let kinds = match category {
-                ConnectionCategory::Local => vec![
-                    ("ollama", "Ollama"),
-                    ("llamacpp", "llama.cpp"),
-                    ("openai-compatible", "OpenAI Compatible (vLLM, LM Studio, LocalAI)"),
-                ],
-                ConnectionCategory::Cloud => vec![
-                    ("openai", "OpenAI"),
-                    ("anthropic", "Anthropic"),
-                    ("gemini", "Gemini"),
-                    ("groq", "Groq"),
-                    ("together", "Together"),
-                    ("openrouter", "OpenRouter"),
-                    ("deepseek", "DeepSeek"),
-                    ("mistral", "Mistral"),
-                ],
-                ConnectionCategory::Enterprise => vec![
-                    ("openai-compatible", "Azure OpenAI / Self-Hosted"),
-                    ("custom", "Custom Gateway"),
-                ],
-            };
-            println!("Provider kind:");
-            for (i, (_, label)) in kinds.iter().enumerate() {
-                println!("  {}  {}", i + 1, label);
-            }
-            print!("Choose [1-{}]: ", kinds.len());
-            let _ = std::io::Write::flush(&mut std::io::stdout());
-            let mut kind_input = String::new();
-            std::io::stdin().read_line(&mut kind_input).ok();
-            let kind_idx = kind_input.trim().parse::<usize>().unwrap_or(1).saturating_sub(1).min(kinds.len() - 1);
-            let (kind_str, _) = kinds[kind_idx];
-            let kind = match kind_str {
-                "ollama" => ConnectionKind::Ollama,
-                "llamacpp" => ConnectionKind::LlamaCpp,
-                "openai-compatible" => ConnectionKind::OpenAICompatible,
-                "openai" => ConnectionKind::OpenAI,
-                "anthropic" => ConnectionKind::Anthropic,
-                "gemini" => ConnectionKind::Gemini,
-                "groq" => ConnectionKind::Groq,
-                "together" => ConnectionKind::Together,
-                "openrouter" => ConnectionKind::OpenRouter,
-                "deepseek" => ConnectionKind::DeepSeek,
-                "mistral" => ConnectionKind::Mistral,
-                _ => ConnectionKind::Custom,
-            };
-            println!();
-            print!("Connection name (e.g. my-ollama): ");
-            let _ = std::io::Write::flush(&mut std::io::stdout());
-            let mut name = String::new();
-            std::io::stdin().read_line(&mut name).ok();
-            let name = name.trim().to_string();
-            if name.is_empty() {
-                eprintln!("Name required.");
-                return;
-            }
-            print!("Endpoint (e.g. http://localhost:11434): ");
-            let _ = std::io::Write::flush(&mut std::io::stdout());
-            let mut endpoint = String::new();
-            std::io::stdin().read_line(&mut endpoint).ok();
-            let endpoint = endpoint.trim().to_string();
-            print!("API key (optional, press Enter to skip): ");
-            let _ = std::io::Write::flush(&mut std::io::stdout());
-            let mut api_key = String::new();
-            std::io::stdin().read_line(&mut api_key).ok();
-            let api_key = api_key.trim().to_string();
-            print!("Default model (e.g. llama3.2): ");
-            let _ = std::io::Write::flush(&mut std::io::stdout());
-            let mut model = String::new();
-            std::io::stdin().read_line(&mut model).ok();
-            let model = model.trim().to_string();
-            let mut conn = Connection::new(&name, kind, &endpoint)
-                .with_model(&model)
-                .with_category(category);
-            if !api_key.is_empty() {
-                conn = conn.with_api_key(&api_key);
-            }
-            let mut reg = ConnectionRegistry::load();
-            match reg.add(conn) {
-                Ok(()) => {
-                    println!();
-                    println!("✓ Connection \"{}\" added. Test it: pandora connection test {}", name, name);
-                }
-                Err(e) => eprintln!("Error: {e}"),
-            }
-        }
         "add" => {
             if args.len() < 6 {
                 eprintln!("Usage: pandora connection add <name> <kind> <endpoint> [model]");
@@ -1801,91 +1691,25 @@ fn cmd_connection(args: &[String]) {
             }
         }
         "test" => {
-            let name = if args.len() > 3 { args[3].clone() } else {
+            if args.len() < 4 {
                 eprintln!("Usage: pandora connection test <name>");
                 return;
-            };
-            let mut reg = ConnectionRegistry::load();
-            match reg.find_mut(&name) {
-                Some(conn) => {
-                    println!("\nTesting: {}\n{}", conn.name, "=".repeat(40));
-                    // Endpoint reachability
-                    print!("  Endpoint ({})... ", conn.endpoint);
-                    let _ = std::io::Write::flush(&mut std::io::stdout());
-                    match conn.test() {
-                        Ok(()) => {
-                            println!("✓ Reachable");
-                            println!("  Latency........... {}ms", conn.latency_ms);
-                            print!("  Authentication.... ");
-                            if conn.api_key.is_some() { println!("✓ Configured"); } else { println!("✓ Not required"); }
-                            println!("  Models............ {} found", conn.models.len());
-                            for m in conn.models.iter().take(5) {
-                                println!("    - {m}");
-                            }
-                            if conn.models.len() > 5 {
-                                println!("    ... and {} more", conn.models.len() - 5);
-                            }
-                            // Capability probes
-                            print!("  Chat/completions.. ");
-                            if conn.supports_chat() { println!("✓"); } else { println!("✗"); }
-                            let _ = reg.save();
-                            println!("\n✓ Connection healthy");
-                        }
-                        Err(e) => {
-                            println!("✗ Unreachable");
-                            println!("  Error: {e}");
-                            println!("\n✗ Connection offline — check endpoint and network");
-                        }
-                    }
-                }
-                None => eprintln!("Not found: {name}. Add: pandora connection add"),
             }
-        }
-        "export" => {
-            let reg = ConnectionRegistry::load();
-            // Export without API keys
-            let safe: Vec<_> = reg.list().iter().map(|c| {
-                format!("name = \"{}\"\nkind = \"{}\"\nendpoint = \"{}\"\nmodel = \"{}\"\ncategory = \"{}\"\n",
-                    c.name, c.kind.label(), c.endpoint, c.default_model, c.category.label())
-            }).collect();
-            let output = safe.join("\n---\n");
-            println!("{}", output);
-        }
-        "import" => {
-            let path = if args.len() > 3 { &args[3] } else {
-                eprintln!("Usage: pandora connection import <file>");
-                return;
-            };
-            match std::fs::read_to_string(path) {
-                Ok(contents) => {
-                    let mut reg = ConnectionRegistry::load();
-                    let mut count = 0;
-                    for block in contents.split("\n---\n") {
-                        let mut name = String::new();
-                        let mut kind_str = String::new();
-                        let mut endpoint = String::new();
-                        let mut model = String::new();
-                        for line in block.lines() {
-                            if let Some(v) = line.strip_prefix("name = \"") { name = v.trim_end_matches('\"').to_string(); }
-                            if let Some(v) = line.strip_prefix("kind = \"") { kind_str = v.trim_end_matches('\"').to_string(); }
-                            if let Some(v) = line.strip_prefix("endpoint = \"") { endpoint = v.trim_end_matches('\"').to_string(); }
-                            if let Some(v) = line.strip_prefix("model = \"") { model = v.trim_end_matches('\"').to_string(); }
-                        }
-                        if !name.is_empty() && !endpoint.is_empty() {
-                            let kind = match kind_str.as_str() {
-                                "ollama" => ConnectionKind::Ollama,
-                                "openai-compatible" => ConnectionKind::OpenAICompatible,
-                                "openai" => ConnectionKind::OpenAI,
-                                "anthropic" => ConnectionKind::Anthropic,
-                                _ => ConnectionKind::Custom,
-                            };
-                            let conn = Connection::new(&name, kind, &endpoint).with_model(&model);
-                            if reg.add(conn).is_ok() { count += 1; }
-                        }
+            let mut reg = ConnectionRegistry::load();
+            match reg.find_mut(&args[3]) {
+                Some(conn) => match conn.test() {
+                    Ok(()) => {
+                        println!(
+                            "OK {} is online ({}ms, {} models)",
+                            conn.name,
+                            conn.latency_ms,
+                            conn.models.len()
+                        );
+                        let _ = reg.save();
                     }
-                    println!("Imported {} connection(s). Test: pandora connection test <name>", count);
-                }
-                Err(e) => eprintln!("Cannot read {path}: {e}"),
+                    Err(e) => eprintln!("OFF {} unreachable: {e}", conn.name),
+                },
+                None => eprintln!("Not found: {}", args[3]),
             }
         }
         "remove" => {
@@ -1899,6 +1723,6 @@ fn cmd_connection(args: &[String]) {
                 Err(e) => eprintln!("Error: {e}"),
             }
         }
-        _ => eprintln!("Subcommands: add, test, remove, wizard, export, import"),
+        _ => eprintln!("Subcommands: add, test, remove"),
     }
 }
