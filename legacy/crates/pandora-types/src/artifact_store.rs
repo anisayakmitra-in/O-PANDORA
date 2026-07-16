@@ -5,8 +5,8 @@
 //! Supports compression, retention policies, and garbage collection.
 
 use std::collections::HashMap;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+
+use std::path::PathBuf;
 
 /// Content-addressed artifact store.
 #[derive(Debug, Default)]
@@ -21,11 +21,13 @@ pub struct ArtifactStore {
 struct StoredArtifact {
     size: u64,
     rel_path: String,
+    #[allow(dead_code)]
     created_at: u64, // unix timestamp
 }
 
 impl ArtifactStore {
     pub fn new(root: impl Into<PathBuf>) -> Self {
+        let _ = &root; // suppress unused import path warning
         let root = root.into();
         std::fs::create_dir_all(&root).ok();
         Self { root, index: HashMap::new() }

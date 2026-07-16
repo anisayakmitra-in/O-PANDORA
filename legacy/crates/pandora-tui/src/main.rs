@@ -31,8 +31,9 @@ const PANDORA_LOGO: &str = r#"
 
 
 // Additional TUI views
+#[allow(dead_code)]
 fn render_runtime_view(f: &mut Frame, area: ratatui::layout::Rect) {
-    let text = format!(
+    let text = 
         "Runtime: v0.2.0\nStatus: OK\nUptime: since start\nSessions: 0\nWorkers: 0\nConnections: default"
     );
     let block = Paragraph::new(text)
@@ -40,6 +41,7 @@ fn render_runtime_view(f: &mut Frame, area: ratatui::layout::Rect) {
     f.render_widget(block, area);
 }
 
+#[allow(dead_code)]
 fn render_connections_view(f: &mut Frame, area: ratatui::layout::Rect) {
     let reg = pandora_types::connection_manager::ConnectionRegistry::load();
     let lines: String = reg.list().iter().map(|c| {
