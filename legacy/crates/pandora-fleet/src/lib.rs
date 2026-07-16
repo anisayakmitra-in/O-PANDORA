@@ -442,3 +442,16 @@ mod tests {
     }
 }
 pub mod worker;
+
+impl Default for WorkerCapability {
+    fn default() -> Self {
+        Self {
+            provider: String::new(),
+            model: String::new(),
+            harnesses: vec![],
+            genes: vec![],
+            sandbox_level: 0,
+            max_concurrency: 4,
+        }
+    }
+}

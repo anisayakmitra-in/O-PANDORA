@@ -75,6 +75,7 @@ impl ConnectionKind {
 /// A named connection — the primary unit of provider configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
+    pub meta: crate::resource::ResourceMeta,
     pub name: String,
     pub category: ConnectionCategory,
     pub kind: ConnectionKind,
