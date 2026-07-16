@@ -21,6 +21,8 @@ use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::events::EventSink;
 use pandora_types::execution_plan::ExecutionPlan;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
+use pandora_types::provider_intel::ProviderIntelligenceEngine;
+use pandora_types::policy_engine::PolicyEngine;
 use pandora_types::harness::HarnessKind;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
@@ -242,6 +244,8 @@ pub struct PandoraRuntime {
     pub provenance: ExecutionProvenanceGraph,
     pub artifacts: ArtifactGraph,
     pub provider_db: ProviderDb,
+    pub provider_intel: ProviderIntelligenceEngine,
+    pub policy_engine: PolicyEngine,
 }
 
 impl PandoraRuntime {
@@ -278,6 +282,8 @@ impl PandoraRuntime {
             provenance: ExecutionProvenanceGraph::new("pending"),
             artifacts: ArtifactGraph::new(),
             provider_db: ProviderDb::new(),
+            provider_intel: ProviderIntelligenceEngine::new(),
+            policy_engine: PolicyEngine::new(),
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
         }
