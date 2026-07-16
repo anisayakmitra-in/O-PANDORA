@@ -39,6 +39,13 @@ impl fmt::Display for PandoraError {
             Self::Io(msg) => write!(f, "I/O error: {msg}"),
             Self::Validation(msg) => write!(f, "validation error: {msg}"),
             Self::Internal(msg) => write!(f, "internal error: {msg}"),
+            Self::Cancelled => write!(f, "cancelled"),
+            Self::Connection(msg) => write!(f, "connection: {msg}"),
+            Self::Execution(msg) => write!(f, "execution: {msg}"),
+            Self::Policy(msg) => write!(f, "policy: {msg}"),
+            Self::Permission(msg) => write!(f, "permission: {msg}"),
+            Self::Fleet(msg) => write!(f, "fleet: {msg}"),
+            Self::Mcp(msg) => write!(f, "mcp: {msg}"),
         }
     }
 }
