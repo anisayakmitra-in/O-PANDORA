@@ -92,3 +92,5 @@ pub mod resource;
 pub mod provider_intel;
 pub mod lock;
 pub mod scheduler;
+
+pub mod artifact_store;

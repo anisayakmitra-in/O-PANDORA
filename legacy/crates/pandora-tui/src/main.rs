@@ -28,6 +28,28 @@ const PANDORA_LOGO: &str = r#"
  ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
 "#;
 
+
+
+// Additional TUI views
+fn render_runtime_view(f: &mut Frame, area: ratatui::layout::Rect) {
+    let text = format!(
+        "Runtime: v0.2.0\nStatus: OK\nUptime: since start\nSessions: 0\nWorkers: 0\nConnections: default"
+    );
+    let block = Paragraph::new(text)
+        .block(Block::default().title(" Runtime ").borders(Borders::ALL));
+    f.render_widget(block, area);
+}
+
+fn render_connections_view(f: &mut Frame, area: ratatui::layout::Rect) {
+    let reg = pandora_types::connection_manager::ConnectionRegistry::load();
+    let lines: String = reg.list().iter().map(|c| {
+        format!("{}  {}  {}ms\n", c.name, c.health_status, c.latency_ms)
+    }).collect();
+    let block = Paragraph::new(if lines.is_empty() { "No connections".into() } else { lines })
+        .block(Block::default().title(" Connections ").borders(Borders::ALL));
+    f.render_widget(block, area);
+}
+
 fn main() -> io::Result<()> {
     let mut terminal = ratatui::init();
     let result = run(&mut terminal);

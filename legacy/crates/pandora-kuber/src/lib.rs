@@ -492,3 +492,25 @@ mod tests {
     }
 }
 pub mod resolver;
+
+
+#[cfg(test)]
+mod more_kuber_tests {
+    use super::*;
+    use std::sync::{Arc, RwLock};
+
+    #[test]
+    fn kuber_installed_count_zero() {
+        let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+        let k = Kuber::new(sc);
+        assert_eq!(k.installed_count(), 0);
+    }
+
+    #[test]
+    fn kuber_search_empty() {
+        let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+        let k = Kuber::new(sc);
+        let r = k.search("nonexistent");
+        assert!(r.is_empty());
+    }
+}
