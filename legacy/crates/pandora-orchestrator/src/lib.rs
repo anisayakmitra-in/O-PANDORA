@@ -359,6 +359,7 @@ impl PandoraRuntime {
         } else {
             println!(
                 "[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)"
+// Stage 2c: Policy evaluation — declarative governance rules        {            let policy_engine = &self.policy_engine;            let mut ctx = std::collections::HashMap::new();            ctx.insert("execution.task".into(), serde_json::json!(task));            let verdicts = policy_engine.evaluate(&ctx);            let blocks: Vec<_> = verdicts.iter().filter(|v| {                v.passed && matches!(&v.action, Some(pandora_types::policy_engine::PolicyAction::Deny { .. }))            }).collect();            if !blocks.is_empty() {                let reason = blocks[0].action.as_ref().map(|a| format!("{:?}", a)).unwrap_or_default();                return Err(anyhow::anyhow!("Policy blocked execution: {reason}"));            }            info!("[STAGE 2c - POLICY] {} rules evaluated, {} fired", verdicts.len(), verdicts.iter().filter(|v| v.passed).count());        }
             );
         }
 
@@ -374,6 +375,9 @@ impl PandoraRuntime {
             .map(|(pp, mm)| (pp.to_string(), mm.to_string()))
         {
             (p, m)
+        } else if let Some((p, m)) = self.provider_intel.best(true, false) {
+            (p.to_string(), m.to_string())
+            
         } else if let Some(target) = self.providers.resolve(None, None, None) {
             (target.provider, target.model)
         } else {
