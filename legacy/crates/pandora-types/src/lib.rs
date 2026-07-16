@@ -88,3 +88,5 @@ pub mod telemetry_engine;
 pub mod universal;
 pub mod workflow_engine;
 pub mod config;
+pub mod resource;
+pub mod provider_intel;
