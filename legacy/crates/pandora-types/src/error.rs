@@ -18,6 +18,13 @@ pub enum PandoraError {
     Io(String),
     Validation(String),
     Internal(String),
+    Cancelled,
+    Connection(String),
+    Execution(String),
+    Policy(String),
+    Permission(String),
+    Fleet(String),
+    Mcp(String),
 }
 
 impl fmt::Display for PandoraError {
