@@ -92,10 +92,22 @@ pub struct ProvenanceEdge {
 
 impl ProvenanceEdge {
     pub fn new(from: impl Into<String>, to: impl Into<String>, reason: impl Into<String>) -> Self {
-        Self { from: from.into(), to: to.into(), reason: reason.into(), confidence: None, duration_ms: None }
+        Self {
+            from: from.into(),
+            to: to.into(),
+            reason: reason.into(),
+            confidence: None,
+            duration_ms: None,
+        }
     }
-    pub fn with_confidence(mut self, c: f32) -> Self { self.confidence = Some(c); self }
-    pub fn with_duration(mut self, ms: u64) -> Self { self.duration_ms = Some(ms); self }
+    pub fn with_confidence(mut self, c: f32) -> Self {
+        self.confidence = Some(c);
+        self
+    }
+    pub fn with_duration(mut self, ms: u64) -> Self {
+        self.duration_ms = Some(ms);
+        self
+    }
 }
 
 /// The execution provenance graph — a DAG of nodes and directed edges.
@@ -114,21 +126,46 @@ pub struct ExecutionProvenanceGraph {
 
 impl ExecutionProvenanceGraph {
     pub fn new(execution_id: impl Into<String>) -> Self {
-        Self { nodes: HashMap::new(), edges: Vec::new(), execution_id: execution_id.into() }
+        Self {
+            nodes: HashMap::new(),
+            edges: Vec::new(),
+            execution_id: execution_id.into(),
+        }
     }
 
     /// Add a node to the graph. Returns the node ID.
-    pub fn add_node(&mut self, kind: NodeKind, id: impl Into<String>, label: impl Into<String>) -> String {
+    pub fn add_node(
+        &mut self,
+        kind: NodeKind,
+        id: impl Into<String>,
+        label: impl Into<String>,
+    ) -> String {
         let id = id.into();
-        let node = ProvenanceNode { id: id.clone(), label: label.into(), kind, metadata: HashMap::new() };
+        let node = ProvenanceNode {
+            id: id.clone(),
+            label: label.into(),
+            kind,
+            metadata: HashMap::new(),
+        };
         self.nodes.insert(id.clone(), node);
         id
     }
 
     /// Add a node with metadata.
-    pub fn add_node_with_meta(&mut self, kind: NodeKind, id: impl Into<String>, label: impl Into<String>, meta: HashMap<String, String>) -> String {
+    pub fn add_node_with_meta(
+        &mut self,
+        kind: NodeKind,
+        id: impl Into<String>,
+        label: impl Into<String>,
+        meta: HashMap<String, String>,
+    ) -> String {
         let id = id.into();
-        let node = ProvenanceNode { id: id.clone(), label: label.into(), kind, metadata: meta };
+        let node = ProvenanceNode {
+            id: id.clone(),
+            label: label.into(),
+            kind,
+            metadata: meta,
+        };
         self.nodes.insert(id.clone(), node);
         id
     }
@@ -139,7 +176,12 @@ impl ExecutionProvenanceGraph {
     }
 
     /// Convenience: add a directed edge from one node id to another.
-    pub fn connect(&mut self, from: impl Into<String>, to: impl Into<String>, reason: impl Into<String>) {
+    pub fn connect(
+        &mut self,
+        from: impl Into<String>,
+        to: impl Into<String>,
+        reason: impl Into<String>,
+    ) {
         self.edges.push(ProvenanceEdge::new(from, to, reason));
     }
 
@@ -171,14 +213,21 @@ impl ExecutionProvenanceGraph {
     /// Number of nodes in the graph.
     /// Number of nodes in the graph.
 
-
     /// Blast radius from Gortex — all nodes downstream of this one.
     pub fn blast_radius(&self, node_id: &str) -> Vec<&str> {
-        self.edges.iter().filter(|e| e.from == node_id).map(|e| e.to.as_str()).collect()
+        self.edges
+            .iter()
+            .filter(|e| e.from == node_id)
+            .map(|e| e.to.as_str())
+            .collect()
     }
-    pub fn node_count(&self) -> usize { self.nodes.len() }
+    pub fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
     /// Number of edges in the graph.
-    pub fn edge_count(&self) -> usize { self.edges.len() }
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
 
     /// Produce a textual representation suitable for `pandora graph`.
     pub fn render(&self) -> String {
@@ -200,7 +249,10 @@ impl ExecutionProvenanceGraph {
         }
         out.push_str("  Edges:\n");
         for edge in &self.edges {
-            out.push_str(&format!("    {} → {}: {}\n", edge.from, edge.to, edge.reason));
+            out.push_str(&format!(
+                "    {} → {}: {}\n",
+                edge.from, edge.to, edge.reason
+            ));
         }
         out
     }
@@ -238,13 +290,25 @@ mod tests {
     fn sample_graph() -> ExecutionProvenanceGraph {
         let mut g = ExecutionProvenanceGraph::new("exec-24af31");
         g.add_node(NodeKind::Task, "task-1", "Implement JWT auth");
-        g.add_node(NodeKind::ExecutionPlan, "plan-1", "SingleShot with RustTests evaluator");
+        g.add_node(
+            NodeKind::ExecutionPlan,
+            "plan-1",
+            "SingleShot with RustTests evaluator",
+        );
         g.add_node(NodeKind::Workflow, "wf-1", "auto-workflow (2 steps)");
         g.add_node(NodeKind::Harness, "harness-coding", "CodingDomainHarness");
         g.add_node(NodeKind::Gene, "gene-shell", "ShellGene");
-        g.add_node(NodeKind::Provider, "provider-ollama", "Ollama (default-model)");
+        g.add_node(
+            NodeKind::Provider,
+            "provider-ollama",
+            "Ollama (default-model)",
+        );
         g.add_node(NodeKind::Evaluator, "eval-rust", "RustTestsEvaluator");
-        g.add_node(NodeKind::Decision, "dec-select-provider", "Provider Selection");
+        g.add_node(
+            NodeKind::Decision,
+            "dec-select-provider",
+            "Provider Selection",
+        );
         g.add_node(NodeKind::Outcome, "outcome-1", "Completed — all tests pass");
         g.connect("task-1", "plan-1", "controller call");
         g.connect("plan-1", "wf-1", "workflow instantiation");
@@ -292,7 +356,11 @@ mod tests {
         let g = sample_graph();
         let kinds: Vec<NodeKind> = vec![NodeKind::Task, NodeKind::Decision, NodeKind::Outcome];
         for kind in &kinds {
-            assert!(!g.nodes_by_kind(kind.clone()).is_empty(), "should have {:?} nodes", kind);
+            assert!(
+                !g.nodes_by_kind(kind.clone()).is_empty(),
+                "should have {:?} nodes",
+                kind
+            );
         }
     }
 

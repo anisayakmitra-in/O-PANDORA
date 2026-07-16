@@ -20,7 +20,14 @@ pub struct GenerationRequest {
 
 impl Default for GenerationRequest {
     fn default() -> Self {
-        Self { prompt: String::new(), model: String::new(), temperature: 0.3, max_tokens: 4096, system: None, top_p: 0.9 }
+        Self {
+            prompt: String::new(),
+            model: String::new(),
+            temperature: 0.3,
+            max_tokens: 4096,
+            system: None,
+            top_p: 0.9,
+        }
     }
 }
 
@@ -43,7 +50,13 @@ pub struct ProviderManifest {
 
 impl Default for ProviderManifest {
     fn default() -> Self {
-        Self { name: "ollama".into(), endpoint: "http://localhost:11434".into(), models: vec![std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into())], capabilities: vec!["text".into()], locality: "local".into() }
+        Self {
+            name: "ollama".into(),
+            endpoint: "http://localhost:11434".into(),
+            models: vec![std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into())],
+            capabilities: vec!["text".into()],
+            locality: "local".into(),
+        }
     }
 }
 
@@ -60,7 +73,9 @@ pub struct ExecutionTarget {
 pub trait Provider: Send + Sync {
     fn name(&self) -> &str;
     fn generate(&self, request: GenerationRequest) -> Result<String, String>;
-    fn manifest(&self) -> ProviderManifest { ProviderManifest::default() }
+    fn manifest(&self) -> ProviderManifest {
+        ProviderManifest::default()
+    }
 }
 
 // ── Ollama provider ──
@@ -75,17 +90,31 @@ pub mod ollama {
 
     impl OllamaProvider {
         pub fn new(endpoint: &str, model: &str) -> Self {
-            Self { endpoint: endpoint.to_string(), model: model.to_string() }
+            Self {
+                endpoint: endpoint.to_string(),
+                model: model.to_string(),
+            }
         }
         pub fn new_default() -> Self {
-            Self { endpoint: "http://localhost:11434".into(), model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()) }
+            Self {
+                endpoint: "http://localhost:11434".into(),
+                model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()),
+            }
         }
     }
 
     impl Provider for OllamaProvider {
-        fn name(&self) -> &str { "ollama" }
+        fn name(&self) -> &str {
+            "ollama"
+        }
         fn manifest(&self) -> ProviderManifest {
-            ProviderManifest { name: "ollama".into(), endpoint: self.endpoint.clone(), models: vec![self.model.clone()], capabilities: vec!["text".into()], locality: "local".into() }
+            ProviderManifest {
+                name: "ollama".into(),
+                endpoint: self.endpoint.clone(),
+                models: vec![self.model.clone()],
+                capabilities: vec!["text".into()],
+                locality: "local".into(),
+            }
         }
         fn generate(&self, request: GenerationRequest) -> Result<String, String> {
             let url = format!("{}/api/generate", self.endpoint);
@@ -95,7 +124,11 @@ pub mod ollama {
                 "stream": false
             });
             let client = reqwest::blocking::Client::new();
-            let resp = client.post(&url).json(&body).send().map_err(|e| format!("req failed: {e}"))?;
+            let resp = client
+                .post(&url)
+                .json(&body)
+                .send()
+                .map_err(|e| format!("req failed: {e}"))?;
             let json: serde_json::Value = resp.json().map_err(|e| format!("parse failed: {e}"))?;
             Ok(json["response"].as_str().unwrap_or("").to_string())
         }
@@ -106,7 +139,9 @@ pub mod ollama {
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
-pub struct CancellationToken { cancelled: Arc<Mutex<bool>> }
+pub struct CancellationToken {
+    cancelled: Arc<Mutex<bool>>,
+}
 
 impl Default for CancellationToken {
     fn default() -> Self {
@@ -115,7 +150,15 @@ impl Default for CancellationToken {
 }
 
 impl CancellationToken {
-    pub fn new() -> Self { Self { cancelled: Arc::new(Mutex::new(false)) } }
-    pub fn cancel(&self) { *self.cancelled.lock().unwrap() = true; }
-    pub fn is_cancelled(&self) -> bool { *self.cancelled.lock().unwrap() }
+    pub fn new() -> Self {
+        Self {
+            cancelled: Arc::new(Mutex::new(false)),
+        }
+    }
+    pub fn cancel(&self) {
+        *self.cancelled.lock().unwrap() = true;
+    }
+    pub fn is_cancelled(&self) -> bool {
+        *self.cancelled.lock().unwrap()
+    }
 }

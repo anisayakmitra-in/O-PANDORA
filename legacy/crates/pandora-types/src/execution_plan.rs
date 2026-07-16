@@ -76,30 +76,78 @@ impl ExecutionBudget {
         }
     }
 
-    pub fn sandbox(mut self, level: SandboxLevel) -> Self { self.sandbox_level = level; self }
-    pub fn retries(mut self, n: u32) -> Self { self.max_retries = n; self }
-    pub fn budget(mut self, usd: f32) -> Self { self.max_cost_usd = usd; self }
+    pub fn sandbox(mut self, level: SandboxLevel) -> Self {
+        self.sandbox_level = level;
+        self
+    }
+    pub fn retries(mut self, n: u32) -> Self {
+        self.max_retries = n;
+        self
+    }
+    pub fn budget(mut self, usd: f32) -> Self {
+        self.max_cost_usd = usd;
+        self
+    }
 }
 
 // ── Enums ──
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum ExecutionTrigger { #[default] Manual, Scheduled, Event }
+pub enum ExecutionTrigger {
+    #[default]
+    Manual,
+    Scheduled,
+    Event,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum ControlStrategy { #[default] SingleShot, Closed, Open, Human, Autonomous }
+pub enum ControlStrategy {
+    #[default]
+    SingleShot,
+    Closed,
+    Open,
+    Human,
+    Autonomous,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum ExecutionMode { #[default] Single, Parallel, Fleet }
+pub enum ExecutionMode {
+    #[default]
+    Single,
+    Parallel,
+    Fleet,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum StopCondition { GoalMet, MaxAttempts(u32), ManualStop, Timeout(u64), Governance }
+pub enum StopCondition {
+    GoalMet,
+    MaxAttempts(u32),
+    ManualStop,
+    Timeout(u64),
+    Governance,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum EvaluatorKind { #[default] None, RustTests, PythonTests, OutputMatch, Custom(String) }
+pub enum EvaluatorKind {
+    #[default]
+    None,
+    RustTests,
+    PythonTests,
+    OutputMatch,
+    Custom(String),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum ExecutionStatus { #[default] Pending, Running, Paused, Completed, Failed, Cancelled, Rejected }
+pub enum ExecutionStatus {
+    #[default]
+    Pending,
+    Running,
+    Paused,
+    Completed,
+    Failed,
+    Cancelled,
+    Rejected,
+}
 
 // ── Execution Plan (immutable) ──
 
@@ -122,47 +170,112 @@ pub struct ExecutionPlan {
 impl Default for ExecutionPlan {
     fn default() -> Self {
         Self {
-            instruction: String::new(), workflow: "default".into(),
+            instruction: String::new(),
+            workflow: "default".into(),
             execution_mode: ExecutionMode::Single,
             control_strategy: ControlStrategy::SingleShot,
-            trigger: ExecutionTrigger::Manual, evaluator: EvaluatorKind::None,
+            trigger: ExecutionTrigger::Manual,
+            evaluator: EvaluatorKind::None,
             stop_conditions: vec![StopCondition::GoalMet],
-            provider_policy: "default".into(), approval_required: false,
+            provider_policy: "default".into(),
+            approval_required: false,
             budget: ExecutionBudget::default(),
         }
     }
 }
 
 impl ExecutionPlan {
-    pub fn single_shot(instruction: &str) -> Self { Self { instruction: instruction.into(), ..Default::default() } }
-    pub fn goal_based(instruction: &str, evaluator: EvaluatorKind, max_attempts: u32) -> Self {
-        Self { instruction: instruction.into(), control_strategy: ControlStrategy::Closed, evaluator, stop_conditions: vec![StopCondition::GoalMet, StopCondition::MaxAttempts(max_attempts)], ..Default::default() }
+    pub fn single_shot(instruction: &str) -> Self {
+        Self {
+            instruction: instruction.into(),
+            ..Default::default()
+        }
     }
-    pub fn with_approval(mut self, required: bool) -> Self { self.approval_required = required; self.control_strategy = ControlStrategy::Human; self }
-    pub fn with_budget(mut self, budget: ExecutionBudget) -> Self { self.budget = budget; self }
+    pub fn goal_based(instruction: &str, evaluator: EvaluatorKind, max_attempts: u32) -> Self {
+        Self {
+            instruction: instruction.into(),
+            control_strategy: ControlStrategy::Closed,
+            evaluator,
+            stop_conditions: vec![
+                StopCondition::GoalMet,
+                StopCondition::MaxAttempts(max_attempts),
+            ],
+            ..Default::default()
+        }
+    }
+    pub fn with_approval(mut self, required: bool) -> Self {
+        self.approval_required = required;
+        self.control_strategy = ControlStrategy::Human;
+        self
+    }
+    pub fn with_budget(mut self, budget: ExecutionBudget) -> Self {
+        self.budget = budget;
+        self
+    }
 }
 
 // ── Execution State (mutable) ──
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExecutionState {
-    pub session_id: String, pub current_stage: String, pub attempt: u32, pub retries: u32,
-    pub current_provider: String, pub current_harness: String, pub status: ExecutionStatus,
-    pub elapsed_ms: u64, pub started_at: String,
+    pub session_id: String,
+    pub current_stage: String,
+    pub attempt: u32,
+    pub retries: u32,
+    pub current_provider: String,
+    pub current_harness: String,
+    pub status: ExecutionStatus,
+    pub elapsed_ms: u64,
+    pub started_at: String,
 }
 impl Default for ExecutionState {
-    fn default() -> Self { Self { session_id: String::new(), current_stage: "init".into(), attempt: 0, retries: 0, current_provider: "none".into(), current_harness: "none".into(), status: ExecutionStatus::Pending, elapsed_ms: 0, started_at: chrono::Utc::now().to_rfc3339() } }
+    fn default() -> Self {
+        Self {
+            session_id: String::new(),
+            current_stage: "init".into(),
+            attempt: 0,
+            retries: 0,
+            current_provider: "none".into(),
+            current_harness: "none".into(),
+            status: ExecutionStatus::Pending,
+            elapsed_ms: 0,
+            started_at: chrono::Utc::now().to_rfc3339(),
+        }
+    }
 }
 
 // ── Execution Outcome (immutable record) ──
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExecutionOutcome {
-    pub session_id: String, pub status: ExecutionStatus, pub attempts: u32, pub retries: u32,
-    pub evaluator_result: String, pub governance_result: String, pub provider_used: String,
-    pub harness_used: String, pub genes_used: Vec<String>, pub artifacts: Vec<String>,
-    pub duration_ms: u64, pub output: String,
+    pub session_id: String,
+    pub status: ExecutionStatus,
+    pub attempts: u32,
+    pub retries: u32,
+    pub evaluator_result: String,
+    pub governance_result: String,
+    pub provider_used: String,
+    pub harness_used: String,
+    pub genes_used: Vec<String>,
+    pub artifacts: Vec<String>,
+    pub duration_ms: u64,
+    pub output: String,
 }
 impl ExecutionOutcome {
-    pub fn from_state(state: &ExecutionState) -> Self { Self { session_id: state.session_id.clone(), status: state.status.clone(), attempts: state.attempt, retries: state.retries, evaluator_result: String::new(), governance_result: String::new(), provider_used: state.current_provider.clone(), harness_used: state.current_harness.clone(), genes_used: Vec::new(), artifacts: Vec::new(), duration_ms: state.elapsed_ms, output: String::new() } }
+    pub fn from_state(state: &ExecutionState) -> Self {
+        Self {
+            session_id: state.session_id.clone(),
+            status: state.status.clone(),
+            attempts: state.attempt,
+            retries: state.retries,
+            evaluator_result: String::new(),
+            governance_result: String::new(),
+            provider_used: state.current_provider.clone(),
+            harness_used: state.current_harness.clone(),
+            genes_used: Vec::new(),
+            artifacts: Vec::new(),
+            duration_ms: state.elapsed_ms,
+            output: String::new(),
+        }
+    }
 }

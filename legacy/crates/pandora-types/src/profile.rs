@@ -48,21 +48,18 @@ pub fn profiles_dir() -> PathBuf {
 /// Returns a descriptive error if the file is missing or malformed.
 pub fn load_profile(name: &str) -> Result<Profile, String> {
     let path = profiles_dir().join(format!("{name}.toml"));
-    let content = std::fs::read_to_string(&path).map_err(|e| {
-        format!("Profile '{name}' not found ({}): {e}", path.display())
-    })?;
-    toml::from_str(&content).map_err(|e| {
-        format!("Failed to parse profile '{name}': {e}")
-    })
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Profile '{name}' not found ({}): {e}", path.display()))?;
+    toml::from_str(&content).map_err(|e| format!("Failed to parse profile '{name}': {e}"))
 }
 
 /// List all available profiles (files with `.toml` extension).
 pub fn list_profiles() -> Result<Vec<String>, String> {
     let dir = profiles_dir();
     let mut profiles = Vec::new();
-    for entry in std::fs::read_dir(&dir).map_err(|e| {
-        format!("Cannot read profiles dir {}: {}", dir.display(), e)
-    })? {
+    for entry in std::fs::read_dir(&dir)
+        .map_err(|e| format!("Cannot read profiles dir {}: {}", dir.display(), e))?
+    {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
         if path.extension().is_some_and(|ext| ext == "toml") {

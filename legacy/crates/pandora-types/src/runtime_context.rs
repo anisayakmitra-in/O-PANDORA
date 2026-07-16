@@ -87,7 +87,10 @@ pub enum ProviderPolicy {
 pub enum RetryStrategy {
     None,
     Fixed(u32),
-    Exponential { max_retries: u32, base_delay_ms: u64 },
+    Exponential {
+        max_retries: u32,
+        base_delay_ms: u64,
+    },
 }
 
 impl Default for RetryStrategy {
@@ -100,7 +103,10 @@ impl Default for RetryStrategy {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ContextWindowStrategy {
     Fixed(usize),
-    Dynamic { max_tokens: usize, compression_ratio: f64 },
+    Dynamic {
+        max_tokens: usize,
+        compression_ratio: f64,
+    },
 }
 
 impl Default for ContextWindowStrategy {
@@ -165,7 +171,10 @@ impl ExecutionId {
     pub fn new() -> Self {
         use std::sync::atomic::{AtomicU64, Ordering};
         static COUNTER: AtomicU64 = AtomicU64::new(1);
-        ExecutionId(format!("exec-{:016x}", COUNTER.fetch_add(1, Ordering::Relaxed)))
+        ExecutionId(format!(
+            "exec-{:016x}",
+            COUNTER.fetch_add(1, Ordering::Relaxed)
+        ))
     }
 }
 

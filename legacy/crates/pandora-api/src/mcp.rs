@@ -4,7 +4,11 @@
 //! runs them through the PandoraRuntime. Exposes `pandora_execute`
 //! and `pandora_pipeline` as MCP tools. Built on top of the Runtime API.
 
-use axum::{extract::State, routing::{get, post}, Json, Router};
+use axum::{
+    extract::State,
+    routing::{get, post},
+    Json, Router,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -14,14 +18,29 @@ use tokio::sync::Mutex;
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-struct McpRequest { jsonrpc: String, id: Option<u64>, method: String, #[serde(default)] params: Value }
+struct McpRequest {
+    jsonrpc: String,
+    id: Option<u64>,
+    method: String,
+    #[serde(default)]
+    params: Value,
+}
 
 #[derive(Debug, Serialize)]
-struct McpResponse { jsonrpc: String, id: Option<u64>, result: Option<Value>, error: Option<Value> }
+struct McpResponse {
+    jsonrpc: String,
+    id: Option<u64>,
+    result: Option<Value>,
+    error: Option<Value>,
+}
 
 #[derive(Debug, Serialize)]
 #[allow(dead_code)]
-struct McpTool { name: String, description: String, input_schema: Value }
+struct McpTool {
+    name: String,
+    description: String,
+    input_schema: Value,
+}
 
 // ── MCP State ──
 
@@ -32,7 +51,9 @@ pub struct McpState {
 /// Start an MCP server on the given address. Advertises pandora_execute
 /// and pandora_pipeline as MCP tools.
 pub async fn serve_mcp(addr: &str) -> Result<(), anyhow::Error> {
-    let state = Arc::new(McpState { runtime: Arc::new(Mutex::new(pandora_orchestrator::PandoraRuntime::new())) });
+    let state = Arc::new(McpState {
+        runtime: Arc::new(Mutex::new(pandora_orchestrator::PandoraRuntime::new())),
+    });
     let app = Router::new()
         .route("/", post(mcp_handler))
         .route("/health", get(|| async { "ok" }))
@@ -45,10 +66,14 @@ pub async fn serve_mcp(addr: &str) -> Result<(), anyhow::Error> {
 }
 
 /// Handle MCP JSON-RPC messages.
-async fn mcp_handler(State(state): State<Arc<McpState>>, Json(req): Json<McpRequest>) -> Json<McpResponse> {
+async fn mcp_handler(
+    State(state): State<Arc<McpState>>,
+    Json(req): Json<McpRequest>,
+) -> Json<McpResponse> {
     match req.method.as_str() {
         "initialize" => Json(McpResponse {
-            jsonrpc: "2.0".into(), id: req.id,
+            jsonrpc: "2.0".into(),
+            id: req.id,
             result: Some(serde_json::json!({
                 "protocolVersion": "2024-11-05",
                 "serverInfo": {"name":"pandora-mcp","version":"1.0.0"},
@@ -57,23 +82,57 @@ async fn mcp_handler(State(state): State<Arc<McpState>>, Json(req): Json<McpRequ
             error: None,
         }),
         "tools/list" => Json(McpResponse {
-            jsonrpc: "2.0".into(), id: req.id,
+            jsonrpc: "2.0".into(),
+            id: req.id,
             result: Some(serde_json::json!({"tools": [
                 {"name":"pandora_execute","description":"Execute a task through Pandora governed runtime","inputSchema":{"type":"object","properties":{"task":{"type":"string"},"strategy":{"type":"string"},"provider":{"type":"string"}},"required":["task"]}},
                 {"name":"pandora_pipeline","description":"Run a full pipeline: plan → harness → gene → provider → evaluator → outcome","inputSchema":{"type":"object","properties":{"goal":{"type":"string"},"domain":{"type":"string"}},"required":["goal"]}}
             ]})),
             error: None,
         }),
-"resources/list" => Json(McpResponse { jsonrpc: "2.0".into(), id: req.id, result: Some(serde_json::json!({"resources":[{"uri":"pandora://sessions","name":"Sessions","mimeType":"application/json"},{"uri":"pandora://providers","name":"Providers","mimeType":"application/json"}]})), error: None }),        "notifications/cancelled" => Json(McpResponse { jsonrpc: "2.0".into(), id: req.id, result: Some(serde_json::json!({"cancelled":true})), error: None }),        "prompts/list" => Json(McpResponse { jsonrpc: "2.0".into(), id: req.id, result: Some(serde_json::json!({"prompts":[{"name":"execute","description":"Run a Pandora execution","arguments":[{"name":"task","required":true}]}]})), error: None }),
+        "resources/list" => Json(McpResponse {
+            jsonrpc: "2.0".into(),
+            id: req.id,
+            result: Some(
+                serde_json::json!({"resources":[{"uri":"pandora://sessions","name":"Sessions","mimeType":"application/json"},{"uri":"pandora://providers","name":"Providers","mimeType":"application/json"}]}),
+            ),
+            error: None,
+        }),
+        "notifications/cancelled" => Json(McpResponse {
+            jsonrpc: "2.0".into(),
+            id: req.id,
+            result: Some(serde_json::json!({"cancelled":true})),
+            error: None,
+        }),
+        "prompts/list" => Json(McpResponse {
+            jsonrpc: "2.0".into(),
+            id: req.id,
+            result: Some(
+                serde_json::json!({"prompts":[{"name":"execute","description":"Run a Pandora execution","arguments":[{"name":"task","required":true}]}]}),
+            ),
+            error: None,
+        }),
         "tools/call" => {
-            let tool = req.params.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            let tool = req
+                .params
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
             let args = req.params.get("arguments").unwrap_or(&Value::Null);
-            let task = args.get("task").or_else(|| args.get("goal")).and_then(|v| v.as_str()).unwrap_or("unknown");
-            let _strategy = args.get("strategy").and_then(|v| v.as_str()).unwrap_or("single_shot");
+            let task = args
+                .get("task")
+                .or_else(|| args.get("goal"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("unknown");
+            let _strategy = args
+                .get("strategy")
+                .and_then(|v| v.as_str())
+                .unwrap_or("single_shot");
             let mut runtime = state.runtime.lock().await;
             match runtime.run(task, "default").await {
                 Ok(report) => Json(McpResponse {
-                    jsonrpc: "2.0".into(), id: req.id,
+                    jsonrpc: "2.0".into(),
+                    id: req.id,
                     result: Some(serde_json::json!({
                         "content": [{"type":"text","text": format!("Tool: {} | Status: {} | Duration: {}ms | Output: {}",
                             tool, if report.success {"ok"} else {"failed"}, report.duration_ms,
@@ -83,14 +142,16 @@ async fn mcp_handler(State(state): State<Arc<McpState>>, Json(req): Json<McpRequ
                     error: None,
                 }),
                 Err(e) => Json(McpResponse {
-                    jsonrpc: "2.0".into(), id: req.id,
+                    jsonrpc: "2.0".into(),
+                    id: req.id,
                     result: None,
                     error: Some(serde_json::json!({"code":-1,"message":e.to_string()})),
                 }),
             }
         }
         _ => Json(McpResponse {
-            jsonrpc: "2.0".into(), id: req.id,
+            jsonrpc: "2.0".into(),
+            id: req.id,
             error: Some(serde_json::json!({"code":-32601,"message":"Method not found"})),
             result: None,
         }),

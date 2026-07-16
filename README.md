@@ -23,7 +23,7 @@ Every step produces a record. You can replay it, explain it, audit it. If someth
 curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/PANDORA-SYSTEMS/main/install.sh | bash
 ```
 
-**From source:**
+**From source (Linux, macOS, WSL2):**
 ```bash
 git clone https://github.com/anisayakmitra-in/PANDORA-SYSTEMS.git
 cd PANDORA-SYSTEMS
@@ -31,7 +31,9 @@ cargo build --release -p pandora
 cp target/release/pandora ~/.local/bin/
 ```
 
-**Requires:** Rust 1.80+, Ollama (or any OpenAI-compatible endpoint)
+**Windows:** use WSL2 for the installer and CLI today.
+
+**Requires:** Rust stable, Ollama (or any OpenAI-compatible endpoint)
 
 ## Quick start
 
@@ -189,7 +191,7 @@ Version:   --version, version
 ## Architecture
 
 ```
-11 crates, 164 tests, 0 errors
+12 crates, 0 build errors when the workspace is green
 
 pandora (CLI)
 pandora-tui (Dashboard)

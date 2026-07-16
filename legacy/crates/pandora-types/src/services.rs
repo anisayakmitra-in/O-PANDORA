@@ -127,11 +127,17 @@ pub trait ProviderService: Service {
     fn latency(&self, model: &str) -> Result<f64, String>;
     fn invoke(&self, model: &str, prompt: &str) -> Result<String, String>;
     /// Whether this provider supports tool/function calls.
-    fn supports_tools(&self) -> bool { false }
+    fn supports_tools(&self) -> bool {
+        false
+    }
     /// Whether this provider supports image inputs.
-    fn supports_images(&self) -> bool { false }
+    fn supports_images(&self) -> bool {
+        false
+    }
     /// Whether this provider supports reasoning/chain-of-thought.
-    fn supports_reasoning(&self) -> bool { false }
+    fn supports_reasoning(&self) -> bool {
+        false
+    }
 }
 
 /// Benchmark — record and query performance scores.

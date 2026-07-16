@@ -12,19 +12,32 @@ use std::collections::HashSet;
 /// The type of work a workflow step performs.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum StepKind {
-    Plan, Execute, Verify, Reflect, Research, Analyze,
-    Generate, Review, Benchmark, Decision,
+    Plan,
+    Execute,
+    Verify,
+    Reflect,
+    Research,
+    Analyze,
+    Generate,
+    Review,
+    Benchmark,
+    Decision,
     Custom(&'static str),
 }
 
 impl StepKind {
     pub fn name(&self) -> &str {
         match self {
-            Self::Plan => "plan", Self::Execute => "execute",
-            Self::Verify => "verify", Self::Reflect => "reflect",
-            Self::Research => "research", Self::Analyze => "analyze",
-            Self::Generate => "generate", Self::Review => "review",
-            Self::Benchmark => "benchmark", Self::Decision => "decision",
+            Self::Plan => "plan",
+            Self::Execute => "execute",
+            Self::Verify => "verify",
+            Self::Reflect => "reflect",
+            Self::Research => "research",
+            Self::Analyze => "analyze",
+            Self::Generate => "generate",
+            Self::Review => "review",
+            Self::Benchmark => "benchmark",
+            Self::Decision => "decision",
             Self::Custom(s) => s,
         }
     }
@@ -49,15 +62,31 @@ pub struct WorkflowStep {
 impl WorkflowStep {
     pub fn new(id: impl Into<String>, kind: StepKind, label: impl Into<String>) -> Self {
         Self {
-            id: id.into(), kind, label: label.into(),
-            description: String::new(), depends_on: Vec::new(),
-            parallel: false, domain_hint: None, provider_hint: None,
-            estimated_cost: 0.0, estimated_duration_ms: 0, output_key: None,
+            id: id.into(),
+            kind,
+            label: label.into(),
+            description: String::new(),
+            depends_on: Vec::new(),
+            parallel: false,
+            domain_hint: None,
+            provider_hint: None,
+            estimated_cost: 0.0,
+            estimated_duration_ms: 0,
+            output_key: None,
         }
     }
-    pub fn with_description(mut self, desc: impl Into<String>) -> Self { self.description = desc.into(); self }
-    pub fn depends_on(mut self, dep: impl Into<String>) -> Self { self.depends_on.push(dep.into()); self }
-    pub fn parallel(mut self) -> Self { self.parallel = true; self }
+    pub fn with_description(mut self, desc: impl Into<String>) -> Self {
+        self.description = desc.into();
+        self
+    }
+    pub fn depends_on(mut self, dep: impl Into<String>) -> Self {
+        self.depends_on.push(dep.into());
+        self
+    }
+    pub fn parallel(mut self) -> Self {
+        self.parallel = true;
+        self
+    }
 }
 
 /// The execution graph — a DAG of workflow steps.
@@ -69,11 +98,28 @@ pub struct ExecutionGraph {
 }
 
 impl ExecutionGraph {
-    pub fn new(name: impl Into<String>) -> Self { Self { workflow_name: name.into(), steps: Vec::new(), execution_order: Vec::new() } }
-    pub fn add_step(&mut self, step: WorkflowStep) { let id = step.id.clone(); self.steps.push(step); self.execution_order.push(id); }
-    pub fn get_step(&self, id: &str) -> Option<&WorkflowStep> { self.steps.iter().find(|s| s.id == id) }
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            workflow_name: name.into(),
+            steps: Vec::new(),
+            execution_order: Vec::new(),
+        }
+    }
+    pub fn add_step(&mut self, step: WorkflowStep) {
+        let id = step.id.clone();
+        self.steps.push(step);
+        self.execution_order.push(id);
+    }
+    pub fn get_step(&self, id: &str) -> Option<&WorkflowStep> {
+        self.steps.iter().find(|s| s.id == id)
+    }
     pub fn ready_steps(&self, completed: &[String]) -> Vec<&WorkflowStep> {
-        self.steps.iter().filter(|s| !completed.contains(&s.id) && s.depends_on.iter().all(|dep| completed.contains(dep))).collect()
+        self.steps
+            .iter()
+            .filter(|s| {
+                !completed.contains(&s.id) && s.depends_on.iter().all(|dep| completed.contains(dep))
+            })
+            .collect()
     }
     pub fn topological_sort(&self) -> Vec<String> {
         let mut visited = HashSet::new();
@@ -81,35 +127,64 @@ impl ExecutionGraph {
         let mut stack: Vec<String> = self.steps.iter().map(|s| s.id.clone()).collect();
         let mut deferred = HashSet::new();
         while let Some(id) = stack.pop() {
-            if visited.contains(&id) { continue; }
+            if visited.contains(&id) {
+                continue;
+            }
             if let Some(step) = self.steps.iter().find(|s| s.id == id) {
-                if step.depends_on.iter().all(|dep| visited.contains(dep)) || deferred.contains(&id) {
-                    visited.insert(id.clone()); order.push(id);
+                if step.depends_on.iter().all(|dep| visited.contains(dep)) || deferred.contains(&id)
+                {
+                    visited.insert(id.clone());
+                    order.push(id);
                 } else {
-                    deferred.insert(id.clone()); stack.push(id);
-                    for dep in &step.depends_on { if !visited.contains(dep) { stack.push(dep.clone()); } }
+                    deferred.insert(id.clone());
+                    stack.push(id);
+                    for dep in &step.depends_on {
+                        if !visited.contains(dep) {
+                            stack.push(dep.clone());
+                        }
+                    }
                 }
             }
         }
         order
     }
-    pub fn parallel_steps(&self) -> Vec<&WorkflowStep> { self.steps.iter().filter(|s| s.parallel).collect() }
-    pub fn sequential_steps(&self) -> Vec<&WorkflowStep> { self.steps.iter().filter(|s| !s.parallel).collect() }
+    pub fn parallel_steps(&self) -> Vec<&WorkflowStep> {
+        self.steps.iter().filter(|s| s.parallel).collect()
+    }
+    pub fn sequential_steps(&self) -> Vec<&WorkflowStep> {
+        self.steps.iter().filter(|s| !s.parallel).collect()
+    }
 }
 
 /// A named, reusable workflow definition.
 #[derive(Debug, Clone, Serialize)]
 pub struct WorkflowDefinition {
-    pub name: String, pub description: String, pub version: String,
-    pub tags: Vec<String>, pub steps: Vec<WorkflowStep>,
+    pub name: String,
+    pub description: String,
+    pub version: String,
+    pub tags: Vec<String>,
+    pub steps: Vec<WorkflowStep>,
 }
 
 impl WorkflowDefinition {
-    pub fn new(name: impl Into<String>) -> Self { Self { name: name.into(), description: String::new(), version: "0.1.0".into(), tags: Vec::new(), steps: Vec::new() } }
-    pub fn with_step(mut self, step: WorkflowStep) -> Self { self.steps.push(step); self }
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            description: String::new(),
+            version: "0.1.0".into(),
+            tags: Vec::new(),
+            steps: Vec::new(),
+        }
+    }
+    pub fn with_step(mut self, step: WorkflowStep) -> Self {
+        self.steps.push(step);
+        self
+    }
     pub fn instantiate(&self, _context: &RuntimeContext) -> ExecutionGraph {
         let mut graph = ExecutionGraph::new(&self.name);
-        for step in &self.steps { graph.add_step(step.clone()); }
+        for step in &self.steps {
+            graph.add_step(step.clone());
+        }
         graph.execution_order = graph.topological_sort();
         graph
     }
@@ -121,13 +196,28 @@ pub struct WorkflowEngine;
 impl WorkflowEngine {
     pub fn plan(context: &RuntimeContext, intent: &str) -> ExecutionGraph {
         let mut graph = ExecutionGraph::new("auto-workflow");
-        graph.add_step(WorkflowStep::new("plan", StepKind::Plan, "Plan execution").with_description(format!("Plan: {intent}")));
-        graph.add_step(WorkflowStep::new("execute", StepKind::Execute, "Execute").with_description("Execute the plan").depends_on("plan"));
+        graph.add_step(
+            WorkflowStep::new("plan", StepKind::Plan, "Plan execution")
+                .with_description(format!("Plan: {intent}")),
+        );
+        graph.add_step(
+            WorkflowStep::new("execute", StepKind::Execute, "Execute")
+                .with_description("Execute the plan")
+                .depends_on("plan"),
+        );
         if context.properties.safety_level as u32 >= 2 {
-            graph.add_step(WorkflowStep::new("verify", StepKind::Verify, "Verify output").with_description("Verify execution results").depends_on("execute"));
+            graph.add_step(
+                WorkflowStep::new("verify", StepKind::Verify, "Verify output")
+                    .with_description("Verify execution results")
+                    .depends_on("execute"),
+            );
         }
         if context.properties.reasoning_depth > 1 {
-            graph.add_step(WorkflowStep::new("reflect", StepKind::Reflect, "Reflect").with_description("Reflect on execution").depends_on("verify"));
+            graph.add_step(
+                WorkflowStep::new("reflect", StepKind::Reflect, "Reflect")
+                    .with_description("Reflect on execution")
+                    .depends_on("verify"),
+            );
         }
         graph.execution_order = graph.topological_sort();
         graph
@@ -135,7 +225,9 @@ impl WorkflowEngine {
 
     pub fn build(steps: Vec<WorkflowStep>) -> ExecutionGraph {
         let mut graph = ExecutionGraph::new("custom-workflow");
-        for step in steps { graph.add_step(step); }
+        for step in steps {
+            graph.add_step(step);
+        }
         graph.execution_order = graph.topological_sort();
         graph
     }
@@ -147,8 +239,10 @@ mod tests {
 
     #[test]
     fn workflow_step_creation() {
-        let step = WorkflowStep::new("step-1", StepKind::Plan, "Initial plan").with_description("Plan the implementation");
-        assert_eq!(step.id, "step-1"); assert_eq!(step.kind, StepKind::Plan);
+        let step = WorkflowStep::new("step-1", StepKind::Plan, "Initial plan")
+            .with_description("Plan the implementation");
+        assert_eq!(step.id, "step-1");
+        assert_eq!(step.kind, StepKind::Plan);
     }
 
     #[test]

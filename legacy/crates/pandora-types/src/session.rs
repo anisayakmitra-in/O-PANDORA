@@ -106,22 +106,22 @@ fn sessions_dir() -> std::path::PathBuf {
 
 fn write_sessions(sessions: &HashMap<String, Session>) -> Result<(), String> {
     let dir = sessions_dir();
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("Cannot create sessions dir: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create sessions dir: {e}"))?;
     for session in sessions.values() {
         let path = dir.join(format!("{}.json", session.id));
         let json = serde_json::to_string_pretty(session)
             .map_err(|e| format!("Serialize session {}: {e}", session.id))?;
         let tmp = dir.join(format!("{}.tmp", session.id));
-        std::fs::write(&tmp, &json)
-            .map_err(|e| format!("Write session {}: {e}", session.id))?;
-        std::fs::rename(&tmp, &path)
-            .map_err(|e| format!("Rename session {}: {e}", session.id))?;
+        std::fs::write(&tmp, &json).map_err(|e| format!("Write session {}: {e}", session.id))?;
+        std::fs::rename(&tmp, &path).map_err(|e| format!("Rename session {}: {e}", session.id))?;
     }
     let index: Vec<String> = sessions.keys().cloned().collect();
     let index_path = dir.join("index.json");
-    std::fs::write(&index_path, serde_json::to_string_pretty(&index).map_err(|e| format!("Serialize index: {e}"))?)
-        .map_err(|e| format!("Write index: {e}"))
+    std::fs::write(
+        &index_path,
+        serde_json::to_string_pretty(&index).map_err(|e| format!("Serialize index: {e}"))?,
+    )
+    .map_err(|e| format!("Write index: {e}"))
 }
 
 // ── SessionStore implementations ──
@@ -155,10 +155,10 @@ impl SessionStore {
         }
         let index_path = dir.join("index.json");
         if index_path.exists() {
-            let content = std::fs::read_to_string(&index_path)
-                .map_err(|e| format!("Read index: {e}"))?;
-            let ids: Vec<String> = serde_json::from_str(&content)
-                .map_err(|e| format!("Parse index: {e}"))?;
+            let content =
+                std::fs::read_to_string(&index_path).map_err(|e| format!("Read index: {e}"))?;
+            let ids: Vec<String> =
+                serde_json::from_str(&content).map_err(|e| format!("Parse index: {e}"))?;
             for id in &ids {
                 let path = dir.join(format!("{id}.json"));
                 if !path.exists() {
@@ -166,25 +166,20 @@ impl SessionStore {
                 }
                 let json = std::fs::read_to_string(&path)
                     .map_err(|e| format!("Read session {id}: {e}"))?;
-                let session: Session = serde_json::from_str(&json)
-                    .map_err(|e| format!("Parse session {id}: {e}"))?;
+                let session: Session =
+                    serde_json::from_str(&json).map_err(|e| format!("Parse session {id}: {e}"))?;
                 self.sessions.insert(id.clone(), session);
             }
         } else {
-            for entry in std::fs::read_dir(&dir)
-                .map_err(|e| format!("Read sessions dir: {e}"))?
-            {
+            for entry in std::fs::read_dir(&dir).map_err(|e| format!("Read sessions dir: {e}"))? {
                 let entry = entry.map_err(|e| format!("Entry: {e}"))?;
                 let path = entry.path();
-                let is_json = path
-                    .extension()
-                    .is_some_and(|e| e == "json");
+                let is_json = path.extension().is_some_and(|e| e == "json");
                 let is_index = path.file_stem() == Some(std::ffi::OsStr::new("index"));
                 if !is_json || is_index {
                     continue;
                 }
-                let json = std::fs::read_to_string(&path)
-                    .map_err(|e| format!("Read: {e}"))?;
+                let json = std::fs::read_to_string(&path).map_err(|e| format!("Read: {e}"))?;
                 if let Ok(session) = serde_json::from_str::<Session>(&json) {
                     self.sessions.insert(session.id.clone(), session);
                 }
@@ -254,9 +249,9 @@ impl SessionStore {
 
     /// Remove a session from the store and delete its file.
     pub fn remove(&mut self, id: &str) -> Result<(), PandoraError> {
-        self.sessions.remove(id).ok_or_else(|| {
-            PandoraError::not_found(format!("Session not found: {id}"))
-        })?;
+        self.sessions
+            .remove(id)
+            .ok_or_else(|| PandoraError::not_found(format!("Session not found: {id}")))?;
         let _ = self.save();
         let path = sessions_dir().join(format!("{id}.json"));
         let _ = std::fs::remove_file(&path);
@@ -271,9 +266,9 @@ impl SessionStore {
 
     /// Create a replay session from an existing session.
     pub fn replay(&mut self, id: &str) -> Result<Session, PandoraError> {
-        let original = self.get(id).ok_or_else(|| {
-            PandoraError::not_found(format!("Session not found: {id}"))
-        })?;
+        let original = self
+            .get(id)
+            .ok_or_else(|| PandoraError::not_found(format!("Session not found: {id}")))?;
         let mut replayed = Session::new(
             format!("replay-{id}"),
             format!("[REPLAY] {}", original.prompt),

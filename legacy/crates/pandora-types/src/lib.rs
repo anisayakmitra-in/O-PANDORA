@@ -32,28 +32,28 @@ pub use harness::{
 };
 pub use session::{Session, SessionStatus, SessionStore};
 
-pub mod decision;
-pub mod evaluation_verdict;
-pub mod error;
-pub mod profile;
 pub mod artifacts;
-pub mod provider_db;
-pub mod package_format;
-pub mod signing;
-pub mod permissions;
-pub mod lockfile;
-pub mod trust;
-pub mod event_store;
-pub mod provider;
 pub mod connection_manager;
-pub mod provenance;
+pub mod decision;
+pub mod error;
+pub mod evaluation_verdict;
+pub mod event_store;
 pub mod events;
-pub mod provider_health;
 pub mod execution_plan;
 pub mod gene;
 pub mod gene_package;
 pub mod harness_gene;
+pub mod lockfile;
+pub mod package_format;
+pub mod permissions;
+pub mod profile;
+pub mod provenance;
+pub mod provider;
+pub mod provider_db;
+pub mod provider_health;
 pub mod session;
+pub mod signing;
+pub mod trust;
 pub use gene::{
     Gene, GeneKind, GeneLineage, GeneLineageEntry, GeneManifest, GeneManifestBuilder,
     SlashCommandOwner,
@@ -77,6 +77,8 @@ pub mod gene_context;
 pub mod governance_runtime;
 pub mod identity_runtime;
 pub mod knowledge_distillation;
+pub mod ledger;
+pub mod parliament;
 pub mod policy_engine;
 pub mod recorder;
 pub mod runtime_context;
@@ -85,5 +87,3 @@ pub mod services;
 pub mod telemetry_engine;
 pub mod universal;
 pub mod workflow_engine;
-pub mod ledger;
-pub mod parliament;

@@ -52,17 +52,17 @@ pub fn check_ollama() -> ProviderHealth {
 }
 
 fn ollama_host() -> String {
-    std::env::var("OLLAMA_HOST")
-        .unwrap_or_else(|_| "http://localhost:11434".into())
+    std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())
 }
 
 fn count_ollama_models(host: &str) -> u32 {
     let out = match Command::new("curl")
         .args(["-s", &format!("{host}/api/tags")])
-        .output() {
-            Ok(o) => o,
-            Err(_) => return 0,
-        };
+        .output()
+    {
+        Ok(o) => o,
+        Err(_) => return 0,
+    };
     let body = String::from_utf8_lossy(&out.stdout);
     body.matches(r#""name":"#).count() as u32
 }
@@ -124,19 +124,18 @@ pub fn benchmark_provider(
 /// Run a full benchmark across all configured providers.
 pub fn benchmark_all() -> Vec<(String, String, u64, f64)> {
     let mut results = Vec::new();
-    let prompt =
-        "def hello():\n    print('hello world')\n\nhello()";
+    let prompt = "def hello():\n    print('hello world')\n\nhello()";
 
     let host = ollama_host();
-    let model = std::env::var("OLLAMA_MODEL")
-        .unwrap_or_else(|_| std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new()));
+    let model = std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| {
+        std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new())
+    });
     match benchmark_provider("Ollama", &host, &model, prompt) {
         Ok((lat, tps)) => results.push(("Ollama".into(), model, lat, tps)),
         Err(e) => results.push(("Ollama".into(), format!("error: {e}"), 0, 0.0)),
     }
 
-    let host2 = std::env::var("LLAMA_CPP_HOST")
-        .unwrap_or_else(|_| "http://localhost:8080".into());
+    let host2 = std::env::var("LLAMA_CPP_HOST").unwrap_or_else(|_| "http://localhost:8080".into());
     match benchmark_provider("LlamaCpp", &host2, "default", prompt) {
         Ok((lat, tps)) => results.push(("LlamaCpp".into(), "default".into(), lat, tps)),
         Err(e) => results.push(("LlamaCpp".into(), format!("error: {e}"), 0, 0.0)),
@@ -157,7 +156,16 @@ fn curl_http_code(url: &str) -> Result<String, String> {
 
 fn curl_post(url: &str, data: &str) -> Result<String, String> {
     let out = Command::new("curl")
-        .args(["-s", "-X", "POST", "-H", "Content-Type: application/json", "-d", data, url])
+        .args([
+            "-s",
+            "-X",
+            "POST",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            data,
+            url,
+        ])
         .output()
         .map_err(|e| format!("curl not found: {e}"))?;
     if !out.status.success() {

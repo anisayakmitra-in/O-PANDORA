@@ -80,7 +80,10 @@ impl TrustPolicy {
         }
         if let Some(price) = pkg.price_usd {
             if price > self.max_price_usd {
-                return Err(format!("Price ${price:.2} exceeds max ${:.2}", self.max_price_usd));
+                return Err(format!(
+                    "Price ${price:.2} exceeds max ${:.2}",
+                    self.max_price_usd
+                ));
             }
         }
 
@@ -152,22 +155,81 @@ pub struct TrustVerdict {
 mod tests {
     use super::*;
     use crate::package_format::PackageManifest;
-    use crate::package_format::PackageKind;
 
     fn pkg(paid: bool, trust: Vec<TrustLevel>, publisher: &str) -> RegistryPackage {
         RegistryPackage {
-            manifest: PackageManifest { id: "test".into(), name: "Test".into(), version: "1.0".into(), publisher: publisher.into(), ..Default::default() },
-            publisher: publisher.into(), published_at: String::new(), downloads: 0, weekly_downloads: 0, stars: 0,
-            verified: true, trust_levels: trust, signature: None, checksum_sha256: String::new(), archive_url: String::new(),
-            github_repo: None, forked_from: None, forks: vec![], reviews: 0, success_rate: 0.0, avg_latency_ms: 0.0,
-            changelog: None, is_paid: paid, price_usd: if paid { Some(9.99) } else { None },
+            manifest: PackageManifest {
+                id: "test".into(),
+                name: "Test".into(),
+                version: "1.0".into(),
+                publisher: publisher.into(),
+                ..Default::default()
+            },
+            publisher: publisher.into(),
+            published_at: String::new(),
+            downloads: 0,
+            weekly_downloads: 0,
+            stars: 0,
+            verified: true,
+            trust_levels: trust,
+            signature: None,
+            checksum_sha256: String::new(),
+            archive_url: String::new(),
+            github_repo: None,
+            forked_from: None,
+            forks: vec![],
+            reviews: 0,
+            success_rate: 0.0,
+            avg_latency_ms: 0.0,
+            changelog: None,
+            is_paid: paid,
+            price_usd: if paid { Some(9.99) } else { None },
         }
     }
 
-    #[test] fn permissive_accepts_anything() { assert!(TrustPolicy::permissive().evaluate(&pkg(false, vec![], "any")).is_ok()); }
-    #[test] fn strict_rejects_unsigned() { assert!(TrustPolicy::strict().evaluate(&pkg(false, vec![], "any")).is_err()); }
-    #[test] fn strict_accepts_verified_signed() { assert!(TrustPolicy::strict().evaluate(&pkg(false, vec![TrustLevel::PandoraVerified, TrustLevel::Signed], "pandora")).is_ok()); }
-    #[test] fn free_only_rejects_paid() { let pol = TrustPolicy { max_price_usd: 0.0, ..Default::default() }; assert!(pol.evaluate(&pkg(true, vec![], "any")).is_err()); }
-    #[test] fn publisher_allow_list() { let pol = TrustPolicy { allow_publishers: vec!["pandora".into()], ..Default::default() }; assert!(pol.evaluate(&pkg(false, vec![], "pandora")).is_ok()); assert!(pol.evaluate(&pkg(false, vec![], "other")).is_err()); }
-    #[test] fn verdict_returns_package_id() { let v = TrustPolicy::permissive().verdict(&pkg(false, vec![], "pandora")); assert_eq!(v.package_id, "pandora/test"); assert!(v.passed); }
+    #[test]
+    fn permissive_accepts_anything() {
+        assert!(TrustPolicy::permissive()
+            .evaluate(&pkg(false, vec![], "any"))
+            .is_ok());
+    }
+    #[test]
+    fn strict_rejects_unsigned() {
+        assert!(TrustPolicy::strict()
+            .evaluate(&pkg(false, vec![], "any"))
+            .is_err());
+    }
+    #[test]
+    fn strict_accepts_verified_signed() {
+        assert!(TrustPolicy::strict()
+            .evaluate(&pkg(
+                false,
+                vec![TrustLevel::PandoraVerified, TrustLevel::Signed],
+                "pandora"
+            ))
+            .is_ok());
+    }
+    #[test]
+    fn free_only_rejects_paid() {
+        let pol = TrustPolicy {
+            max_price_usd: 0.0,
+            ..Default::default()
+        };
+        assert!(pol.evaluate(&pkg(true, vec![], "any")).is_err());
+    }
+    #[test]
+    fn publisher_allow_list() {
+        let pol = TrustPolicy {
+            allow_publishers: vec!["pandora".into()],
+            ..Default::default()
+        };
+        assert!(pol.evaluate(&pkg(false, vec![], "pandora")).is_ok());
+        assert!(pol.evaluate(&pkg(false, vec![], "other")).is_err());
+    }
+    #[test]
+    fn verdict_returns_package_id() {
+        let v = TrustPolicy::permissive().verdict(&pkg(false, vec![], "pandora"));
+        assert_eq!(v.package_id, "pandora/test");
+        assert!(v.passed);
+    }
 }

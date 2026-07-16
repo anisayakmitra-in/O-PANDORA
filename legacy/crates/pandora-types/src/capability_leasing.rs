@@ -31,7 +31,9 @@ pub enum LeaseStatus {
 }
 
 /// Priority levels for capability requests.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 pub enum CapabilityPriority {
     Low,
     #[default]
@@ -62,7 +64,12 @@ pub struct CapabilityBudget {
 
 impl Default for CapabilityBudget {
     fn default() -> Self {
-        Self { max_duration_ms: 60_000, max_cost_cents: 100, max_memory_mb: 1024, max_cpu_ms: 30_000 }
+        Self {
+            max_duration_ms: 60_000,
+            max_cost_cents: 100,
+            max_memory_mb: 1024,
+            max_cpu_ms: 30_000,
+        }
     }
 }
 
@@ -136,9 +143,14 @@ mod tests {
     #[test]
     fn lease_serde() {
         let l = CapabilityLease {
-            lease_id: "l1".into(), capability: "filesystem".into(), provider: "native".into(),
-            session_id: "s1".into(), priority: CapabilityPriority::Normal,
-            granted_at_ms: 0, expires_at_ms: 60_000, status: LeaseStatus::Active,
+            lease_id: "l1".into(),
+            capability: "filesystem".into(),
+            provider: "native".into(),
+            session_id: "s1".into(),
+            priority: CapabilityPriority::Normal,
+            granted_at_ms: 0,
+            expires_at_ms: 60_000,
+            status: LeaseStatus::Active,
         };
         let json = serde_json::to_string(&l).unwrap();
         let _: CapabilityLease = serde_json::from_str(&json).unwrap();
@@ -152,13 +164,18 @@ mod tests {
     }
 
     #[test]
-    fn budget_default() { assert_eq!(CapabilityBudget::default().max_duration_ms, 60_000); }
+    fn budget_default() {
+        assert_eq!(CapabilityBudget::default().max_duration_ms, 60_000);
+    }
 
     #[test]
     fn session_serde() {
         let s = CapabilitySession {
-            session_id: "s1".into(), leases: vec![], created_at_ms: 0,
-            health: Health::Healthy, total_cost_cents: 0,
+            session_id: "s1".into(),
+            leases: vec![],
+            created_at_ms: 0,
+            health: Health::Healthy,
+            total_cost_cents: 0,
         };
         let json = serde_json::to_string(&s).unwrap();
         let _: CapabilitySession = serde_json::from_str(&json).unwrap();
@@ -167,8 +184,10 @@ mod tests {
     #[test]
     fn failure_reasons() {
         let f = CapabilityFailure {
-            lease_id: "l1".into(), reason: FailureReason::Timeout,
-            timestamp_ms: 0, retryable: true,
+            lease_id: "l1".into(),
+            reason: FailureReason::Timeout,
+            timestamp_ms: 0,
+            retryable: true,
         };
         assert!(f.retryable);
     }

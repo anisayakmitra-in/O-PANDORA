@@ -57,8 +57,7 @@ impl GeneKind {
 
 /// Rich metadata for a Gene — used by KUBER for display, search, and publishing.
 /// Not part of the runtime execution path.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GeneMetadata {
     pub description: String,
     pub homepage: Option<String>,
@@ -71,7 +70,6 @@ pub struct GeneMetadata {
     pub custom: HashMap<String, String>,
     pub permissions: Vec<String>,
 }
-
 
 // ── Gene Manifest — minimalist runtime record ──
 
@@ -119,14 +117,38 @@ pub struct GeneManifestBuilder {
 
 #[allow(clippy::too_many_arguments)]
 impl GeneManifestBuilder {
-    pub fn id(mut self, id: impl Into<String>) -> Self { self.id = Some(id.into()); self }
-    pub fn name(mut self, n: impl Into<String>) -> Self { self.name = Some(n.into()); self }
-    pub fn kind(mut self, k: GeneKind) -> Self { self.kind = Some(k); self }
-    pub fn version(mut self, v: impl Into<String>) -> Self { self.version = Some(v.into()); self }
-    pub fn author(mut self, a: impl Into<String>) -> Self { self.author = Some(a.into()); self }
-    pub fn description(mut self, d: impl Into<String>) -> Self { self.description = Some(d.into()); self }
-    pub fn capability(mut self, c: impl Into<String>) -> Self { self.capabilities.push(c.into()); self }
-    pub fn dependency(mut self, d: impl Into<String>) -> Self { self.dependencies.push(d.into()); self }
+    pub fn id(mut self, id: impl Into<String>) -> Self {
+        self.id = Some(id.into());
+        self
+    }
+    pub fn name(mut self, n: impl Into<String>) -> Self {
+        self.name = Some(n.into());
+        self
+    }
+    pub fn kind(mut self, k: GeneKind) -> Self {
+        self.kind = Some(k);
+        self
+    }
+    pub fn version(mut self, v: impl Into<String>) -> Self {
+        self.version = Some(v.into());
+        self
+    }
+    pub fn author(mut self, a: impl Into<String>) -> Self {
+        self.author = Some(a.into());
+        self
+    }
+    pub fn description(mut self, d: impl Into<String>) -> Self {
+        self.description = Some(d.into());
+        self
+    }
+    pub fn capability(mut self, c: impl Into<String>) -> Self {
+        self.capabilities.push(c.into());
+        self
+    }
+    pub fn dependency(mut self, d: impl Into<String>) -> Self {
+        self.dependencies.push(d.into());
+        self
+    }
     pub fn slash_command(mut self, cmd: impl Into<String>, desc: impl Into<String>) -> Self {
         self.slash_commands.push(super::harness::SlashCommand {
             command: cmd.into(),
@@ -134,7 +156,10 @@ impl GeneManifestBuilder {
         });
         self
     }
-    pub fn permission(mut self, p: impl Into<String>) -> Self { self.permissions.push(p.into()); self }
+    pub fn permission(mut self, p: impl Into<String>) -> Self {
+        self.permissions.push(p.into());
+        self
+    }
     pub fn metadata(mut self, k: impl Into<String>, v: impl Into<String>) -> Self {
         self.metadata.insert(k.into(), v.into());
         self
@@ -233,9 +258,15 @@ pub trait Gene: Send + Sync + std::fmt::Debug {
 
     // ── Convenience methods ──
 
-    fn id(&self) -> &str { &self.manifest().id }
-    fn name(&self) -> &str { &self.manifest().name }
-    fn kind(&self) -> &GeneKind { &self.manifest().kind }
+    fn id(&self) -> &str {
+        &self.manifest().id
+    }
+    fn name(&self) -> &str {
+        &self.manifest().name
+    }
+    fn kind(&self) -> &GeneKind {
+        &self.manifest().kind
+    }
 }
 
 /// Who owns a slash command.

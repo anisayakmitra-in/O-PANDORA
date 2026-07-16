@@ -9,32 +9,32 @@
 //! Every stage returns a StageOutput. Parliament merges deltas.
 
 use anyhow::Result;
-use pandora_types::ledger::{ExecutionLedger, LedgerEntry, LedgerOutcome};
-use pandora_types::provider::ollama::OllamaProvider;
-use pandora_types::provider::Provider;
-use pandora_types::provider::GenerationRequest;
 use pandora_services::ExecutionController;
 use pandora_shadow_council::ShadowCouncil;
+use pandora_types::ledger::{ExecutionLedger, LedgerEntry, LedgerOutcome};
+use pandora_types::provider::ollama::OllamaProvider;
+use pandora_types::provider::GenerationRequest;
+use pandora_types::provider::Provider;
 mod sinks;
-use sinks::BroadcastSink;
-use pandora_types::execution_plan::ExecutionPlan;
-use pandora_types::events::EventSink;
-use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
+use pandora_types::artifacts::ArtifactGraph;
 use pandora_types::capability_resolution::CapabilityResolutionEngine;
+use pandora_types::events::EventSink;
+use pandora_types::execution_plan::ExecutionPlan;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
 use pandora_types::harness::HarnessKind;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
+use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
+use pandora_types::provider::CancellationToken;
+use pandora_types::provider_db::{ProviderDb, ProviderObservation};
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
 use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::session::SessionStore;
 use pandora_types::telemetry_engine::TelemetryEngine;
-use pandora_types::artifacts::ArtifactGraph;
-use pandora_types::provider_db::{ProviderDb, ProviderObservation};
 use pandora_types::workflow_engine::{ExecutionGraph, StepKind, WorkflowStep};
+use sinks::BroadcastSink;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use pandora_types::provider::CancellationToken;
 
 // ── Stage Output types ──
 
@@ -169,7 +169,9 @@ impl ProviderRegistry {
         self.providers.iter().find(|p| p.name() == name).cloned()
     }
 
-    pub fn set_default_model(&mut self, model: Option<String>) { self.default_model_name = model; }
+    pub fn set_default_model(&mut self, model: Option<String>) {
+        self.default_model_name = model;
+    }
     pub fn set_defaults(&mut self, provider: Option<&str>, model: Option<&str>) {
         self.default_provider_name = provider.map(|s| s.to_string());
         self.default_model_name = model.map(|s| s.to_string());
@@ -250,10 +252,15 @@ impl PandoraRuntime {
             providers.register(Arc::new(OllamaProvider::new_default()));
         } else {
             for conn in cr.healthy() {
-                providers.register(Arc::new(OllamaProvider::new(&conn.endpoint, &conn.default_model)));
+                providers.register(Arc::new(OllamaProvider::new(
+                    &conn.endpoint,
+                    &conn.default_model,
+                )));
             }
         }
-        providers.set_default_model(Some(std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new())));
+        providers.set_default_model(Some(
+            std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new()),
+        ));
         Self {
             ctx: RuntimeContext::new("default-session", "pandora"),
             recorder: ExecutionRecorder::new(),
@@ -262,9 +269,7 @@ impl PandoraRuntime {
             knowledge: KnowledgeDistillationEngine::new(),
             ledger: ExecutionLedger::new(),
             sessions: SessionStore::new(),
-            council: {
-ShadowCouncil::new()
-        },
+            council: { ShadowCouncil::new() },
             parliament: pandora_types::parliament::Parliament::new(),
             controller: ExecutionController::new(),
             plan: ExecutionPlan::default(),
@@ -292,9 +297,14 @@ ShadowCouncil::new()
         let tid = format!("task-{execution_id}");
         let oid = format!("outcome-{execution_id}");
         self.provenance.add_node(NodeKind::Task, &tid, task);
-        self.provenance.add_node(NodeKind::ExecutionPlan, format!("plan-{execution_id}"), "plan");
+        self.provenance.add_node(
+            NodeKind::ExecutionPlan,
+            format!("plan-{execution_id}"),
+            "plan",
+        );
         self.provenance.add_node(NodeKind::Outcome, &oid, "Pending");
-        self.provenance.connect(&tid, format!("plan-{execution_id}"), "controller initiated");
+        self.provenance
+            .connect(&tid, format!("plan-{execution_id}"), "controller initiated");
 
         // ── Session: first-class execution object ──
         let mut session = pandora_types::Session::new(&execution_id, task);
@@ -340,7 +350,9 @@ ShadowCouncil::new()
                 .metadata
                 .insert("selected_harness".to_string(), harness_names.join(","));
         } else {
-            println!("[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)");
+            println!(
+                "[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)"
+            );
         }
 
         // ponytail: sandbox via ExecutionBudget.sandbox_level
@@ -349,7 +361,11 @@ ShadowCouncil::new()
         let candidates = self.cap_resolution.resolve_domain(domain);
         let (provider_name, model) = if let Some(best) = candidates.first() {
             (best.provider.clone(), best.model.clone())
-        } else if let Some((p, m)) = self.provider_db.best(&self.plan.provider_policy).map(|(pp, mm)| (pp.to_string(), mm.to_string())) {
+        } else if let Some((p, m)) = self
+            .provider_db
+            .best(&self.plan.provider_policy)
+            .map(|(pp, mm)| (pp.to_string(), mm.to_string()))
+        {
             (p, m)
         } else if let Some(target) = self.providers.resolve(None, None, None) {
             (target.provider, target.model)
@@ -438,9 +454,19 @@ ShadowCouncil::new()
             telemetry: vec![],
             timestamp: chrono::Utc::now(),
         };
-        let _ = self.recorder.record_frame(&ReplayId(frame_id.clone()), frame);
+        let _ = self
+            .recorder
+            .record_frame(&ReplayId(frame_id.clone()), frame);
         println!("[STAGE 5 - RECORDER] frame captured");
-        self.provider_db.record(ProviderObservation { provider: provider_name.clone(), model: model.clone(), latency_ms: exec_ms as u64, tokens_used: response.len(), success: !response.is_empty(), cost_usd: 0.0, timestamp: std::time::SystemTime::now() });
+        self.provider_db.record(ProviderObservation {
+            provider: provider_name.clone(),
+            model: model.clone(),
+            latency_ms: exec_ms as u64,
+            tokens_used: response.len(),
+            success: !response.is_empty(),
+            cost_usd: 0.0,
+            timestamp: std::time::SystemTime::now(),
+        });
 
         session
             .metadata
@@ -470,15 +496,30 @@ ShadowCouncil::new()
         if let Ok(home) = std::env::var("HOME") {
             let log = std::path::PathBuf::from(home).join(".pandora/events.log");
             let _ = std::fs::create_dir_all(log.parent().unwrap());
-            let _ = std::fs::OpenOptions::new().create(true).append(true).open(&log)
-                .map(|mut f| { let _ = writeln!(f, "{}|execution|{}b|{}", self.ctx.session_id, response.len(), success); });
+            let _ = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log)
+                .map(|mut f| {
+                    let _ = writeln!(
+                        f,
+                        "{}|execution|{}b|{}",
+                        self.ctx.session_id,
+                        response.len(),
+                        success
+                    );
+                });
         }
         if !success {
             let record = FailureRecord::new(provider_name.clone(), domain);
             self.failure_intel.ingest(record);
             self.failure_intel.cluster();
         }
-        let root_causes = if success { 0 } else { self.failure_intel.root_cause_count() };
+        let root_causes = if success {
+            0
+        } else {
+            self.failure_intel.root_cause_count()
+        };
         println!("[STAGE 7 - INTEL] {} root causes", root_causes);
 
         // Stage 8: Knowledge Distillation
@@ -500,34 +541,32 @@ ShadowCouncil::new()
         }
 
         // Stage 9: Execution Ledger — immutable permanent record
-        self.ledger
-            .append(LedgerEntry {
-                stage: "complete".into(),
-                duration_ms: exec_ms as u64,
-                entry_id: format!("entry-{}", execution_id),
-                execution_id: execution_id.clone(),
-                timestamp: chrono::Utc::now().to_rfc3339(),
-                provider: provider_name.clone(),
-                workflow: "full-pipeline".into(),
-                skill_version: None,
-                reason: format!("Execute task in domain '{}'", domain),
-                cost: 0.0,
-                decision: format!("{}/{}", provider_name, model),
-                outcome: if success {
-                    LedgerOutcome::Success
-                } else {
-                    LedgerOutcome::Failure("empty-response".into())
-                },
-                previous_hash: None,
-                hash: format!("hash-{:x}", rand::random::<u64>()),
-                metadata: HashMap::from([
-                    ("task".into(), task.into()),
-                    ("domain".into(), domain.into()),
-                    ("output_tokens".into(), response.len().to_string()),
-                    ("duration_ms".into(), exec_ms.to_string()),
-                ]),
-            })
-            ;
+        self.ledger.append(LedgerEntry {
+            stage: "complete".into(),
+            duration_ms: exec_ms as u64,
+            entry_id: format!("entry-{}", execution_id),
+            execution_id: execution_id.clone(),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            provider: provider_name.clone(),
+            workflow: "full-pipeline".into(),
+            skill_version: None,
+            reason: format!("Execute task in domain '{}'", domain),
+            cost: 0.0,
+            decision: format!("{}/{}", provider_name, model),
+            outcome: if success {
+                LedgerOutcome::Success
+            } else {
+                LedgerOutcome::Failure("empty-response".into())
+            },
+            previous_hash: None,
+            hash: format!("hash-{:x}", rand::random::<u64>()),
+            metadata: HashMap::from([
+                ("task".into(), task.into()),
+                ("domain".into(), domain.into()),
+                ("output_tokens".into(), response.len().to_string()),
+                ("duration_ms".into(), exec_ms.to_string()),
+            ]),
+        });
 
         println!("[STAGE 9 - LEDGER] {} entries total", self.ledger.len());
 

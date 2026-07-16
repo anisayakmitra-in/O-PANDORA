@@ -49,7 +49,11 @@ pub struct Policy {
 }
 
 impl Policy {
-    pub fn new(name: impl Into<String>, trigger: impl Into<String>, domain: impl Into<String>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        trigger: impl Into<String>,
+        domain: impl Into<String>,
+    ) -> Self {
         Self {
             // ponytail: unique ID via random
             id: format!("policy-{:016x}", rand::random::<u64>()),
@@ -75,39 +79,65 @@ pub struct PolicyEngine {
 }
 
 impl PolicyEngine {
-    pub fn new() -> Self { Self { policies: Vec::new() } }
+    pub fn new() -> Self {
+        Self {
+            policies: Vec::new(),
+        }
+    }
 
     pub fn register(&mut self, policy: Policy) {
         self.policies.push(policy);
     }
 
     pub fn resolve(&self, trigger: &str, domain: &str) -> Vec<&Policy> {
-        let mut result: Vec<&Policy> = self.policies.iter()
-            .filter(|p| p.enabled && p.trigger == trigger && (p.domain == domain || p.domain == "*"))
+        let mut result: Vec<&Policy> = self
+            .policies
+            .iter()
+            .filter(|p| {
+                p.enabled && p.trigger == trigger && (p.domain == domain || p.domain == "*")
+            })
             .collect();
         result.sort_by_key(|a| a.priority);
         result
     }
 
     pub fn execute(&self, trigger: &str, domain: &str) -> Vec<&PolicyAction> {
-        self.resolve(trigger, domain).iter().flat_map(|p| p.actions.iter()).collect()
+        self.resolve(trigger, domain)
+            .iter()
+            .flat_map(|p| p.actions.iter())
+            .collect()
     }
 
-    pub fn list(&self) -> &[Policy] { &self.policies }
-    pub fn policy_count(&self) -> usize { self.policies.len() }
+    pub fn list(&self) -> &[Policy] {
+        &self.policies
+    }
+    pub fn policy_count(&self) -> usize {
+        self.policies.len()
+    }
 
     pub fn build_standard(&mut self) {
-        self.register(Policy::new("Coding Workflow", "after_coding", "coding")
-            .action(PolicyAction::Format).action(PolicyAction::Lint)
-            .action(PolicyAction::Test).action(PolicyAction::Benchmark)
-            .action(PolicyAction::Summarize));
-        self.register(Policy::new("Research Workflow", "after_research", "research")
-            .action(PolicyAction::Summarize).action(PolicyAction::UpdateDashboard)
-            .action(PolicyAction::Notify));
+        self.register(
+            Policy::new("Coding Workflow", "after_coding", "coding")
+                .action(PolicyAction::Format)
+                .action(PolicyAction::Lint)
+                .action(PolicyAction::Test)
+                .action(PolicyAction::Benchmark)
+                .action(PolicyAction::Summarize),
+        );
+        self.register(
+            Policy::new("Research Workflow", "after_research", "research")
+                .action(PolicyAction::Summarize)
+                .action(PolicyAction::UpdateDashboard)
+                .action(PolicyAction::Notify),
+        );
     }
 }
 
-impl Default for PolicyEngine { fn default() -> Self { Self::new() } }
+impl Default for PolicyEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

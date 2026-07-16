@@ -16,13 +16,25 @@ pub enum PipelineEvent {
     /// A pipeline stage started.
     StageStarted { stage: String },
     /// A pipeline stage completed.
-    StageFinished { stage: String, success: bool, duration_ms: u64 },
+    StageFinished {
+        stage: String,
+        success: bool,
+        duration_ms: u64,
+    },
     /// The Shadow Council selected a harness.
     HarnessSelected { harness: String, reason: String },
     /// A provider was selected.
-    ProviderSelected { provider: String, model: String, reason: String },
+    ProviderSelected {
+        provider: String,
+        model: String,
+        reason: String,
+    },
     /// A gene was executed.
-    GeneExecuted { gene: String, duration_ms: u64, success: bool },
+    GeneExecuted {
+        gene: String,
+        duration_ms: u64,
+        success: bool,
+    },
     /// A control decision was made.
     DecisionMade {
         stage: String,
@@ -37,7 +49,11 @@ pub enum PipelineEvent {
     /// Evaluator passed.
     EvaluationPassed { evaluator: String, goal: String },
     /// Evaluator failed with a reason.
-    EvaluationFailed { evaluator: String, goal: String, reason: String },
+    EvaluationFailed {
+        evaluator: String,
+        goal: String,
+        reason: String,
+    },
     /// Human approval requested for an action.
     ApprovalRequested { action: String, session_id: String },
     /// Execution completed.
@@ -68,12 +84,7 @@ impl PipelineEvent {
     }
 
     /// Convenience constructor for [`DecisionMade`].
-    pub fn decision(
-        stage: &str,
-        chosen: &str,
-        reason: &str,
-        rejected: Vec<String>,
-    ) -> Self {
+    pub fn decision(stage: &str, chosen: &str, reason: &str, rejected: Vec<String>) -> Self {
         Self::DecisionMade {
             stage: stage.into(),
             chosen: chosen.into(),

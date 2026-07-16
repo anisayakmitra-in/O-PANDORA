@@ -27,7 +27,10 @@ impl EventStore {
     pub fn new(base_dir: PathBuf) -> Self {
         let dir = base_dir.join("events");
         let _ = fs::create_dir_all(&dir);
-        Self { dir, buffer: Mutex::new(Vec::new()) }
+        Self {
+            dir,
+            buffer: Mutex::new(Vec::new()),
+        }
     }
 
     /// Append an event to the in-memory buffer.
@@ -45,7 +48,9 @@ impl EventStore {
             let path = self.dir.join(format!("{}.events.json", session_id));
             let line = serde_json::to_string(&event).map_err(|e| e.to_string())?;
             let mut file = fs::OpenOptions::new()
-                .create(true).append(true).open(&path)
+                .create(true)
+                .append(true)
+                .open(&path)
                 .map_err(|e| format!("Cannot open event file: {e}"))?;
             use std::io::Write;
             writeln!(file, "{}", line).map_err(|e| format!("Cannot write event: {e}"))?;
@@ -57,7 +62,11 @@ impl EventStore {
     pub fn read_events(&self, session_id: &str) -> Result<Vec<PipelineEvent>, String> {
         let path = self.dir.join(format!("{}.events.json", session_id));
         let content = fs::read_to_string(&path).map_err(|e| format!("Cannot read events: {e}"))?;
-        content.lines().filter(|l| !l.is_empty()).map(|l| serde_json::from_str(l).map_err(|e| format!("Parse error: {e}"))).collect()
+        content
+            .lines()
+            .filter(|l| !l.is_empty())
+            .map(|l| serde_json::from_str(l).map_err(|e| format!("Parse error: {e}")))
+            .collect()
     }
 
     /// Reconstruct an execution timeline from events.
@@ -66,14 +75,45 @@ impl EventStore {
         let mut timeline = Vec::new();
         for event in &events {
             match event {
-                PipelineEvent::StageStarted { stage } => timeline.push(format!("Stage started: {stage}")),
-                PipelineEvent::StageFinished { stage, success, duration_ms } => timeline.push(format!("Stage {}: {} ({}ms)", stage, if *success { "OK" } else { "FAIL" }, duration_ms)),
-                PipelineEvent::HarnessSelected { harness, reason } => timeline.push(format!("Harness: {harness} ({reason})")),
-                PipelineEvent::ProviderSelected { provider, model, reason } => timeline.push(format!("Provider: {provider}/{model} ({reason})")),
-                PipelineEvent::GeneExecuted { gene, duration_ms, success } => timeline.push(format!("Gene: {gene} ({}ms, {})", duration_ms, if *success { "OK" } else { "FAIL" })),
-                PipelineEvent::DecisionMade { stage, chosen, .. } => timeline.push(format!("Decision at {stage}: {chosen}")),
-                PipelineEvent::EvaluationPassed { evaluator, .. } => timeline.push(format!("Evaluator passed: {evaluator}")),
-                PipelineEvent::EvaluationFailed { evaluator, reason, .. } => timeline.push(format!("Evaluator failed: {evaluator} — {reason}")),
+                PipelineEvent::StageStarted { stage } => {
+                    timeline.push(format!("Stage started: {stage}"))
+                }
+                PipelineEvent::StageFinished {
+                    stage,
+                    success,
+                    duration_ms,
+                } => timeline.push(format!(
+                    "Stage {}: {} ({}ms)",
+                    stage,
+                    if *success { "OK" } else { "FAIL" },
+                    duration_ms
+                )),
+                PipelineEvent::HarnessSelected { harness, reason } => {
+                    timeline.push(format!("Harness: {harness} ({reason})"))
+                }
+                PipelineEvent::ProviderSelected {
+                    provider,
+                    model,
+                    reason,
+                } => timeline.push(format!("Provider: {provider}/{model} ({reason})")),
+                PipelineEvent::GeneExecuted {
+                    gene,
+                    duration_ms,
+                    success,
+                } => timeline.push(format!(
+                    "Gene: {gene} ({}ms, {})",
+                    duration_ms,
+                    if *success { "OK" } else { "FAIL" }
+                )),
+                PipelineEvent::DecisionMade { stage, chosen, .. } => {
+                    timeline.push(format!("Decision at {stage}: {chosen}"))
+                }
+                PipelineEvent::EvaluationPassed { evaluator, .. } => {
+                    timeline.push(format!("Evaluator passed: {evaluator}"))
+                }
+                PipelineEvent::EvaluationFailed {
+                    evaluator, reason, ..
+                } => timeline.push(format!("Evaluator failed: {evaluator} — {reason}")),
                 _ => {}
             }
         }
@@ -119,7 +159,13 @@ mod tests {
     fn push_and_flush() {
         let dir = std::env::temp_dir().join(format!("evtest-{}", rand::random::<u64>()));
         let store = EventStore::new(dir.clone());
-        store.push("sess-1", PipelineEvent::ExecutionStarted { session_id: "sess-1".into(), plan: "test".into() });
+        store.push(
+            "sess-1",
+            PipelineEvent::ExecutionStarted {
+                session_id: "sess-1".into(),
+                plan: "test".into(),
+            },
+        );
         store.flush().unwrap();
         let events = store.read_events("sess-1").unwrap();
         assert_eq!(events.len(), 1);
@@ -130,8 +176,20 @@ mod tests {
     fn reconstruct_timeline() {
         let dir = std::env::temp_dir().join(format!("evtest-{}", rand::random::<u64>()));
         let store = EventStore::new(dir.clone());
-        store.push("sess-1", PipelineEvent::StageStarted { stage: "plan".into() });
-        store.push("sess-1", PipelineEvent::StageFinished { stage: "plan".into(), success: true, duration_ms: 42 });
+        store.push(
+            "sess-1",
+            PipelineEvent::StageStarted {
+                stage: "plan".into(),
+            },
+        );
+        store.push(
+            "sess-1",
+            PipelineEvent::StageFinished {
+                stage: "plan".into(),
+                success: true,
+                duration_ms: 42,
+            },
+        );
         store.flush().unwrap();
         let timeline = store.reconstruct_timeline("sess-1").unwrap();
         assert!(timeline.len() >= 2);

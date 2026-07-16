@@ -1,10 +1,10 @@
 //! Pandora KUBER — CLI entry point.
 
-use std::sync::{Arc, RwLock};
 use pandora_kuber::Kuber;
 use pandora_shadow_council::ShadowCouncil;
 use std::env;
 use std::process;
+use std::sync::{Arc, RwLock};
 
 fn get_kuber() -> Kuber {
     let sc = Arc::new(RwLock::new(ShadowCouncil::new()));

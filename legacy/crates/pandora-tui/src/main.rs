@@ -57,7 +57,12 @@ fn ui(f: &mut Frame) {
     let logo_lines: Vec<Line> = PANDORA_LOGO
         .lines()
         .filter(|l| !l.trim().is_empty())
-        .map(|l| Line::from(Span::styled(l, Style::default().fg(Color::Rgb(255, 20, 147))))) // deep pink
+        .map(|l| {
+            Line::from(Span::styled(
+                l,
+                Style::default().fg(Color::Rgb(255, 20, 147)),
+            ))
+        }) // deep pink
         .collect();
     let header = Paragraph::new(logo_lines)
         .block(Block::default().borders(Borders::NONE))
@@ -65,7 +70,14 @@ fn ui(f: &mut Frame) {
     f.render_widget(header, chunks[0]);
 
     // ── Tabs / Sections ──
-    let tabs = [" Runtime ", " Genes ", " Harnesses ", " Providers ", " Plans ", " Palace "];
+    let tabs = [
+        " Runtime ",
+        " Genes ",
+        " Harnesses ",
+        " Providers ",
+        " Plans ",
+        " Palace ",
+    ];
     let tab_widget = Tabs::new(tabs.iter().map(|t| Line::from(*t)).collect::<Vec<_>>())
         .block(Block::default().borders(Borders::BOTTOM))
         .select(0)
@@ -81,7 +93,11 @@ fn ui(f: &mut Frame) {
 
     let body = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(33), Constraint::Percentage(33), Constraint::Percentage(34)])
+        .constraints([
+            Constraint::Percentage(33),
+            Constraint::Percentage(33),
+            Constraint::Percentage(34),
+        ])
         .split(main_chunks[1]);
 
     // Load runtime data
@@ -95,14 +111,28 @@ fn ui(f: &mut Frame) {
         builtins.len(), summary.total_harnesses, summary.slash_commands
     );
     let runtime_block = Paragraph::new(runtime_text)
-        .block(Block::default().title(" Runtime ").borders(Borders::ALL).style(Style::default().fg(Color::White)))
+        .block(
+            Block::default()
+                .title(" Runtime ")
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::White)),
+        )
         .style(Style::default().fg(Color::Gray));
     f.render_widget(runtime_block, body[0]);
 
     // Column 2 — Genes + Providers
-    let gene_list: String = builtins.iter().take(12).map(|g| format!("  {} — {}\n", g.id, g.description)).collect();
+    let gene_list: String = builtins
+        .iter()
+        .take(12)
+        .map(|g| format!("  {} — {}\n", g.id, g.description))
+        .collect();
     let gene_block = Paragraph::new(gene_list)
-        .block(Block::default().title(" Built-in Genes ").borders(Borders::ALL).style(Style::default().fg(Color::White)))
+        .block(
+            Block::default()
+                .title(" Built-in Genes ")
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::White)),
+        )
         .style(Style::default().fg(Color::Gray));
     f.render_widget(gene_block, body[1]);
 
@@ -112,18 +142,25 @@ fn ui(f: &mut Frame) {
         if std::env::var("PALACE_URL").is_ok() { "online" } else { "offline" }
     );
     let palace_block = Paragraph::new(palace_text)
-        .block(Block::default().title(" Marketplace ").borders(Borders::ALL).style(Style::default().fg(Color::White)))
+        .block(
+            Block::default()
+                .title(" Marketplace ")
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::White)),
+        )
         .style(Style::default().fg(Color::Gray));
     f.render_widget(palace_block, body[2]);
 
     // Status bar
     let status = Line::from(vec![
-        Span::styled(" PANDORA SYSTEMS ", Style::default().fg(Color::Rgb(255, 20, 147))),
+        Span::styled(
+            " PANDORA SYSTEMS ",
+            Style::default().fg(Color::Rgb(255, 20, 147)),
+        ),
         Span::raw(" │ "),
         Span::styled("Runtime: OK", Style::default().fg(Color::Green)),
         Span::raw(" │ q quit · esc exit"),
     ]);
-    let status_block = Paragraph::new(status)
-        .block(Block::default().borders(Borders::TOP));
+    let status_block = Paragraph::new(status).block(Block::default().borders(Borders::TOP));
     f.render_widget(status_block, main_chunks[0]);
 }

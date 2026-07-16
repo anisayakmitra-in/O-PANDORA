@@ -32,11 +32,18 @@ impl Default for DependencyResolver {
 }
 
 impl DependencyResolver {
-    pub fn new() -> Self { Self { available: HashMap::new() } }
+    pub fn new() -> Self {
+        Self {
+            available: HashMap::new(),
+        }
+    }
 
     /// Register an available package (e.g., from a source or built-in).
     pub fn register(&mut self, id: &str, version: &str, source: &str) {
-        self.available.entry(id.to_string()).or_default().push((version.to_string(), source.to_string()));
+        self.available
+            .entry(id.to_string())
+            .or_default()
+            .push((version.to_string(), source.to_string()));
     }
 
     /// Resolve the dependencies declared in a manifest.
@@ -45,7 +52,12 @@ impl DependencyResolver {
         let mut lock = Lockfile::new();
         for dep in &manifest.dependencies {
             if let Some(resolved) = self.resolve_one(&dep.id, &dep.version_req) {
-                lock.add(&resolved.id, &resolved.version, &resolved.checksum, &resolved.source);
+                lock.add(
+                    &resolved.id,
+                    &resolved.version,
+                    &resolved.checksum,
+                    &resolved.source,
+                );
             }
         }
         lock
@@ -54,19 +66,25 @@ impl DependencyResolver {
     /// Resolve a single dependency. Returns the best matching version.
     fn resolve_one(&self, id: &str, version_req: &str) -> Option<ResolvedDep> {
         let candidates = self.available.get(id)?;
-        let best = candidates.iter().filter(|(v, _)| {
-            // Simple semver: * matches anything, exact matches, >= prefix
-            if version_req == "*" { return true; }
-            if version_req.starts_with(">=") {
-                let min = version_req.trim_start_matches(">=").trim();
-                return compare_versions(v, min) != std::cmp::Ordering::Less;
-            }
-            if version_req.starts_with('^') {
-                let want = version_req.trim_start_matches('^');
-                return v.starts_with(want) || compare_versions(v, want) != std::cmp::Ordering::Less;
-            }
-            v == version_req
-        }).max_by(|(a, _), (b, _)| compare_versions(a, b));
+        let best = candidates
+            .iter()
+            .filter(|(v, _)| {
+                // Simple semver: * matches anything, exact matches, >= prefix
+                if version_req == "*" {
+                    return true;
+                }
+                if version_req.starts_with(">=") {
+                    let min = version_req.trim_start_matches(">=").trim();
+                    return compare_versions(v, min) != std::cmp::Ordering::Less;
+                }
+                if version_req.starts_with('^') {
+                    let want = version_req.trim_start_matches('^');
+                    return v.starts_with(want)
+                        || compare_versions(v, want) != std::cmp::Ordering::Less;
+                }
+                v == version_req
+            })
+            .max_by(|(a, _), (b, _)| compare_versions(a, b));
 
         best.map(|(v, src)| ResolvedDep {
             id: id.to_string(),
@@ -80,7 +98,9 @@ impl DependencyResolver {
 /// Compare two semver strings. Returns -1, 0, or 1.
 fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
     let parse = |s: &str| -> Vec<u64> {
-        s.split(|c: char| !c.is_ascii_digit()).filter_map(|n| n.parse().ok()).collect()
+        s.split(|c: char| !c.is_ascii_digit())
+            .filter_map(|n| n.parse().ok())
+            .collect()
     };
     let va = parse(a);
     let vb = parse(b);
@@ -113,8 +133,13 @@ mod tests {
         r.register("pandora/shell", "1.1.0", "palace");
         r.register("pandora/shell", "0.9.0", "palace");
         let manifest = PackageManifest {
-            id: "test".into(), name: "test".into(), version: "1.0".into(),
-            dependencies: vec![pandora_types::package_format::PackageDependency::new("pandora/shell").version("*")],
+            id: "test".into(),
+            name: "test".into(),
+            version: "1.0".into(),
+            dependencies: vec![pandora_types::package_format::PackageDependency::new(
+                "pandora/shell",
+            )
+            .version("*")],
             ..Default::default()
         };
         let lock = r.resolve(&manifest);
@@ -130,8 +155,12 @@ mod tests {
         r.register("p/a", "2.0.0", "palace");
         r.register("p/a", "1.5.0", "palace");
         let manifest = PackageManifest {
-            id: "t".into(), name: "t".into(), version: "1".into(),
-            dependencies: vec![pandora_types::package_format::PackageDependency::new("p/a").version(">=1.5")],
+            id: "t".into(),
+            name: "t".into(),
+            version: "1".into(),
+            dependencies: vec![
+                pandora_types::package_format::PackageDependency::new("p/a").version(">=1.5")
+            ],
             ..Default::default()
         };
         let lock = r.resolve(&manifest);

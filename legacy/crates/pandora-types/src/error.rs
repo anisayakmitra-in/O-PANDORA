@@ -39,21 +39,43 @@ impl fmt::Display for PandoraError {
 impl std::error::Error for PandoraError {}
 
 impl PandoraError {
-    pub fn not_found(msg: impl Into<String>) -> Self { Self::NotFound(msg.into()) }
-    pub fn already_exists(msg: impl Into<String>) -> Self { Self::AlreadyExists(msg.into()) }
-    pub fn config(msg: impl Into<String>) -> Self { Self::Config(msg.into()) }
-    pub fn provider(msg: impl Into<String>) -> Self { Self::Provider(msg.into()) }
-    pub fn harness(msg: impl Into<String>) -> Self { Self::Harness(msg.into()) }
-    pub fn gene(msg: impl Into<String>) -> Self { Self::Gene(msg.into()) }
-    pub fn io(msg: impl Into<String>) -> Self { Self::Io(msg.into()) }
-    pub fn validation(msg: impl Into<String>) -> Self { Self::Validation(msg.into()) }
-    pub fn internal(msg: impl Into<String>) -> Self { Self::Internal(msg.into()) }
+    pub fn not_found(msg: impl Into<String>) -> Self {
+        Self::NotFound(msg.into())
+    }
+    pub fn already_exists(msg: impl Into<String>) -> Self {
+        Self::AlreadyExists(msg.into())
+    }
+    pub fn config(msg: impl Into<String>) -> Self {
+        Self::Config(msg.into())
+    }
+    pub fn provider(msg: impl Into<String>) -> Self {
+        Self::Provider(msg.into())
+    }
+    pub fn harness(msg: impl Into<String>) -> Self {
+        Self::Harness(msg.into())
+    }
+    pub fn gene(msg: impl Into<String>) -> Self {
+        Self::Gene(msg.into())
+    }
+    pub fn io(msg: impl Into<String>) -> Self {
+        Self::Io(msg.into())
+    }
+    pub fn validation(msg: impl Into<String>) -> Self {
+        Self::Validation(msg.into())
+    }
+    pub fn internal(msg: impl Into<String>) -> Self {
+        Self::Internal(msg.into())
+    }
 }
 
 impl From<String> for PandoraError {
-    fn from(msg: String) -> Self { Self::Internal(msg) }
+    fn from(msg: String) -> Self {
+        Self::Internal(msg)
+    }
 }
 
 impl From<&str> for PandoraError {
-    fn from(msg: &str) -> Self { Self::Internal(msg.to_string()) }
+    fn from(msg: &str) -> Self {
+        Self::Internal(msg.to_string())
+    }
 }
