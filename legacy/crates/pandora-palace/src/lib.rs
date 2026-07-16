@@ -366,3 +366,21 @@ mod tests {
     // Palace tests require a running server.
     // Run: cargo run -p pandora-palace and test with curl.
 }
+
+
+#[cfg(test)]
+mod palace_tests {
+    use super::*;
+
+    #[test]
+    fn palace_new_is_empty() {
+        let server = PalaceState::new();
+        assert!(server.packages.is_empty());
+    }
+
+    #[test]
+    fn palace_registry_empty() {
+        let server = PalaceState::new();
+        assert!(server.packages.is_empty());
+    }
+}

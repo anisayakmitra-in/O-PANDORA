@@ -164,3 +164,21 @@ fn ui(f: &mut Frame) {
     let status_block = Paragraph::new(status).block(Block::default().borders(Borders::TOP));
     f.render_widget(status_block, main_chunks[0]);
 }
+
+
+#[cfg(test)]
+mod tui_tests {
+    #[test]
+    fn logo_ascii_valid() {
+        let logo = crate::PANDORA_LOGO;
+        assert!(logo.contains("PANDORA"));
+        assert!(logo.len() > 100);
+    }
+
+    #[test]
+    fn builtin_genes_exist() {
+        let genes = pandora_kuber::builtin::all();
+        assert!(!genes.is_empty());
+        assert!(genes.iter().any(|g| g.id == "filesystem"));
+    }
+}

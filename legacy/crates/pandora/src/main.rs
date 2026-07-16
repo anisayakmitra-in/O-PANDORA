@@ -1726,3 +1726,30 @@ fn cmd_connection(args: &[String]) {
         _ => eprintln!("Subcommands: add, test, remove"),
     }
 }
+
+
+#[cfg(test)]
+mod cli_integration_tests {
+    use super::*;
+
+    #[test]
+    fn cmd_keygen_works() {
+        // Test keygen via direct function call
+        let kp = pandora_types::signing::generate_keypair();
+        assert!(!kp.public_key.is_empty());
+        assert!(!kp.secret_key.is_empty());
+        assert_ne!(kp.public_key, kp.secret_key);
+    }
+
+    #[test]
+    fn sessions_dir_exists() {
+        let dir = sessions_dir();
+        assert!(dir.to_string_lossy().contains(".pandora"));
+    }
+
+    #[test]
+    fn compound_intent_detection() {
+        let steps = pandora_harnesses::android_use::CompoundIntentDetector::detect("open app and send message");
+        assert!(!steps.is_empty());
+    }
+}

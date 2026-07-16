@@ -189,3 +189,42 @@ pub async fn serve(addr: &str, sessions_dir: std::path::PathBuf) -> Result<(), a
     Ok(())
 }
 pub mod mcp;
+
+
+#[cfg(test)]
+mod api_tests {
+    #[test]
+    fn api_constructs() {
+        // Verify the MCP server can be constructed
+        use crate::mcp::McpState;
+        use std::sync::Arc;
+        use tokio::sync::Mutex;
+        let state = McpState {
+            runtime: Arc::new(Mutex::new(pandora_orchestrator::PandoraRuntime::new())),
+        };
+        assert!(state.runtime.lock().is_ok());
+    }
+
+    #[test]
+    fn mcp_tool_structure() {
+        use crate::mcp::McpTool;
+        let tool = McpTool {
+            name: "test".into(),
+            description: "test tool".into(),
+            input_schema: serde_json::json!({}),
+        };
+        assert_eq!(tool.name, "test");
+    }
+
+    #[test]
+    fn api_types() {
+        // Verify SessionInfo is constructable
+        let info = crate::SessionInfo {
+            id: "s1".into(),
+            prompt: "test".into(),
+            status: "ok".into(),
+            timeline_count: 1,
+        };
+        assert_eq!(info.id, "s1");
+    }
+}
