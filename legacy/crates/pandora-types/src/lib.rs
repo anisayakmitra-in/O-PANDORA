@@ -94,3 +94,5 @@ pub mod lock;
 pub mod scheduler;
 
 pub mod artifact_store;
+pub mod checkpoint;
+pub mod verifier;

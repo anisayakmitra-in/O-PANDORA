@@ -26,6 +26,14 @@ struct StoredArtifact {
 }
 
 impl ArtifactStore {
+    /// Hash raw bytes (non-cryptographic, for dedup).
+    pub fn hash_bytes(data: &[u8]) -> String {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut h = DefaultHasher::new();
+        data.hash(&mut h);
+        format!("{:016x}", h.finish())
+    }
     pub fn new(root: impl Into<PathBuf>) -> Self {
         let _ = &root; // suppress unused import path warning
         let root = root.into();
