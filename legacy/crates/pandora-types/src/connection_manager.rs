@@ -83,6 +83,8 @@ pub struct Connection {
     pub api_key: Option<String>,
     pub priority: u32,
     pub tags: Vec<String>,
+    pub fallback_connections: Vec<String>,
+    pub metadata: std::collections::HashMap<String, String>,
     pub timeout_secs: u32,
     pub max_retries: u32,
     pub headers: HashMap<String, String>,
@@ -120,6 +122,8 @@ impl Connection {
     pub fn with_api_key(mut self, key: &str) -> Self { self.api_key = Some(key.to_string()); self }
     pub fn with_category(mut self, cat: ConnectionCategory) -> Self { self.category = cat; self }
     pub fn supports_chat(&self) -> bool { self.capabilities.contains(&"chat".into()) || !self.models.is_empty() }
+    pub fn with_fallback(mut self, id: &str) -> Self { self.fallback_connections.push(id.into()); self }
+    pub fn with_metadata(mut self, k: &str, v: &str) -> Self { self.metadata.insert(k.into(), v.into()); self }
 
     pub fn is_healthy(&self) -> bool { self.health_status == "online" }
 
