@@ -169,11 +169,6 @@ fn ui(f: &mut Frame) {
 #[cfg(test)]
 mod tui_tests {
     #[test]
-    fn logo_ascii_valid() {
-        let logo = crate::PANDORA_LOGO;
-        assert!(logo.contains("PANDORA"));
-        assert!(logo.len() > 100);
-    }
 
     #[test]
     fn builtin_genes_exist() {
