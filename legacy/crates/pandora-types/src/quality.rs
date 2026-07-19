@@ -30,7 +30,7 @@ pub struct QualityReport {
 /// Run all quality gates on a package directory.
 pub fn run_pipeline(package_dir: &str) -> QualityReport {
     let start = std::time::Instant::now();
-    let mut gates = Vec::new();
+    
 
     // Gate 1: Schema validation
     gates.push(check_schema(package_dir));
