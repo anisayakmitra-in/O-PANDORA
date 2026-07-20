@@ -83,7 +83,7 @@ impl Lifecycle {
             retries: 0, max_retries });
     }
     pub fn can_retry(&self) -> bool {
-        self.steps.last().map_or(false, |s| s.retries < s.max_retries)
+        self.steps.last().is_some_and(|s| s.retries < s.max_retries)
     }
 }
 
