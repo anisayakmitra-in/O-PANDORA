@@ -114,7 +114,7 @@ impl HierarchicalMemory {
         // Collect matching IDs first
         let mut matches: Vec<(String, f32)> = self.entries.iter()
             .filter(|(_, e)| {
-                let layer_match = layer.map_or(true, |l| e.layer == l);
+                let layer_match = layer.is_none_or(|l| e.layer == l);
                 let tag_match = tags.iter().any(|t| e.tags.iter().any(|et| et == t));
                 layer_match && tag_match
             })
@@ -139,7 +139,7 @@ impl HierarchicalMemory {
         let query = query.to_lowercase();
         let mut matches: Vec<(String, f32)> = self.entries.iter()
             .filter(|(_, e)| {
-                let layer_match = layer.map_or(true, |l| e.layer == l);
+                let layer_match = layer.is_none_or(|l| e.layer == l);
                 let hit = e.content.to_lowercase().contains(&query)
                     || e.tags.iter().any(|t| t.to_lowercase().contains(&query));
                 layer_match && hit
