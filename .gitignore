@@ -1,5 +1,6 @@
 /target
-/Cargo.lock
+llama.cpp/
+legacy/archive/root-files/
 *.swp
 *.swo
 *~
