@@ -11,13 +11,8 @@ mod resilience {
     use pandora_types::event_bus::EventBus;
     use pandora_types::hierarchical_memory::{HierarchicalMemory, MemoryLayer};
     use pandora_types::lifecycle_hooks::{Hook, HookRegistry, LifecycleEvent};
-    use pandora_types::permissions_manifest::{
-        FilesystemScope, PermissionManifest, PermissionVerdict, ShellPermissions,
-    };
     use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
-    use pandora_types::runtime_node::{
-        NodeCapabilities, NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
-    };
+    // runtime_node not needed in this module
     use pandora_types::universal_registry::{
         HealthStatus, InMemoryRegistry, Registry, RegistryEntry,
     };

@@ -11,9 +11,7 @@ use pandora_types::permissions_manifest::{
     PermissionManifest, PermissionVerdict, ShellPermissions,
 };
 use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
-use pandora_types::runtime_node::{
-    NodeCapabilities, NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
-};
+use pandora_types::runtime_node::{NodeCapabilities, NodeRegistry, RuntimeNode};
 use pandora_types::universal_registry::{HealthStatus, InMemoryRegistry, Registry, RegistryEntry};
 use pandora_types::workflow_lifecycle::{Lifecycle, LifecycleState};
 use std::collections::HashMap;
@@ -75,7 +73,7 @@ fn cap_registry_accepts_duplicates() {
     };
     r.register(e());
     r.register(e());
-    assert!(r.providers_for("a").len() >= 1);
+    assert!(!r.providers_for("a").is_empty());
 }
 
 #[test]
@@ -359,7 +357,6 @@ fn cap_with_empty_strings() {
         confidence: -1.0,
         metadata: HashMap::new(),
     });
-    assert!(r.all_capabilities().len() >= 0);
 }
 
 #[test]
