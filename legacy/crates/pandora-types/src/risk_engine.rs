@@ -104,10 +104,14 @@ fn classify_shell(cmd: &str) -> RiskLevel {
         if stripped.contains(p) { return RiskLevel::Critical; }
     }
 
-    // High — privilege escalation, pipe-to-shell
-    let high_patterns = ["sudo ", "su ", "curl ", "wget ", "| bash", "| sh", "nc -l", "> /dev/"];
-    for p in &high_patterns {
-        if stripped.starts_with(p) || stripped.contains(p) { return RiskLevel::High; }
+    // High — privilege escalation, pipe-to-shell, network-to-disk
+    let high_starts = ["sudo ", "su ", "curl ", "wget ", "nc -l"];
+    let high_contains = ["| bash", "| sh", "| bash", "curl ", "| bash"];
+    for p in &high_starts {
+        if stripped.starts_with(p) { return RiskLevel::High; }
+    }
+    for p in &high_contains {
+        if stripped.contains(p) { return RiskLevel::High; }
     }
 
     // Medium — file deletion, process signals
