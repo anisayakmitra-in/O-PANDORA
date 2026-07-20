@@ -232,7 +232,7 @@ impl CodeGraphGene {
                 .version("0.1.0")
                 .author("pandora")
                 .build()
-                .unwrap(),
+                .expect("hardcoded manifest must build"),
         }
     }
 }

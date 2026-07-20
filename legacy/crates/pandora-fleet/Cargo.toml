@@ -1,4 +1,5 @@
 [package]
+description = "Distributed worker nodes for Pandora runtime"
 publish = false
 name = "pandora-fleet"
 version.workspace = true

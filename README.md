@@ -60,6 +60,11 @@ cp target/release/pandora ~/.local/bin/
 # Scaffold your first gene
 ./target/release/pandora new gene hello-tool
 cd hello-tool && cat gene.toml
+
+# Try the SDK examples
+cargo run --example hello_gene -p pandora-types
+cargo run --example hello_capability -p pandora-types
+cargo run --example hello_permissions -p pandora-types
 ```
 
 ## What's in the box

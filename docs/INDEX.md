@@ -31,7 +31,6 @@
 
 ## Operations
 - [Configuration](CONFIGURATION.md) — all config options and env vars
-- [Performance](PERFORMANCE_AUDIT.md) — performance audit findings
 
 ## Release
 - [Changelog](../CHANGELOG.md) — version history

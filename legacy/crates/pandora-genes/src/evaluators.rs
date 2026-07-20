@@ -11,7 +11,7 @@ use std::process::Command;
 fn mk(id: &str, kind: GeneKind, desc: &str) -> GeneManifest {
     GeneManifestBuilder::default()
         .id(id).name(id).kind(kind).version("0.1.0").author("pandora")
-        .description(desc).build().unwrap()
+        .description(desc).build().expect("hardcoded evaluator manifest must build")
 }
 
 fn run(args: &[&str]) -> Result<String, String> {

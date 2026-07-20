@@ -15,6 +15,10 @@ fn main() {
         cmd_version(&[]);
         return;
     }
+    if args[1] == "--help" || args[1] == "-h" || args[1] == "help" {
+        usage();
+        return;
+    }
     match args[1].as_str() {
         "install" => {
             cmd_install(&args);
@@ -614,7 +618,7 @@ fn cmd_doctor(_args: &[String]) {
     let sd = sessions_dir();
     let session_count = std::fs::read_dir(&sd).map(|d| d.count()).unwrap_or(0);
     println!("\nSessions: {session_count} stored");
-    println!("Architecture: v1.0 — frozen");
+    println!("Architecture: v0.1.0 — frozen");
     println!("Runtime: {}", env!("CARGO_PKG_VERSION"));
     // Check config env vars
     for var in &[
@@ -674,7 +678,7 @@ fn cmd_inspect(args: &[String]) {
     }
 }
 fn cmd_architecture(_args: &[String]) {
-    println!("Pandora Architecture v1.0\n  Constitutional Services -> Shadow Council -> Harnesses -> Genes -> Providers");
+    println!("Pandora Architecture v0.1.0\n  Constitutional Services -> Shadow Council -> Harnesses -> Genes -> Providers");
 }
 fn cmd_status(_args: &[String]) {
     let built = pandora_kuber::builtin::all().len();
@@ -1192,7 +1196,7 @@ fn cmd_shell(_args: &[String]) {
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
     history.reverse();
-    println!("PANDORA v1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit");
+    println!("PANDORA v0.1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit");
     let mut input = String::new();
     loop {
         print!("pandora> ");
