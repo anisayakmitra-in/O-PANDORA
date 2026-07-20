@@ -1,62 +1,67 @@
-# Pandora Documentation Index
+#!/usr/bin/env python3
+"""Update INDEX.md to include all docs."""
 
-## 1. Getting Started
-- [README](../README.md) — install + quick start
-- [ARCHITECTURE](../ARCHITECTURE.md) — big picture with diagrams
-- [ARCHITECTURE_FREEZE](../ARCHITECTURE_FREEZE.md) — canonical pipeline, invariants
-- [CONTRIBUTING](../CONTRIBUTING.md) — code style, workflow, crate map
+idx = """# Pandora Documentation Index
 
-## 2. Runtime
-- [Execution Pipeline](specs/runtime/pipeline.md)
-- [Execution Controller](specs/runtime/controller.md)
-- [Scheduler](specs/runtime/scheduler.md)
-- [Checkpoints](specs/runtime/checkpoints.md)
-- [Provenance](specs/runtime/provenance.md)
-- [Artifacts](specs/runtime/artifacts.md)
-- [Events](specs/runtime/events.md)
+## Getting Started
+- [README](../README.md) — install, quick start, architecture overview
+- [Installation](../README.md#install) — build from source
+- [CLI Reference](CLI.md) — all commands with examples
+- [Configuration](CONFIGURATION.md) — config files, environment variables
 
-## 3. Governance
-- [Parliament](specs/governance/parliament.md)
-- [Shadow Council](specs/governance/shadow-council.md)
-- [Policy Engine](specs/governance/policy-engine.md)
-- [Permissions](specs/governance/permissions.md)
+## Architecture
+- [ARCHITECTURE](ARCHITECTURE.md) — system overview with diagrams
+- [ARCHITECTURE_FREEZE](../ARCHITECTURE_FREEZE.md) — frozen API surfaces
+- [ARCHITECTURE_DECISIONS](ARCHITECTURE_DECISIONS.md) — design rationale
+- [WHICH_LAYER](WHICH_LAYER.md) — where your code runs
+- [OWNERSHIP](OWNERSHIP.md) — crate boundaries and responsibilities
+- [RFC Process](rfcs/README.md) — how to propose architectural changes
+- [RFC-0001](rfcs/0001-capability-system.md) — capability system design
 
-## 4. Connections & Providers
-- [Connections](specs/connections/index.md)
-- [Provider Intelligence](specs/providers/intelligence.md)
-- [Ollama](specs/providers/ollama.md)
-- [OpenAI Compatible](specs/providers/openai-compatible.md)
+## Runtime
+- [Execution Pipeline](../ARCHITECTURE_FREEZE.md#execution-pipeline) — 9-stage pipeline
+- [Execution Plan](../ARCHITECTURE_FREEZE.md#frozen-subsystems) — plan format
+- [Shadow Council](../ARCHITECTURE_FREEZE.md#shadow-council) — harness routing
+- [Workflow Lifecycle](../ARCHITECTURE_FREEZE.md#workflow-lifecycle) — canonical states
 
-## 5. Components
-- [Harnesses](specs/harnesses/index.md)
-- [Genes](specs/genes/index.md)
-- [Skills](specs/skills/index.md)
+## Components
+- [Harnesses](../README.md#harnesses) — source, meta, domain (12 built-in)
+- [Genes](../README.md#genes) — 21 built-in atomic tools
+- [SDK](SDK.md) — scaffolding guide for all component types
+- [Capabilities](CAPABILITIES.md) — capability system reference
 
-## 6. Package System
-- [Package Format](specs/packages/format.md)
-- [Compatibility Matrix](specs/packages/compatibility.md)
-- [Signing](specs/packages/signing.md)
-- [Quality Pipeline](specs/packages/quality.md)
+## Governance
+- [Permissions](PERMISSIONS.md) — permission manifest reference
+- [Policy Engine](../ARCHITECTURE_FREEZE.md#policy-engine) — governance rules
+- [Parliament](../ARCHITECTURE_FREEZE.md#parliament) — pre/post flight checks
+- [Security](SECURITY.md) — threat model
 
-## 7. Marketplace
-- [Palace](specs/palace/index.md)
-- [Publishing](specs/palace/publishing.md)
-- [Trust](specs/palace/trust.md)
+## Marketplace
+- [Palace](../README.md#marketplace) — package registry overview
+- [Package Format](../ARCHITECTURE_FREEZE.md#package-format) — package structure
+- [Quality Pipeline](../ARCHITECTURE_FREEZE.md#quality-pipeline) — 11 publish gates
 
-## 8. Operations
-- [Fleet](specs/fleet/index.md)
-- [MCP Server](specs/mcp/index.md)
-- [Security](SECURITY.md)
-- [Readiness](READINESS.md)
+## Operations
+- [Fleet](../ARCHITECTURE_FREEZE.md#fleet) — distributed execution
+- [Runtime Nodes](../ARCHITECTURE_FREEZE.md#runtime-node) — device mesh
+- [Connections](CONFIGURATION.md#example) — provider management
+- [Checkpoints](../ARCHITECTURE_FREEZE.md#checkpoint-manager) — crash recovery
 
-## 9. SDK
-- [SDK Overview](specs/sdk/index.md)
-- [Gene Authoring](specs/sdk/gene.md)
-- [Harness Authoring](specs/sdk/harness.md)
-- [Provider Authoring](specs/sdk/provider.md)
-- [Policy Authoring](specs/sdk/policy.md)
-- [Package Authoring](specs/sdk/package.md)
+## SDK & Development
+- [CLI Reference](CLI.md) — full command reference
+- [SDK Guide](SDK.md) — scaffolding genes, harnesses, packages
+- [Contributing](../CONTRIBUTING.md) — how to contribute
+- [AI Agent Support](../.ai/AGENTS.md) — Claude, Codex, Cursor, etc.
+- [Readiness Checklist](READINESS.md) — v1.0 release status
 
-## 10. Architecture Decisions
-- [ADR Index](specs/adr/index.md)
-- [ARCHITECTURE_DECISIONS](ARCHITECTURE_DECISIONS.md)
+## Reference
+- [Security Model](SECURITY.md) — threat model, attack surfaces
+- [Configuration Reference](CONFIGURATION.md) — all config options
+- [Permission Manifest](PERMISSIONS.md) — full permission schema
+- [Capability Registry](CAPABILITIES.md) — well-known capabilities
+"""
+
+base = "/home/user/pandora-systems/docs/INDEX.md"
+with open(base, 'w') as f:
+    f.write(idx)
+print("INDEX.md updated")
