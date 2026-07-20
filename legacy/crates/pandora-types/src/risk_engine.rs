@@ -86,50 +86,47 @@ pub fn classify(op: &OperationType) -> RiskLevel {
 
 fn classify_shell(cmd: &str) -> RiskLevel {
     let cmd = cmd.trim();
-    // Strip wrappers
-    let stripped = cmd
-        .strip_prefix("sudo ")
-        .or_else(|| cmd.strip_prefix("env "))
-        .or_else(|| cmd.strip_prefix("nohup "))
-        .or_else(|| cmd.strip_prefix("nice "))
-        .unwrap_or(cmd);
 
-    // Critical — irreversible
+    // Critical — irreversible (check on full command, not stripped)
     let critical_patterns = [
         "rm -rf /", "rm -rf /*", "rm -rf ~", "rm -rf $HOME",
         "mkfs", "dd if=", ":(){ :|:& };:", "chmod 777 /",
         "fork bomb", "shutdown", "reboot", "halt",
     ];
     for p in &critical_patterns {
-        if stripped.contains(p) { return RiskLevel::Critical; }
+        if cmd.contains(p) { return RiskLevel::Critical; }
     }
 
-    // High — privilege escalation, pipe-to-shell, network-to-disk
-    let high_starts = ["sudo ", "su ", "curl ", "wget ", "nc -l"];
-    let high_contains = ["| bash", "| sh", "| bash", "curl ", "| bash"];
-    for p in &high_starts {
-        if stripped.starts_with(p) { return RiskLevel::High; }
+    // High — privilege escalation, pipe-to-shell, network fetch
+    if cmd.starts_with("sudo ") || cmd.starts_with("su ") {
+        return RiskLevel::High;
     }
-    for p in &high_contains {
-        if stripped.contains(p) { return RiskLevel::High; }
+    if cmd.contains("| bash") || cmd.contains("| sh") || cmd.contains("|bash") || cmd.contains("|sh") {
+        return RiskLevel::High;
+    }
+    if cmd.starts_with("curl ") || cmd.starts_with("wget ") {
+        return RiskLevel::High;
+    }
+    if cmd.contains("nc -l") {
+        return RiskLevel::High;
     }
 
-    // Medium — file deletion, process signals
-    let medium_patterns = ["rm -r", "rm -f", "kill", "pkill", "systemctl", "ufw", "iptables", "chown"];
-    for p in &medium_patterns {
-        if stripped.starts_with(p) { return RiskLevel::Medium; }
+    // Medium — file deletion, process signals, system config
+    let medium_starts = ["rm -r", "rm -f", "kill", "pkill", "systemctl", "ufw", "iptables", "chown"];
+    for p in &medium_starts {
+        if cmd.starts_with(p) { return RiskLevel::Medium; }
     }
 
     // Low — common dev tools
-    let low_patterns = ["git commit", "git push", "cargo build", "npm install", "pip install", "make"];
-    for p in &low_patterns {
-        if stripped.starts_with(p) { return RiskLevel::Low; }
+    let low_starts = ["git commit", "git push", "cargo build", "npm install", "pip install", "make"];
+    for p in &low_starts {
+        if cmd.starts_with(p) { return RiskLevel::Low; }
     }
 
     // Safe — read-only
-    let safe_patterns = ["ls", "cat", "grep", "find", "echo", "git status", "git log", "git diff", "pwd", "whoami", "head", "tail", "wc"];
-    for p in &safe_patterns {
-        if stripped.starts_with(p) { return RiskLevel::Safe; }
+    let safe_starts = ["ls", "cat", "grep", "find", "echo", "git status", "git log", "git diff", "pwd", "whoami", "head", "tail", "wc"];
+    for p in &safe_starts {
+        if cmd.starts_with(p) { return RiskLevel::Safe; }
     }
 
     // Default — unknown, treat as medium
