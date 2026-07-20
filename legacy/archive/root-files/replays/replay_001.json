@@ -1,0 +1,9 @@
+{
+  "replay_id": "replay_001",
+  "target_graph": "graph_001",
+  "target_lineage": "lineage_001",
+  "target_mutation": "mutation_001",
+  "replay_reason": "Mutation audit replay",
+  "initiated_by": "shadow_council",
+  "timestamp": "2026-05-22"
+}

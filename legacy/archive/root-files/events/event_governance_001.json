@@ -1,0 +1,10 @@
+{
+  "event_id": "event_governance_001",
+  "event_type": "mutation.governed",
+  "timestamp": "2026-05-22",
+  "source_gene": "shadow_council",
+  "payload": {
+    "mutation": "mutation_001",
+    "verdict": "approved"
+  }
+}

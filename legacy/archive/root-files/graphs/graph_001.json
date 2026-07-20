@@ -1,0 +1,28 @@
+{
+  "graph_id": "graph_001",
+  "root_task_id": "task_root",
+  "nodes": [
+    {
+      "node_id": "node_1",
+      "gene_id": "planning_gene",
+      "harness_id": "planning_harness",
+      "status": "Completed",
+      "capability": "task.decomposition",
+      "timestamp": "2026-05-22"
+    },
+    {
+      "node_id": "node_2",
+      "gene_id": "execution_gene",
+      "harness_id": "execution_harness",
+      "status": "Running",
+      "capability": "code.execution",
+      "timestamp": "2026-05-22"
+    }
+  ],
+  "edges": [
+    {
+      "from": "node_1",
+      "to": "node_2"
+    }
+  ]
+}

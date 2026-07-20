@@ -1,4 +1,3 @@
-#![allow(clippy::possible_missing_else)]
 //! Pandora Fleet — distributed execution infrastructure.
 //!
 //! Remote workers, fleet orchestration, network scheduling,
@@ -70,7 +69,6 @@ impl RemoteWorker {
         if self.health == WorkerHealth::Offline {
             return false;
         }
-        #[allow(clippy::possible_missing_else)]
         if self.current_load >= self.capability.max_concurrency {
             return false;
         }

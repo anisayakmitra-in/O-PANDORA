@@ -1,0 +1,19 @@
+{
+  "graph_id": "runtime_graph_001",
+  "vertices": [
+    {
+      "node_id": "memory",
+      "node_type": "anubis"
+    },
+    {
+      "node_id": "telemetry",
+      "node_type": "panoptes"
+    }
+  ],
+  "edges": [
+    {
+      "from": "memory",
+      "to": "telemetry"
+    }
+  ]
+}

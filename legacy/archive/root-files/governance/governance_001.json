@@ -1,0 +1,8 @@
+{
+  "decision_id": "governance_001",
+  "target_mutation": "mutation_001",
+  "reviewed_by": "shadow_council",
+  "verdict": "Approved",
+  "reasoning": "Mutation considered safe and beneficial",
+  "timestamp": "2026-05-22"
+}

@@ -1,0 +1,15 @@
+{
+  "session_id": "session-alpha",
+  "gene": "coding-v1",
+  "provider": "ollama",
+  "prompt": "Explain Rust ownership",
+  "approved_tools": [
+    "read_file",
+    "web_scrape"
+  ],
+  "denied_tools": [
+    "shell"
+  ],
+  "memory_hits": 0,
+  "success": true
+}

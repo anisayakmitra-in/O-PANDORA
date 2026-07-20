@@ -1,0 +1,241 @@
+.
+├── Cargo.lock
+├── Cargo.toml
+├── crates
+│   ├── anubis-memory
+│   │   ├── Cargo.toml
+│   │   ├── examples
+│   │   │   ├── test_branch_replay.rs
+│   │   │   ├── test_branching.rs
+│   │   │   ├── test_causal.rs
+│   │   │   ├── test_distributed.rs
+│   │   │   ├── test_event_stream.rs
+│   │   │   ├── test_evolution.rs
+│   │   │   ├── test_governance.rs
+│   │   │   ├── test_graph.rs
+│   │   │   ├── test_lineage.rs
+│   │   │   ├── test_merge.rs
+│   │   │   ├── test_namespace.rs
+│   │   │   ├── test_query.rs
+│   │   │   ├── test_replay.rs
+│   │   │   └── test_shadow_council.rs
+│   │   └── src
+│   │       ├── branch.rs
+│   │       ├── branch_replay.rs
+│   │       ├── category.rs
+│   │       ├── causal.rs
+│   │       ├── compression.rs
+│   │       ├── distributed.rs
+│   │       ├── embeddings.rs
+│   │       ├── event.rs
+│   │       ├── evolution.rs
+│   │       ├── governance.rs
+│   │       ├── graph.rs
+│   │       ├── lib.rs
+│   │       ├── lineage.rs
+│   │       ├── merge.rs
+│   │       ├── namespace.rs
+│   │       ├── query.rs
+│   │       ├── reflection.rs
+│   │       ├── relationships.rs
+│   │       ├── replay.rs
+│   │       ├── retrieval.rs
+│   │       ├── salience.rs
+│   │       ├── shadow_council.rs
+│   │       ├── storage.rs
+│   │       ├── temporal.rs
+│   │       └── temporal_query.rs
+│   ├── pandora-cli
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── main.rs
+│   ├── pandora-cognition
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       ├── dataset
+│   │       ├── evaluator
+│   │       ├── evolution
+│   │       ├── lib.rs
+│   │       ├── module
+│   │       ├── optimizer
+│   │       ├── pipeline
+│   │       ├── reflection
+│   │       ├── registry
+│   │       ├── signature
+│   │       └── telemetry
+│   ├── pandora-events
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── pandora-gene
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── pandora-governance
+│   │   ├── Cargo.toml
+│   │   ├── examples
+│   │   │   ├── test_governed_execution.rs
+│   │   │   └── test_watchdog_timeout.rs
+│   │   └── src
+│   │       ├── audit.rs
+│   │       ├── context.rs
+│   │       ├── error.rs
+│   │       ├── event.rs
+│   │       ├── jsonl_logger.rs
+│   │       ├── killswitch.rs
+│   │       ├── lib.rs
+│   │       ├── router.rs
+│   │       ├── telemetry.rs
+│   │       ├── tier.rs
+│   │       └── traits.rs
+│   ├── pandora-harness
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       ├── base.rs
+│   │       ├── coding.rs
+│   │       ├── feedback.rs
+│   │       ├── harness_selector.rs
+│   │       ├── lib.rs
+│   │       └── runner.rs
+│   ├── pandora-memory
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       ├── lib.rs
+│   │       └── performance.rs
+│   ├── pandora-model
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       ├── client.rs
+│   │       ├── errors.rs
+│   │       ├── lib.rs
+│   │       └── response.rs
+│   ├── pandora-panoptikon
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── pandora-policy
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── pandora-provider
+│   │   ├── Cargo.toml
+│   │   ├── examples
+│   │   │   ├── test_ollama.rs
+│   │   │   ├── test_registry.rs
+│   │   │   └── test_streaming.rs
+│   │   └── src
+│   │       ├── lib.rs
+│   │       ├── ollama.rs
+│   │       ├── provider.rs
+│   │       ├── registry.rs
+│   │       └── types.rs
+│   ├── pandora-runtime
+│   │   ├── Cargo.toml
+│   │   ├── examples
+│   │   │   └── test_gene_plugin.rs
+│   │   └── src
+│   │       ├── abi.rs
+│   │       ├── capability.rs
+│   │       ├── config.rs
+│   │       ├── contract.rs
+│   │       ├── delegation.rs
+│   │       ├── dependency.rs
+│   │       ├── evolution.rs
+│   │       ├── gene.rs
+│   │       ├── harness.rs
+│   │       ├── ingest.rs
+│   │       ├── lib.rs
+│   │       ├── loader.rs
+│   │       ├── main.rs
+│   │       ├── manifest.rs
+│   │       ├── negotiation.rs
+│   │       ├── panoptes.rs
+│   │       ├── permission.rs
+│   │       ├── plugin.rs
+│   │       ├── provider
+│   │       ├── registry.rs
+│   │       ├── runtime.rs
+│   │       ├── sandbox.rs
+│   │       ├── scheduler.rs
+│   │       ├── task.rs
+│   │       └── trace.rs
+│   ├── pandora-sandbox
+│   │   ├── Cargo.toml
+│   │   ├── examples
+│   │   │   └── test_sandbox.rs
+│   │   └── src
+│   │       ├── config.rs
+│   │       ├── engine.rs
+│   │       ├── error.rs
+│   │       ├── governance.rs
+│   │       ├── lib.rs
+│   │       ├── reaper.rs
+│   │       ├── sandbox.rs
+│   │       └── security.rs
+│   ├── pandora-scheduler
+│   │   ├── Cargo.toml
+│   │   ├── examples
+│   │   │   └── test_scheduler.rs
+│   │   └── src
+│   │       ├── adapter.rs
+│   │       ├── budget.rs
+│   │       ├── event.rs
+│   │       ├── executor.rs
+│   │       ├── heartbeat.rs
+│   │       ├── lib.rs
+│   │       ├── persistence.rs
+│   │       ├── queue.rs
+│   │       ├── retry.rs
+│   │       ├── runtime.rs
+│   │       ├── scheduler.rs
+│   │       ├── task.rs
+│   │       └── watchdog.rs
+│   ├── pandora-signal
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── pandora-tools
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       ├── filesystem.rs
+│   │       └── lib.rs
+│   ├── pandora-tui
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── main.rs
+│   └── pandora-types
+│       ├── Cargo.toml
+│       └── src
+│           ├── harness.rs
+│           ├── harness_gene.rs
+│           └── lib.rs
+├── genes
+│   ├── archive
+│   │   └── coding-gene-gen-1.json
+│   ├── business.json
+│   ├── coding-v2.json
+│   ├── coding.json
+│   ├── core
+│   ├── installed
+│   │   ├── coding.json
+│   │   └── ollama-provider.json
+│   ├── llamacpp-provider.json
+│   ├── ollama-provider.json
+│   ├── panoptes.json
+│   └── registry.json
+├── memory
+│   ├── export
+│   │   └── anubis-export.json
+│   ├── memory.jsonl
+│   ├── performance.json
+│   └── sessions
+│       └── runtime.jsonl
+├── structure.txt
+├── test-runner
+│   ├── Cargo.toml
+│   └── src
+│       └── main.rs
+└── traces
+    └── session-alpha.json
+
+67 directories, 172 files

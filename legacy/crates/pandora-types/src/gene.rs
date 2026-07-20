@@ -115,7 +115,6 @@ pub struct GeneManifestBuilder {
     owner_harness: Option<String>,
 }
 
-#[allow(clippy::too_many_arguments)]
 impl GeneManifestBuilder {
     pub fn id(mut self, id: impl Into<String>) -> Self {
         self.id = Some(id.into());

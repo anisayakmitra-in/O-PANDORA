@@ -1,4 +1,3 @@
-#![allow(clippy::possible_missing_else)]
 //! Pandora KUBER — gene distribution system.
 //! Search, install, score, and manage gene packages.
 
@@ -198,7 +197,6 @@ impl Kuber {
             .sum()
     }
 
-    #[allow(clippy::possible_missing_else)]
     pub fn score(&self, path: &str) -> Result<Score, pandora_types::PandoraError> {
         let dir = Path::new(path);
         if !dir.exists() {
