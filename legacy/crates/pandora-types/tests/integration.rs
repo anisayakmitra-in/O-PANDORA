@@ -22,7 +22,7 @@ mod integration {
     };
     use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
     use pandora_types::runtime_node::{
-        NodeCapabilities, NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
+         NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
     };
     use pandora_types::universal_registry::{
         HealthStatus, InMemoryRegistry, Registry, RegistryEntry,
@@ -231,13 +231,13 @@ mod integration {
             vec!["standard".into(), "rust".into()],
             1.0,
         );
-        let pid = mem.remember(
+        let _pid = mem.remember(
             MemoryLayer::Project,
             "Project uses axum for HTTP".into(),
             vec!["project".into(), "rust".into(), "axum".into()],
             0.8,
         );
-        let sid = mem.remember(
+        let _sid = mem.remember(
             MemoryLayer::Session,
             "Working on auth middleware".into(),
             vec!["session".into(), "auth".into()],
@@ -465,7 +465,7 @@ mod integration {
 
         // 2. All events received
         let mut count = 0;
-        while let Ok(_) = rx.try_recv() {
+        while rx.try_recv().is_ok() {
             count += 1;
         }
         assert_eq!(count, 5, "Must receive all 5 published events");
