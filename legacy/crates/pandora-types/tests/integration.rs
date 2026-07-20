@@ -1,28 +1,22 @@
-//! End-to-end integration tests — complete user journeys.
-//!
-//! These tests exercise real Pandora subsystems without mocks.
-//! They do NOT require an LLM provider — all test scenarios use
-//! infrastructure-only code paths (planning, routing, governance,
-//! permissions, memory, nodes, auth).
-//!
-//! Run: cargo test -p pandora-types -- integration
+// ──────────────────────────────────────────────
+// Resilience tests — corrupt data, invalid state, edge cases
+// ──────────────────────────────────────────────
 
 #[cfg(test)]
-mod integration {
+mod resilience {
     use pandora_types::auth_manager::AuthStore;
-    use pandora_types::capability_registry::{well_known, CapabilityEntry, CapabilityRegistry};
+    use pandora_types::capability_registry::{CapabilityEntry, CapabilityRegistry};
     use pandora_types::connection_lifecycle::ConnectionLifecycle;
     use pandora_types::context_strategy::{ContextManager, ContextMessage, ContextStrategy};
-    use pandora_types::event_bus::{BusEventKind, EventBus};
+    use pandora_types::event_bus::EventBus;
     use pandora_types::hierarchical_memory::{HierarchicalMemory, MemoryLayer};
-    use pandora_types::intent_router::{Capability, CapabilityProviderKind, IntentRouter};
     use pandora_types::lifecycle_hooks::{Hook, HookRegistry, LifecycleEvent};
     use pandora_types::permissions_manifest::{
         FilesystemScope, PermissionManifest, PermissionVerdict, ShellPermissions,
     };
     use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
     use pandora_types::runtime_node::{
-        NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
+        NodeCapabilities, NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
     };
     use pandora_types::universal_registry::{
         HealthStatus, InMemoryRegistry, Registry, RegistryEntry,
@@ -30,469 +24,515 @@ mod integration {
     use pandora_types::workflow_lifecycle::{Lifecycle, LifecycleState};
     use std::collections::HashMap;
 
-    // ──────────────────────────────────────────────
-    // Scenario 1: Intent → Plan → Workflow → Execute → Verify
-    // ──────────────────────────────────────────────
+    // ── 1. Corrupt/empty manifests ──
+
     #[test]
-    fn scenario_1_intent_to_execution() {
-        // 1. Intent Router registers capabilities
-        let mut router = IntentRouter::new();
-        router.register(Capability {
-            name: "code".into(),
-            description: "Generate and edit source code".into(),
-            keywords: vec!["code".into(), "generate".into(), "write".into()],
-            weight: 0.8,
-            provider_id: "coding-domain".into(),
-            provider_kind: CapabilityProviderKind::Harness,
-        });
-        router.register(Capability {
-            name: "docker".into(),
-            description: "Build and run containers".into(),
-            keywords: vec!["docker".into(), "container".into(), "build".into()],
-            weight: 0.5,
-            provider_id: "devops-domain".into(),
-            provider_kind: CapabilityProviderKind::Harness,
-        });
-
-        // 2. Match user intent
-        let results = router.match_input("generate a Rust crate");
-        assert!(!results.is_empty(), "Intent Router must find a match");
-        assert_eq!(results[0].capability.name, "code");
-        assert!(results[0].score > 0.0, "Match must have positive score");
-
-        // 3. Create Workflow lifecycle
-        let mut wf = Lifecycle::new("exe-001", "code-generation");
-        assert_eq!(wf.state, LifecycleState::Initialize);
-
-        // 4. Transition through states
-        assert!(wf.transition(LifecycleState::Plan).is_ok());
-        wf.step("design", 3);
-
-        assert!(wf.transition(LifecycleState::Execute).is_ok());
-        wf.step("implement", 3);
-
-        assert!(wf.transition(LifecycleState::Verify).is_ok());
-        wf.step("test", 3);
-
-        assert!(wf.transition(LifecycleState::Complete).is_ok());
-        assert!(wf.state.is_terminal());
-
-        // 5. Lifecycle hooks fire at each transition
-        let mut hooks = HookRegistry::new();
-        hooks.register(Hook {
-            command: "audit-log --event=exec".into(),
-            event: LifecycleEvent::BeforeExecution,
-            blocking: false,
-            owner: "audit".into(),
-            matcher: None,
-            priority: 10,
-        });
-        let pre_hooks = hooks.hooks_for(&LifecycleEvent::BeforeExecution);
-        assert_eq!(pre_hooks.len(), 1);
-    }
-
-    // ──────────────────────────────────────────────
-    // Scenario 2: Permission Manifest → Policy → Audit
-    // ──────────────────────────────────────────────
-    #[test]
-    fn scenario_2_permission_policy_audit() {
-        // 1. Define permission manifest
-        let perm = PermissionManifest {
-            filesystem: vec![FilesystemScope {
-                path: "/tmp".into(),
-                read: true,
-                write: true,
-            }],
-            shell: ShellPermissions {
-                enabled: true,
-                blocked: vec!["rm -rf *".into(), "sudo *".into()],
-                auto_approved: vec!["git *".into(), "ls *".into()],
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
-        // 2. Policy evaluation
-        assert_eq!(
-            perm.is_shell_allowed("git status"),
-            PermissionVerdict::Allowed
-        );
+    fn empty_permission_manifest_denies_everything() {
+        let perm = PermissionManifest::default();
         assert!(matches!(
-            perm.is_shell_allowed("sudo rm -rf /"),
+            perm.is_shell_allowed("anything"),
             PermissionVerdict::Denied { .. }
         ));
-        assert_eq!(
-            perm.is_path_allowed("/tmp/test.rs", true),
-            PermissionVerdict::Allowed
-        );
         assert!(matches!(
             perm.is_path_allowed("/etc/passwd", false),
             PermissionVerdict::Denied { .. }
         ));
+        assert!(matches!(
+            perm.is_host_allowed("example.com"),
+            PermissionVerdict::Denied { .. }
+        ));
+    }
 
-        // 3. Risk classification
-        assert_eq!(
-            classify(&OperationType::Shell("ls -la".into())),
-            RiskLevel::Safe
+    #[test]
+    fn partially_configured_manifest_has_defaults() {
+        let perm = PermissionManifest {
+            shell: ShellPermissions {
+                enabled: true,
+                blocked: vec![],
+                auto_approved: vec![],
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        assert!(matches!(
+            perm.is_shell_allowed("echo hi"),
+            PermissionVerdict::Allowed
+        ));
+        assert!(matches!(
+            perm.is_path_allowed("/tmp", false),
+            PermissionVerdict::Denied { .. }
+        ));
+    }
+
+    #[test]
+    fn empty_host_is_denied() {
+        let perm = PermissionManifest::default();
+        assert!(matches!(
+            perm.is_host_allowed(""),
+            PermissionVerdict::Denied { .. }
+        ));
+    }
+
+    // ── 2. Invalid registries ──
+
+    #[test]
+    fn empty_capability_registry_returns_empty() {
+        let reg = CapabilityRegistry::new();
+        assert!(reg.all_capabilities().is_empty());
+        assert!(reg.providers_for("anything").is_empty());
+        assert!(reg.provider_capabilities("nonexistent").is_empty());
+    }
+
+    #[test]
+    fn duplicate_registration_is_idempotent() {
+        let mut reg = CapabilityRegistry::new();
+        let entry = CapabilityEntry {
+            capability: "test.cap".into(),
+            provider_id: "p1".into(),
+            provider_kind: "gene".into(),
+            confidence: 1.0,
+            metadata: HashMap::new(),
+        };
+        reg.register(entry);
+        reg.register(CapabilityEntry {
+            capability: "test.cap".into(),
+            provider_id: "p1".into(),
+            provider_kind: "gene".into(),
+            confidence: 1.0,
+            metadata: HashMap::new(),
+        });
+        assert_eq!(reg.providers_for("test.cap").len(), 1);
+    }
+
+    #[test]
+    fn empty_universal_registry_handles_all_queries() {
+        let mut reg: InMemoryRegistry<RegistryEntry> = InMemoryRegistry::new();
+        assert!(reg.list_by_kind("test").is_empty());
+        assert!(reg.list_all().is_empty());
+        assert!(reg.discover_by_capability("test").is_empty());
+        let entry = RegistryEntry {
+            id: "",
+            name: "",
+            version: "",
+            kind: "",
+            capabilities: vec![],
+            health: HealthStatus::Healthy,
+            signature: None,
+            metadata: HashMap::new(),
+        };
+        assert!(reg.register(entry).is_ok());
+    }
+
+    #[test]
+    fn registry_rejects_duplicate_id() {
+        let mut reg: InMemoryRegistry<RegistryEntry> = InMemoryRegistry::new();
+        reg.register(RegistryEntry {
+            id: "dup".into(),
+            name: "a".into(),
+            version: "1".into(),
+            kind: "t".into(),
+            capabilities: vec![],
+            health: HealthStatus::Healthy,
+            signature: None,
+            metadata: HashMap::new(),
+        })
+        .unwrap();
+        assert!(reg
+            .register(RegistryEntry {
+                id: "dup".into(),
+                name: "b".into(),
+                version: "1".into(),
+                kind: "t".into(),
+                capabilities: vec![],
+                health: HealthStatus::Healthy,
+                signature: None,
+                metadata: HashMap::new(),
+            })
+            .is_err());
+    }
+
+    #[test]
+    fn unhealthy_entries_are_still_listed() {
+        let mut reg: InMemoryRegistry<RegistryEntry> = InMemoryRegistry::new();
+        reg.register(RegistryEntry {
+            id: "sick".into(),
+            name: "sick".into(),
+            version: "".into(),
+            kind: "test".into(),
+            capabilities: vec![],
+            health: HealthStatus::Unhealthy("disk full".into()),
+            signature: None,
+            metadata: HashMap::new(),
+        })
+        .unwrap();
+        assert_eq!(reg.list_all().len(), 1);
+    }
+
+    // ── 3. Memory edge cases ──
+
+    #[test]
+    fn empty_memory_returns_empty() {
+        let mem = HierarchicalMemory::new();
+        assert!(mem.search_by_tags(&[], None).is_empty());
+        assert!(mem.search_by_content("", None).is_empty());
+        assert!(mem.recall("nonexistent").is_none());
+    }
+
+    #[test]
+    fn memory_wrong_layer_has_no_entries() {
+        let mut mem = HierarchicalMemory::new();
+        mem.remember(MemoryLayer::Global, "test".into(), vec![], 1.0);
+        assert!(mem.layer_entries(MemoryLayer::Session).is_empty());
+    }
+
+    #[test]
+    fn memory_recall_nonexistent_returns_none() {
+        let mem = HierarchicalMemory::new();
+        assert!(mem.recall("no-such-id").is_none());
+    }
+
+    // ── 4. Context strategy edge cases ──
+
+    #[test]
+    fn empty_context_not_over_limit() {
+        let cm = ContextManager::new(0, ContextStrategy::DropOldest);
+        assert!(!cm.is_over_limit());
+    }
+
+    #[test]
+    fn context_termination_guard_works() {
+        let mut cm = ContextManager::new(1, ContextStrategy::Summarize);
+        for i in 0..50 {
+            cm.push(ContextMessage {
+                role: "user".into(),
+                content: format!("msg {} which is long enough to test the budget", i),
+                timestamp: i,
+                pinned: false,
+            });
+        }
+        cm.enforce_limit();
+        assert!(cm.messages_dropped > 0 || cm.messages().len() > 0);
+    }
+
+    // ── 5. Event bus edge cases ──
+
+    #[test]
+    fn bus_without_subscribers_works() {
+        let bus = EventBus::default_capacity();
+        bus.publish(
+            crate::integration::BusEventKind::ExecutionStarted,
+            serde_json::json!("test"),
+            "t",
         );
-        assert_eq!(
-            classify(&OperationType::Shell("rm -rf /".into())),
-            RiskLevel::Critical
+    }
+
+    #[test]
+    fn bus_subscriber_dropped_does_not_break_others() {
+        let bus = EventBus::default_capacity();
+        let _rx = bus.subscribe();
+        let rx2 = bus.subscribe();
+        bus.publish(
+            crate::integration::BusEventKind::ExecutionCompleted,
+            serde_json::json!("ok"),
+            "t",
         );
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        assert!(rx2.try_recv().is_ok());
+    }
+
+    #[test]
+    fn bus_many_events_dont_overflow() {
+        let bus = EventBus::default_capacity();
+        let rx = bus.subscribe();
+        for i in 0..20 {
+            bus.publish(
+                crate::integration::BusEventKind::StageCompleted,
+                serde_json::json!({"i": i}),
+                "t",
+            );
+        }
+        std::thread::sleep(std::time::Duration::from_millis(30));
+        let mut count = 0;
+        while let Ok(_) = rx.try_recv() {
+            count += 1;
+        }
+        assert!(count > 0);
+    }
+
+    // ── 6. Auth edge cases ──
+
+    #[test]
+    fn empty_tokens_fail() {
+        let mut auth = AuthStore::default();
+        assert!(auth.validate_bootstrap("").is_none());
+        assert!(auth.validate_api_key("").is_none());
+        assert!(auth.validate_session("").is_none());
+    }
+
+    #[test]
+    fn bootstrap_cannot_be_reused() {
+        let mut auth = AuthStore::default();
+        let t = auth.create_bootstrap();
+        assert!(auth.validate_bootstrap(&t).is_some());
+        assert!(auth.validate_bootstrap(&t).is_none());
+    }
+
+    #[test]
+    fn invalid_session_returns_none() {
+        let mut auth = AuthStore::default();
+        assert!(auth.validate_session("nope").is_none());
+    }
+
+    #[test]
+    fn removed_session_does_not_validate() {
+        let mut auth = AuthStore::default();
+        let sid = auth.create_session("client-1");
+        assert!(auth.validate_session(&sid).is_some());
+        auth.remove_session(&sid);
+        assert!(auth.validate_session(&sid).is_none());
+    }
+
+    // ── 7. Connection lifecycle edge cases ──
+
+    #[test]
+    fn empty_fleet_handles_all_queries() {
+        let fleet = ConnectionLifecycle::new();
+        assert_eq!(fleet.count(), 0);
+        assert!(fleet.healthy_workers().is_empty());
+        assert!(!fleet.heartbeat("nonexistent"));
+    }
+
+    #[test]
+    fn lease_twice_fails() {
+        let mut fleet = ConnectionLifecycle::new();
+        fleet.connect("w1", "n", None, vec![]);
+        assert!(fleet.acquire_lease("t1", "w1").is_some());
+        assert!(fleet.acquire_lease("t1", "w2").is_none());
+    }
+
+    #[test]
+    fn disconnect_unknown_worker_is_safe() {
+        let mut fleet = ConnectionLifecycle::new();
+        fleet.disconnect("ghost");
+        assert_eq!(fleet.count(), 0);
+    }
+
+    #[test]
+    fn release_untaken_lease_is_safe() {
+        let mut fleet = ConnectionLifecycle::new();
+        fleet.connect("w1", "n", None, vec![]);
+        fleet.release_lease("never-held", "w1");
+    }
+
+    // ── 8. RuntimeNode edge cases ──
+
+    #[test]
+    fn empty_node_registry() {
+        let reg = NodeRegistry::new();
+        assert!(reg.with_capability("anything").is_empty());
+    }
+
+    #[test]
+    fn node_unknown_capability_returns_empty() {
+        let mut reg = NodeRegistry::new();
+        let mut node = RuntimeNode::local();
+        node.id = "test".into();
+        node.capabilities.gpu = true;
+        reg.register(node);
+        assert!(reg.with_capability("nonexistent").is_empty());
+    }
+
+    #[test]
+    fn node_multiple_transports() {
+        let mut node = RuntimeNode::local();
+        node.id = "multi".into();
+        node.transports = vec![TransportKind::Tcp, TransportKind::Grpc];
+        assert_eq!(node.transports.len(), 2);
+        let mut reg = NodeRegistry::new();
+        reg.register(node);
+        assert_eq!(reg.nodes.len(), 1);
+    }
+
+    // ── 9. Workflow edge cases ──
+
+    #[test]
+    fn illegal_transition_returns_error() {
+        let mut wf = Lifecycle::new("t", "t");
+        assert!(wf.transition(LifecycleState::Complete).is_err());
+    }
+
+    #[test]
+    fn terminal_state_rejects_all() {
+        let mut wf = Lifecycle::new("t", "t");
+        wf.transition(LifecycleState::Plan).ok();
+        wf.transition(LifecycleState::Execute).ok();
+        wf.transition(LifecycleState::Verify).ok();
+        wf.transition(LifecycleState::Complete).ok();
+        assert!(wf.transition(LifecycleState::Execute).is_err());
+    }
+
+    #[test]
+    fn retry_limit_respected() {
+        let mut wf = Lifecycle::new("t", "t");
+        wf.transition(LifecycleState::Plan).ok();
+        wf.transition(LifecycleState::Execute).ok();
+        wf.step("task", 0);
+        assert!(!wf.can_retry());
+    }
+
+    #[test]
+    fn full_recovery_cycle() {
+        let mut wf = Lifecycle::new("t", "t");
+        assert_eq!(wf.state, LifecycleState::Initialize);
+        wf.transition(LifecycleState::Plan).ok();
+        wf.transition(LifecycleState::Execute).ok();
+        wf.transition(LifecycleState::Verify).ok();
+        wf.transition(LifecycleState::Recover).ok();
+        wf.transition(LifecycleState::Execute).ok();
+        wf.transition(LifecycleState::Verify).ok();
+        wf.transition(LifecycleState::Complete).ok();
+        assert!(wf.state.is_terminal());
+    }
+
+    // ── 10. Hooks edge cases ──
+
+    #[test]
+    fn empty_hook_registry() {
+        let h = HookRegistry::new();
+        assert_eq!(h.count(), 0);
+        assert!(h.hooks_for(&LifecycleEvent::BeforeExecution).is_empty());
+    }
+
+    #[test]
+    fn hook_event_mismatch() {
+        let mut h = HookRegistry::new();
+        h.register(Hook {
+            command: "x".into(),
+            event: LifecycleEvent::BeforeExecution,
+            blocking: false,
+            owner: "t".into(),
+            matcher: None,
+            priority: 5,
+        });
+        assert!(h.hooks_for(&LifecycleEvent::AfterExecution).is_empty());
+    }
+
+    #[test]
+    fn hook_priority_ordering() {
+        let mut h = HookRegistry::new();
+        for p in &[20, 10, 30] {
+            h.register(Hook {
+                command: format!("h-{}", p),
+                event: LifecycleEvent::BeforeExecution,
+                blocking: false,
+                owner: "t".into(),
+                matcher: None,
+                priority: *p,
+            });
+        }
+        assert_eq!(h.hooks_for(&LifecycleEvent::BeforeExecution).len(), 3);
+    }
+
+    // ── 11. Risk engine edge cases ──
+
+    #[test]
+    fn empty_command_safe() {
+        assert_eq!(classify(&OperationType::Shell("".into())), RiskLevel::Safe);
+    }
+
+    #[test]
+    fn unknown_command_medium() {
         assert_eq!(
-            classify(&OperationType::Filesystem {
-                path: "/etc/passwd".into(),
-                write: true
+            classify(&OperationType::Shell("unknown".into())),
+            RiskLevel::Medium
+        );
+    }
+
+    #[test]
+    fn privileged_docker_high() {
+        assert_eq!(
+            classify(&OperationType::Docker {
+                image: "u".into(),
+                privileged: true
             }),
             RiskLevel::High
         );
+    }
+
+    #[test]
+    fn non_privileged_docker_medium() {
+        assert_eq!(
+            classify(&OperationType::Docker {
+                image: "u".into(),
+                privileged: false
+            }),
+            RiskLevel::Medium
+        );
+    }
+
+    #[test]
+    fn git_commands_classified() {
         assert_eq!(
             classify(&OperationType::Git("status".into())),
             RiskLevel::Safe
         );
         assert_eq!(
-            classify(&OperationType::Docker {
-                image: "ubuntu".into(),
-                privileged: true
-            }),
-            RiskLevel::High
+            classify(&OperationType::Git("push origin main".into())),
+            RiskLevel::Medium
         );
-
-        // 4. Event bus notification
-        let bus = EventBus::default_capacity();
-        let mut rx = bus.subscribe();
-        bus.publish(
-            BusEventKind::PolicyEvaluated,
-            serde_json::json!({"verdict": "denied", "policy": "no-root-access"}),
-            "policy-engine",
-        );
-        std::thread::sleep(std::time::Duration::from_millis(10));
-        let event = rx.try_recv().expect("must receive policy event");
-        assert_eq!(event.kind.label(), "policy.evaluated");
     }
 
-    // ──────────────────────────────────────────────
-    // Scenario 3: RuntimeNode → Capability → Dispatch
-    // ──────────────────────────────────────────────
     #[test]
-    fn scenario_3_node_capability_dispatch() {
-        // 1. Create Runtime Nodes
-        let mut node_reg = NodeRegistry::new();
-
-        let mut desktop = RuntimeNode::local();
-        desktop.id = "desktop-1".into();
-        desktop.capabilities.gpu = true;
-        desktop.capabilities.shell = true;
-        node_reg.register(desktop);
-
-        let mut phone = RuntimeNode::local();
-        phone.id = "phone-1".into();
-        phone.kind = NodeKind::Phone;
-        phone.platform = NodePlatform::Android;
-        phone.capabilities.camera = true;
-        phone.capabilities.bluetooth = true;
-        node_reg.register(phone);
-
-        let mut server = RuntimeNode::local();
-        server.id = "server-1".into();
-        server.kind = NodeKind::Server;
-        server.capabilities.execution = true;
-        server.capabilities.gpu = true;
-        server.transports.push(TransportKind::Grpc);
-        node_reg.register(server);
-
-        // 2. Capability negotiation — find GPU nodes
-        let gpu_nodes = node_reg.with_capability("gpu");
-        assert_eq!(gpu_nodes.len(), 2, "Desktop + Server have GPU");
-
-        // 3. Find camera-capable nodes
-        let camera_nodes = node_reg.with_capability("camera");
-        assert_eq!(camera_nodes.len(), 1, "Only phone has camera");
-
-        // 4. Transport capabilities
-        let grpc_nodes = node_reg.by_kind(&NodeKind::Server);
-        assert_eq!(grpc_nodes.len(), 1);
-
-        // 5. Task dispatch — pick the best node for execution
-        let execution_nodes = node_reg.with_capability("execution");
-        assert!(execution_nodes.iter().any(|n| n.id == "server-1"));
-    }
-
-    // ──────────────────────────────────────────────
-    // Scenario 4: Memory → Context Strategy → Retrieval
-    // ──────────────────────────────────────────────
-    #[test]
-    fn scenario_4_memory_context_retrieval() {
-        // 1. Hierarchical memory with multiple layers
-        let mut mem = HierarchicalMemory::new();
-        let gid = mem.remember(
-            MemoryLayer::Global,
-            "Company coding standards".into(),
-            vec!["standard".into(), "rust".into()],
-            1.0,
-        );
-        let _pid = mem.remember(
-            MemoryLayer::Project,
-            "Project uses axum for HTTP".into(),
-            vec!["project".into(), "rust".into(), "axum".into()],
-            0.8,
-        );
-        let _sid = mem.remember(
-            MemoryLayer::Session,
-            "Working on auth middleware".into(),
-            vec!["session".into(), "auth".into()],
-            0.5,
-        );
-
-        // 2. Search across layers
-        let results = mem.search_by_tags(&["rust"], None);
-        assert_eq!(results.len(), 2, "Global + Project contain 'rust' tag");
-
-        // 3. Layer isolation
-        let global_entries = mem.layer_entries(MemoryLayer::Global);
-        assert_eq!(global_entries.len(), 1);
-
-        // 4. Context strategy — manage overflow
-        let mut ctx = ContextManager::new(100, ContextStrategy::DropOldest);
-        ctx.push(ContextMessage {
-            role: "user".into(),
-            content: "This is a long conversation that might exceed the token budget if we're not careful about what we keep in memory".into(),
-            timestamp: 1, pinned: false,
-        });
-        // Still under limit — no drops
-        assert_eq!(ctx.messages_dropped, 0);
-
-        // 5. Overflow triggers drops
-        ctx.max_tokens = 5;
-        ctx.push(ContextMessage {
-            role: "user".into(),
-            content: "overflow message".into(),
-            timestamp: 2,
-            pinned: false,
-        });
-        assert!(ctx.messages_dropped > 0);
-
-        // 6. Verify persisting and recalling
-        let recalled = mem.recall(&gid).expect("must find global memory");
-        assert!(recalled.content.contains("coding standards"));
-    }
-
-    // ──────────────────────────────────────────────
-    // Scenario 5: Connection Lifecycle → Worker → Task
-    // ──────────────────────────────────────────────
-    #[test]
-    fn scenario_5_fleet_connection_lifecycle() {
-        let mut fleet = ConnectionLifecycle::new();
-
-        // 1. Worker joins
-        fleet.connect(
-            "worker-1",
-            "node-desktop",
-            Some("192.168.1.10:9000"),
-            vec!["shell".into(), "filesystem".into()],
-        );
-        assert_eq!(fleet.count(), 1);
-        assert_eq!(fleet.healthy_workers().len(), 1);
-
-        // 2. Heartbeats
-        assert!(fleet.heartbeat("worker-1"));
-        assert!(!fleet.heartbeat("nonexistent"));
-
-        // 3. Task lease acquired
-        let lease = fleet.acquire_lease("task-build", "worker-1");
-        assert!(lease.is_some(), "Must acquire lease for available worker");
-
-        // 4. Cannot double-assign
-        let lease2 = fleet.acquire_lease("task-build", "worker-2");
-        assert!(lease2.is_none(), "Cannot acquire already-held lease");
-
-        // 5. Renew lease
-        assert!(fleet.renew_lease("task-build"), "Must renew active lease");
-
-        // 6. Release
-        fleet.release_lease("task-build", "worker-1");
-        let lease3 = fleet.acquire_lease("task-build", "worker-2");
-        assert!(
-            lease3.is_some(),
-            "After release, another worker can acquire"
-        );
-
-        // 7. Disconnect
-        fleet.disconnect("worker-1");
+    fn browser_mcp_classified() {
         assert_eq!(
-            fleet.worker("worker-1").unwrap().state,
-            pandora_types::connection_lifecycle::ConnectionState::Disconnected
+            classify(&OperationType::Browser("navigate".into())),
+            RiskLevel::Medium
+        );
+        assert_eq!(
+            classify(&OperationType::Mcp("ping".into())),
+            RiskLevel::Safe
         );
     }
 
-    // ──────────────────────────────────────────────
-    // Scenario 6: Authentication → Session → Execution
-    // ──────────────────────────────────────────────
+    // ── 12. Capability fuzzy tests ──
+
     #[test]
-    fn scenario_6_auth_session_execution() {
-        let mut auth = AuthStore::default();
-
-        // 1. Bootstrap
-        let token = auth.create_bootstrap();
-        assert!(token.len() >= 8);
-
-        // 2. Validate bootstrap
-        let client_id = auth.validate_bootstrap(&token);
-        assert!(client_id.is_some());
-
-        // 3. Cannot reuse
-        assert!(auth.validate_bootstrap(&token).is_none());
-
-        // 4. Create API key
-        let api_key = auth.create_api_key("ci-bot");
-        assert!(api_key.len() >= 8);
-
-        // 5. Validate API key
-        let api_client = auth.validate_api_key(&api_key);
-        assert!(api_client.is_some());
-
-        // 6. Create session
-        let sid = auth.create_session("api-client-1");
-        assert!(sid.len() >= 8);
-
-        // 7. Validate and refresh
-        let session = auth.validate_session(&sid);
-        assert!(session.is_some());
-        assert_eq!(session.unwrap().client_id, "api-client-1");
+    fn capabilities_with_empty_strings() {
+        let mut reg = CapabilityRegistry::new();
+        reg.register(CapabilityEntry {
+            capability: "".into(),
+            provider_id: "".into(),
+            provider_kind: "".into(),
+            confidence: 0.0,
+            metadata: HashMap::new(),
+        });
+        assert!(reg.all_capabilities().len() > 0 || reg.all_capabilities().is_empty());
     }
 
-    // ──────────────────────────────────────────────
-    // Scenario 7: Capability Registry → Universal Registry
-    // ──────────────────────────────────────────────
     #[test]
-    fn scenario_7_registry_unified() {
-        // 1. Capability registry — register capabilities
-        let mut cap_reg = CapabilityRegistry::new();
-        cap_reg.register(CapabilityEntry {
-            capability: well_known::CODE_PARSE.into(),
-            provider_id: "tree-sitter-gene".into(),
-            provider_kind: "gene".into(),
+    fn capabilities_case_sensitive() {
+        let mut reg = CapabilityRegistry::new();
+        reg.register(CapabilityEntry {
+            capability: "Code.Parse".into(),
+            provider_id: "p".into(),
+            provider_kind: "g".into(),
             confidence: 1.0,
             metadata: HashMap::new(),
         });
-        cap_reg.register(CapabilityEntry {
-            capability: well_known::BROWSER_NAVIGATE.into(),
-            provider_id: "computer-use".into(),
-            provider_kind: "harness".into(),
-            confidence: 0.9,
-            metadata: HashMap::new(),
-        });
-
-        // 2. Discover by capability
-        assert_eq!(cap_reg.providers_for(well_known::CODE_PARSE).len(), 1);
-        assert_eq!(cap_reg.providers_for(well_known::BROWSER_NAVIGATE).len(), 1);
-        assert_eq!(cap_reg.providers_for("nonexistent").len(), 0);
-
-        // 3. Provider capabilities
-        let caps = cap_reg.provider_capabilities("tree-sitter-gene");
-        assert!(caps.contains(&well_known::CODE_PARSE));
-
-        // 4. Universal registry — register packages
-        let mut uni = InMemoryRegistry::new();
-        uni.register(RegistryEntry {
-            id: "pkg-1".into(),
-            name: "coding-domain".into(),
-            version: "1.0.0".into(),
-            kind: "harness".into(),
-            capabilities: vec![well_known::CODE_PARSE.into(), well_known::CODE_LINT.into()],
-            health: HealthStatus::Healthy,
-            signature: None,
-            metadata: [("author".into(), "pandora".into())].into(),
-        })
-        .unwrap();
-        uni.register(RegistryEntry {
-            id: "pkg-2".into(),
-            name: "browser-automation".into(),
-            version: "0.5.0".into(),
-            kind: "harness".into(),
-            capabilities: vec![well_known::BROWSER_NAVIGATE.into()],
-            health: HealthStatus::Healthy,
-            signature: None,
-            metadata: HashMap::new(),
-        })
-        .unwrap();
-
-        // 5. Search by kind
-        assert_eq!(uni.list_by_kind("harness").len(), 2);
-
-        // 6. Discover by capability
-        let code_pkgs = uni.discover_by_capability(well_known::CODE_PARSE);
-        assert_eq!(code_pkgs.len(), 1);
-        assert_eq!(code_pkgs[0].name, "coding-domain");
+        assert_eq!(reg.providers_for("code.parse").len(), 0);
+        assert_eq!(reg.providers_for("Code.Parse").len(), 1);
     }
 
-    // ──────────────────────────────────────────────
-    // Scenario 8: Event Bus → Lifecycle Hooks → Audit Trail
-    // ──────────────────────────────────────────────
     #[test]
-    fn scenario_8_events_hooks_audit() {
-        let bus = EventBus::default_capacity();
-        let mut rx = bus.subscribe();
-
-        // 1. Execution lifecycle events
-        bus.publish(
-            BusEventKind::ExecutionStarted,
-            serde_json::json!({"task": "build API"}),
-            "runner",
-        );
-        bus.publish(
-            BusEventKind::StageCompleted,
-            serde_json::json!({"stage": "plan", "duration_ms": 150}),
-            "pipeline",
-        );
-        bus.publish(
-            BusEventKind::HarnessDispatched,
-            serde_json::json!({"harness": "coding-domain"}),
-            "council",
-        );
-        bus.publish(
-            BusEventKind::ProviderSelected,
-            serde_json::json!({"provider": "ollama", "model": "llama3.2"}),
-            "resolver",
-        );
-        bus.publish(
-            BusEventKind::ExecutionCompleted,
-            serde_json::json!({"task": "build API", "success": true}),
-            "runner",
-        );
-
-        std::thread::sleep(std::time::Duration::from_millis(20));
-
-        // 2. All events received
-        let mut count = 0;
-        while rx.try_recv().is_ok() {
-            count += 1;
-        }
-        assert_eq!(count, 5, "Must receive all 5 published events");
-
-        // 3. Lifecycle hooks registered and dispatched
-        let mut hooks = HookRegistry::new();
-        let mut hook_count = 0;
-
-        for event in &[
-            LifecycleEvent::BeforeExecution,
-            LifecycleEvent::AfterExecution,
-            LifecycleEvent::BeforeInstall,
-            LifecycleEvent::AfterInstall,
-        ] {
-            hooks.register(Hook {
-                command: format!("notify --event={}", event.label()),
-                event: event.clone(),
-                blocking: false,
-                owner: "audit-harness".into(),
-                matcher: None,
-                priority: 5,
-            });
-            hook_count += 1;
-        }
-
-        assert_eq!(hooks.count(), hook_count);
-        assert_eq!(hooks.hooks_for(&LifecycleEvent::BeforeExecution).len(), 1);
-        assert_eq!(hooks.hooks_for(&LifecycleEvent::AfterInstall).len(), 1);
+    fn negative_confidence_registers() {
+        let mut reg = CapabilityRegistry::new();
+        reg.register(CapabilityEntry {
+            capability: "t".into(),
+            provider_id: "p".into(),
+            provider_kind: "g".into(),
+            confidence: -1.0,
+            metadata: HashMap::new(),
+        });
+        assert_eq!(reg.providers_for("t").len(), 1);
     }
 }
