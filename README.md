@@ -18,9 +18,11 @@ Every step produces a record. You can replay it, explain it, audit it. If someth
 
 ## Install
 
-**One-liner (Linux, macOS, WSL2):**
+**Prerequisites:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/PANDORA-SYSTEMS/main/install.sh | bash
+# Install Rust (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
 ```
 
 **From source (Linux, macOS, WSL2):**
@@ -38,18 +40,26 @@ cp target/release/pandora ~/.local/bin/
 ## Quick start
 
 ```bash
+# Verify the CLI works
+./target/release/pandora --help
+./target/release/pandora --version
+
 # Add a provider (Ollama running locally)
-pandora connection add local ollama http://localhost:11434
+./target/release/pandora connection add local ollama http://localhost:11434
 
 # Run a task
-pandora run "build a REST API"
+./target/release/pandora run "build a REST API"
 
 # See what happened
-pandora sessions
-pandora explain <session-id>
+./target/release/pandora sessions
+./target/release/pandora explain <session-id>
 
-# Interactive shell (marketplace, agents, goal tracking)
-pandora shell
+# Interactive shell
+./target/release/pandora shell
+
+# Scaffold your first gene
+./target/release/pandora new gene hello-tool
+cd hello-tool && cat gene.toml
 ```
 
 ## What's in the box
