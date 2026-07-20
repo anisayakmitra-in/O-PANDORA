@@ -201,7 +201,9 @@ fn usage() {
     eprintln!("        timeline [id]         Show execution timeline");
     eprintln!();
     eprintln!("    Packages:");
-    eprintln!("        install <pkg>         Install a package");
+    eprintln!(
+        "        install <pkg>         Install a package (local or Palace with --palace=URL)"
+    );
     eprintln!("        uninstall <pkg>       Remove a package");
     eprintln!("        update <pkg>          Update a package");
     eprintln!("        list                  List installed packages");
@@ -277,20 +279,43 @@ fn command_available(command: &str, version_arg: &str) -> bool {
 
 fn cmd_install(args: &[String]) {
     if args.len() < 3 {
-        eprintln!("Usage: pandora install <id>");
+        eprintln!("Usage: pandora install <id> [--palace=URL]");
         process::exit(1);
     }
+    let pkg_id = &args[2];
+    let palace_url = args
+        .iter()
+        .find_map(|a| a.strip_prefix("--palace=").map(|s| s.to_string()))
+        .or_else(|| std::env::var("PANDORA_PALACE_URL").ok())
+        .unwrap_or_else(|| "http://localhost:3000".to_string());
+
+    // 1. Try local KUBER sources first
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
     let mut k = pandora_kuber::Kuber::new(sc.clone());
     if let Ok(cwd) = env::current_dir() {
         k.add_source("local", &cwd.to_string_lossy());
     }
-    match k.install(&args[2]) {
+    if k.install(pkg_id).is_ok() {
+        println!("Installed: {}", pkg_id);
+        return;
+    }
+
+    // 2. Try remote Palace lookup
+    eprintln!("Not found locally. Trying Palace at {} ...", palace_url);
+    let url = format!("{}/api/packages/{}", palace_url, pkg_id);
+    match reqwest::blocking::get(&url) {
+        Ok(resp) if resp.status().is_success() => {
+            eprintln!("Found {} on Palace.", pkg_id);
+            eprintln!("Remote download not yet implemented.");
+            eprintln!("Package URL: {}/api/packages/{}", palace_url, pkg_id);
+        }
         Ok(_) => {
-            println!("Installed: {}", args[2]);
+            eprintln!("Package '{}' not found on Palace.", pkg_id);
+            process::exit(1);
         }
         Err(e) => {
-            eprintln!("Not found: {} ({})", args[2], e);
+            eprintln!("Could not connect to Palace: {}", e);
+            eprintln!("Local install also failed.");
             process::exit(1);
         }
     }

@@ -14,3 +14,4 @@ serde_json.workspace = true
 pandora-api = { path = "../pandora-api" }
 pandora-harnesses = { path = "../pandora-harnesses" }
 tracing-subscriber.workspace = true
+reqwest.workspace = true

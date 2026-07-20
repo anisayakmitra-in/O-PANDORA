@@ -1030,6 +1030,7 @@ dependencies = [
  "pandora-orchestrator",
  "pandora-shadow-council",
  "pandora-types",
+ "reqwest",
  "serde_json",
  "tokio",
  "tracing-subscriber",
