@@ -110,3 +110,6 @@ pub mod auth_manager;
 pub mod intent_router;
 pub mod hierarchical_memory;
 pub mod lifecycle_hooks;
+pub mod plugin_manifest;
+pub mod connection_lifecycle;
+pub mod universal_registry;
