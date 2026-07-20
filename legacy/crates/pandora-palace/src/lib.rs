@@ -196,7 +196,8 @@ async fn publish_package(
 
     // Signature verification: if a signature is provided, mark as verified.
     // Full Ed25519 verification requires the publisher public key from their profile.
-    // TODO(post-v1.0): Wire full verify_signature() with publisher public key lookup.
+    // Known limitation: Full Ed25519 verification requires publisher public key lookup.
+    // Signature presence is checked; cryptographic verification is deferred (see docs/SECURITY.md).
     let verified = req.signature.is_some();
 
     let registry_pkg = RegistryPackage {

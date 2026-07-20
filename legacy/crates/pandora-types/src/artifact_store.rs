@@ -20,7 +20,7 @@ pub struct ArtifactStore {
 struct StoredArtifact {
     size: u64,
     rel_path: String,
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     created_at: u64, // unix timestamp
 }
 

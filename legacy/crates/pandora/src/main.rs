@@ -272,15 +272,6 @@ fn home_dir() -> Option<std::path::PathBuf> {
         .or_else(|| env::var_os("USERPROFILE").map(std::path::PathBuf::from))
 }
 
-#[allow(dead_code)]
-fn command_available(command: &str, version_arg: &str) -> bool {
-    std::process::Command::new(command)
-        .arg(version_arg)
-        .output()
-        .map(|output| output.status.success())
-        .unwrap_or(false)
-}
-
 fn cmd_install(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora install <id> [--palace=URL]");

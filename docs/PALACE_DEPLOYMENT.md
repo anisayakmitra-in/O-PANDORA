@@ -1,0 +1,57 @@
+# Palace Deployment Guide
+
+## What is this?
+
+Palace is Pandora's package registry server. It's an Axum-based HTTP API.
+
+## When is it used?
+
+When you want to host a package registry for your team or the public Pandora ecosystem.
+
+## Running Palace
+
+```bash
+cargo build --release -p pandora-palace
+./target/release/pandora-palace
+```
+
+Default port: `3000`.
+
+## API endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Health check |
+| `/api/login` | POST | User login |
+| `/api/packages` | GET | List all packages |
+| `/api/packages/{id}` | GET | Get package details |
+| `/api/packages/{id}/versions` | GET | Get version history |
+| `/api/publish` | POST | Publish a package |
+| `/api/search` | POST | Search packages |
+
+## CLI integration
+
+```bash
+# Point the CLI at your Palace
+export PANDORA_PALACE_URL=http://your-palace:3000
+
+# Or per-command
+pandora install my-package --palace=http://your-palace:3000
+```
+
+## Known limitations (v0.1.0)
+
+- **In-memory storage** — data is lost on restart. Production use requires adding persistence.
+- **No authentication middleware** — login endpoint exists but other endpoints don't enforce auth.
+- **Signature presence check** — full Ed25519 verification deferred (needs publisher public key lookup).
+- **No pagination** — `/api/packages` returns all entries.
+- **No download endpoint** — package discovery works; archive download is not yet wired.
+
+## Future roadmap
+
+- SQLite persistence
+- Auth middleware on all endpoints
+- Full Ed25519 signature verification
+- Pagination and ranking
+- Package archive download
+- Publisher profile pages

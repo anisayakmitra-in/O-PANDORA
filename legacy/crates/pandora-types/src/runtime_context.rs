@@ -23,7 +23,6 @@ pub enum MemoryMode {
 
 /// How the execution is scheduled.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-#[allow(dead_code)]
 pub enum ExecutionMode {
     #[default]
     Single,
@@ -285,39 +284,6 @@ impl Checkpoint {
     }
 }
 
-// ── Session (legacy, linked to RuntimeContext) ──
-
-/// A session groups multiple executions under one conversation.
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-struct Session {
-    pub session_id: String,
-    pub project_id: String,
-    pub properties: ExecutionProperties,
-    pub context: RuntimeContext,
-}
-
-#[allow(dead_code)]
-impl Session {
-    pub fn new(session_id: impl Into<String>, project_id: impl Into<String>) -> Self {
-        let s: String = session_id.into();
-        let p: String = project_id.into();
-        let context = RuntimeContext::new(s.clone(), p.clone());
-        Self {
-            session_id: s,
-            project_id: p,
-            properties: ExecutionProperties::default(),
-            context,
-        }
-    }
-
-    pub fn create_execution(&self, properties: Option<ExecutionProperties>) -> RuntimeContext {
-        let mut ctx = RuntimeContext::new(&self.session_id, &self.project_id);
-        ctx.properties = properties.unwrap_or_else(|| self.properties.clone());
-        ctx
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -353,14 +319,6 @@ mod tests {
         assert_eq!(ctx.get_variable("PROJECT"), Some("pandora"));
         assert_eq!(ctx.get_variable("MODEL"), Some("qwen"));
         assert_eq!(ctx.get_variable("NONEXIST"), None);
-    }
-
-    #[test]
-    fn session_creates_execution() {
-        let session = Session::new("chat-1", "project-x");
-        let ctx = session.create_execution(None);
-        assert_eq!(ctx.session_id, "chat-1");
-        assert_eq!(ctx.project_id, "project-x");
     }
 
     #[test]

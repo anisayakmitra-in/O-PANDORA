@@ -54,7 +54,7 @@ struct ExecuteResponse {
 }
 
 #[derive(Debug, Serialize)]
-#[allow(dead_code)]
+#[expect(dead_code)]
 struct SessionInfo {
     id: String,
     prompt: String,
