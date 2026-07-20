@@ -373,7 +373,8 @@ mod tests {
                 telemetry_level: 2,
             },
         );
-        r.finalize(&rid, 1500, 500, 0.05, 2, true).expect("recorder");
+        r.finalize(&rid, 1500, 500, 0.05, 2, true)
+            .expect("recorder");
         assert_eq!(r.get(&rid).expect("recorder").total_duration_ms, 1500);
     }
     #[test]
@@ -418,7 +419,8 @@ mod tests {
             .expect("recorder");
         r.record_frame(&rid, ExecutionFrame::new("execute", "Implementation"))
             .expect("recorder");
-        r.finalize(&rid, 5000, 1000, 0.10, 1, true).expect("recorder");
+        r.finalize(&rid, 5000, 1000, 0.10, 1, true)
+            .expect("recorder");
         assert!(ReplayEngine::trace(r.get(&rid).expect("recorder")).contains("plan"));
     }
     #[test]

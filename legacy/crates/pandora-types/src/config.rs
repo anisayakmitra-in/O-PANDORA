@@ -57,16 +57,42 @@ impl PandoraConfig {
         std::fs::write(Self::path(), toml_str).map_err(|e| format!("write: {e}"))
     }
 
-    fn path() -> PathBuf { config_dir().join("config.toml") }
+    fn path() -> PathBuf {
+        config_dir().join("config.toml")
+    }
 
     /// Merge env var overrides. Env vars take precedence over file.
     pub fn with_env(mut self) -> Self {
-        if let Ok(v) = std::env::var("PANDORA_DEFAULT_MODEL") { if !v.is_empty() { self.default_model = Some(v); } }
-        if let Ok(v) = std::env::var("PANDORA_DEFAULT_PROVIDER") { if !v.is_empty() { self.default_provider = Some(v); } }
-        if let Ok(v) = std::env::var("PANDORA_PROVIDER_POLICY") { if !v.is_empty() { self.provider_policy = Some(v); } }
-        if let Ok(v) = std::env::var("PANDORA_MAX_ATTEMPTS") { if let Ok(n) = v.parse() { self.max_attempts = Some(n); } }
-        if let Ok(v) = std::env::var("PANDORA_SANDBOX_LEVEL") { if let Ok(n) = v.parse() { self.sandbox_level = Some(n); } }
-        if let Ok(v) = std::env::var("PANDORA_MAX_TOKENS") { if let Ok(n) = v.parse() { self.max_tokens = Some(n); } }
+        if let Ok(v) = std::env::var("PANDORA_DEFAULT_MODEL") {
+            if !v.is_empty() {
+                self.default_model = Some(v);
+            }
+        }
+        if let Ok(v) = std::env::var("PANDORA_DEFAULT_PROVIDER") {
+            if !v.is_empty() {
+                self.default_provider = Some(v);
+            }
+        }
+        if let Ok(v) = std::env::var("PANDORA_PROVIDER_POLICY") {
+            if !v.is_empty() {
+                self.provider_policy = Some(v);
+            }
+        }
+        if let Ok(v) = std::env::var("PANDORA_MAX_ATTEMPTS") {
+            if let Ok(n) = v.parse() {
+                self.max_attempts = Some(n);
+            }
+        }
+        if let Ok(v) = std::env::var("PANDORA_SANDBOX_LEVEL") {
+            if let Ok(n) = v.parse() {
+                self.sandbox_level = Some(n);
+            }
+        }
+        if let Ok(v) = std::env::var("PANDORA_MAX_TOKENS") {
+            if let Ok(n) = v.parse() {
+                self.max_tokens = Some(n);
+            }
+        }
         self
     }
 }
@@ -83,12 +109,21 @@ pub fn config_dir() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test] fn config_defaults() { let c = PandoraConfig::default(); assert!(c.default_model.is_none()); }
-    #[test] fn config_with_env() {
+    #[test]
+    fn config_defaults() {
+        let c = PandoraConfig::default();
+        assert!(c.default_model.is_none());
+    }
+    #[test]
+    fn config_with_env() {
         std::env::set_var("PANDORA_DEFAULT_MODEL", "test-model");
         let c = PandoraConfig::default().with_env();
         assert_eq!(c.default_model, Some("test-model".into()));
         std::env::remove_var("PANDORA_DEFAULT_MODEL");
     }
-    #[test] fn config_dir_exists() { let d = config_dir(); assert!(d.to_string_lossy().contains(".pandora")); }
+    #[test]
+    fn config_dir_exists() {
+        let d = config_dir();
+        assert!(d.to_string_lossy().contains(".pandora"));
+    }
 }

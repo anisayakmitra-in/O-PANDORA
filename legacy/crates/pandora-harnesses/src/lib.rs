@@ -132,16 +132,24 @@ pub fn register_all(sc: &mut ShadowCouncil) {
 
     // Domain harnesses — registered here so cmd_run doesn't hardcode them.
     // Adding a new domain harness = add one line here, not in the CLI.
-    sc.install(Box::new(coding::CodingDomainHarness::new())).ok();
-    sc.install(Box::new(design::DesignDomainHarness::new())).ok();
-    sc.install(Box::new(security::SecurityDomainHarness::new())).ok();
-    sc.install(Box::new(cybersecurity::CybersecurityDomainHarness::new())).ok();
-    sc.install(Box::new(research::ResearchDomainHarness::new())).ok();
-    sc.install(Box::new(computer_use::ComputerUseHarness::new())).ok();
-    sc.install(Box::new(android_use::AndroidUseHarness::new())).ok();
+    sc.install(Box::new(coding::CodingDomainHarness::new()))
+        .ok();
+    sc.install(Box::new(design::DesignDomainHarness::new()))
+        .ok();
+    sc.install(Box::new(security::SecurityDomainHarness::new()))
+        .ok();
+    sc.install(Box::new(cybersecurity::CybersecurityDomainHarness::new()))
+        .ok();
+    sc.install(Box::new(research::ResearchDomainHarness::new()))
+        .ok();
+    sc.install(Box::new(computer_use::ComputerUseHarness::new()))
+        .ok();
+    sc.install(Box::new(android_use::AndroidUseHarness::new()))
+        .ok();
 
     // Meta harness
-    sc.install(Box::new(coordination::CoordinationMetaHarness::new())).ok();
+    sc.install(Box::new(coordination::CoordinationMetaHarness::new()))
+        .ok();
 }
 
 #[cfg(test)]

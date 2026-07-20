@@ -117,7 +117,9 @@ impl PermissionManifest {
     /// Check if a shell command is allowed.
     pub fn is_shell_allowed(&self, command: &str) -> PermissionVerdict {
         if !self.shell.enabled {
-            return PermissionVerdict::Denied { reason: "Shell access not enabled".into() };
+            return PermissionVerdict::Denied {
+                reason: "Shell access not enabled".into(),
+            };
         }
         for pattern in &self.shell.blocked {
             if matches_glob(pattern, command) {
@@ -145,26 +147,36 @@ impl PermissionManifest {
         for scope in &self.filesystem {
             if path.starts_with(&scope.path) {
                 if write && !scope.write {
-                    return PermissionVerdict::Denied { reason: "Write not allowed in scope".into() };
+                    return PermissionVerdict::Denied {
+                        reason: "Write not allowed in scope".into(),
+                    };
                 }
                 if !write && !scope.read {
-                    return PermissionVerdict::Denied { reason: "Read not allowed in scope".into() };
+                    return PermissionVerdict::Denied {
+                        reason: "Read not allowed in scope".into(),
+                    };
                 }
                 return PermissionVerdict::Allowed;
             }
         }
         // No matching scope — deny by default
-        PermissionVerdict::Denied { reason: "No matching filesystem scope".into() }
+        PermissionVerdict::Denied {
+            reason: "No matching filesystem scope".into(),
+        }
     }
 
     /// Check if a network host is accessible.
     pub fn is_host_allowed(&self, host: &str) -> PermissionVerdict {
         if !self.network.enabled {
-            return PermissionVerdict::Denied { reason: "Network access not enabled".into() };
+            return PermissionVerdict::Denied {
+                reason: "Network access not enabled".into(),
+            };
         }
         for blocked in &self.network.blocked_hosts {
             if host == blocked {
-                return PermissionVerdict::Denied { reason: format!("Host blocked: {host}") };
+                return PermissionVerdict::Denied {
+                    reason: format!("Host blocked: {host}"),
+                };
             }
         }
         if !self.network.allowed_hosts.is_empty() {
@@ -173,7 +185,9 @@ impl PermissionManifest {
                     return PermissionVerdict::Allowed;
                 }
             }
-            return PermissionVerdict::Denied { reason: format!("Host not in allowlist: {host}") };
+            return PermissionVerdict::Denied {
+                reason: format!("Host not in allowlist: {host}"),
+            };
         }
         PermissionVerdict::Allowed
     }
@@ -216,8 +230,14 @@ mod tests {
             },
             ..Default::default()
         };
-        assert!(matches!(m.is_shell_allowed("rm -rf /"), PermissionVerdict::Denied { .. }));
-        assert!(matches!(m.is_shell_allowed("sudo apt install"), PermissionVerdict::Denied { .. }));
+        assert!(matches!(
+            m.is_shell_allowed("rm -rf /"),
+            PermissionVerdict::Denied { .. }
+        ));
+        assert!(matches!(
+            m.is_shell_allowed("sudo apt install"),
+            PermissionVerdict::Denied { .. }
+        ));
     }
 
     #[test]
@@ -238,15 +258,35 @@ mod tests {
     fn filesystem_scope_check() {
         let m = PermissionManifest {
             filesystem: vec![
-                FilesystemScope { path: "/tmp".into(), read: true, write: true },
-                FilesystemScope { path: "/etc".into(), read: true, write: false },
+                FilesystemScope {
+                    path: "/tmp".into(),
+                    read: true,
+                    write: true,
+                },
+                FilesystemScope {
+                    path: "/etc".into(),
+                    read: true,
+                    write: false,
+                },
             ],
             ..Default::default()
         };
-        assert_eq!(m.is_path_allowed("/tmp/file.txt", true), PermissionVerdict::Allowed);
-        assert_eq!(m.is_path_allowed("/etc/config", false), PermissionVerdict::Allowed);
-        assert!(matches!(m.is_path_allowed("/etc/config", true), PermissionVerdict::Denied { .. }));
-        assert!(matches!(m.is_path_allowed("/root/file", false), PermissionVerdict::Denied { .. }));
+        assert_eq!(
+            m.is_path_allowed("/tmp/file.txt", true),
+            PermissionVerdict::Allowed
+        );
+        assert_eq!(
+            m.is_path_allowed("/etc/config", false),
+            PermissionVerdict::Allowed
+        );
+        assert!(matches!(
+            m.is_path_allowed("/etc/config", true),
+            PermissionVerdict::Denied { .. }
+        ));
+        assert!(matches!(
+            m.is_path_allowed("/root/file", false),
+            PermissionVerdict::Denied { .. }
+        ));
     }
 
     #[test]
@@ -260,16 +300,31 @@ mod tests {
             },
             ..Default::default()
         };
-        assert_eq!(m.is_host_allowed("api.openai.com"), PermissionVerdict::Allowed);
-        assert!(matches!(m.is_host_allowed("evil.com"), PermissionVerdict::Denied { .. }));
-        assert!(matches!(m.is_host_allowed("unknown.com"), PermissionVerdict::Denied { .. }));
+        assert_eq!(
+            m.is_host_allowed("api.openai.com"),
+            PermissionVerdict::Allowed
+        );
+        assert!(matches!(
+            m.is_host_allowed("evil.com"),
+            PermissionVerdict::Denied { .. }
+        ));
+        assert!(matches!(
+            m.is_host_allowed("unknown.com"),
+            PermissionVerdict::Denied { .. }
+        ));
     }
 
     #[test]
     fn empty_manifest_denies_everything() {
         let m = PermissionManifest::default();
-        assert!(matches!(m.is_path_allowed("/anywhere", false), PermissionVerdict::Denied { .. }));
+        assert!(matches!(
+            m.is_path_allowed("/anywhere", false),
+            PermissionVerdict::Denied { .. }
+        ));
         // Shell is not enabled → denied
-        assert!(matches!(m.is_shell_allowed("ls"), PermissionVerdict::Denied { .. }));
+        assert!(matches!(
+            m.is_shell_allowed("ls"),
+            PermissionVerdict::Denied { .. }
+        ));
     }
 }

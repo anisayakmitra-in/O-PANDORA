@@ -55,50 +55,116 @@ pub fn run_pipeline(package_dir: &str) -> QualityReport {
 }
 
 fn check_schema(_dir: &str) -> GateResult {
-    GateResult { gate: "schema".into(), passed: true, duration_ms: 1, details: Some("TOML schema valid".into()), warnings: vec![] }
+    GateResult {
+        gate: "schema".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("TOML schema valid".into()),
+        warnings: vec![],
+    }
 }
 
 fn check_compatibility(_dir: &str) -> GateResult {
-    GateResult { gate: "compatibility".into(), passed: true, duration_ms: 1, details: Some("OS/arch matched".into()), warnings: vec![] }
+    GateResult {
+        gate: "compatibility".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("OS/arch matched".into()),
+        warnings: vec![],
+    }
 }
 
 fn check_permissions(_dir: &str) -> GateResult {
-    GateResult { gate: "permissions".into(), passed: true, duration_ms: 1, details: Some("No excessive permissions".into()), warnings: vec![] }
+    GateResult {
+        gate: "permissions".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("No excessive permissions".into()),
+        warnings: vec![],
+    }
 }
 
 fn generate_sbom(dir: &str) -> GateResult {
     let sbom_path = format!("{dir}/sbom.json");
     let sbom = format!("{{\"package\": \"{}\", \"dependencies\": []}}", dir);
     let _ = std::fs::write(&sbom_path, sbom);
-    GateResult { gate: "sbom".into(), passed: true, duration_ms: 1, details: Some("SBOM generated".into()), warnings: vec![] }
+    GateResult {
+        gate: "sbom".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("SBOM generated".into()),
+        warnings: vec![],
+    }
 }
 
 fn check_lint(_dir: &str) -> GateResult {
-    GateResult { gate: "lint".into(), passed: true, duration_ms: 2, details: Some("0 warnings".into()), warnings: vec![] }
+    GateResult {
+        gate: "lint".into(),
+        passed: true,
+        duration_ms: 2,
+        details: Some("0 warnings".into()),
+        warnings: vec![],
+    }
 }
 
 fn run_benchmarks(_dir: &str) -> GateResult {
-    GateResult { gate: "benchmark".into(), passed: true, duration_ms: 5, details: Some("avg 12ms, p95 45ms".into()), warnings: vec![] }
+    GateResult {
+        gate: "benchmark".into(),
+        passed: true,
+        duration_ms: 5,
+        details: Some("avg 12ms, p95 45ms".into()),
+        warnings: vec![],
+    }
 }
 
 fn security_scan(_dir: &str) -> GateResult {
-    GateResult { gate: "security".into(), passed: true, duration_ms: 3, details: Some("0 vulnerabilities".into()), warnings: vec![] }
+    GateResult {
+        gate: "security".into(),
+        passed: true,
+        duration_ms: 3,
+        details: Some("0 vulnerabilities".into()),
+        warnings: vec![],
+    }
 }
 
 fn verify_signatures(_dir: &str) -> GateResult {
-    GateResult { gate: "signature".into(), passed: true, duration_ms: 1, details: Some("Ed25519 valid".into()), warnings: vec![] }
+    GateResult {
+        gate: "signature".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("Ed25519 valid".into()),
+        warnings: vec![],
+    }
 }
 
 fn check_sandbox(_dir: &str) -> GateResult {
-    GateResult { gate: "sandbox".into(), passed: true, duration_ms: 1, details: Some("Compatible with sandbox level 0-2".into()), warnings: vec![] }
+    GateResult {
+        gate: "sandbox".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("Compatible with sandbox level 0-2".into()),
+        warnings: vec![],
+    }
 }
 
 fn run_integration_tests(_dir: &str) -> GateResult {
-    GateResult { gate: "integration".into(), passed: true, duration_ms: 10, details: Some("All tests passed".into()), warnings: vec![] }
+    GateResult {
+        gate: "integration".into(),
+        passed: true,
+        duration_ms: 10,
+        details: Some("All tests passed".into()),
+        warnings: vec![],
+    }
 }
 
 fn simulate_telemetry(_dir: &str) -> GateResult {
-    GateResult { gate: "telemetry".into(), passed: true, duration_ms: 1, details: Some("Telemetry simulation OK".into()), warnings: vec![] }
+    GateResult {
+        gate: "telemetry".into(),
+        passed: true,
+        duration_ms: 1,
+        details: Some("Telemetry simulation OK".into()),
+        warnings: vec![],
+    }
 }
 
 #[cfg(test)]
@@ -107,7 +173,10 @@ mod tests {
 
     #[test]
     fn pipeline_runs_all_gates() {
-        let dir = std::env::temp_dir().join("pandora-test-pkg").to_string_lossy().to_string();
+        let dir = std::env::temp_dir()
+            .join("pandora-test-pkg")
+            .to_string_lossy()
+            .to_string();
         let _ = std::fs::create_dir_all(&dir);
         let report = run_pipeline(&dir);
         assert_eq!(report.gates.len(), 11);
@@ -116,7 +185,10 @@ mod tests {
 
     #[test]
     fn sbom_generates_file() {
-        let dir = std::env::temp_dir().join("pandora-sbom-test").to_string_lossy().to_string();
+        let dir = std::env::temp_dir()
+            .join("pandora-sbom-test")
+            .to_string_lossy()
+            .to_string();
         let _ = std::fs::create_dir_all(&dir);
         let _ = run_pipeline(&dir);
         let sbom = std::fs::read_to_string(format!("{dir}/sbom.json")).unwrap();

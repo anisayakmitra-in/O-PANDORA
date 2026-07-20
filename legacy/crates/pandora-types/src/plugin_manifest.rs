@@ -4,7 +4,7 @@
 //! provider, connector, transport, sandbox, runtime node) uses the same manifest
 //! structure. Adding a new component type = new manifest file, not new code.
 //!
-//! Invariant: "Everything should be installable via manifest." 
+//! Invariant: "Everything should be installable via manifest."
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -118,7 +118,11 @@ impl PluginManifest {
                 missing.push(dep.name.clone());
             }
         }
-        if missing.is_empty() { Ok(()) } else { Err(missing) }
+        if missing.is_empty() {
+            Ok(())
+        } else {
+            Err(missing)
+        }
     }
 }
 
@@ -128,7 +132,12 @@ mod tests {
 
     #[test]
     fn roundtrip_json() {
-        let m = PluginManifest::new("coding-domain", "1.0.0", PluginKind::Harness, "Coding domain harness");
+        let m = PluginManifest::new(
+            "coding-domain",
+            "1.0.0",
+            PluginKind::Harness,
+            "Coding domain harness",
+        );
         let json = m.to_json().unwrap();
         let parsed = PluginManifest::from_json(&json).unwrap();
         assert_eq!(parsed.name, "coding-domain");
@@ -138,7 +147,11 @@ mod tests {
     #[test]
     fn dependency_check() {
         let mut m = PluginManifest::new("test-plugin", "1.0.0", PluginKind::Skill, "test");
-        m.dependencies.push(PluginDependency { name: "rust-analyzer".into(), version: ">=1.0".into(), required: true });
+        m.dependencies.push(PluginDependency {
+            name: "rust-analyzer".into(),
+            version: ">=1.0".into(),
+            required: true,
+        });
         assert!(m.check_dependencies(&["rust-analyzer", "git"]).is_ok());
         assert!(m.check_dependencies(&["git"]).is_err());
     }

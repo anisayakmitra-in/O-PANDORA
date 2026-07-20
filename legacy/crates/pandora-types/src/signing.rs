@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublisherKeyPair {
-    pub public_key: String,  // base64 encoded
-    pub secret_key: String,  // base64 encoded (keep secure!)
+    pub public_key: String, // base64 encoded
+    pub secret_key: String, // base64 encoded (keep secure!)
     pub created_at: String,
 }
 
@@ -21,7 +21,7 @@ pub struct PackageSignature {
     pub version: String,
     pub publisher: String,
     pub public_key: String,
-    pub signature: String,   // base64 encoded Ed25519 signature
+    pub signature: String, // base64 encoded Ed25519 signature
     pub signed_at: String,
     pub archive_sha256: String,
 }
@@ -29,8 +29,8 @@ pub struct PackageSignature {
 /// Generate a real Ed25519 keypair using OS randomness (ring::rand::SystemRandom).
 pub fn generate_keypair() -> PublisherKeyPair {
     let rng = SystemRandom::new();
-    let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng)
-        .expect("Failed to generate Ed25519 keypair");
+    let pkcs8_bytes =
+        Ed25519KeyPair::generate_pkcs8(&rng).expect("Failed to generate Ed25519 keypair");
     let key_pair = Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref())
         .expect("Failed to parse generated keypair");
 
@@ -57,10 +57,10 @@ pub fn sign_package(
     secret_key_b64: &str,
     archive_hash: &str,
 ) -> Result<PackageSignature, String> {
-    let pkcs8_bytes = base64_decode(secret_key_b64)
-        .map_err(|e| format!("Invalid secret key: {e}"))?;
-    let key_pair = Ed25519KeyPair::from_pkcs8(&pkcs8_bytes)
-        .map_err(|e| format!("Failed to load key: {e}"))?;
+    let pkcs8_bytes =
+        base64_decode(secret_key_b64).map_err(|e| format!("Invalid secret key: {e}"))?;
+    let key_pair =
+        Ed25519KeyPair::from_pkcs8(&pkcs8_bytes).map_err(|e| format!("Failed to load key: {e}"))?;
 
     // Build message to sign: package_id:version:publisher:archive_hash
     let message = format!("{}:{}:{}:{}", package_id, version, publisher, archive_hash);
@@ -84,10 +84,10 @@ pub fn sign_package(
 
 /// Verify a package signature against the public key and original data.
 pub fn verify_signature(sig: &PackageSignature, data: &[u8]) -> Result<bool, String> {
-    let public_key_bytes = base64_decode(&sig.public_key)
-        .map_err(|e| format!("Invalid public key: {e}"))?;
-    let signature_bytes = base64_decode(&sig.signature)
-        .map_err(|e| format!("Invalid signature: {e}"))?;
+    let public_key_bytes =
+        base64_decode(&sig.public_key).map_err(|e| format!("Invalid public key: {e}"))?;
+    let signature_bytes =
+        base64_decode(&sig.signature).map_err(|e| format!("Invalid signature: {e}"))?;
 
     let public_key = UnparsedPublicKey::new(&ED25519, &public_key_bytes);
     match public_key.verify(data, &signature_bytes) {
@@ -147,12 +147,13 @@ mod tests {
     #[test]
     fn sign_and_verify_roundtrip() {
         let kp = generate_keypair();
-        let sig = sign_package(
-            "test-pkg", "1.0.0", "test-author",
-            &kp.secret_key, "abc123"
-        ).expect("signing failed");
-        
-        let message = format!("{}:{}:{}:{}", sig.package_id, sig.version, sig.publisher, sig.archive_sha256);
+        let sig = sign_package("test-pkg", "1.0.0", "test-author", &kp.secret_key, "abc123")
+            .expect("signing failed");
+
+        let message = format!(
+            "{}:{}:{}:{}",
+            sig.package_id, sig.version, sig.publisher, sig.archive_sha256
+        );
         let valid = verify_signature(&sig, message.as_bytes()).expect("verification failed");
         assert!(valid, "Signature verification failed for roundtrip");
     }
@@ -160,14 +161,15 @@ mod tests {
     #[test]
     fn tampered_signature_fails() {
         let kp = generate_keypair();
-        let mut sig = sign_package(
-            "test-pkg", "1.0.0", "test-author",
-            &kp.secret_key, "abc123"
-        ).expect("signing failed");
-        
+        let mut sig = sign_package("test-pkg", "1.0.0", "test-author", &kp.secret_key, "abc123")
+            .expect("signing failed");
+
         // Tamper with the version
         sig.version = "2.0.0".into();
-        let message = format!("{}:{}:{}:{}", sig.package_id, sig.version, sig.publisher, sig.archive_sha256);
+        let message = format!(
+            "{}:{}:{}:{}",
+            sig.package_id, sig.version, sig.publisher, sig.archive_sha256
+        );
         let valid = verify_signature(&sig, message.as_bytes()).expect("verification failed");
         assert!(!valid, "Tampered signature should fail verification");
     }

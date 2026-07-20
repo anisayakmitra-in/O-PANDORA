@@ -70,7 +70,9 @@ pub struct HookRegistry {
 }
 
 impl HookRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Register a hook.
     pub fn register(&mut self, hook: Hook) {
@@ -79,22 +81,25 @@ impl HookRegistry {
 
     /// Get all hooks for a specific lifecycle event, sorted by priority.
     pub fn hooks_for(&self, event: &LifecycleEvent) -> Vec<&Hook> {
-        let mut matches: Vec<&Hook> = self.hooks
-            .iter()
-            .filter(|h| h.event == *event)
-            .collect();
+        let mut matches: Vec<&Hook> = self.hooks.iter().filter(|h| h.event == *event).collect();
         matches.sort_by_key(|h| h.priority);
         matches
     }
 
     /// Get blocking hooks for an event.
     pub fn blocking_hooks(&self, event: &LifecycleEvent) -> Vec<&Hook> {
-        self.hooks_for(event).into_iter().filter(|h| h.blocking).collect()
+        self.hooks_for(event)
+            .into_iter()
+            .filter(|h| h.blocking)
+            .collect()
     }
 
     /// Get non-blocking hooks for an event.
     pub fn audit_hooks(&self, event: &LifecycleEvent) -> Vec<&Hook> {
-        self.hooks_for(event).into_iter().filter(|h| !h.blocking).collect()
+        self.hooks_for(event)
+            .into_iter()
+            .filter(|h| !h.blocking)
+            .collect()
     }
 
     /// Remove all hooks from a specific owner.
@@ -104,7 +109,9 @@ impl HookRegistry {
         before - self.hooks.len()
     }
 
-    pub fn count(&self) -> usize { self.hooks.len() }
+    pub fn count(&self) -> usize {
+        self.hooks.len()
+    }
 }
 
 /// A hook registration from a manifest file.
@@ -199,8 +206,24 @@ mod tests {
 
     #[test]
     fn hook_def_parse_event() {
-        assert!(HookDef { event: "before-execution".into(), command: "cmd".into(), blocking: false, matcher: None, priority: 0 }.parse_event().is_some());
-        assert!(HookDef { event: "unknown".into(), command: "cmd".into(), blocking: false, matcher: None, priority: 0 }.parse_event().is_some()); // Custom
+        assert!(HookDef {
+            event: "before-execution".into(),
+            command: "cmd".into(),
+            blocking: false,
+            matcher: None,
+            priority: 0
+        }
+        .parse_event()
+        .is_some());
+        assert!(HookDef {
+            event: "unknown".into(),
+            command: "cmd".into(),
+            blocking: false,
+            matcher: None,
+            priority: 0
+        }
+        .parse_event()
+        .is_some()); // Custom
     }
 
     #[test]

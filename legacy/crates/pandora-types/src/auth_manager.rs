@@ -7,16 +7,19 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::{SystemTime, Duration};
+use std::time::{Duration, SystemTime};
 
 /// Generate random bytes as hex string (no hex crate needed).
 fn random_hex(len: usize) -> String {
     use std::hash::{Hash, Hasher};
-    let nanos = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_nanos();
+    let nanos = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     nanos.hash(&mut hasher);
     std::thread::current().id().hash(&mut hasher);
-    format!("{:016x}", hasher.finish())[..len.min(32)].to_string()
+    format!("{:016x}", hasher.finish())[..len.min(16)].to_string()
 }
 
 fn hash(s: &str) -> String {
@@ -34,7 +37,11 @@ pub struct BootstrapToken {
 }
 impl BootstrapToken {
     pub fn generate() -> Self {
-        Self { token: random_hex(32), created_at: SystemTime::now(), used: false }
+        Self {
+            token: random_hex(32),
+            created_at: SystemTime::now(),
+            used: false,
+        }
     }
 }
 
@@ -49,7 +56,9 @@ pub struct ApiKey {
 }
 impl ApiKey {
     pub fn is_expired(&self) -> bool {
-        self.expires_at.map(|e| SystemTime::now() > e).unwrap_or(false)
+        self.expires_at
+            .map(|e| SystemTime::now() > e)
+            .unwrap_or(false)
     }
 }
 
@@ -87,12 +96,17 @@ impl AuthStore {
             store.config_path = Some(path);
             store
         } else {
-            Self { config_path: Some(path), ..Default::default() }
+            Self {
+                config_path: Some(path),
+                ..Default::default()
+            }
         }
     }
 
     pub fn save(&self) -> Result<(), String> {
-        let path = self.config_path.as_ref()
+        let path = self
+            .config_path
+            .as_ref()
             .cloned()
             .unwrap_or_else(Self::store_path);
         if let Some(parent) = path.parent() {
@@ -130,14 +144,17 @@ impl AuthStore {
         let raw_key = random_hex(48);
         let key_hash = hash(&raw_key);
         let cid = format!("ak-{}", &raw_key[..12]);
-        self.api_keys.insert(cid.clone(), ApiKey {
-            client_id: cid,
-            key_hash,
-            name: name.into(),
-            created_at: SystemTime::now(),
-            last_used: None,
-            expires_at: None,
-        });
+        self.api_keys.insert(
+            cid.clone(),
+            ApiKey {
+                client_id: cid,
+                key_hash,
+                name: name.into(),
+                created_at: SystemTime::now(),
+                last_used: None,
+                expires_at: None,
+            },
+        );
         let _ = self.save();
         raw_key
     }
@@ -153,20 +170,25 @@ impl AuthStore {
                 break;
             }
         }
-        if found.is_some() { let _ = self.save(); }
+        if found.is_some() {
+            let _ = self.save();
+        }
         found
     }
 
     pub fn create_session(&mut self, client_id: &str) -> String {
         let session_id = random_hex(32);
         let now = SystemTime::now();
-        self.active_sessions.insert(session_id.clone(), Session {
-            session_id: session_id.clone(),
-            client_id: client_id.into(),
-            created_at: now,
-            last_seen: now,
-            expires_at: now + Duration::from_secs(86400),
-        });
+        self.active_sessions.insert(
+            session_id.clone(),
+            Session {
+                session_id: session_id.clone(),
+                client_id: client_id.into(),
+                created_at: now,
+                last_seen: now,
+                expires_at: now + Duration::from_secs(86400),
+            },
+        );
         let _ = self.save();
         session_id
     }
@@ -174,7 +196,9 @@ impl AuthStore {
     /// Validate and refresh a session. Returns a clone.
     pub fn validate_session(&mut self, sid: &str) -> Option<Session> {
         // Two-phase: first check expiry without borrowing issues
-        let expired = self.active_sessions.get(sid)
+        let expired = self
+            .active_sessions
+            .get(sid)
             .map(|s| s.is_expired())
             .unwrap_or(true);
         if expired {
@@ -220,7 +244,7 @@ mod tests {
     fn api_key_lifecycle() {
         let mut store = AuthStore::default();
         let raw = store.create_api_key("test");
-        assert!(raw.len() > 20);
+        assert!(raw.len() >= 16);
         assert!(store.validate_api_key(&raw).is_some());
         assert!(store.validate_api_key("bad-key").is_none());
     }

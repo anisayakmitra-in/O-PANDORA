@@ -184,7 +184,12 @@ impl RuntimeNode {
     pub fn local() -> Self {
         let now = SystemTime::now();
         Self {
-            id: format!("local-{}", now.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs()),
+            id: format!(
+                "local-{}",
+                now.duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
+            ),
             kind: NodeKind::Desktop,
             platform: NodePlatform::current(),
             capabilities: NodeCapabilities {
@@ -221,7 +226,9 @@ pub struct NodeRegistry {
 }
 
 impl NodeRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn register(&mut self, node: RuntimeNode) {
         self.nodes.insert(node.id.clone(), node);
@@ -246,7 +253,9 @@ impl NodeRegistry {
         let now = SystemTime::now();
         let before = self.nodes.len();
         self.nodes.retain(|_, n| {
-            now.duration_since(n.last_seen).map(|d| d.as_secs() < max_age_secs).unwrap_or(true)
+            now.duration_since(n.last_seen)
+                .map(|d| d.as_secs() < max_age_secs)
+                .unwrap_or(true)
         });
         before - self.nodes.len()
     }

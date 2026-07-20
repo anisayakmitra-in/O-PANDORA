@@ -27,10 +27,15 @@ pub struct ResourceMeta {
 impl Default for ResourceMeta {
     fn default() -> Self {
         Self {
-            id: String::new(), namespace: String::new(), version: String::new(),
-            kind: ResourceKind::Unknown, owner: None,
-            created_at: SystemTime::UNIX_EPOCH, updated_at: SystemTime::UNIX_EPOCH,
-            labels: HashMap::new(), annotations: HashMap::new(),
+            id: String::new(),
+            namespace: String::new(),
+            version: String::new(),
+            kind: ResourceKind::Unknown,
+            owner: None,
+            created_at: SystemTime::UNIX_EPOCH,
+            updated_at: SystemTime::UNIX_EPOCH,
+            labels: HashMap::new(),
+            annotations: HashMap::new(),
         }
     }
 }
@@ -109,11 +114,18 @@ pub trait RuntimeResource: Send + Sync {
     }
 
     /// Resources this one depends on.
-    fn dependencies(&self) -> Vec<String> { vec![] }
+    fn dependencies(&self) -> Vec<String> {
+        vec![]
+    }
 
     /// A human-readable summary for the observatory.
     fn summary(&self) -> String {
-        format!("{} v{} ({:?})", self.meta().id, self.meta().version, self.meta().kind)
+        format!(
+            "{} v{} ({:?})",
+            self.meta().id,
+            self.meta().version,
+            self.meta().kind
+        )
     }
 }
 
@@ -122,10 +134,18 @@ pub trait RuntimeResource: Send + Sync {
 macro_rules! impl_resource {
     ($ty:ty) => {
         impl $crate::resource::RuntimeResource for $ty {
-            fn meta(&self) -> &$crate::resource::ResourceMeta { &self.meta }
-            fn health(&self) -> &$crate::resource::ResourceHealth { &self.health }
-            fn lineage(&self) -> &$crate::resource::ResourceLineage { &self.lineage }
-            fn capabilities(&self) -> &$crate::resource::CapabilitySet { &self.capabilities }
+            fn meta(&self) -> &$crate::resource::ResourceMeta {
+                &self.meta
+            }
+            fn health(&self) -> &$crate::resource::ResourceHealth {
+                &self.health
+            }
+            fn lineage(&self) -> &$crate::resource::ResourceLineage {
+                &self.lineage
+            }
+            fn capabilities(&self) -> &$crate::resource::CapabilitySet {
+                &self.capabilities
+            }
         }
     };
 }

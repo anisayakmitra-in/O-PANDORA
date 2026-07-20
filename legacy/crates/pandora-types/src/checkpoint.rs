@@ -36,7 +36,9 @@ pub enum PipelineStage {
 }
 
 impl PipelineStage {
-    pub fn number(&self) -> u8 { *self as u8 }
+    pub fn number(&self) -> u8 {
+        *self as u8
+    }
     pub fn name(&self) -> &'static str {
         match self {
             Self::Plan => "plan",

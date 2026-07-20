@@ -165,11 +165,8 @@ fn ui(f: &mut Frame) {
     f.render_widget(status_block, main_chunks[0]);
 }
 
-
 #[cfg(test)]
 mod tui_tests {
-    #[test]
-
     #[test]
     fn builtin_genes_exist() {
         let genes = pandora_kuber::builtin::all();

@@ -124,7 +124,9 @@ pub struct CapabilityRegistry {
 }
 
 impl CapabilityRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Register a capability for a provider.
     pub fn register(&mut self, entry: CapabilityEntry) {
@@ -137,26 +139,32 @@ impl CapabilityRegistry {
 
     /// Find which providers offer a capability.
     pub fn providers_for(&self, capability: &str) -> Vec<&CapabilityEntry> {
-        self.index.get(capability).map(|v| v.iter().collect()).unwrap_or_default()
+        self.index
+            .get(capability)
+            .map(|v| v.iter().collect())
+            .unwrap_or_default()
     }
 
     /// Check if a provider has a capability.
     pub fn provider_has(&self, provider_id: &str, capability: &str) -> bool {
-        self.by_provider.get(provider_id)
+        self.by_provider
+            .get(provider_id)
             .map(|caps| caps.contains(capability))
             .unwrap_or(false)
     }
 
     /// List all capabilities a provider advertises.
     pub fn provider_capabilities(&self, provider_id: &str) -> Vec<&str> {
-        self.by_provider.get(provider_id)
+        self.by_provider
+            .get(provider_id)
             .map(|caps| caps.iter().map(|s| s.as_str()).collect())
             .unwrap_or_default()
     }
 
     /// Search for capabilities matching a pattern.
     pub fn search(&self, pattern: &str) -> Vec<&str> {
-        self.index.keys()
+        self.index
+            .keys()
             .filter(|k| k.contains(pattern))
             .map(|s| s.as_str())
             .collect()
@@ -188,8 +196,13 @@ mod tests {
     use super::*;
 
     fn make_entry(cap: &str, pid: &str) -> CapabilityEntry {
-        CapabilityEntry { capability: cap.into(), provider_id: pid.into(),
-            provider_kind: "gene".into(), confidence: 1.0, metadata: HashMap::new() }
+        CapabilityEntry {
+            capability: cap.into(),
+            provider_id: pid.into(),
+            provider_kind: "gene".into(),
+            confidence: 1.0,
+            metadata: HashMap::new(),
+        }
     }
 
     #[test]
@@ -223,10 +236,16 @@ mod tests {
     fn well_known_constants_are_unique() {
         let mut seen = HashSet::new();
         let caps = [
-            well_known::FS_READ, well_known::FS_WRITE, well_known::NET_HTTP,
-            well_known::GPU_CUDA, well_known::CODE_PARSE, well_known::RUNTIME_EXECUTE,
+            well_known::FS_READ,
+            well_known::FS_WRITE,
+            well_known::NET_HTTP,
+            well_known::GPU_CUDA,
+            well_known::CODE_PARSE,
+            well_known::RUNTIME_EXECUTE,
         ];
-        for c in &caps { seen.insert(*c); }
+        for c in &caps {
+            seen.insert(*c);
+        }
         assert_eq!(seen.len(), caps.len());
     }
 }

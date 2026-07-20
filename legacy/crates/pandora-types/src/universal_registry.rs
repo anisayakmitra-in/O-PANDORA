@@ -74,7 +74,9 @@ pub struct InMemoryRegistry {
 }
 
 impl InMemoryRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 }
 
 impl Registry for InMemoryRegistry {
@@ -98,10 +100,7 @@ impl Registry for InMemoryRegistry {
     }
 
     fn list_by_kind(&self, kind: &str) -> Vec<&RegistryEntry> {
-        self.entries
-            .values()
-            .filter(|e| e.kind == kind)
-            .collect()
+        self.entries.values().filter(|e| e.kind == kind).collect()
     }
 
     fn unregister(&mut self, id: &str) -> Result<(), String> {
@@ -111,7 +110,9 @@ impl Registry for InMemoryRegistry {
             .ok_or_else(|| format!("Entry not found: {id}"))
     }
 
-    fn count(&self) -> usize { self.entries.len() }
+    fn count(&self) -> usize {
+        self.entries.len()
+    }
 }
 
 #[cfg(test)]
@@ -158,7 +159,8 @@ mod tests {
             health: HealthStatus::Healthy,
             signature: None,
             metadata: HashMap::new(),
-        }).unwrap();
+        })
+        .unwrap();
         reg.register(RegistryEntry {
             id: "g2".into(),
             name: "g2".into(),
@@ -168,7 +170,8 @@ mod tests {
             health: HealthStatus::Healthy,
             signature: None,
             metadata: HashMap::new(),
-        }).unwrap();
+        })
+        .unwrap();
         assert_eq!(reg.discover_by_capability("code").len(), 1);
         assert_eq!(reg.discover_by_capability("browser").len(), 1);
         assert_eq!(reg.discover_by_capability("nonexistent").len(), 0);

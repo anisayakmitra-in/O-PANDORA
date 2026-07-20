@@ -21,13 +21,13 @@ use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::events::EventSink;
 use pandora_types::execution_plan::ExecutionPlan;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
-use pandora_types::provider_intel::ProviderIntelligenceEngine;
-use pandora_types::policy_engine::PolicyEngine;
 use pandora_types::harness::HarnessKind;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
+use pandora_types::policy_engine::PolicyEngine;
 use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
 use pandora_types::provider::CancellationToken;
 use pandora_types::provider_db::{ProviderDb, ProviderObservation};
+use pandora_types::provider_intel::ProviderIntelligenceEngine;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
 use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::session::SessionStore;
@@ -37,7 +37,7 @@ use sinks::BroadcastSink;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 // ── Stage Output types ──
 
@@ -360,8 +360,7 @@ impl PandoraRuntime {
                 .insert("selected_harness".to_string(), harness_names.join(","));
         } else {
             println!(
-                "[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)"
-// Stage 2c: Policy evaluation — declarative governance rules        {            let policy_engine = &self.policy_engine;            let mut ctx = std::collections::HashMap::new();            ctx.insert("execution.task".into(), serde_json::json!(task));            let verdicts = policy_engine.evaluate(&ctx);            let blocks: Vec<_> = verdicts.iter().filter(|v| {                v.passed && matches!(&v.action, Some(pandora_types::policy_engine::PolicyAction::Deny { .. }))            }).collect();            if !blocks.is_empty() {                let reason = blocks[0].action.as_ref().map(|a| format!("{:?}", a)).unwrap_or_default();                return Err(anyhow::anyhow!("Policy blocked execution: {reason}"));            }            info!("[STAGE 2c - POLICY] {} rules evaluated, {} fired", verdicts.len(), verdicts.iter().filter(|v| v.passed).count());        }
+                "[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)" // Stage 2c: Policy evaluation — declarative governance rules        {            let policy_engine = &self.policy_engine;            let mut ctx = std::collections::HashMap::new();            ctx.insert("execution.task".into(), serde_json::json!(task));            let verdicts = policy_engine.evaluate(&ctx);            let blocks: Vec<_> = verdicts.iter().filter(|v| {                v.passed && matches!(&v.action, Some(pandora_types::policy_engine::PolicyAction::Deny { .. }))            }).collect();            if !blocks.is_empty() {                let reason = blocks[0].action.as_ref().map(|a| format!("{:?}", a)).unwrap_or_default();                return Err(anyhow::anyhow!("Policy blocked execution: {reason}"));            }            info!("[STAGE 2c - POLICY] {} rules evaluated, {} fired", verdicts.len(), verdicts.iter().filter(|v| v.passed).count());        }
             );
         }
 
@@ -379,7 +378,6 @@ impl PandoraRuntime {
             (p, m)
         } else if let Some((p, m)) = self.provider_intel.best(true, false) {
             (p.to_string(), m.to_string())
-            
         } else if let Some(target) = self.providers.resolve(None, None, None) {
             (target.provider, target.model)
         } else {
@@ -470,7 +468,9 @@ impl PandoraRuntime {
         let _ = self
             .recorder
             .record_frame(&ReplayId(frame_id.clone()), frame);
-        if self.cancel_token.is_cancelled() { return Err(anyhow::anyhow!("Execution cancelled")); }
+        if self.cancel_token.is_cancelled() {
+            return Err(anyhow::anyhow!("Execution cancelled"));
+        }
         info!("[STAGE 5 - RECORDER] frame captured");
         self.provider_db.record(ProviderObservation {
             provider: provider_name.clone(),
@@ -509,7 +509,9 @@ impl PandoraRuntime {
         use std::io::Write;
         if let Ok(home) = std::env::var("HOME") {
             let log = std::path::PathBuf::from(home).join(".pandora/events.log");
-            let _ = std::fs::create_dir_all(log.parent().unwrap_or_else(|| std::path::Path::new("/tmp")));
+            let _ = std::fs::create_dir_all(
+                log.parent().unwrap_or_else(|| std::path::Path::new("/tmp")),
+            );
             let _ = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -582,7 +584,9 @@ impl PandoraRuntime {
             ]),
         });
 
-        if self.cancel_token.is_cancelled() { return Err(anyhow::anyhow!("Execution cancelled")); }
+        if self.cancel_token.is_cancelled() {
+            return Err(anyhow::anyhow!("Execution cancelled"));
+        }
         info!("[STAGE 9 - LEDGER] {} entries total", self.ledger.len());
 
         // ── Parliament merge: RuntimeDelta → RuntimeContext ──

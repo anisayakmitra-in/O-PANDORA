@@ -1,4 +1,3 @@
-
 //! Artifact Store — content-addressed blob storage.
 //!
 //! Stores artifacts by SHA-256 hash for deduplication.
@@ -38,7 +37,10 @@ impl ArtifactStore {
         let _ = &root; // suppress unused import path warning
         let root = root.into();
         std::fs::create_dir_all(&root).ok();
-        Self { root, index: HashMap::new() }
+        Self {
+            root,
+            index: HashMap::new(),
+        }
     }
 
     /// Store data and return its content hash.
@@ -65,18 +67,23 @@ impl ArtifactStore {
             .unwrap_or_default()
             .as_secs();
 
-        self.index.insert(hash.clone(), StoredArtifact {
-            size: data.len() as u64,
-            rel_path: format!("{}/{}", &hash[..2], &hash),
-            created_at: now,
-        });
+        self.index.insert(
+            hash.clone(),
+            StoredArtifact {
+                size: data.len() as u64,
+                rel_path: format!("{}/{}", &hash[..2], &hash),
+                created_at: now,
+            },
+        );
 
         Ok(hash)
     }
 
     /// Retrieve data by content hash.
     pub fn get(&self, hash: &str) -> Result<Vec<u8>, String> {
-        let entry = self.index.get(hash)
+        let entry = self
+            .index
+            .get(hash)
             .ok_or_else(|| format!("Artifact not found: {hash}"))?;
         let path = self.root.join(&entry.rel_path);
         std::fs::read(&path).map_err(|e| format!("read: {e}"))
@@ -93,7 +100,9 @@ impl ArtifactStore {
     }
 
     /// Number of stored artifacts.
-    pub fn count(&self) -> usize { self.index.len() }
+    pub fn count(&self) -> usize {
+        self.index.len()
+    }
 }
 
 #[cfg(test)]

@@ -20,17 +20,30 @@ pub struct CompatibilityMatrix {
 impl CompatibilityMatrix {
     pub fn is_compatible(&self) -> bool {
         if !self.os.is_empty() {
-            let current_os = if cfg!(target_os = "linux") { "linux" }
-            else if cfg!(target_os = "macos") { "macos" }
-            else if cfg!(target_os = "windows") { "windows" }
-            else { "unknown" };
-            if !self.os.iter().any(|o| o == current_os) { return false; }
+            let current_os = if cfg!(target_os = "linux") {
+                "linux"
+            } else if cfg!(target_os = "macos") {
+                "macos"
+            } else if cfg!(target_os = "windows") {
+                "windows"
+            } else {
+                "unknown"
+            };
+            if !self.os.iter().any(|o| o == current_os) {
+                return false;
+            }
         }
         if !self.arch.is_empty() {
-            let current_arch = if cfg!(target_arch = "x86_64") { "x86_64" }
-            else if cfg!(target_arch = "aarch64") { "aarch64" }
-            else { "unknown" };
-            if !self.arch.iter().any(|a| a == current_arch) { return false; }
+            let current_arch = if cfg!(target_arch = "x86_64") {
+                "x86_64"
+            } else if cfg!(target_arch = "aarch64") {
+                "aarch64"
+            } else {
+                "unknown"
+            };
+            if !self.arch.iter().any(|a| a == current_arch) {
+                return false;
+            }
         }
         true
     }
@@ -40,10 +53,15 @@ impl CompatibilityMatrix {
 mod tests {
     use super::*;
     #[test]
-    fn empty_matrix_is_compatible() { assert!(CompatibilityMatrix::default().is_compatible()); }
+    fn empty_matrix_is_compatible() {
+        assert!(CompatibilityMatrix::default().is_compatible());
+    }
     #[test]
     fn wrong_os_fails() {
-        let m = CompatibilityMatrix { os: vec!["nonexistent".into()], ..Default::default() };
+        let m = CompatibilityMatrix {
+            os: vec!["nonexistent".into()],
+            ..Default::default()
+        };
         assert!(!m.is_compatible());
     }
 }

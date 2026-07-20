@@ -25,7 +25,7 @@ pub struct Policy {
 /// Conditions that must be satisfied for the policy to fire.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyCondition {
-    pub field: String,    // e.g. "execution.sandbox_level", "package.trust_level"
+    pub field: String, // e.g. "execution.sandbox_level", "package.trust_level"
     pub operator: ConditionOp,
     pub value: serde_json::Value,
 }
@@ -45,14 +45,35 @@ pub enum ConditionOp {
 /// What happens when policy conditions are met.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PolicyAction {
-    Allow { reason: String },
-    Deny { reason: String, block: bool },
-    RequireApproval { reason: String, approver: Option<String> },
-    Log { level: String, message: String },
-    ModifyRequest { field: String, value: serde_json::Value },
-    Route { connection: String },
-    Quarantine { reason: String },
-    Escalate { level: String, reason: String },
+    Allow {
+        reason: String,
+    },
+    Deny {
+        reason: String,
+        block: bool,
+    },
+    RequireApproval {
+        reason: String,
+        approver: Option<String>,
+    },
+    Log {
+        level: String,
+        message: String,
+    },
+    ModifyRequest {
+        field: String,
+        value: serde_json::Value,
+    },
+    Route {
+        connection: String,
+    },
+    Quarantine {
+        reason: String,
+    },
+    Escalate {
+        level: String,
+        reason: String,
+    },
 }
 
 /// The result of evaluating a single policy.
@@ -74,17 +95,18 @@ pub struct PolicyEngine {
 }
 
 impl PolicyEngine {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Register a policy.
-    pub fn register(&mut self, policy: Policy) { self.policies.push(policy); }
+    pub fn register(&mut self, policy: Policy) {
+        self.policies.push(policy);
+    }
 
     /// Evaluate all policies against the given context. Returns the first
     /// Deny verdict, or the aggregate of all Allow verdicts.
-    pub fn evaluate(
-        &self,
-        context: &HashMap<String, serde_json::Value>,
-    ) -> Vec<PolicyVerdict> {
+    pub fn evaluate(&self, context: &HashMap<String, serde_json::Value>) -> Vec<PolicyVerdict> {
         let mut results = Vec::new();
         let mut sorted: Vec<&Policy> = self.policies.iter().filter(|p| p.enabled).collect();
         sorted.sort_by_key(|p| std::cmp::Reverse(p.priority));
@@ -96,12 +118,17 @@ impl PolicyEngine {
             for cond in &policy.conditions {
                 let field_value = context.get(&cond.field);
                 let met = evaluate_condition(cond, field_value);
-                evidence.insert(cond.field.clone(), serde_json::json!({
-                    "value": field_value,
-                    "expected": cond.value,
-                    "met": met,
-                }));
-                if !met { conditions_met = false; }
+                evidence.insert(
+                    cond.field.clone(),
+                    serde_json::json!({
+                        "value": field_value,
+                        "expected": cond.value,
+                        "met": met,
+                    }),
+                );
+                if !met {
+                    conditions_met = false;
+                }
             }
 
             let verdict = if conditions_met {
@@ -130,13 +157,12 @@ impl PolicyEngine {
 }
 
 /// Evaluate a single condition against a runtime value.
-fn evaluate_condition(
-    cond: &PolicyCondition,
-    field_value: Option<&serde_json::Value>,
-) -> bool {
+fn evaluate_condition(cond: &PolicyCondition, field_value: Option<&serde_json::Value>) -> bool {
     match cond.operator {
         ConditionOp::Exists => field_value.is_some(),
-        ConditionOp::Empty => field_value.is_none_or(|v| v.is_null() || v.as_str().is_some_and(|s| s.is_empty())),
+        ConditionOp::Empty => {
+            field_value.is_none_or(|v| v.is_null() || v.as_str().is_some_and(|s| s.is_empty()))
+        }
         ConditionOp::Equals => field_value == Some(&cond.value),
         ConditionOp::NotEquals => field_value != Some(&cond.value),
         ConditionOp::GreaterThan => {
@@ -157,11 +183,10 @@ fn evaluate_condition(
                 _ => false,
             }
         }
-        ConditionOp::In => {
-            cond.value.as_array().is_some_and(|arr| {
-                field_value.is_some_and(|v| arr.contains(v))
-            })
-        }
+        ConditionOp::In => cond
+            .value
+            .as_array()
+            .is_some_and(|arr| field_value.is_some_and(|v| arr.contains(v))),
     }
 }
 

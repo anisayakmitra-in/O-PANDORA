@@ -23,16 +23,23 @@ pub enum PackageLifecycle {
 
 impl PackageLifecycle {
     pub fn can_transition_to(&self, next: PackageLifecycle) -> bool {
-        matches!((self, next),
-            (_, PackageLifecycle::Broken) | (_, PackageLifecycle::Yanked) |
-            (Self::Draft, Self::Testing) |
-            (Self::Testing, Self::Beta) | (Self::Testing, Self::Draft) |
-            (Self::Beta, Self::Published) | (Self::Beta, Self::Testing) |
-            (Self::Published, Self::Verified) | (Self::Published, Self::Deprecated) |
-            (Self::Verified, Self::LTS) | (Self::Verified, Self::Deprecated) |
-            (Self::LTS, Self::Deprecated) |
-            (Self::Deprecated, Self::Archived) | (Self::Deprecated, Self::Superseded) |
-            (Self::Superseded, Self::Archived)
+        matches!(
+            (self, next),
+            (_, PackageLifecycle::Broken)
+                | (_, PackageLifecycle::Yanked)
+                | (Self::Draft, Self::Testing)
+                | (Self::Testing, Self::Beta)
+                | (Self::Testing, Self::Draft)
+                | (Self::Beta, Self::Published)
+                | (Self::Beta, Self::Testing)
+                | (Self::Published, Self::Verified)
+                | (Self::Published, Self::Deprecated)
+                | (Self::Verified, Self::LTS)
+                | (Self::Verified, Self::Deprecated)
+                | (Self::LTS, Self::Deprecated)
+                | (Self::Deprecated, Self::Archived)
+                | (Self::Deprecated, Self::Superseded)
+                | (Self::Superseded, Self::Archived)
         )
     }
 
@@ -58,11 +65,19 @@ mod lifecycle_tests {
     use super::*;
 
     #[test]
-    fn draft_to_testing() { assert!(PackageLifecycle::Draft.can_transition_to(PackageLifecycle::Testing)); }
+    fn draft_to_testing() {
+        assert!(PackageLifecycle::Draft.can_transition_to(PackageLifecycle::Testing));
+    }
     #[test]
-    fn published_to_verified() { assert!(PackageLifecycle::Published.can_transition_to(PackageLifecycle::Verified)); }
+    fn published_to_verified() {
+        assert!(PackageLifecycle::Published.can_transition_to(PackageLifecycle::Verified));
+    }
     #[test]
-    fn cannot_skip_states() { assert!(!PackageLifecycle::Draft.can_transition_to(PackageLifecycle::Published)); }
+    fn cannot_skip_states() {
+        assert!(!PackageLifecycle::Draft.can_transition_to(PackageLifecycle::Published));
+    }
     #[test]
-    fn any_to_broken() { assert!(PackageLifecycle::Published.can_transition_to(PackageLifecycle::Broken)); }
+    fn any_to_broken() {
+        assert!(PackageLifecycle::Published.can_transition_to(PackageLifecycle::Broken));
+    }
 }

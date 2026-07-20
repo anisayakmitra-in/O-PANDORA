@@ -3,7 +3,7 @@
 //! Replaces `.read().unwrap()` and `.write().unwrap()` with
 //! proper error handling. Use these wrappers in production code.
 
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// Read from an RwLock without panicking on poison.
 pub fn rwlock_read<T>(lock: &RwLock<T>) -> Result<RwLockReadGuard<'_, T>, String> {

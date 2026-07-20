@@ -31,15 +31,19 @@ impl PackageHealth {
     }
 
     /// Derive health from signals — CI failures, install errors, age.
-    pub fn derive(
-        ci_passing: bool,
-        install_success_rate: f64,
-        days_since_update: u64,
-    ) -> Self {
-        if !ci_passing { return Self::Broken; }
-        if install_success_rate < 0.5 { return Self::Warning; }
-        if days_since_update > 365 { return Self::Abandoned; }
-        if days_since_update < 30 { return Self::Maintained; }
+    pub fn derive(ci_passing: bool, install_success_rate: f64, days_since_update: u64) -> Self {
+        if !ci_passing {
+            return Self::Broken;
+        }
+        if install_success_rate < 0.5 {
+            return Self::Warning;
+        }
+        if days_since_update > 365 {
+            return Self::Abandoned;
+        }
+        if days_since_update < 30 {
+            return Self::Maintained;
+        }
         Self::Healthy
     }
 }

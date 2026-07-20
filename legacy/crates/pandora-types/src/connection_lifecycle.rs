@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::time::{SystemTime, Duration};
+use std::time::{Duration, SystemTime};
 
 /// Connection state for a fleet worker or runtime node.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -78,7 +78,7 @@ impl ConnectionRecord {
     pub fn is_stale(&self, max_age_secs: u64) -> bool {
         SystemTime::now()
             .duration_since(self.last_heartbeat)
-            .map(|d| d.as_secs() > max_age_secs)
+            .map(|d| d.as_secs() >= max_age_secs)
             .unwrap_or(true)
     }
 }
@@ -107,18 +107,27 @@ impl ConnectionLifecycle {
     }
 
     /// Register a new connection.
-    pub fn connect(&mut self, worker_id: &str, node_id: &str, address: Option<&str>, capabilities: Vec<String>) {
+    pub fn connect(
+        &mut self,
+        worker_id: &str,
+        node_id: &str,
+        address: Option<&str>,
+        capabilities: Vec<String>,
+    ) {
         let now = SystemTime::now();
-        self.connections.insert(worker_id.into(), ConnectionRecord {
-            worker_id: worker_id.into(),
-            node_id: node_id.into(),
-            state: ConnectionState::Connected,
-            connected_at: now,
-            last_heartbeat: now,
-            address: address.map(|s| s.into()),
-            capabilities,
-            active_leases: vec![],
-        });
+        self.connections.insert(
+            worker_id.into(),
+            ConnectionRecord {
+                worker_id: worker_id.into(),
+                node_id: node_id.into(),
+                state: ConnectionState::Connected,
+                connected_at: now,
+                last_heartbeat: now,
+                address: address.map(|s| s.into()),
+                capabilities,
+                active_leases: vec![],
+            },
+        );
     }
 
     /// Record a heartbeat from a worker.
@@ -158,7 +167,9 @@ impl ConnectionLifecycle {
     pub fn sweep_stale(&mut self) -> Vec<String> {
         let mut stale = vec![];
         for conn in self.connections.values_mut() {
-            if conn.state == ConnectionState::Connected && conn.is_stale(self.heartbeat_timeout_secs) {
+            if conn.state == ConnectionState::Connected
+                && conn.is_stale(self.heartbeat_timeout_secs)
+            {
                 conn.state = ConnectionState::Stale;
                 stale.push(conn.worker_id.clone());
             }
@@ -169,7 +180,8 @@ impl ConnectionLifecycle {
     /// Remove stale connections entirely.
     pub fn purge_stale(&mut self) -> usize {
         let before = self.connections.len();
-        self.connections.retain(|_, c| !c.is_stale(self.heartbeat_timeout_secs * 3));
+        self.connections
+            .retain(|_, c| !c.is_stale(self.heartbeat_timeout_secs * 3));
         before - self.connections.len()
     }
 
@@ -215,11 +227,16 @@ impl ConnectionLifecycle {
 
     /// List all healthy (Connected) workers.
     pub fn healthy_workers(&self) -> Vec<&ConnectionRecord> {
-        self.connections.values().filter(|c| c.state == ConnectionState::Connected).collect()
+        self.connections
+            .values()
+            .filter(|c| c.state == ConnectionState::Connected)
+            .collect()
     }
 
     /// Count total connections.
-    pub fn count(&self) -> usize { self.connections.len() }
+    pub fn count(&self) -> usize {
+        self.connections.len()
+    }
 }
 
 #[cfg(test)]

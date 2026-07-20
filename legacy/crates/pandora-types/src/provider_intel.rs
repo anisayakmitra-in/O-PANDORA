@@ -82,7 +82,9 @@ pub struct ProviderIntelligenceEngine {
 }
 
 impl ProviderIntelligenceEngine {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Record a successful execution.
     pub fn record_success(
@@ -104,9 +106,15 @@ impl ProviderIntelligenceEngine {
         intel.avg_latency_ms = (intel.avg_latency_ms * (n - 1.0) + latency_ms as f64) / n;
 
         // Percentiles — simple max-update approach (full histogram needs a library)
-        if latency_ms > intel.p95_latency_ms { intel.p95_latency_ms = latency_ms; }
-        if latency_ms > intel.p99_latency_ms { intel.p99_latency_ms = latency_ms; }
-        if intel.p50_latency_ms == 0 || latency_ms < intel.p50_latency_ms { intel.p50_latency_ms = latency_ms; }
+        if latency_ms > intel.p95_latency_ms {
+            intel.p95_latency_ms = latency_ms;
+        }
+        if latency_ms > intel.p99_latency_ms {
+            intel.p99_latency_ms = latency_ms;
+        }
+        if intel.p50_latency_ms == 0 || latency_ms < intel.p50_latency_ms {
+            intel.p50_latency_ms = latency_ms;
+        }
 
         intel.total_cost_usd += cost_usd;
         intel.avg_cost_usd = intel.total_cost_usd / n;
@@ -132,7 +140,13 @@ impl ProviderIntelligenceEngine {
     }
 
     /// Score a provider for the given requirements. Higher is better.
-    pub fn score(&self, provider: &str, model: &str, _prefer_speed: bool, require_reliability: bool) -> f64 {
+    pub fn score(
+        &self,
+        provider: &str,
+        model: &str,
+        _prefer_speed: bool,
+        require_reliability: bool,
+    ) -> f64 {
         let intel = match self.providers.get(&format!("{}:{}", provider, model)) {
             Some(i) => i,
             None => return 0.0, // Unknown provider
@@ -172,9 +186,15 @@ impl ProviderIntelligenceEngine {
 
     /// Find the best provider for given requirements.
     pub fn best(&self, prefer_speed: bool, require_reliability: bool) -> Option<(&str, &str)> {
-        self.providers.iter()
+        self.providers
+            .iter()
             .filter(|(_, i)| i.success_rate > 0.5 && i.consecutive_failures < 3)
-            .map(|(key, i)| (key, self.score(&i.provider_id, &i.model, prefer_speed, require_reliability)))
+            .map(|(key, i)| {
+                (
+                    key,
+                    self.score(&i.provider_id, &i.model, prefer_speed, require_reliability),
+                )
+            })
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(key, _)| {
                 let parts: Vec<&str> = key.splitn(2, ':').collect();

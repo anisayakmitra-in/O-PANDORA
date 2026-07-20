@@ -14,7 +14,12 @@ use std::time::SystemTime;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum MemoryLayer {
-    Global, Organization, Project, Workspace, Session, Execution,
+    Global,
+    Organization,
+    Project,
+    Workspace,
+    Session,
+    Execution,
 }
 
 impl MemoryLayer {
@@ -81,23 +86,39 @@ pub struct HierarchicalMemory {
 }
 
 impl HierarchicalMemory {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     fn next_id(&mut self) -> String {
         self.next_id += 1;
         format!("mem-{}", self.next_id)
     }
 
-    pub fn remember(&mut self, layer: MemoryLayer, content: String, tags: Vec<String>, importance: f32) -> String {
+    pub fn remember(
+        &mut self,
+        layer: MemoryLayer,
+        content: String,
+        tags: Vec<String>,
+        importance: f32,
+    ) -> String {
         let id = self.next_id();
         let now = SystemTime::now();
         self.order.push(id.clone());
-        self.entries.insert(id.clone(), MemoryEntry {
-            id: id.clone(), layer, content, tags,
-            importance: importance.clamp(0.0, 1.0),
-            created_at: now, last_accessed: now, access_count: 0,
-            pinned: false,
-        });
+        self.entries.insert(
+            id.clone(),
+            MemoryEntry {
+                id: id.clone(),
+                layer,
+                content,
+                tags,
+                importance: importance.clamp(0.0, 1.0),
+                created_at: now,
+                last_accessed: now,
+                access_count: 0,
+                pinned: false,
+            },
+        );
         id
     }
 
@@ -110,9 +131,15 @@ impl HierarchicalMemory {
     }
 
     /// Search by tags. Returns owned entries.
-    pub fn search_by_tags(&mut self, tags: &[&str], layer: Option<MemoryLayer>) -> Vec<MemoryEntry> {
+    pub fn search_by_tags(
+        &mut self,
+        tags: &[&str],
+        layer: Option<MemoryLayer>,
+    ) -> Vec<MemoryEntry> {
         // Collect matching IDs first
-        let mut matches: Vec<(String, f32)> = self.entries.iter()
+        let mut matches: Vec<(String, f32)> = self
+            .entries
+            .iter()
             .filter(|(_, e)| {
                 let layer_match = layer.is_none_or(|l| e.layer == l);
                 let tag_match = tags.iter().any(|t| e.tags.iter().any(|et| et == t));
@@ -135,9 +162,15 @@ impl HierarchicalMemory {
     }
 
     /// Search by content substring. Returns owned entries.
-    pub fn search_by_content(&mut self, query: &str, layer: Option<MemoryLayer>) -> Vec<MemoryEntry> {
+    pub fn search_by_content(
+        &mut self,
+        query: &str,
+        layer: Option<MemoryLayer>,
+    ) -> Vec<MemoryEntry> {
         let query = query.to_lowercase();
-        let mut matches: Vec<(String, f32)> = self.entries.iter()
+        let mut matches: Vec<(String, f32)> = self
+            .entries
+            .iter()
             .filter(|(_, e)| {
                 let layer_match = layer.is_none_or(|l| e.layer == l);
                 let hit = e.content.to_lowercase().contains(&query)
@@ -161,7 +194,11 @@ impl HierarchicalMemory {
 
     /// Get all entries in a specific layer (owned).
     pub fn layer_entries(&self, layer: MemoryLayer) -> Vec<MemoryEntry> {
-        self.entries.values().filter(|e| e.layer == layer).cloned().collect()
+        self.entries
+            .values()
+            .filter(|e| e.layer == layer)
+            .cloned()
+            .collect()
     }
 
     pub fn purge_expired(&mut self) -> usize {
@@ -172,7 +209,12 @@ impl HierarchicalMemory {
     }
 
     pub fn pin(&mut self, id: &str) -> bool {
-        self.entries.get_mut(id).map(|e| { e.pinned = true; }).is_some()
+        self.entries
+            .get_mut(id)
+            .map(|e| {
+                e.pinned = true;
+            })
+            .is_some()
     }
 
     pub fn forget(&mut self, id: &str) -> bool {
@@ -180,7 +222,9 @@ impl HierarchicalMemory {
         self.entries.remove(id).is_some()
     }
 
-    pub fn count(&self) -> usize { self.entries.len() }
+    pub fn count(&self) -> usize {
+        self.entries.len()
+    }
 }
 
 #[cfg(test)]
@@ -190,7 +234,12 @@ mod tests {
     #[test]
     fn remember_and_recall() {
         let mut m = HierarchicalMemory::new();
-        let id = m.remember(MemoryLayer::Session, "User prefers Rust".into(), vec!["pref".into(), "lang".into()], 0.7);
+        let id = m.remember(
+            MemoryLayer::Session,
+            "User prefers Rust".into(),
+            vec!["pref".into(), "lang".into()],
+            0.7,
+        );
         let e = m.recall(&id).unwrap();
         assert_eq!(e.layer, MemoryLayer::Session);
         assert_eq!(e.access_count, 1);
@@ -199,8 +248,18 @@ mod tests {
     #[test]
     fn search_by_tags_returns_ordered() {
         let mut m = HierarchicalMemory::new();
-        m.remember(MemoryLayer::Session, "cargo build".into(), vec!["rust".into(), "build".into()], 0.3);
-        m.remember(MemoryLayer::Session, "secure coding".into(), vec!["rust".into(), "security".into()], 0.9);
+        m.remember(
+            MemoryLayer::Session,
+            "cargo build".into(),
+            vec!["rust".into(), "build".into()],
+            0.3,
+        );
+        m.remember(
+            MemoryLayer::Session,
+            "secure coding".into(),
+            vec!["rust".into(), "security".into()],
+            0.9,
+        );
         let results = m.search_by_tags(&["rust"], Some(MemoryLayer::Session));
         assert_eq!(results.len(), 2);
         assert!(results[0].importance >= results[1].importance);
@@ -209,8 +268,18 @@ mod tests {
     #[test]
     fn layer_isolation() {
         let mut m = HierarchicalMemory::new();
-        m.remember(MemoryLayer::Global, "global fact".into(), vec!["g".into()], 1.0);
-        m.remember(MemoryLayer::Session, "session fact".into(), vec!["s".into()], 1.0);
+        m.remember(
+            MemoryLayer::Global,
+            "global fact".into(),
+            vec!["g".into()],
+            1.0,
+        );
+        m.remember(
+            MemoryLayer::Session,
+            "session fact".into(),
+            vec!["s".into()],
+            1.0,
+        );
         assert_eq!(m.layer_entries(MemoryLayer::Global).len(), 1);
         assert_eq!(m.layer_entries(MemoryLayer::Session).len(), 1);
     }

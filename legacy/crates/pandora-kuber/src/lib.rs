@@ -493,7 +493,6 @@ mod tests {
 }
 pub mod resolver;
 
-
 #[cfg(test)]
 mod more_kuber_tests {
     use super::*;

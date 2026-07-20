@@ -47,7 +47,9 @@ pub struct ModelRegistry {
 }
 
 impl ModelRegistry {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Load the cached registry from disk.
     pub fn load() -> Self {
@@ -96,12 +98,18 @@ impl ModelRegistry {
 
     /// List all models from a given provider.
     pub fn by_provider(&self, provider: &str) -> Vec<&ModelEntry> {
-        self.models.values().filter(|m| m.provider == provider).collect()
+        self.models
+            .values()
+            .filter(|m| m.provider == provider)
+            .collect()
     }
 
     /// Find models that support a capability.
     pub fn with_capability(&self, cap_fn: impl Fn(&ModelCapabilities) -> bool) -> Vec<&ModelEntry> {
-        self.models.values().filter(|m| cap_fn(&m.capabilities)).collect()
+        self.models
+            .values()
+            .filter(|m| cap_fn(&m.capabilities))
+            .collect()
     }
 
     /// Find models that support vision.
@@ -120,7 +128,9 @@ impl ModelRegistry {
     }
 
     /// Total model count.
-    pub fn count(&self) -> usize { self.models.len() }
+    pub fn count(&self) -> usize {
+        self.models.len()
+    }
 
     fn cache_path() -> PathBuf {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
@@ -145,7 +155,10 @@ mod tests {
             id: "llama3.2".into(),
             provider: "ollama".into(),
             name: "Llama 3.2".into(),
-            capabilities: ModelCapabilities { supports_chat: true, ..Default::default() },
+            capabilities: ModelCapabilities {
+                supports_chat: true,
+                ..Default::default()
+            },
             pricing_per_1k_input: None,
             pricing_per_1k_output: None,
             discovered_at: SystemTime::now(),
@@ -171,7 +184,11 @@ mod tests {
             id: "gpt-4o".into(),
             provider: "openai".into(),
             name: "GPT-4o".into(),
-            capabilities: ModelCapabilities { supports_vision: true, supports_tools: true, ..Default::default() },
+            capabilities: ModelCapabilities {
+                supports_vision: true,
+                supports_tools: true,
+                ..Default::default()
+            },
             pricing_per_1k_input: None,
             pricing_per_1k_output: None,
             discovered_at: SystemTime::now(),
@@ -180,7 +197,10 @@ mod tests {
             id: "llama3.2".into(),
             provider: "ollama".into(),
             name: "Llama 3.2".into(),
-            capabilities: ModelCapabilities { supports_chat: true, ..Default::default() },
+            capabilities: ModelCapabilities {
+                supports_chat: true,
+                ..Default::default()
+            },
             pricing_per_1k_input: None,
             pricing_per_1k_output: None,
             discovered_at: SystemTime::now(),

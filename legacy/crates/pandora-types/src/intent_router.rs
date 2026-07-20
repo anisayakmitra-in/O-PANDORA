@@ -53,18 +53,14 @@ pub struct IntentRouter {
 
 /// Stoplist — common words that don't indicate intent.
 const STOPLIST: &[&str] = &[
-    "a", "an", "the", "this", "that", "with", "from", "into", "about",
-    "and", "or", "not", "but", "for", "to", "of", "in", "on", "at",
-    "is", "are", "was", "were", "be", "been", "being", "have", "has",
-    "had", "do", "does", "did", "will", "would", "could", "should",
-    "may", "might", "can", "shall", "i", "you", "he", "she", "it",
-    "we", "they", "me", "him", "her", "us", "them", "my", "your",
-    "his", "its", "our", "their", "just", "please", "now", "then",
-    "get", "make", "use", "find", "show", "check", "run", "start",
-    "stop", "create", "add", "remove", "update", "need", "want",
-    "help", "like", "think", "know", "see", "go", "come", "take",
-    "give", "tell", "ask", "try", "let", "put", "set", "say",
-    "http", "https", "www", "com", "org", "net",
+    "a", "an", "the", "this", "that", "with", "from", "into", "about", "and", "or", "not", "but",
+    "for", "to", "of", "in", "on", "at", "is", "are", "was", "were", "be", "been", "being", "have",
+    "has", "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "can",
+    "shall", "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "my",
+    "your", "his", "its", "our", "their", "just", "please", "now", "then", "get", "make", "use",
+    "find", "show", "check", "run", "start", "stop", "create", "add", "remove", "update", "need",
+    "want", "help", "like", "think", "know", "see", "go", "come", "take", "give", "tell", "ask",
+    "try", "let", "put", "set", "say", "http", "https", "www", "com", "org", "net",
 ];
 
 impl IntentRouter {
@@ -92,7 +88,10 @@ impl IntentRouter {
             for word in cap.description.to_lowercase().split_whitespace() {
                 let word = word.trim_matches(|c: char| !c.is_alphanumeric());
                 if !word.is_empty() && !STOPLIST.contains(&word) && word.len() > 2 {
-                    self.keyword_index.entry(word.to_string()).or_default().push(i);
+                    self.keyword_index
+                        .entry(word.to_string())
+                        .or_default()
+                        .push(i);
                 }
             }
         }
@@ -125,7 +124,10 @@ impl IntentRouter {
                     let cap = &self.capabilities[idx];
                     let boost = cap.weight;
                     *scores.entry(idx).or_insert(0.0) += 0.3 + boost;
-                    reasons.entry(idx).or_default().push(format!("keyword match: '{word}'"));
+                    reasons
+                        .entry(idx)
+                        .or_default()
+                        .push(format!("keyword match: '{word}'"));
                 }
             }
         }
@@ -140,13 +142,20 @@ impl IntentRouter {
             })
             .collect();
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results
     }
 
     /// Find capabilities by kind.
     pub fn by_kind(&self, kind: &CapabilityProviderKind) -> Vec<&Capability> {
-        self.capabilities.iter().filter(|c| &c.provider_kind == kind).collect()
+        self.capabilities
+            .iter()
+            .filter(|c| &c.provider_kind == kind)
+            .collect()
     }
 
     /// Count registered capabilities.

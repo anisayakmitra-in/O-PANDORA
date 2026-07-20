@@ -171,7 +171,11 @@ mod tests {
         let bus = EventBus::default_capacity();
         let mut rx1 = bus.subscribe();
         let mut rx2 = bus.subscribe();
-        bus.publish(BusEventKind::StageCompleted, serde_json::json!({"stage": "plan"}), "test");
+        bus.publish(
+            BusEventKind::StageCompleted,
+            serde_json::json!({"stage": "plan"}),
+            "test",
+        );
         std::thread::sleep(std::time::Duration::from_millis(10));
         assert!(rx1.try_recv().is_ok());
         assert!(rx2.try_recv().is_ok());

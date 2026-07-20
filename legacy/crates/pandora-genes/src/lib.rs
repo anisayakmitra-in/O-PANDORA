@@ -528,18 +528,26 @@ mod tests {
 
     #[test]
     fn shell_echo() {
-        assert_eq!(ShellGene::new().execute("echo hi").expect("genes").trim(), "hi");
+        assert_eq!(
+            ShellGene::new().execute("echo hi").expect("genes").trim(),
+            "hi"
+        );
     }
     #[test]
     fn python_math() {
         assert_eq!(
-            PythonToolGene::new().execute("print(2+2)").expect("genes").trim(),
+            PythonToolGene::new()
+                .execute("print(2+2)")
+                .expect("genes")
+                .trim(),
             "4"
         );
     }
     #[test]
     fn workflow_steps() {
-        let r = WorkflowGene::new().execute("echo a\necho b").expect("genes");
+        let r = WorkflowGene::new()
+            .execute("echo a\necho b")
+            .expect("genes");
         assert!(r.contains("step 1: a") && r.contains("step 2: b"));
     }
     #[test]

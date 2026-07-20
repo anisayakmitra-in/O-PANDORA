@@ -558,7 +558,11 @@ fn cmd_doctor(_args: &[String]) {
         print!("{label}... ");
         let shell = if cfg!(windows) { "cmd" } else { "sh" };
         let flag = if cfg!(windows) { "/c" } else { "-c" };
-        match std::process::Command::new(shell).arg(flag).arg(cmd).output() {
+        match std::process::Command::new(shell)
+            .arg(flag)
+            .arg(cmd)
+            .output()
+        {
             Ok(o) if o.status.success() => println!("OK"),
             _ => println!("FAIL"),
         }
@@ -845,14 +849,26 @@ fn cmd_new(args: &[String]) {
         "harness" => {
             let dir = std::path::Path::new(".").join(name);
             std::fs::create_dir_all(dir.join("src")).expect("CLI I/O");
-            std::fs::write(dir.join("harness.toml"), format!("id = {name}\nname = {name}\nkind = Domain\nversion = 0.1.0\n")).expect("CLI I/O");
-            std::fs::write(dir.join("src").join("lib.rs"), format!("pub struct {sn}Harness;\n")).expect("CLI I/O");
+            std::fs::write(
+                dir.join("harness.toml"),
+                format!("id = {name}\nname = {name}\nkind = Domain\nversion = 0.1.0\n"),
+            )
+            .expect("CLI I/O");
+            std::fs::write(
+                dir.join("src").join("lib.rs"),
+                format!("pub struct {sn}Harness;\n"),
+            )
+            .expect("CLI I/O");
             println!("Created: {name}/");
         }
         "package" => {
             let dir = std::path::Path::new(".").join(name);
             std::fs::create_dir_all(&dir).expect("CLI I/O");
-            std::fs::write(dir.join("pandora.toml"), format!("[package]\nid = {name}\nname = {name}\nversion = 0.1.0\nkind = gene\n")).expect("CLI I/O");
+            std::fs::write(
+                dir.join("pandora.toml"),
+                format!("[package]\nid = {name}\nname = {name}\nversion = 0.1.0\nkind = gene\n"),
+            )
+            .expect("CLI I/O");
             println!("Created: {name}/");
         }
         "evaluator" => {
@@ -864,13 +880,21 @@ fn cmd_new(args: &[String]) {
         "policy" => {
             let dir = std::path::Path::new(".").join(name);
             std::fs::create_dir_all(&dir).expect("CLI I/O");
-            std::fs::write(dir.join("policy.toml"), format!("[policy]\nid = {name}\nname = {name}\npriority = 50\n")).expect("CLI I/O");
+            std::fs::write(
+                dir.join("policy.toml"),
+                format!("[policy]\nid = {name}\nname = {name}\npriority = 50\n"),
+            )
+            .expect("CLI I/O");
             println!("Created: {name}/");
         }
         "workflow" => {
             let dir = std::path::Path::new(".").join(name);
             std::fs::create_dir_all(&dir).expect("CLI I/O");
-            std::fs::write(dir.join("workflow.toml"), format!("[workflow]\nid = {name}\nname = {name}\nsteps = [plan, execute]\n")).expect("CLI I/O");
+            std::fs::write(
+                dir.join("workflow.toml"),
+                format!("[workflow]\nid = {name}\nname = {name}\nsteps = [plan, execute]\n"),
+            )
+            .expect("CLI I/O");
             println!("Created: {name}/");
         }
         "provider" => {
@@ -885,7 +909,9 @@ fn cmd_new(args: &[String]) {
             Ok(p) => println!("Created: {p}"),
             Err(e) => eprintln!("{e}"),
         },
-        _ => eprintln!("Use: pandora new gene|harness|package|skill|evaluator|policy|workflow|provider <name>"),
+        _ => eprintln!(
+            "Use: pandora new gene|harness|package|skill|evaluator|policy|workflow|provider <name>"
+        ),
     }
 }
 
@@ -1132,7 +1158,7 @@ fn cmd_shell(_args: &[String]) {
                 .join(".pandora")
                 .join("shell_history")
         });
-            let _ = std::fs::create_dir_all(hp.parent().unwrap_or_else(|| std::path::Path::new("/tmp")));
+    let _ = std::fs::create_dir_all(hp.parent().unwrap_or_else(|| std::path::Path::new("/tmp")));
     let mut history: Vec<String> = std::fs::read_to_string(&hp)
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
@@ -1791,7 +1817,6 @@ fn cmd_connection(args: &[String]) {
     }
 }
 
-
 #[cfg(test)]
 mod cli_integration_tests {
     use super::*;
@@ -1813,7 +1838,9 @@ mod cli_integration_tests {
 
     #[test]
     fn compound_intent_detection() {
-        let steps = pandora_harnesses::android_use::CompoundIntentDetector::detect("open app and send message");
+        let steps = pandora_harnesses::android_use::CompoundIntentDetector::detect(
+            "open app and send message",
+        );
         assert!(!steps.is_empty());
     }
 }
