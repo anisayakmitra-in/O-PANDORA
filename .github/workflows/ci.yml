@@ -20,6 +20,7 @@ jobs:
       - run: cargo clippy --workspace -- -D warnings
       - run: cargo test --workspace
       - run: cargo build --release -p pandora -p pandora-tui
+      - run: cargo check --examples -p pandora-types
 
   release:
     runs-on: ${{ matrix.os }}

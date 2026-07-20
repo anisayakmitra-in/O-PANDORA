@@ -1,4 +1,5 @@
 [package]
+publish = false
 name = "pandora-api"
 version.workspace = true
 edition.workspace = true
