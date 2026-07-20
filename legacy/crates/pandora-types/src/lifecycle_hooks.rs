@@ -9,7 +9,6 @@
 //! in a manifest-driven way."
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Lifecycle events that hooks can attach to.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
