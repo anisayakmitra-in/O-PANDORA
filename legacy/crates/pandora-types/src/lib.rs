@@ -113,3 +113,4 @@ pub mod lifecycle_hooks;
 pub mod plugin_manifest;
 pub mod connection_lifecycle;
 pub mod universal_registry;
+pub mod workflow_lifecycle;
