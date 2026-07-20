@@ -163,3 +163,50 @@ To propose a change to a frozen surface:
 ---
 
 _Frozen: v0.2.0. Last updated: 2026-07-16._
+
+---
+
+## v0.3 Freeze (2026-07-20)
+
+The following APIs are frozen as of v0.3. Changes require an RFC.
+
+### Frozen Subsystems (18 modules, 72 total types)
+
+| Subsystem | Key Types |
+|-----------|-----------|
+| Execution Pipeline | ExecutionPlan, ExecutionGraph, ExecutionController |
+| Universal Registry | Registry trait, RegistryEntry, InMemoryRegistry |
+| Runtime Node | RuntimeNode, NodeKind, NodePlatform, TransportKind |
+| Permission Manifest | PermissionManifest, PermissionVerdict |
+| Event Bus | EventBus, BusEvent, BusEventKind, SharedEventBus |
+| Intent Router | IntentRouter, Capability, IntentMatch |
+| Hierarchical Memory | HierarchicalMemory, MemoryLayer, MemoryEntry |
+| Context Strategy | ContextManager, ContextStrategy |
+| Lifecycle Hooks | HookRegistry, Hook, LifecycleEvent |
+| Model Registry | ModelRegistry, ModelEntry |
+| Policy Engine | PolicyEngine, PolicyRule, PolicyVerdict |
+| Workflow Lifecycle | Lifecycle, LifecycleState, LifecycleMiddleware |
+| SDK | CLI scaffolds for 8 component types |
+| Capability Registry | CapabilityRegistry, well_known constants |
+| Execution Risk | RiskLevel, OperationType, classify() |
+| Auth Manager | AuthStore, BootstrapToken, ApiKey, Session |
+| Plugin Manifest | PluginManifest, PluginKind |
+| Connection Lifecycle | ConnectionLifecycle, ConnectionRecord, TaskLease |
+
+### Capability Language
+
+Every subsystem communicates through capability strings. Registries index them,
+intents match them, permissions authorize them, policies evaluate them, nodes
+advertise them, Palace searches by them. See RFC-0001 for the design.
+
+### Invariants (unchanged)
+
+1. Data-driven — manifests, registries, capabilities, not hardcoded enums
+2. Extensible — add genes/harnesses/capabilities without modifying core
+3. Platform-agnostic — adapters only
+4. Transport-agnostic — pluggable transports
+5. Manifest-driven — hooks, permissions, dependencies in manifests
+
+### RFC Process
+
+Architectural changes to frozen surfaces require an RFC in docs/rfcs/.
