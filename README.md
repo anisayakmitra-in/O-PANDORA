@@ -195,8 +195,6 @@ Version:   --version, version
 | `docs/OWNERSHIP.md` | Crate boundaries and responsibilities |
 | `docs/WHICH_LAYER.md` | "Where does this code go?" decision tree |
 | `docs/SECURITY.md` | Trust model, signing, permissions |
-| `docs/tutorials/BUILD_A_GENE.md` | Build your first gene |
-| `docs/tutorials/BUILD_DOMAIN_HARNESS.md` | Build a domain harness |
 
 ## Architecture
 
