@@ -100,3 +100,4 @@ pub mod lifecycle;
 pub mod compatibility;
 pub mod package_health;
 pub mod quality;
+pub mod model_registry;
