@@ -183,7 +183,70 @@ fn cmd_version(_args: &[String]) {
 }
 
 fn usage() {
-    eprintln!("Pandora v1.0 — AI agent runtime\nUsage: pandora <command>\nCommands:\n  install, run, search, list, info, uninstall, update\n  providers, harnesses, genes, doctor, inspect, architecture\n  status, stop, resume, timeline, governance, approve, reject\n  gene, harness, service, config, shell, package, graph\n  lineage, new, benchmark, explain, profiles, sessions\n  replay, session");
+    eprintln!();
+    eprintln!("Pandora — governed execution runtime");
+    eprintln!();
+    eprintln!("USAGE:");
+    eprintln!("    pandora <command> [args]");
+    eprintln!();
+    eprintln!("COMMANDS:");
+    eprintln!("    Execution:");
+    eprintln!("        run <task>            Execute a task through the pipeline");
+    eprintln!("        shell                 Start interactive operator shell");
+    eprintln!("        resume [id]           Resume interrupted execution");
+    eprintln!("        replay <id>           Replay an execution");
+    eprintln!("        trace <id>            Show execution trace");
+    eprintln!("        inspect <id>          Inspect an execution");
+    eprintln!("        explain <id>          Explain execution decisions");
+    eprintln!("        timeline [id]         Show execution timeline");
+    eprintln!();
+    eprintln!("    Packages:");
+    eprintln!("        install <pkg>         Install a package");
+    eprintln!("        uninstall <pkg>       Remove a package");
+    eprintln!("        update <pkg>          Update a package");
+    eprintln!("        list                  List installed packages");
+    eprintln!("        info <pkg>            Show package details");
+    eprintln!("        search <query>       Search Palace registry");
+    eprintln!("        publish               Publish current package");
+    eprintln!();
+    eprintln!("    Providers:");
+    eprintln!("        providers             List available providers");
+    eprintln!("        connections           List configured connections");
+    eprintln!("        connection add <name> <kind> <endpoint> [model]");
+    eprintln!("        connection test <name>");
+    eprintln!("        connection remove <name>");
+    eprintln!();
+    eprintln!("    Runtime:");
+    eprintln!("        harnesses             List registered harnesses");
+    eprintln!("        genes                 List built-in genes");
+    eprintln!("        doctor                Run health checks");
+    eprintln!("        status                Show runtime status");
+    eprintln!("        architecture          Show architecture diagram");
+    eprintln!("        sessions              List sessions");
+    eprintln!("        artifacts             List artifacts");
+    eprintln!();
+    eprintln!("    SDK:");
+    eprintln!("        new <type> <name>    Scaffold: gene|harness|package|skill|");
+    eprintln!("                              evaluator|policy|workflow|provider");
+    eprintln!("        keygen                Generate Ed25519 keypair");
+    eprintln!("        benchmark [provider]  Benchmark providers");
+    eprintln!("        profiles              List config profiles");
+    eprintln!();
+    eprintln!("    Other:");
+    eprintln!("        version, --version    Show version");
+    eprintln!("        graph                 Show execution graph");
+    eprintln!("        lineage               Show gene lineage");
+    eprintln!("        governance            Show governance state");
+    eprintln!("        fleet <subcommand>    Manage fleet workers");
+    eprintln!("        serve                 Start MCP server");
+    eprintln!();
+    eprintln!("EXAMPLES:");
+    eprintln!("    pandora run \"build a REST API\"");
+    eprintln!("    pandora shell");
+    eprintln!("    pandora new gene my-gene");
+    eprintln!("    pandora connection add local-ollama ollama http://localhost:11434");
+    eprintln!();
+    eprintln!("Full docs: https://github.com/anisayakmitra-in/PANDORA-SYSTEMS");
 }
 
 fn sessions_dir() -> std::path::PathBuf {
@@ -362,48 +425,10 @@ fn cmd_run(args: &[String]) {
     match tokio::runtime::Runtime::new() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::design::DesignDomainHarness::new(),
-                ))
-                .ok();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::computer_use::ComputerUseHarness::new(),
-                ))
-                .ok();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::android_use::AndroidUseHarness::new(),
-                ))
-                .ok();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::coding::CodingDomainHarness::new(),
-                ))
-                .ok();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::cybersecurity::CybersecurityDomainHarness::new(),
-                ))
-                .ok();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::research::ResearchDomainHarness::new(),
-                ))
-                .ok();
-            runtime
-                .council
-                .install(Box::new(
-                    pandora_harnesses::security::SecurityDomainHarness::new(),
-                ))
-                .ok();
+            // Register all built-in harnesses (source + domain + meta) via
+            // single discovery function. Adding a new harness = add it to
+            // register_all(), not here. See ARCHITECTURE_FREEZE.md invariant 7.
+            pandora_harnesses::register_all(&mut runtime.council);
             use pandora_types::execution_plan::*;
             runtime.plan = ExecutionPlan {
                 instruction: task.clone(),

@@ -30,31 +30,19 @@ pub struct QualityReport {
 /// Run all quality gates on a package directory.
 pub fn run_pipeline(package_dir: &str) -> QualityReport {
     let start = std::time::Instant::now();
-    
-
-    // Gate 1: Schema validation
-    gates.push(check_schema(package_dir));
-    // Gate 2: Compatibility validation
-    gates.push(check_compatibility(package_dir));
-    // Gate 3: Permission validation
-    gates.push(check_permissions(package_dir));
-    // Gate 4: SBOM generation
-    gates.push(generate_sbom(package_dir));
-    // Gate 5: Static analysis (lint)
-    gates.push(check_lint(package_dir));
-    // Gate 6: Benchmarks
-    gates.push(run_benchmarks(package_dir));
-    // Gate 7: Security scan
-    gates.push(security_scan(package_dir));
-    // Gate 8: Signature verification
-    gates.push(verify_signatures(package_dir));
-    // Gate 9: Sandbox compatibility
-    gates.push(check_sandbox(package_dir));
-    // Gate 10: Integration tests
-    gates.push(run_integration_tests(package_dir));
-    // Gate 11: Telemetry simulation
-    gates.push(simulate_telemetry(package_dir));
-
+    let gates = vec![
+        check_schema(package_dir),
+        check_compatibility(package_dir),
+        check_permissions(package_dir),
+        generate_sbom(package_dir),
+        check_lint(package_dir),
+        run_benchmarks(package_dir),
+        security_scan(package_dir),
+        verify_signatures(package_dir),
+        check_sandbox(package_dir),
+        run_integration_tests(package_dir),
+        simulate_telemetry(package_dir),
+    ];
     let passed = gates.iter().all(|g| g.passed);
 
     QualityReport {
