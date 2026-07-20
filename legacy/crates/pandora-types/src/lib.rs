@@ -109,3 +109,4 @@ pub mod context_strategy;
 pub mod auth_manager;
 pub mod intent_router;
 pub mod hierarchical_memory;
+pub mod lifecycle_hooks;
