@@ -11,15 +11,15 @@ use std::time::{Duration, SystemTime};
 
 /// Generate random bytes as hex string (no hex crate needed).
 fn random_hex(len: usize) -> String {
-    use std::hash::{Hash, Hasher};
-    let nanos = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    nanos.hash(&mut hasher);
-    std::thread::current().id().hash(&mut hasher);
-    format!("{:016x}", hasher.finish())[..len.min(16)].to_string()
+    use ring::rand::SecureRandom;
+    let rng = ring::rand::SystemRandom::new();
+    let mut bytes = vec![0u8; len.div_ceil(2)];
+    rng.fill(&mut bytes).expect("OS random generation failed");
+    bytes
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>()[..len]
+        .to_string()
 }
 
 fn hash(s: &str) -> String {
@@ -131,7 +131,7 @@ impl AuthStore {
 
     pub fn validate_bootstrap(&mut self, token: &str) -> Option<String> {
         match &self.bootstrap {
-            Some(bt) if bt.token == token && !bt.used => {
+            Some(bt) if constant_time_eq(&bt.token, token) && !bt.used => {
                 self.bootstrap.as_mut().unwrap().used = true;
                 let _ = self.save();
                 Some("bootstrap-client".into())
@@ -164,7 +164,7 @@ impl AuthStore {
         // Find by hash
         let mut found: Option<String> = None;
         for ak in self.api_keys.values_mut() {
-            if ak.key_hash == key_hash && !ak.is_expired() {
+            if constant_time_eq(&ak.key_hash, &key_hash) && !ak.is_expired() {
                 ak.last_used = Some(SystemTime::now());
                 found = Some(ak.client_id.clone());
                 break;
@@ -225,7 +225,23 @@ impl AuthStore {
 }
 
 pub fn is_loopback(addr: &str) -> bool {
-    addr.starts_with("127.") || addr.starts_with("::1") || addr == "localhost"
+    addr.starts_with("127.")
+        || addr == "::1"
+        || addr == "[::1]"
+        || addr == "localhost"
+        || addr == "0.0.0.0"
+}
+
+/// Constant-time string comparison to prevent timing attacks.
+fn constant_time_eq(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut result: u8 = 0;
+    for (x, y) in a.bytes().zip(b.bytes()) {
+        result |= x ^ y;
+    }
+    result == 0
 }
 
 #[cfg(test)]

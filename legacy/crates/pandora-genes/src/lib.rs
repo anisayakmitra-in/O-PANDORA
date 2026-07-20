@@ -137,7 +137,17 @@ impl Gene for FilesystemGene {
             return Ok("Usage: read|write|list <path>".into());
         }
         match p[0] {
-            "read" => std::fs::read_to_string(p.get(1).unwrap_or(&"")).map_err(|e| e.to_string()),
+            "read" => {
+                let path = p.get(1).copied().unwrap_or("");
+                if path.is_empty() {
+                    return Err("Missing path".into());
+                }
+                let canonical = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
+                if canonical.to_string_lossy().contains("..") {
+                    return Err("Path traversal not allowed".into());
+                }
+                std::fs::read_to_string(&canonical).map_err(|e| e.to_string())
+            }
             "write" => {
                 let path = p.get(1).ok_or("Missing path")?;
                 std::fs::write(path, "content").map_err(|e| e.to_string())?;

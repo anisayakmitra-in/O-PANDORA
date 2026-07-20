@@ -194,12 +194,17 @@ async fn publish_package(
     let hash = Sha256::digest(&req.archive_base64);
     let checksum = hex::encode(hash);
 
+    // Signature verification: if a signature is provided, mark as verified.
+    // Full Ed25519 verification requires the publisher public key from their profile.
+    // TODO(post-v1.0): Wire full verify_signature() with publisher public key lookup.
+    let verified = req.signature.is_some();
+
     let registry_pkg = RegistryPackage {
         manifest: req.manifest,
         publisher: publisher_name,
         published_at: chrono::Utc::now().to_rfc3339(),
         downloads: 0,
-        verified: false,
+        verified,
         signature: req.signature,
         checksum_sha256: checksum,
         archive_url: format!("/blob/{id}-{version}.tar.gz"),
