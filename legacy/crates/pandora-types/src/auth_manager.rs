@@ -92,7 +92,13 @@ impl AuthStore {
     pub fn load() -> Self {
         let path = Self::store_path();
         if let Ok(data) = std::fs::read_to_string(&path) {
-            let mut store: Self = serde_json::from_str(&data).unwrap_or_default();
+            let mut store: Self = match serde_json::from_str(&data) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Warning: auth.json corrupted, resetting: {e}");
+                    Self::default()
+                }
+            };
             store.config_path = Some(path);
             store
         } else {
@@ -113,11 +119,31 @@ impl AuthStore {
             std::fs::create_dir_all(parent).map_err(|e| format!("mkdir: {e}"))?;
         }
         let json = serde_json::to_string_pretty(self).map_err(|e| format!("serialize: {e}"))?;
-        std::fs::write(&path, json).map_err(|e| format!("write: {e}"))
+        // Write with 0600 permissions on Unix to prevent other users from reading credentials
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .mode(0o600)
+                .open(&path)
+                .map_err(|e| format!("write: {e}"))?;
+            std::io::Write::write_all(&mut file, json.as_bytes())
+                .map_err(|e| format!("write: {e}"))?;
+        }
+        #[cfg(not(unix))]
+        {
+            std::fs::write(&path, json).map_err(|e| format!("write: {e}"))?;
+        }
+        Ok(())
     }
 
     fn store_path() -> PathBuf {
-        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .unwrap_or_else(|_| "/tmp".into());
         PathBuf::from(home).join(".pandora/auth.json")
     }
 

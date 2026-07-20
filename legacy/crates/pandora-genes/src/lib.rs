@@ -149,9 +149,19 @@ impl Gene for FilesystemGene {
                 std::fs::read_to_string(&canonical).map_err(|e| e.to_string())
             }
             "write" => {
-                let path = p.get(1).ok_or("Missing path")?;
-                std::fs::write(path, "content").map_err(|e| e.to_string())?;
-                Ok(format!("wrote {path}"))
+                let raw_path = p.get(1).copied().ok_or("Missing path")?;
+                if raw_path.is_empty() {
+                    return Err("Missing path".into());
+                }
+                let parent = std::path::Path::new(raw_path)
+                    .parent()
+                    .ok_or("Invalid path")?;
+                let canonical = std::fs::canonicalize(parent).map_err(|e| e.to_string())?;
+                if canonical.to_string_lossy().contains("..") {
+                    return Err("Path traversal not allowed".into());
+                }
+                std::fs::write(raw_path, "content").map_err(|e| e.to_string())?;
+                Ok(format!("wrote {raw_path}"))
             }
             "list" => {
                 let dir = std::fs::read_dir(p.get(1).unwrap_or(&".")).map_err(|e| e.to_string())?;
@@ -188,6 +198,9 @@ impl Gene for ShellGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
+        if std::env::var("PANDORA_SHELL_UNSAFE").is_ok() {
+            return Err("Shell execution requires explicit permission".into());
+        }
         let o = Command::new("sh")
             .arg("-c")
             .arg(input)
@@ -224,6 +237,9 @@ impl Gene for WorkflowGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
+        if std::env::var("PANDORA_SHELL_UNSAFE").is_ok() {
+            return Err("Shell execution requires explicit permission".into());
+        }
         let mut r = Vec::new();
         for (i, line) in input.lines().enumerate() {
             let o = Command::new("sh")
@@ -353,6 +369,9 @@ impl Gene for BenchmarkGene {
     fn execute(&self, input: &str) -> Result<String, String> {
         if input.trim().is_empty() {
             return Err("Usage: benchmark <command>".into());
+        }
+        if std::env::var("PANDORA_SHELL_UNSAFE").is_ok() {
+            return Err("Shell execution requires explicit permission".into());
         }
         let s = std::time::Instant::now();
         let o = Command::new("sh")

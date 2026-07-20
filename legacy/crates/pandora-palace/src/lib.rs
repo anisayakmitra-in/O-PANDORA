@@ -148,6 +148,8 @@ fn authenticate(state: &PalaceState, headers: &axum::http::HeaderMap) -> Option<
     let tokens = state.tokens.blocking_read();
     let user_id = tokens.get(token)?;
     let users = state.users.blocking_read();
+    // Token expiry is checked at login time; stored tokens have no expiry metadata.
+    // Post-v0.1.0: add token expiry tracking with a (token, expires_at) tuple.
     users.get(user_id).cloned()
 }
 

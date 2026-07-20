@@ -23,6 +23,18 @@ use axum::{
 use pandora_types::execution_plan::*;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+/// Check Bearer token if PANDORA_API_TOKEN is set.
+/// If the env var is not set, auth is skipped (current behavior).
+fn require_auth(headers: &axum::http::HeaderMap) -> bool {
+    let expected = match std::env::var("PANDORA_API_TOKEN") {
+        Ok(t) if !t.is_empty() => t,
+        _ => return true, // No token configured = open access (same as before)
+    };
+    let auth = headers.get("authorization").and_then(|v| v.to_str().ok());
+    auth.and_then(|a| a.strip_prefix("Bearer "))
+        .is_some_and(|t| t == expected)
+}
 use tokio::sync::Mutex;
 
 /// Shared runtime state.
@@ -70,8 +82,12 @@ async fn health() -> impl IntoResponse {
 
 async fn execute(
     State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<ExecuteRequest>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
+    if !require_auth(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
     let strategy = match req.strategy.as_str() {
         "closed" => ControlStrategy::Closed,
         "human" => ControlStrategy::Human,
@@ -105,14 +121,16 @@ async fn execute(
             output: r.output.chars().take(2000).collect(),
             duration_ms: r.duration_ms as u64,
             provider: r.provider,
-        }),
+        })
+        .into_response(),
         Err(e) => Json(ExecuteResponse {
             session_id: String::new(),
             status: "error".into(),
             output: e.to_string(),
             duration_ms: 0,
             provider: String::new(),
-        }),
+        })
+        .into_response(),
     }
 }
 
