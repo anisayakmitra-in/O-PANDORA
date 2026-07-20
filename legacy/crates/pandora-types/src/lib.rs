@@ -102,3 +102,4 @@ pub mod package_health;
 pub mod quality;
 pub mod model_registry;
 pub mod permissions_manifest;
+pub mod runtime_node;
