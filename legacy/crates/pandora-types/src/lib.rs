@@ -104,3 +104,4 @@ pub mod model_registry;
 pub mod permissions_manifest;
 pub mod runtime_node;
 pub mod event_bus;
+pub mod risk_engine;
