@@ -7,9 +7,9 @@ edition.workspace = true
 pandora-kuber = { path = "../pandora-kuber" }
 pandora-orchestrator = { path = "../pandora-orchestrator" }
 pandora-shadow-council = { path = "../pandora-shadow-council" }
-tokio = { version = "1", features = ["full"] }
+tokio.workspace = true
 pandora-types = { path = "../pandora-types" }
-serde_json = "1"
+serde_json.workspace = true
 pandora-api = { path = "../pandora-api" }
 pandora-harnesses = { path = "../pandora-harnesses" }
-tracing-subscriber = "0.3"
+tracing-subscriber.workspace = true

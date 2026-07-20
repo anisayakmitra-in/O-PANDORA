@@ -19,9 +19,38 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["Arka <arka@pandora.local>"]
+authors = ["Pandora Contributors"]
 license = "MIT"
+rust-version = "1.81"
 
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+rand = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+axum = "0.7"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+thiserror = "1"
+toml = "0.8"
+hex = "0.4"
+ring = "0.17"
+base64 = "0.22"
+sha2 = "0.10"
+petgraph = "0.6"
+walkdir = "2"
+ratatui = "0.29"
+crossterm = "0.28"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Binary size: ~6M debug, ~2M release (strip=true, lto)
+# lto=fat gives best optimization at ~8min compile
+# codegen-units=1 gives ~15% smaller binaries
 [profile.release]
 opt-level = 3
 lto = true

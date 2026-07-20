@@ -1,5 +1,9 @@
 name: CI
+
 on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   test:
@@ -10,21 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo check --workspace
-      - run: cargo test --workspace
-      - run: cargo clippy --workspace -- -D warnings
-
-  fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: rustup component add rustfmt
+      - run: rustup component add clippy rustfmt
       - run: cargo fmt --all -- --check
+      - run: cargo check --workspace
+      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test --workspace
+      - run: cargo build --release -p pandora -p pandora-tui
 
   release:
     runs-on: ${{ matrix.os }}
-    needs: [test, fmt]
+    needs: [test]
     if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
@@ -33,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build --release -p pandora -p pandora-tui
-      - name: Upload pandora
+      - name: Upload artifacts
         uses: softprops/action-gh-release@v1
         with:
           files: |

@@ -7,4 +7,4 @@ edition.workspace = true
 pandora-types = { path = "../pandora-types" }
 pandora-shadow-council = { path = "../pandora-shadow-council" }
 pandora-services = { path = "../pandora-services" }
-serde = { version = "1", features = ["derive"] }
+serde.workspace = true

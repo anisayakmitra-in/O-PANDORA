@@ -365,7 +365,7 @@ fn cmd_execute(args: &[String]) {
         ..ExecutionBudget::default()
     };
 
-    match tokio::runtime::Runtime::new() {
+    match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
             runtime.plan = ExecutionPlan {
@@ -392,12 +392,15 @@ fn cmd_execute(args: &[String]) {
                     process::exit(1);
                 }
             }
+            process::exit(0);
         }),
         Err(e) => {
             eprintln!("Failed to start runtime: {e}");
             process::exit(1);
         }
     }
+    // Exit immediately to avoid tokio runtime teardown panic on some platforms.
+    process::exit(0);
 }
 
 /// Extract a top-level TOML key as a string. Handles inline and quoted values.
@@ -422,7 +425,7 @@ fn cmd_run(args: &[String]) {
     }
     let task: String = args[2..].join(" ");
     println!("Task: {task}");
-    match tokio::runtime::Runtime::new() {
+    match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
             // Register all built-in harnesses (source + domain + meta) via
@@ -451,6 +454,7 @@ fn cmd_run(args: &[String]) {
                     process::exit(1);
                 }
             }
+            process::exit(0);
         }),
         Err(e) => {
             eprintln!("Failed to start runtime: {e}");
@@ -1700,7 +1704,10 @@ fn cmd_serve(_args: &[String]) {
     println!("  Starting on http://localhost:9090");
     println!("  Endpoints: /health /execute /sessions /explain /providers");
     println!("  Integrations: MCP, Cursor, Claude Code, VS Code");
-    match tokio::runtime::Runtime::new() {
+    match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
         Ok(rt) => rt.block_on(async {
             pandora_api::serve("0.0.0.0:9090", sessions)
                 .await
