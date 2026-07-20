@@ -107,3 +107,5 @@ pub mod event_bus;
 pub mod risk_engine;
 pub mod context_strategy;
 pub mod auth_manager;
+pub mod intent_router;
+pub mod hierarchical_memory;
