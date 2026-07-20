@@ -22,7 +22,7 @@ mod integration {
     };
     use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
     use pandora_types::runtime_node::{
-         NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
+        NodeKind, NodePlatform, NodeRegistry, RuntimeNode, TransportKind,
     };
     use pandora_types::universal_registry::{
         HealthStatus, InMemoryRegistry, Registry, RegistryEntry,

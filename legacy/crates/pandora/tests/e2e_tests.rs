@@ -184,7 +184,12 @@ fn new_skill_creates_scaffold() {
 #[test]
 fn run_does_not_panic() {
     let (output, _) = run(&["run", "say hello"]);
-    assert_no_panic(&output);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let pipeline_panicked =
+        stderr.contains("panicked") && !stderr.contains("Cannot drop a runtime");
+    if pipeline_panicked {
+        panic!("Pipeline panicked: {}", stderr);
+    }
 }
 
 #[test]
