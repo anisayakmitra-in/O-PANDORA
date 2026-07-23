@@ -178,7 +178,21 @@ fn main() {
     }
 }
 
+const PANDORA_ASCII: &str = r#"
+         /\_/\
+    ____/ o o \
+   /~____  =  /
+  (______)__m_m)
+     |        |
+     |  ╔══╗ |
+     |  ║◇◇║ |
+     |  ║◇◇║ |
+     |  ╚══╝ |
+     |___|||||
+"#;
+
 fn cmd_version(_args: &[String]) {
+    println!("{PANDORA_ASCII}");
     let hash = option_env!("GIT_HASH").unwrap_or("unknown");
     let pkg = env!("CARGO_PKG_VERSION");
     println!("pandora {pkg} ({hash})");
@@ -1187,7 +1201,7 @@ fn cmd_shell(_args: &[String]) {
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
     history.reverse();
-    println!("PANDORA v0.1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit");
+    println!("{PANDORA_ASCII}\nPANDORA v0.1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit");
     let mut input = String::new();
     loop {
         print!("pandora> ");
