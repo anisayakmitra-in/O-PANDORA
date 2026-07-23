@@ -1,4 +1,6 @@
 [package]
+description = "21 built-in genes — shell, filesystem, git, http, docker, browser, code analysis"
+keywords = ["ai", "runtime", "tools"]
 publish = false
 name = "pandora-genes"
 version.workspace = true

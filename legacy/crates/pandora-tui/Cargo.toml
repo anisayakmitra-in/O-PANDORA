@@ -1,4 +1,6 @@
 [package]
+description = "Terminal UI dashboard for Pandora runtime"
+keywords = ["ai", "tui", "dashboard"]
 publish = false
 name = "pandora-tui"
 version.workspace = true

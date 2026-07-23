@@ -1,4 +1,6 @@
 [package]
+description = "Pipeline engine — 9-stage execution pipeline with retry, failover, and governance"
+keywords = ["ai", "runtime", "orchestration"]
 publish = false
 name = "pandora-orchestrator"
 version.workspace = true

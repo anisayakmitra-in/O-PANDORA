@@ -1,4 +1,6 @@
 [package]
+description = "Service traits and default implementations for Pandora runtime"
+keywords = ["ai", "runtime", "services"]
 publish = false
 name = "pandora-services"
 version.workspace = true

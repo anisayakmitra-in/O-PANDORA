@@ -1,5 +1,9 @@
 # Pandora
 
+[![CI](https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/actions/workflows/ci.yml/badge.svg)](https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/releases/tag/v0.1.0)
+
 A governed execution runtime for AI agents. You give it a task, it runs through a pipeline of harnesses and genes, and tells you exactly what it did and why.
 
 It's not a chatbot. It's not an agent framework. It's the layer that sits between "ask an LLM something" and "ship code to production" — the part most people skip.

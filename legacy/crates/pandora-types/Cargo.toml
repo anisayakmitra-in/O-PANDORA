@@ -1,4 +1,6 @@
 [package]
+description = "Canonical shared types for Pandora OS — genes, harnesses, manifests, permissions, signing"
+keywords = ["ai", "runtime", "governance", "sdk", "agent"]
 publish = false
 name = "pandora-types"
 version.workspace = true

@@ -1,4 +1,6 @@
 [package]
+description = "12 built-in harnesses — coding, design, security, research, computer-use"
+keywords = ["ai", "runtime", "harnesses"]
 publish = false
 name = "pandora-harnesses"
 version.workspace = true

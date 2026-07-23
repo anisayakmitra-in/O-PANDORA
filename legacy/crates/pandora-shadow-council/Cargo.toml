@@ -1,4 +1,6 @@
 [package]
+description = "Harness and gene registry — routing tasks to the right harness and gene"
+keywords = ["ai", "runtime", "routing"]
 publish = false
 name = "pandora-shadow-council"
 version.workspace = true

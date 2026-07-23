@@ -1,4 +1,6 @@
 [package]
+description = "CLI — governed execution runtime for AI agents"
+keywords = ["ai", "cli", "runtime", "agent"]
 publish = false
 name = "pandora"
 version.workspace = true

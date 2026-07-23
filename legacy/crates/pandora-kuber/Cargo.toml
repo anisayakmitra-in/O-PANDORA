@@ -1,4 +1,6 @@
 [package]
+description = "Package management — discover, install, score, and manage gene packages"
+keywords = ["ai", "package-manager", "registry"]
 publish = false
 name = "pandora-kuber"
 version.workspace = true
