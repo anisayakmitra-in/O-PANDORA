@@ -1,6 +1,6 @@
-# Architecture Freeze — Pandora v1.0
+# Architecture Freeze — Pandora v0.1.0
 
-This document records the canonical architecture of Pandora at v1.0.  
+This document records the canonical architecture of Pandora at v0.1.0.  
 It is the single source of truth for crate responsibilities, stable APIs,  
 and architectural invariants. All changes to frozen surfaces require an ADR.
 
@@ -69,7 +69,7 @@ No stage may be removed; new stages append at the end.
 
 ---
 
-## Stable Public Interfaces (frozen at v1.0)
+## Stable Public Interfaces (frozen at v0.1.0)
 
 ### Execution
 

@@ -2,7 +2,7 @@
 
 ## Architecture Freeze
 
-Pandora v1.0 is under architecture freeze. See `ARCHITECTURE_FREEZE.md` for the canonical execution pipeline, crate responsibilities, and frozen APIs. Changes to frozen surfaces require an ADR.
+Pandora v0.1.0 is under architecture freeze. See `ARCHITECTURE_FREEZE.md` for the canonical execution pipeline, crate responsibilities, and frozen APIs. Changes to frozen surfaces require an ADR.
 
 ## Getting Started
 

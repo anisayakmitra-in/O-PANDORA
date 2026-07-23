@@ -1,10 +1,11 @@
 #!/bin/bash
-PORT=9091
-echo "KUBER Palace starting on :"
+set -e
+PORT="${PANDORA_PALACE_PORT:-3000}"
+echo "Pandora Palace starting on :$PORT"
 cargo run --release -p pandora-palace &
-PID=
-echo "Palace PID: "
-echo "  http://localhost:/health"
-echo "  http://localhost:/api/packages"
-trap "kill  2>/dev/null" EXIT
-wait 
+PID=$!
+echo "Palace PID: $PID"
+echo "  http://localhost:$PORT/health"
+echo "  http://localhost:$PORT/api/packages"
+trap "kill $PID 2>/dev/null" EXIT
+wait $PID

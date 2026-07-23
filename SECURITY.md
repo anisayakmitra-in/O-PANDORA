@@ -1,4 +1,4 @@
-# Security Model — Pandora v1.0
+# Security Model — Pandora v0.1.0
 
 ## Trust Boundaries
 
@@ -24,7 +24,7 @@ User → CLI → PandoraRuntime → Provider (LLM API)
 
 ### 3. Provider Communication (High)
 - **API key exposure**: Keys stored in plaintext `~/.pandora/connections.toml`
-- **Mitigation**: v1.0 accepts plaintext for local dev. v1.1 adds OS keychain integration.
+- **Mitigation**: v0.1.0 accepts plaintext for local dev. v0.2.0 will add OS keychain integration.
 
 ### 4. Command Injection (Medium)
 - **Shell commands**: `pandora doctor` shells out to check tools
@@ -57,5 +57,5 @@ User → CLI → PandoraRuntime → Provider (LLM API)
 ## Threat Model Version
 
 - v0.2.0: Trust-on-first-use for packages. Plaintext API keys.
-- v1.0.0: Package signing mandatory. OS keychain for API keys.
+- v0.1.0: Package signing mandatory. OS keychain for API keys.
 - v1.1.0: Sandbox isolation for gene execution.

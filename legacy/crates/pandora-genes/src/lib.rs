@@ -198,8 +198,10 @@ impl Gene for ShellGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
-        if std::env::var("PANDORA_SHELL_UNSAFE").is_ok() {
-            return Err("Shell execution requires explicit permission".into());
+        if std::env::var("PANDORA_SHELL_UNSAFE").is_err() {
+            return Err(
+                "Shell execution requires PANDORA_SHELL_UNSAFE=1 to acknowledge risks".into(),
+            );
         }
         let o = Command::new("sh")
             .arg("-c")
@@ -237,8 +239,10 @@ impl Gene for WorkflowGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, String> {
-        if std::env::var("PANDORA_SHELL_UNSAFE").is_ok() {
-            return Err("Shell execution requires explicit permission".into());
+        if std::env::var("PANDORA_SHELL_UNSAFE").is_err() {
+            return Err(
+                "Shell execution requires PANDORA_SHELL_UNSAFE=1 to acknowledge risks".into(),
+            );
         }
         let mut r = Vec::new();
         for (i, line) in input.lines().enumerate() {
@@ -370,8 +374,10 @@ impl Gene for BenchmarkGene {
         if input.trim().is_empty() {
             return Err("Usage: benchmark <command>".into());
         }
-        if std::env::var("PANDORA_SHELL_UNSAFE").is_ok() {
-            return Err("Shell execution requires explicit permission".into());
+        if std::env::var("PANDORA_SHELL_UNSAFE").is_err() {
+            return Err(
+                "Shell execution requires PANDORA_SHELL_UNSAFE=1 to acknowledge risks".into(),
+            );
         }
         let s = std::time::Instant::now();
         let o = Command::new("sh")

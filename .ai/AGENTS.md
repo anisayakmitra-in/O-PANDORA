@@ -10,9 +10,9 @@ You are working on **Pandora**, an AI execution operating system.
 
 ## Quick rules:
 - No `.unwrap()` in production — use `.expect("reason")`
-- All public APIs return `PandoraError`, not `String`
+- Public APIs are migrating to `PandoraError` (v0.1.0 still uses `String` in some traits; v1.0 will be fully typed)
 - Every pipeline stage uses `tracing::info!` not `println!`
-- Changes to frozen surfaces require an ADR in `docs/specs/adr/`
+- Changes to frozen surfaces require an ADR in `docs/rfcs/`
 - Lock operations: `rwlock_read()` / `rwlock_write()` — never `.read().unwrap()`
 
 ## Crate map:

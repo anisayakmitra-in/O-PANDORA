@@ -14,7 +14,7 @@ $ pandora --version
      |  ╚══╝ |
      |___|||||
 
-pandora 0.1.0 (d31211f)
+pandora 0.1.0
 Platform: linux
 Arch: x86_64
 ```

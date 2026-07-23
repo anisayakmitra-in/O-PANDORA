@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Runtime architecture: ExecutionPipeline, ExecutionController, ShadowCouncil
-- 12 built-in harnesses: 5 source, 1 meta, 6 domain (coding, design, security,
+- 13 built-in harnesses: 5 source, 1 meta, 7 domain (coding, design, security,
   research, computer-use, android-use)
 - 21 built-in genes across filesystem, git, docker, browser, and shell domains
 - 72 type system modules in pandora-types crate
