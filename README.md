@@ -75,6 +75,22 @@ cargo run --example hello_capability -p pandora-types
 cargo run --example hello_permissions -p pandora-types
 ```
 
+## CLI Examples
+
+See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for CLI output examples.
+
+## Sample Apps
+
+See [sample-apps/](sample-apps/) for reference applications.
+
+## CLI Examples
+
+See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for CLI output examples.
+
+## Sample Apps
+
+See [sample-apps/](sample-apps/) for reference applications.
+
 ## What's in the box
 
 ### The pipeline
