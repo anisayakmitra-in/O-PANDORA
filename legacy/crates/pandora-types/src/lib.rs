@@ -67,6 +67,8 @@ pub const ARCHITECTURE_INVARIANT: &str = "execute-from-service-or-gene-only";
 pub use gene_package::{discover_gene_packages, GenePackage, GenePackageManifest, SlashCommandDef};
 pub use harness_gene::HarnessGene;
 
+pub mod prelude;
+
 pub mod capability_leasing;
 pub mod capability_resolution;
 pub mod config;

@@ -8,6 +8,7 @@ use std::fmt;
 
 /// The canonical error type for all Pandora operations.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum PandoraError {
     NotFound(String),
     AlreadyExists(String),

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// Canonical kind of harness — all three share the same lifecycle.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum HarnessKind {
     /// Augments one or more constitutional services.
     Source,

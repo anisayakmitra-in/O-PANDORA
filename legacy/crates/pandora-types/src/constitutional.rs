@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 
 /// The kind of constitutional object a manifest describes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum ManifestKind {
     SourceHarness,
     MetaHarness,
@@ -369,6 +370,7 @@ pub struct ManifestTrust {
     pub verified: bool,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[non_exhaustive]
 pub enum TrustLevel {
     #[default]
     Unknown,
@@ -732,6 +734,7 @@ impl ConstitutionalManifestBuilder {
 // ── Validation ──
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[non_exhaustive]
 pub enum ManifestValidationError {
     #[error("manifest name must not be empty")]
     EmptyName,

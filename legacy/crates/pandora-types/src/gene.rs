@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 /// Classification of a gene's purpose.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum GeneKind {
     Tool,
     Provider,
@@ -237,10 +238,27 @@ impl GeneLineage {
 
 // ── Gene Trait ──
 
-/// Generic trait for any Gene type.
+/// Canonical runtime Gene trait.
 ///
-/// All gene kinds share this same runtime contract. The `execute` method
-/// must be overridden; the default returns an error.
+/// This is the primary trait developers implement when building genes.
+/// Most developers should implement this trait.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
+///
+/// struct MyGene { m: GeneManifest }
+/// impl Gene for MyGene {
+///     fn manifest(&self) -> &GeneManifest { &self.m }
+///     fn execute(&self, input: &str) -> Result<String, String> {
+///         Ok(format!("hello: {input}"))
+///     }
+/// }
+/// ```
+///
+/// See `constitutional::Gene` only when implementing governance-level genes
+/// that require access to `GeneExecutionContext` and constitutional manifest APIs.
 pub trait Gene: Send + Sync + std::fmt::Debug {
     /// Access the gene's canonical manifest.
     fn manifest(&self) -> &GeneManifest;

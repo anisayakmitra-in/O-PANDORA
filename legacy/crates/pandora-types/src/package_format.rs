@@ -29,6 +29,7 @@ pub fn package_id(publisher: &str, name: &str) -> String {
 
 /// Trust level assigned to a package.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum TrustLevel {
     #[default]
     None,
