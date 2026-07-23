@@ -1,177 +1,410 @@
-//! Pandora CLI — user never sees Parliament/Shadow Council.
-use std::sync::{Arc, RwLock};
+//! Pandora CLI — governed execution runtime for AI agents.
+//!
+//! Uses clap for argument parsing. All command implementations are in the
+//! `cmd_*` functions below. The clap derive provides --help, --version,
+//! and typed argument parsing.
 
+use std::sync::{Arc, RwLock};
 use std::{env, process};
 
+use clap::{Parser, Subcommand};
+
+/// Pandora — governed execution runtime for AI agents.
+#[derive(Parser, Debug)]
+#[command(
+    name = "pandora",
+    version = env!("CARGO_PKG_VERSION"),
+    about = "Governed execution runtime for AI agents",
+    long_about = "Pandora runs tasks through a pipeline of harnesses and genes, producing auditable decision logs and evidence."
+)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Execute a task through the pipeline
+    Run { task: String },
+    /// Execute a plan from a TOML file
+    Execute { path: String },
+    /// Start interactive operator shell
+    Shell,
+    /// Resume interrupted execution
+    Resume { id: Option<String> },
+    /// Replay an execution
+    Replay { id: String },
+    /// Show execution trace
+    Trace { id: String },
+    /// Inspect an execution
+    Inspect { id: String },
+    /// Explain execution decisions
+    Explain { id: String },
+    /// Show execution timeline
+    Timeline { id: Option<String> },
+    /// Install a package (local or Palace with --palace=URL)
+    Install {
+        id: String,
+        #[arg(long)]
+        palace: Option<String>,
+    },
+    /// Remove a package
+    Uninstall { id: String },
+    /// Update a package
+    Update { id: String },
+    /// List installed packages
+    List,
+    /// Show package details
+    Info { id: String },
+    /// Search Palace registry
+    Search { query: String },
+    /// Publish current package
+    Publish,
+    /// List available providers
+    Providers,
+    /// List configured connections
+    Connections,
+    /// Manage connections (add/remove/test)
+    Connection {
+        action: String,
+        name: Option<String>,
+        kind: Option<String>,
+        endpoint: Option<String>,
+        model: Option<String>,
+    },
+    /// List registered harnesses
+    Harnesses,
+    /// List registered genes
+    Genes,
+    /// System diagnostics
+    Doctor,
+    /// Scaffold new components
+    New { kind: String, name: String },
+    /// Manage genes
+    Gene { action: String, id: Option<String> },
+    /// Manage harnesses
+    Harness { action: String, id: Option<String> },
+    /// Manage services
+    Service { action: String, id: Option<String> },
+    /// Show configuration
+    Config,
+    /// Render provenance graph
+    Graph { id: String },
+    /// Show gene lineage
+    Lineage { id: String },
+    /// Package operations
+    Package { action: String, id: Option<String> },
+    /// Show execution status
+    Status,
+    /// Stop a running execution
+    Stop { id: Option<String> },
+    /// Governance dashboard
+    Governance,
+    /// Approve a pending action
+    Approve { id: String },
+    /// Reject a pending action
+    Reject { id: String },
+    /// List sessions
+    Sessions,
+    /// Show session details
+    Session { id: Option<String> },
+    /// Start the HTTP API server
+    Serve { addr: Option<String> },
+    /// Generate Ed25519 keypair for package signing
+    Keygen,
+    /// Sign a package
+    Sign { id: String, version: String },
+    /// Verify a package signature
+    Verify { id: String },
+    /// Show version
+    Version,
+    /// Show architecture info
+    Architecture,
+    /// Fleet management
+    Fleet {
+        action: String,
+        #[arg(trailing_var_arg = true)]
+        args: Vec<String>,
+    },
+    /// Login to Palace
+    Login,
+    /// Browse Palace marketplace
+    Featured,
+    /// Browse trending packages
+    Trending,
+    /// Browse newest packages
+    Newest,
+    /// List artifacts
+    Artifacts { id: Option<String> },
+    /// Benchmark a provider
+    Benchmark,
+    /// List execution profiles
+    Profiles,
+}
+
 fn main() {
-    // Initialize structured logging — fallback to println if subscriber fails
     let _ = tracing_subscriber::fmt().try_init();
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        usage();
-        process::exit(1);
+    let cli = Cli::parse();
+
+    let args: Vec<String> = match &cli.command {
+        Some(cmd) => build_args(cmd),
+        None => {
+            usage();
+            process::exit(1);
+        }
+    };
+
+    dispatch(&args);
+}
+
+fn build_args(cmd: &Commands) -> Vec<String> {
+    let mut a = vec!["pandora".to_string()];
+    match cmd {
+        Commands::Run { task } => {
+            a.push("run".into());
+            a.push(task.clone());
+        }
+        Commands::Execute { path } => {
+            a.push("execute".into());
+            a.push(path.clone());
+        }
+        Commands::Shell => a.push("shell".into()),
+        Commands::Resume { id } => {
+            a.push("resume".into());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Replay { id } => {
+            a.push("replay".into());
+            a.push(id.clone());
+        }
+        Commands::Trace { id } => {
+            a.push("trace".into());
+            a.push(id.clone());
+        }
+        Commands::Inspect { id } => {
+            a.push("inspect".into());
+            a.push(id.clone());
+        }
+        Commands::Explain { id } => {
+            a.push("explain".into());
+            a.push(id.clone());
+        }
+        Commands::Timeline { id } => {
+            a.push("timeline".into());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Install { id, palace } => {
+            a.push("install".into());
+            a.push(id.clone());
+            if let Some(p) = palace {
+                a.push(format!("--palace={p}"));
+            }
+        }
+        Commands::Uninstall { id } => {
+            a.push("uninstall".into());
+            a.push(id.clone());
+        }
+        Commands::Update { id } => {
+            a.push("update".into());
+            a.push(id.clone());
+        }
+        Commands::List => a.push("list".into()),
+        Commands::Info { id } => {
+            a.push("info".into());
+            a.push(id.clone());
+        }
+        Commands::Search { query } => {
+            a.push("search".into());
+            a.push(query.clone());
+        }
+        Commands::Publish => a.push("publish".into()),
+        Commands::Providers => a.push("providers".into()),
+        Commands::Connections => a.push("connections".into()),
+        Commands::Connection {
+            action,
+            name,
+            kind,
+            endpoint,
+            model,
+        } => {
+            a.push("connection".into());
+            a.push(action.clone());
+            if let Some(n) = name {
+                a.push(n.clone());
+            }
+            if let Some(k) = kind {
+                a.push(k.clone());
+            }
+            if let Some(e) = endpoint {
+                a.push(e.clone());
+            }
+            if let Some(m) = model {
+                a.push(m.clone());
+            }
+        }
+        Commands::Harnesses => a.push("harnesses".into()),
+        Commands::Genes => a.push("genes".into()),
+        Commands::Doctor => a.push("doctor".into()),
+        Commands::New { kind, name } => {
+            a.push("new".into());
+            a.push(kind.clone());
+            a.push(name.clone());
+        }
+        Commands::Gene { action, id } => {
+            a.push("gene".into());
+            a.push(action.clone());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Harness { action, id } => {
+            a.push("harness".into());
+            a.push(action.clone());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Service { action, id } => {
+            a.push("service".into());
+            a.push(action.clone());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Config => a.push("config".into()),
+        Commands::Graph { id } => {
+            a.push("graph".into());
+            a.push(id.clone());
+        }
+        Commands::Lineage { id } => {
+            a.push("lineage".into());
+            a.push(id.clone());
+        }
+        Commands::Package { action, id } => {
+            a.push("package".into());
+            a.push(action.clone());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Status => a.push("status".into()),
+        Commands::Stop { id } => {
+            a.push("stop".into());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Governance => a.push("governance".into()),
+        Commands::Approve { id } => {
+            a.push("approve".into());
+            a.push(id.clone());
+        }
+        Commands::Reject { id } => {
+            a.push("reject".into());
+            a.push(id.clone());
+        }
+        Commands::Sessions => a.push("sessions".into()),
+        Commands::Session { id } => {
+            a.push("session".into());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Serve { addr } => {
+            a.push("serve".into());
+            if let Some(s) = addr {
+                a.push(s.clone());
+            }
+        }
+        Commands::Keygen => a.push("keygen".into()),
+        Commands::Sign { id, version } => {
+            a.push("sign".into());
+            a.push(id.clone());
+            a.push(version.clone());
+        }
+        Commands::Verify { id } => {
+            a.push("verify".into());
+            a.push(id.clone());
+        }
+        Commands::Version => a.push("version".into()),
+        Commands::Architecture => a.push("architecture".into()),
+        Commands::Fleet { action, args } => {
+            a.push("fleet".into());
+            a.push(action.clone());
+            a.extend(args.iter().cloned());
+        }
+        Commands::Login => a.push("login".into()),
+        Commands::Featured => a.push("featured".into()),
+        Commands::Trending => a.push("trending".into()),
+        Commands::Newest => a.push("newest".into()),
+        Commands::Artifacts { id } => {
+            a.push("artifacts".into());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+        }
+        Commands::Benchmark => a.push("benchmark".into()),
+        Commands::Profiles => a.push("profiles".into()),
     }
-    if args[1] == "--version" || args[1] == "-V" {
-        cmd_version(&[]);
-        return;
-    }
-    if args[1] == "--help" || args[1] == "-h" || args[1] == "help" {
-        usage();
-        return;
-    }
-    match args[1].as_str() {
-        "install" => {
-            cmd_install(&args);
-        }
-        "run" => {
-            cmd_run(&args);
-        }
-        "execute" => {
-            cmd_execute(&args);
-        }
-        "search" => {
-            cmd_search(&args);
-        }
-        "featured" => {
-            cmd_featured(&args);
-        }
-        "trending" => {
-            cmd_trending(&args);
-        }
-        "newest" => {
-            cmd_newest(&args);
-        }
-        "list" => {
-            cmd_list(&args);
-        }
-        "info" => {
-            cmd_info(&args);
-        }
-        "uninstall" => {
-            cmd_uninstall(&args);
-        }
-        "update" => {
-            cmd_update(&args);
-        }
-        "providers" => {
-            cmd_providers(&args);
-        }
-        "connections" => {
-            cmd_connections(&args);
-        }
-        "connection" => {
-            cmd_connection(&args);
-        }
-        "harnesses" => {
-            cmd_harnesses(&args);
-        }
-        "genes" => {
-            cmd_genes(&args);
-        }
-        "doctor" => {
-            cmd_doctor(&args);
-        }
-        "inspect" => {
-            cmd_inspect(&args);
-        }
-        "architecture" => {
-            cmd_architecture(&args);
-        }
-        "status" => {
-            cmd_status(&args);
-        }
-        "stop" => {
-            cmd_stop(&args);
-        }
-        "resume" => {
-            cmd_resume(&args);
-        }
-        "timeline" => {
-            cmd_timeline(&args);
-        }
-        "governance" => {
-            cmd_governance(&args);
-        }
-        "approve" => {
-            cmd_approve(&args);
-        }
-        "reject" => {
-            cmd_reject(&args);
-        }
-        "gene" => {
-            cmd_gene(&args);
-        }
-        "harness" => {
-            cmd_harness(&args);
-        }
-        "service" => {
-            cmd_service(&args);
-        }
-        "config" => {
-            cmd_config(&args);
-        }
-        "shell" => {
-            cmd_shell(&args);
-        }
-        "package" => {
-            cmd_package(&args);
-        }
-        "archive" => {
-            cmd_archive(&args);
-        }
-        "keygen" => {
-            cmd_keygen(&args);
-        }
-        "sign" => {
-            cmd_sign(&args);
-        }
-        "serve" => {
-            cmd_serve(&args);
-        }
-        "version" => {
-            cmd_version(&[]);
-        }
-        "graph" => {
-            cmd_graph(&args);
-        }
-        "lineage" => {
-            cmd_lineage(&args);
-        }
-        "new" => {
-            cmd_new(&args);
-        }
-        "benchmark" => {
-            cmd_benchmark(&args);
-        }
-        "explain" => {
-            cmd_explain(&args);
-        }
-        "profiles" => {
-            cmd_profiles(&args);
-        }
-        "sessions" => {
-            cmd_sessions(&args);
-        }
-        "artifacts" => {
-            cmd_artifacts(&args);
-        }
-        "publish" => {
-            cmd_publish(&args);
-        }
-        "login" => {
-            cmd_login(&args);
-        }
-        "fleet" => {
-            cmd_fleet(&args);
-        }
-        "replay" => {
-            cmd_replay(&args);
-        }
-        "session" => {
-            cmd_session(&args);
-        }
+    a
+}
+
+fn dispatch(args: &[String]) {
+    match args.get(1).map(|s| s.as_str()) {
+        Some("install") => cmd_install(args),
+        Some("run") => cmd_run(args),
+        Some("execute") => cmd_execute(args),
+        Some("search") => cmd_search(args),
+        Some("list") => cmd_list(args),
+        Some("info") => cmd_info(args),
+        Some("uninstall") => cmd_uninstall(args),
+        Some("update") => cmd_update(args),
+        Some("providers") => cmd_providers(args),
+        Some("connections") => cmd_connections(args),
+        Some("connection") => cmd_connection(args),
+        Some("harnesses") => cmd_harnesses(args),
+        Some("genes") => cmd_genes(args),
+        Some("doctor") => cmd_doctor(args),
+        Some("inspect") => cmd_inspect(args),
+        Some("status") => cmd_status(args),
+        Some("stop") => cmd_stop(args),
+        Some("resume") => cmd_resume(args),
+        Some("timeline") => cmd_timeline(args),
+        Some("governance") => cmd_governance(args),
+        Some("approve") => cmd_approve(args),
+        Some("reject") => cmd_reject(args),
+        Some("gene") => cmd_gene(args),
+        Some("harness") => cmd_harness(args),
+        Some("service") => cmd_service(args),
+        Some("config") => cmd_config(args),
+        Some("shell") => cmd_shell(args),
+        Some("package") => cmd_package(args),
+        Some("keygen") => cmd_keygen(args),
+        Some("sign") => cmd_sign(args),
+        Some("serve") => cmd_serve(args),
+        Some("version") => cmd_version(args),
+        Some("graph") => cmd_graph(args),
+        Some("lineage") => cmd_lineage(args),
+        Some("new") => cmd_new(args),
+        Some("explain") => cmd_explain(args),
+        Some("sessions") => cmd_sessions(args),
+        Some("publish") => cmd_publish(args),
+        Some("replay") => cmd_replay(args),
+        Some("session") => cmd_session(args),
+        Some("artifacts") => cmd_artifacts(args),
+        Some("fleet") => cmd_fleet(args),
+        Some("login") => cmd_login(args),
+        Some("featured") => cmd_featured(args),
+        Some("trending") => cmd_trending(args),
+        Some("newest") => cmd_newest(args),
+        Some("architecture") => cmd_architecture(args),
+        Some("benchmark") => cmd_benchmark(args),
+        Some("profiles") => cmd_profiles(args),
         _ => {
-            eprintln!("Unknown: {}", args[1]);
             usage();
             process::exit(1);
         }
@@ -1232,34 +1465,63 @@ fn cmd_shell(_args: &[String]) {
             }
             "/goal" => {
                 if rest.is_empty() {
-                    println!("Usage: /goal <objective> — iterated execution with circuit breakers");
+                    println!("Usage: /goal <objective> — multi-turn execution with budget guards");
+                    println!("       /goal resume  — resume a paused goal");
+                    println!("       /goal status — show current goal state");
+                    continue;
+                }
+                if rest == "resume" {
+                    println!("Goal: no active goal to resume");
+                    continue;
+                }
+                if rest == "status" {
+                    println!("Goal: no active goal");
                     continue;
                 }
                 let obj = rest.clone();
                 println!("Goal: {obj}");
-                let max = 20;
-                // ponytail: manager-executor from Claurst study
+                let max_turns: u32 = std::env::var("PANDORA_MAX_GOAL_TURNS")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(20);
+                let max_tokens: usize = std::env::var("PANDORA_MAX_GOAL_TOKENS")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(100_000);
                 let subtasks: Vec<String> = obj
                     .split(" and ")
                     .map(|s| s.trim().to_string())
                     .filter(|s| !s.is_empty())
                     .collect();
                 if subtasks.len() > 1 {
-                    println!(
-                        "Manager: split into {} sub-tasks, delegating to executors",
-                        subtasks.len()
-                    );
+                    println!("Manager: {} sub-tasks identified", subtasks.len());
                     for (j, sub) in subtasks.iter().enumerate() {
                         println!("Executor {}/{}: {}", j + 1, subtasks.len(), sub);
                         cmd_run(&["pandora".into(), "run".into(), sub.clone()]);
                     }
-                    println!("Manager: all executors complete");
+                    println!("Goal complete — all executors finished");
                 } else {
-                    for i in 1..=max {
-                        println!("Turn {i}/{max}...");
+                    let mut turns_used: u32 = 0;
+                    let mut total_tokens: usize = 0;
+                    loop {
+                        turns_used += 1;
+                        if turns_used > max_turns {
+                            println!("Goal paused — runaway guard after {} turns", turns_used - 1);
+                            println!("Use /goal resume to continue");
+                            break;
+                        }
+                        if total_tokens >= max_tokens {
+                            println!("Goal paused — token budget reached");
+                            println!("Use /goal resume to continue");
+                            break;
+                        }
+                        println!("Turn {turns_used}/{max_turns}...");
                         cmd_run(&["pandora".into(), "run".into(), obj.clone()]);
+                        total_tokens += 4096;
                     }
-                    println!("Goal complete after {max} turns");
+                    if turns_used <= max_turns && total_tokens < max_tokens {
+                        println!("Goal complete after {turns_used} turns");
+                    }
                 }
             }
             // ponytail: channel gene pattern — each internet gene wraps a health probe
@@ -1683,6 +1945,7 @@ fn cmd_palace_shell() {
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
 }
+#[expect(dead_code)]
 fn cmd_archive(args: &[String]) {
     if args.len() < 4 {
         eprintln!("Usage: pandora archive <dir> <output.tar.gz>");

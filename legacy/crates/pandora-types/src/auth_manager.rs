@@ -141,6 +141,12 @@ impl AuthStore {
     }
 
     fn store_path() -> PathBuf {
+        // Resolution order: PANDORA_HOME > ~/.pandora (legacy) > XDG
+        if let Ok(h) = std::env::var("PANDORA_HOME") {
+            if !h.is_empty() {
+                return PathBuf::from(h).join("auth.json");
+            }
+        }
         let home = std::env::var("HOME")
             .or_else(|_| std::env::var("USERPROFILE"))
             .unwrap_or_else(|_| "/tmp".into());

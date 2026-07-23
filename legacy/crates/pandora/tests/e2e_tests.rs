@@ -101,7 +101,7 @@ fn help_shows_usage() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(text.contains("USAGE:"), "Help must show USAGE:\n{}", text);
+    assert!(text.contains("Usage"), "Help must show USAGE:\n{}", text);
     assert!(
         text.contains("run"),
         "Help must show 'run' command:\n{}",
