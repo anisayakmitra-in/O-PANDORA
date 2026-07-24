@@ -8,6 +8,8 @@
 //!
 //! Every stage returns a StageOutput. Parliament merges deltas.
 
+pub mod agentic_loop;
+
 use anyhow::Result;
 use pandora_services::ExecutionController;
 use pandora_shadow_council::ShadowCouncil;
@@ -25,7 +27,7 @@ use pandora_types::harness::HarnessKind;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::policy_engine::PolicyEngine;
 use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
-use pandora_types::provider::CancellationToken;
+
 use pandora_types::provider_db::{ProviderDb, ProviderObservation};
 use pandora_types::provider_intel::ProviderIntelligenceEngine;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
@@ -415,30 +417,62 @@ impl PandoraRuntime {
             candidates_considered: candidates.len(),
         };
 
-        // Stage 4: Provider Execution (real HTTP call)
+        // Stage 4: Agentic Loop — LLM <-> gene execution
         let provider = self
             .providers
             .get(&provider_name)
             .ok_or_else(|| anyhow::anyhow!("Provider not found: {}", provider_name))?;
-        let request = GenerationRequest {
-            model: model.clone(),
-            prompt: format!(
-                "Task: {task}\nDomain: {domain}\n\nExecute and return only the result.",
-            ),
-            temperature: 0.2,
-            ..Default::default()
-        };
-        let _cancel = CancellationToken::new();
+
+        // Collect all registered genes from the Shadow Council
+        let gene_refs: Vec<&dyn pandora_types::gene::Gene> = self
+            .council
+            .all_genes()
+            .iter()
+            .map(|ig| ig.gene.as_ref())
+            .collect();
+
         let exec_start = Instant::now();
-        let response = provider
-            .generate(request)
-            .map_err(|e| anyhow::anyhow!("Provider {} failed: {}", provider_name, e))?;
+
+        let response = if gene_refs.is_empty() {
+            // No genes registered — fall back to single-shot
+            let request = GenerationRequest {
+                model: model.clone(),
+                prompt: format!(
+                    "Task: {task}\nDomain: {domain}\n\nExecute and return only the result.",
+                ),
+                temperature: 0.2,
+                ..Default::default()
+            };
+            provider
+                .generate(request)
+                .map_err(|e| anyhow::anyhow!("Provider {} failed: {}", provider_name, e))?
+        } else {
+            // Run the agentic loop: LLM calls genes as tools
+            let config = agentic_loop::AgenticConfig::default();
+            let result = agentic_loop::run_agentic_loop(
+                task,
+                domain,
+                provider.as_ref(),
+                &gene_refs,
+                None,
+                &config,
+            )
+            .map_err(|e| anyhow::anyhow!("Agentic loop failed: {}", e))?;
+            println!(
+                "[STAGE 4 - AGENTIC LOOP] {} turns, {} tool calls, {} tokens, {} ms",
+                result.turns_used, result.tool_calls_made, result.total_tokens, result.duration_ms
+            );
+            // Record tool results as telemetry events
+            for tr in &result.tool_results {
+                let tid = self
+                    .telemetry
+                    .begin_trace(&execution_id, format!("tool:{}", tr.tool_name));
+                self.telemetry.begin_span(&tid, "gene-execute", "tool");
+            }
+            result.output
+        };
+
         let exec_ms = exec_start.elapsed().as_millis();
-        println!(
-            "[STAGE 4 - EXECUTION] {} tokens, {} ms",
-            response.len(),
-            exec_ms
-        );
         let provider_out = ProviderStageOutput {
             text: response.clone(),
             tokens_used: response.len(),

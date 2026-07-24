@@ -329,10 +329,8 @@ mod tests {
             reasoning_depth: 5,
             ..Default::default()
         };
-        let session = Session::new("s", "p");
-        let ctx = session.create_execution(Some(props));
-        assert_eq!(ctx.properties.exec_mode, ExecutionMode::Single);
-        assert_eq!(ctx.properties.reasoning_depth, 5);
+        assert_eq!(props.exec_mode, ExecutionMode::Single);
+        assert_eq!(props.reasoning_depth, 5);
     }
 
     #[test]

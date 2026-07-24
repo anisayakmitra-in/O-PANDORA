@@ -746,6 +746,9 @@ impl ShadowCouncil {
             .find_by_capability(cap)
             .and_then(|id| self.genes.get_gene(id))
     }
+    pub fn all_genes(&self) -> Vec<&InstalledGene> {
+        self.genes.all()
+    }
     pub fn genes_by_kind(&self, kind: &GeneKind) -> Vec<&InstalledGene> {
         self.genes.list_by_kind(kind)
     }

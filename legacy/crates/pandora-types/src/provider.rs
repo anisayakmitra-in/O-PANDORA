@@ -76,6 +76,30 @@ pub trait Provider: Send + Sync {
     fn manifest(&self) -> ProviderManifest {
         ProviderManifest::default()
     }
+
+    /// Generate a response with tool definitions available to the LLM.
+    /// The LLM can respond with text and/or tool_calls.
+    /// Default implementation falls back to plain generate() (no tool use).
+    fn generate_with_tools(
+        &self,
+        request: GenerationRequest,
+        _tools: &[ToolDefinition],
+        _messages: &[ChatMessage],
+    ) -> Result<ChatCompletion, String> {
+        // Default: no tool support, just call generate and wrap the result.
+        let text = self.generate(request)?;
+        Ok(ChatCompletion {
+            text,
+            tool_calls: vec![],
+            finish_reason: "stop".into(),
+            tokens_used: 0,
+        })
+    }
+
+    /// Whether this provider supports function/tool calling.
+    fn supports_tools(&self) -> bool {
+        false
+    }
 }
 
 // ── Ollama provider ──
@@ -132,7 +156,169 @@ pub mod ollama {
             let json: serde_json::Value = resp.json().map_err(|e| format!("parse failed: {e}"))?;
             Ok(json["response"].as_str().unwrap_or("").to_string())
         }
+
+        fn supports_tools(&self) -> bool {
+            true
+        }
+
+        fn generate_with_tools(
+            &self,
+            request: GenerationRequest,
+            tools: &[ToolDefinition],
+            messages: &[ChatMessage],
+        ) -> Result<ChatCompletion, String> {
+            let url = format!("{}/api/chat", self.endpoint);
+
+            // Convert messages to Ollama chat format
+            let chat_messages: Vec<serde_json::Value> = messages
+                .iter()
+                .map(|m| {
+                    let mut msg = serde_json::json!({
+                        "role": m.role,
+                        "content": m.content,
+                    });
+                    if !m.tool_calls.is_empty() {
+                        let tool_calls: Vec<serde_json::Value> = m
+                            .tool_calls
+                            .iter()
+                            .map(|tc| {
+                                serde_json::json!({
+                                    "function": {
+                                        "name": tc.name,
+                                        "arguments": tc.arguments,
+                                    }
+                                })
+                            })
+                            .collect();
+                        msg["tool_calls"] = serde_json::Value::Array(tool_calls);
+                    }
+                    if let Some(ref id) = m.tool_call_id {
+                        msg["tool_call_id"] = serde_json::Value::String(id.clone());
+                    }
+                    msg
+                })
+                .collect();
+
+            // Convert tool definitions to Ollama function format
+            let tools_json: Vec<serde_json::Value> = tools
+                .iter()
+                .map(|t| {
+                    serde_json::json!({
+                        "type": "function",
+                        "function": {
+                            "name": t.name,
+                            "description": t.description,
+                            "parameters": t.parameters,
+                        }
+                    })
+                })
+                .collect();
+
+            let body = serde_json::json!({
+                "model": self.model,
+                "messages": chat_messages,
+                "tools": tools_json,
+                "options": {
+                    "temperature": request.temperature,
+                    "num_predict": request.max_tokens,
+                },
+                "stream": false
+            });
+
+            let client = reqwest::blocking::Client::new();
+            let resp = client
+                .post(&url)
+                .json(&body)
+                .send()
+                .map_err(|e| format!("tool req failed: {e}"))?;
+
+            let json: serde_json::Value =
+                resp.json().map_err(|e| format!("tool parse failed: {e}"))?;
+
+            // Extract text content
+            let text = json["message"]["content"]
+                .as_str()
+                .unwrap_or("")
+                .to_string();
+
+            // Extract tool calls from response
+            let tool_calls: Vec<ToolCall> = json["message"]["tool_calls"]
+                .as_array()
+                .map(|calls| {
+                    calls
+                        .iter()
+                        .enumerate()
+                        .map(|(i, tc)| {
+                            let name = tc["function"]["name"]
+                                .as_str()
+                                .unwrap_or("unknown")
+                                .to_string();
+                            let args = tc["function"]["arguments"]
+                                .as_str()
+                                .unwrap_or("{}")
+                                .to_string();
+                            ToolCall {
+                                id: format!("call-{i}"),
+                                name,
+                                arguments: args,
+                            }
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            let finish_reason = if !tool_calls.is_empty() {
+                "tool_calls"
+            } else if text.is_empty() {
+                "length"
+            } else {
+                "stop"
+            };
+
+            Ok(ChatCompletion {
+                text,
+                tool_calls,
+                finish_reason: finish_reason.into(),
+                tokens_used: json["eval_count"].as_u64().unwrap_or(0) as usize,
+            })
+        }
     }
+}
+
+// ── Tool / Function calling types ──
+
+/// A tool definition sent to the LLM so it knows what genes are available.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolDefinition {
+    pub name: String,
+    pub description: String,
+    pub parameters: serde_json::Value,
+}
+
+/// A tool call requested by the LLM during the agentic loop.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolCall {
+    pub id: String,
+    pub name: String,
+    pub arguments: String,
+}
+
+/// A message in the agentic conversation loop.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub role: String, // "system" | "user" | "assistant" | "tool"
+    pub content: String,
+    pub tool_calls: Vec<ToolCall>,
+    pub tool_call_id: Option<String>,
+}
+
+/// Response from the LLM in the agentic loop.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatCompletion {
+    pub text: String,
+    pub tool_calls: Vec<ToolCall>,
+    pub finish_reason: String, // "stop" | "tool_calls" | "length"
+    pub tokens_used: usize,
 }
 
 /// Simple cancellation token — replaces tokio_util::sync::CancellationToken.
