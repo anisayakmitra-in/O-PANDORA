@@ -528,8 +528,8 @@ fn cmd_install(args: &[String]) {
     let registry_url = args
         .iter()
         .find_map(|a| a.strip_prefix("--registry=").map(|s| s.to_string()))
-        .or_else(|| std::env::var("PANDORA_PALACE_URL").ok())
-        .unwrap_or_else(|| "http://localhost:3000".to_string());
+        .or_else(|| std::env::var("PANDORA_REGISTRY_URL").ok())
+        .unwrap_or_else(|| "http://localhost:3001".to_string());
 
     // 1. Try local KUBER sources first
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
@@ -544,7 +544,7 @@ fn cmd_install(args: &[String]) {
 
     // 2. Try remote K-O Palace lookup
     eprintln!("Not found locally. Trying K-O Palace at {} ...", registry_url);
-    let url = format!("{}/api/packages/{}", registry_url, pkg_id);
+    let url = format!("{}/api/v1/packages/{}", registry_url, pkg_id);
     match reqwest::blocking::get(&url) {
         Ok(resp) if resp.status().is_success() => {
             eprintln!("Found {} on K-O Palace.", pkg_id);
