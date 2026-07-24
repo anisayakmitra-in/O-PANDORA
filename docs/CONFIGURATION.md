@@ -29,7 +29,7 @@ endpoint = "http://localhost:11434"
 | `PANDORA_MAX_ATTEMPTS` | `3` | Max attempts for retry loops |
 | `PANDORA_SANDBOX` | `none` | Sandbox level (deprecated, use `PANDORA_SANDBOX_LEVEL`) |
 | `PANDORA_SANDBOX_LEVEL` | `none` | Sandbox enforcement level |
-| `PANDORA_PALACE_URL` | `http://localhost:3000` | K-O Palace registry server URL |
+| `PANDORA_REGISTRY_URL` | `http://localhost:3001` | K-O Palace registry server URL |
 | `PANDORA_PROFILES_DIR` | `~/.pandora/profiles` | Execution profiles directory |
 | `PANDORA_PROVIDER_POLICY` | (none) | Provider selection policy |
 | `PANDORA_SECRET_KEY` | (none) | Ed25519 secret key for package signing |

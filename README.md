@@ -5,8 +5,8 @@
 </p>
 
 [![CI](https://github.com/anisayakmitra-in/O-PANDORA/actions/workflows/ci.yml/badge.svg)](https://github.com/anisayakmitra-in/O-PANDORA/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.1.0)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.1.0)
 
 A governed execution runtime for AI agents. You give it a task, it runs through a pipeline of harnesses and genes, and tells you exactly what it did and why.
 
@@ -83,13 +83,7 @@ See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for CLI output examples.
 
 See [sample-apps/](sample-apps/) for reference applications.
 
-## CLI Examples
 
-See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for CLI output examples.
-
-## Sample Apps
-
-See [sample-apps/](sample-apps/) for reference applications.
 
 ## What's in the box
 
@@ -168,8 +162,8 @@ A package registry built into the CLI. Discover, install, and publish genes and 
 
 ```bash
 pandora shell
-/kuber-palace          # browse marketplace
-/install coding-domain # install from K-O Palace
+/market               # browse K-O Palace marketplace
+/install coding-domain # install from K-O Palace registry
 ```
 
 Everything is free. Monetization comes later, once the ecosystem grows.

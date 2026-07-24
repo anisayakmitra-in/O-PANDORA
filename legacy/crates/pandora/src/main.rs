@@ -1570,7 +1570,13 @@ fn cmd_shell(_args: &[String]) {
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
     history.reverse();
-    println!("{PANDORA_ASCII}\nPANDORA v0.1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit");
+    println!("{PANDORA_ASCII}\nO-PANDORA v0.1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genes, /help, /quit");
+    // Check if stdin is a terminal before entering interactive mode
+    use std::io::IsTerminal;
+    if !std::io::stdin().is_terminal() {
+        eprintln!("Interactive shell requires a terminal. Use 'pandora run <task>' instead.");
+        return;
+    }
     let mut input = String::new();
     loop {
         print!("pandora> ");
