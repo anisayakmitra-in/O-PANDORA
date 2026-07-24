@@ -13,19 +13,31 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum GeneKind {
+    // ── Tool genes — atomic capabilities ──
     Tool,
     Provider,
     Workflow,
-    Agent,
     Skill,
+    SlashCommand,
+    MCP,
+    // ── Runtime genes — execution and coordination ──
+    Agent,
     Memory,
     Planner,
     Reasoner,
     Execution,
-    SlashCommand,
-    MCP,
-    Knowledge,
+    // ── Governance genes — constitutional control ──
+    Governance,
+    Security,
     Permission,
+    // ── Infrastructure genes — deploy, network, storage ──
+    Infrastructure,
+    Communication,
+    // ── Evolution genes — self-improvement ──
+    Evolution,
+    Cognitive,
+    // ── Evaluation genes ──
+    Knowledge,
     Benchmark,
     /// User-defined gene kind.
     Custom(String),
@@ -38,16 +50,22 @@ impl GeneKind {
             Self::Tool => "tool",
             Self::Provider => "provider",
             Self::Workflow => "workflow",
-            Self::Agent => "agent",
             Self::Skill => "skill",
+            Self::SlashCommand => "slash_command",
+            Self::MCP => "mcp",
+            Self::Agent => "agent",
             Self::Memory => "memory",
             Self::Planner => "planner",
             Self::Reasoner => "reasoner",
             Self::Execution => "execution",
-            Self::SlashCommand => "slash_command",
-            Self::MCP => "mcp",
-            Self::Knowledge => "knowledge",
+            Self::Governance => "governance",
+            Self::Security => "security",
             Self::Permission => "permission",
+            Self::Infrastructure => "infrastructure",
+            Self::Communication => "communication",
+            Self::Evolution => "evolution",
+            Self::Cognitive => "cognitive",
+            Self::Knowledge => "knowledge",
             Self::Benchmark => "benchmark",
             Self::Custom(_) => "custom",
         }

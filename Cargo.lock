@@ -1192,6 +1192,7 @@ dependencies = [
  "pandora-shadow-council",
  "pandora-types",
  "serde",
+ "tracing",
 ]
 
 [[package]]

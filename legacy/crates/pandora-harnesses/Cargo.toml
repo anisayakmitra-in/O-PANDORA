@@ -11,3 +11,4 @@ pandora-types = { path = "../pandora-types" }
 pandora-shadow-council = { path = "../pandora-shadow-council" }
 pandora-services = { path = "../pandora-services" }
 serde.workspace = true
+tracing.workspace = true

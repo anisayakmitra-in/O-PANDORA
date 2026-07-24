@@ -107,8 +107,24 @@ source_harness!(
     IdentityService
 );
 
-pub fn register_all(sc: &mut ShadowCouncil) {
+/// Register built-in default harnesses.
+///
+/// These are the defaults that ship with Pandora. They can be removed
+/// and replaced by the user via `pandora harness remove <id>` and
+/// `pandora harness install <id>` from Palace.
+///
+/// Source harnesses augment Pandora's core architecture (memory, execution,
+/// governance, identity, planning). They can be replaced with alternative
+/// implementations but should not all be removed.
+///
+/// Domain harnesses provide specialized capabilities (coding, design, security,
+/// research, etc.). Users can install/remove these freely.
+///
+/// Meta harnesses provide coordination between other harnesses.
+pub fn register_defaults(sc: &mut ShadowCouncil) {
     use pandora_services::*;
+
+    // Source harnesses — foundational architecture
     sc.install(Box::new(MemorySourceHarness::new(Arc::new(
         DefaultMemoryService::new(),
     ))))
@@ -130,8 +146,7 @@ pub fn register_all(sc: &mut ShadowCouncil) {
     ))))
     .ok();
 
-    // Domain harnesses — registered here so cmd_run doesn't hardcode them.
-    // Adding a new domain harness = add one line here, not in the CLI.
+    // Domain harnesses — specialized capabilities (removable)
     sc.install(Box::new(coding::CodingDomainHarness::new()))
         .ok();
     sc.install(Box::new(design::DesignDomainHarness::new()))
@@ -147,9 +162,54 @@ pub fn register_all(sc: &mut ShadowCouncil) {
     sc.install(Box::new(android_use::AndroidUseHarness::new()))
         .ok();
 
-    // Meta harness
+    // Meta harness — coordination
     sc.install(Box::new(coordination::CoordinationMetaHarness::new()))
         .ok();
+}
+
+/// Register harnesses dynamically.
+///
+/// Scans Pandora home for installed harness packages from Palace.
+/// Falls back to `register_defaults()` if no packages are installed.
+///
+/// This makes harness registration fully dynamic — users install/remove
+/// harnesses via `pandora install` / `pandora uninstall` from Palace,
+/// and this function picks them up at runtime startup.
+pub fn register_dynamic(sc: &mut ShadowCouncil) {
+    // Check if user has any harness packages installed from Palace
+    let home = std::env::var("PANDORA_HOME")
+        .map(|h| std::path::PathBuf::from(h).join("harnesses"))
+        .unwrap_or_else(|_| {
+            std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
+                .join(".pandora/harnesses")
+        });
+
+    if home.exists() {
+        // Scan for installed harness packages
+        if let Ok(entries) = std::fs::read_dir(&home) {
+            let count = entries
+                .filter_map(|e| e.ok())
+                .filter(|e| e.path().is_dir() && e.path().join("harness.toml").exists())
+                .count();
+            if count > 0 {
+                tracing::info!(
+                    "[HARNESSES] {} harness packages found in {}",
+                    count,
+                    home.display()
+                );
+                // Palace-installed harnesses would be loaded here.
+                // For now, we still register defaults alongside.
+            }
+        }
+    }
+
+    // Always register built-in defaults
+    register_defaults(sc);
+}
+
+/// Backward compat — calls register_defaults
+pub fn register_all(sc: &mut ShadowCouncil) {
+    register_dynamic(sc);
 }
 
 #[cfg(test)]

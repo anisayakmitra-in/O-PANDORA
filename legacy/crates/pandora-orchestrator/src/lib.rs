@@ -485,13 +485,15 @@ impl PandoraRuntime {
                 provider.as_ref(),
                 &gene_refs,
                 None,
+                Some(&self.parliament),
                 &config,
             )
             .map_err(|e| anyhow::anyhow!("Agentic loop failed: {}", e))?;
 
             println!(
-                "[STAGE 4 - AGENTIC LOOP] {} turns, {} tool calls, {} tokens, {} ms",
-                result.turns_used, result.tool_calls_made, result.total_tokens, result.duration_ms
+                "[STAGE 4 - AGENTIC LOOP] {} turns, {} tool calls, {} tokens, {} ms, {} ctx dropped, {} governance warnings",
+                result.turns_used, result.tool_calls_made, result.total_tokens, result.duration_ms,
+                result.context_messages_dropped, result.governance_warnings
             );
 
             // --- Record tool results in self-improvement modules ---
