@@ -468,6 +468,7 @@ pub struct SkillGeneRef {
 }
 
 pub mod builtin;
+pub mod import;
 pub mod skill;
 
 #[cfg(test)]

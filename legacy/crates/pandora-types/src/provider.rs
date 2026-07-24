@@ -100,7 +100,41 @@ pub trait Provider: Send + Sync {
     fn supports_tools(&self) -> bool {
         false
     }
+
+    /// Stream a response from the LLM, calling the callback for each chunk.
+    /// Default implementation: call generate() and emit one chunk.
+    fn generate_stream(
+        &self,
+        request: GenerationRequest,
+        callback: &StreamCallback,
+    ) -> Result<String, String> {
+        let text = self.generate(request)?;
+        callback(StreamChunk {
+            text: text.clone(),
+            tool_calls: vec![],
+            done: true,
+        });
+        Ok(text)
+    }
+
+    /// Whether this provider supports streaming responses.
+    fn supports_streaming(&self) -> bool {
+        false
+    }
 }
+
+// ── Streaming types ──
+
+/// A chunk of a streaming response from the LLM.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamChunk {
+    pub text: String,
+    pub tool_calls: Vec<ToolCall>,
+    pub done: bool,
+}
+
+/// Callback for streaming responses.
+pub type StreamCallback = Box<dyn Fn(StreamChunk) + Send + Sync>;
 
 // ── Ollama provider ──
 
@@ -159,6 +193,54 @@ pub mod ollama {
 
         fn supports_tools(&self) -> bool {
             true
+        }
+
+        fn supports_streaming(&self) -> bool {
+            true
+        }
+
+        fn generate_stream(
+            &self,
+            request: GenerationRequest,
+            callback: &StreamCallback,
+        ) -> Result<String, String> {
+            let url = format!("{}/api/generate", self.endpoint);
+            let body = serde_json::json!({
+                "model": self.model, "prompt": request.prompt,
+                "options": { "temperature": request.temperature, "num_predict": request.max_tokens },
+                "stream": true
+            });
+            let client = reqwest::blocking::Client::new();
+            let resp = client
+                .post(&url)
+                .json(&body)
+                .send()
+                .map_err(|e| format!("stream req failed: {e}"))?;
+
+            // Read line by line (Ollama streams NDJSON)
+            let mut full_text = String::new();
+            for line in resp.text().unwrap_or_default().lines() {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(line) {
+                    if let Some(chunk) = json["response"].as_str() {
+                        if !chunk.is_empty() {
+                            full_text.push_str(chunk);
+                            callback(StreamChunk {
+                                text: chunk.to_string(),
+                                tool_calls: vec![],
+                                done: false,
+                            });
+                        }
+                    }
+                    if json["done"].as_bool() == Some(true) {
+                        callback(StreamChunk {
+                            text: String::new(),
+                            tool_calls: vec![],
+                            done: true,
+                        });
+                    }
+                }
+            }
+            Ok(full_text)
         }
 
         fn generate_with_tools(

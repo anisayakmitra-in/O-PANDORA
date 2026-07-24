@@ -18,3 +18,4 @@ pandora-harnesses = { path = "../pandora-harnesses" }
 tracing-subscriber.workspace = true
 clap.workspace = true
 reqwest.workspace = true
+shellexpand = "3"

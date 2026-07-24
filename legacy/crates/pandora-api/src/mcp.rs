@@ -86,7 +86,12 @@ async fn mcp_handler(
             id: req.id,
             result: Some(serde_json::json!({"tools": [
                 {"name":"pandora_execute","description":"Execute a task through Pandora governed runtime","inputSchema":{"type":"object","properties":{"task":{"type":"string"},"strategy":{"type":"string"},"provider":{"type":"string"}},"required":["task"]}},
-                {"name":"pandora_pipeline","description":"Run a full pipeline: plan → harness → gene → provider → evaluator → outcome","inputSchema":{"type":"object","properties":{"goal":{"type":"string"},"domain":{"type":"string"}},"required":["goal"]}}
+                {"name":"pandora_pipeline","description":"Run a full pipeline: plan, harness, gene, provider, evaluator, outcome","inputSchema":{"type":"object","properties":{"goal":{"type":"string"},"domain":{"type":"string"}},"required":["goal"]}},
+                {"name":"pandora_genes","description":"List all registered genes available as tools","inputSchema":{"type":"object","properties":{}}},
+                {"name":"pandora_harnesses","description":"List all registered harnesses","inputSchema":{"type":"object","properties":{}}},
+                {"name":"pandora_sessions","description":"List recent sessions","inputSchema":{"type":"object","properties":{"limit":{"type":"number"}}}},
+                {"name":"pandora_memory_search","description":"Search Pandora memory for relevant context","inputSchema":{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}},
+                {"name":"pandora_install","description":"Install a package from K-O Palace registry","inputSchema":{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}}
             ]})),
             error: None,
         }),

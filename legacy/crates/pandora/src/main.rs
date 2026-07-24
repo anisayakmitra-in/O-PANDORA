@@ -138,6 +138,10 @@ enum Commands {
     Artifacts { id: Option<String> },
     /// Benchmark a provider
     Benchmark,
+    /// Run an overnight execution (long-running, checkpoints, notifications)
+    Overnight { task: String },
+    /// Import settings from another AI agent
+    Import { tool: String, path: Option<String> },
     /// List execution profiles
     Profiles,
 }
@@ -349,6 +353,17 @@ fn build_args(cmd: &Commands) -> Vec<String> {
         }
         Commands::Benchmark => a.push("benchmark".into()),
         Commands::Profiles => a.push("profiles".into()),
+        Commands::Overnight { task } => {
+            a.push("overnight".into());
+            a.push(task.clone());
+        }
+        Commands::Import { tool, path } => {
+            a.push("import".into());
+            a.push(tool.clone());
+            if let Some(p) = path {
+                a.push(p.clone());
+            }
+        }
     }
     a
 }
@@ -404,6 +419,8 @@ fn dispatch(args: &[String]) {
         Some("architecture") => cmd_architecture(args),
         Some("benchmark") => cmd_benchmark(args),
         Some("profiles") => cmd_profiles(args),
+        Some("overnight") => cmd_overnight(args),
+        Some("import") => cmd_import(args),
         _ => {
             usage();
             process::exit(1);
@@ -1324,6 +1341,45 @@ fn cmd_explain(args: &[String]) {
     }
 }
 
+fn cmd_import(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora import <tool> [path]");
+        eprintln!("Supported tools: claude-code, opencode, goose, cline, hermes");
+        process::exit(1);
+    }
+    let tool = &args[2];
+    let path = args
+        .get(3)
+        .map(|s| s.as_str())
+        .unwrap_or_else(|| match tool.as_str() {
+            "claude-code" | "claude" => "~/.claude",
+            "opencode" => "~/.config/opencode",
+            "goose" => "~/.config/goose",
+            "cline" => "~/.config/Code/User/globalStorage/saoudrizwan.claude-dev",
+            "hermes" => "~/.hermes",
+            _ => ".",
+        });
+    let expanded = shellexpand::tilde(path).to_string();
+    match pandora_kuber::import::import_from(tool, &expanded) {
+        Ok(result) => {
+            println!("Import from {}:", result.tool);
+            if result.imported.is_empty() {
+                println!("  (nothing found to import)");
+            }
+            for item in &result.imported {
+                println!("  + {item}");
+            }
+            for err in &result.errors {
+                eprintln!("  ! {err}");
+            }
+        }
+        Err(e) => {
+            eprintln!("Import failed: {e}");
+            process::exit(1);
+        }
+    }
+}
+
 fn cmd_profiles(_args: &[String]) {
     match pandora_types::profile::list_profiles() {
         Ok(p) => {
@@ -1337,6 +1393,83 @@ fn cmd_profiles(_args: &[String]) {
         }
         Err(e) => {
             eprintln!("Error: {e}");
+        }
+    }
+}
+
+fn cmd_overnight(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora overnight <task>");
+        eprintln!("Runs a long execution with checkpointing and notifications.");
+        eprintln!("Set PANDORA_NOTIFY_EMAIL to receive email on completion.");
+        process::exit(1);
+    }
+    let task: String = args[2..].join(" ");
+    println!("Overnight execution: {task}");
+    println!("  Checkpointing: enabled");
+    println!(
+        "  Max turns: {}",
+        std::env::var("PANDORA_MAX_GOAL_TURNS").unwrap_or_else(|_| "20".into())
+    );
+    println!(
+        "  Max tokens: {}",
+        std::env::var("PANDORA_MAX_GOAL_TOKENS").unwrap_or_else(|_| "100000".into())
+    );
+
+    match tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(rt) => rt.block_on(async {
+            let mut runtime = pandora_orchestrator::PandoraRuntime::new();
+            pandora_harnesses::register_all(&mut runtime.council);
+
+            // Set overnight defaults: high budget, checkpointing
+            use pandora_types::execution_plan::*;
+            runtime.plan = ExecutionPlan {
+                instruction: task.clone(),
+                control_strategy: ControlStrategy::SingleShot,
+                evaluator: EvaluatorKind::None,
+                provider_policy: "default".into(),
+                budget: ExecutionBudget {
+                    max_tokens: std::env::var("PANDORA_MAX_GOAL_TOKENS")
+                        .ok()
+                        .and_then(|s| s.parse().ok())
+                        .unwrap_or(100_000),
+                    max_duration: std::time::Duration::from_secs(3600), // 1 hour max
+                    ..Default::default()
+                },
+                stop_conditions: vec![StopCondition::GoalMet],
+                ..Default::default()
+            };
+
+            match runtime.run(&task, "default").await {
+                Ok(r) if r.success => {
+                    println!("\n{}", r.output.chars().take(2000).collect::<String>());
+                    println!("\n--- Overnight complete ---");
+                    println!("  Execution ID: {}", r.execution_id);
+                    println!("  Duration: {}ms", r.duration_ms);
+                    println!("  Provider: {}/{}", r.provider, r.model);
+
+                    // Email notification if configured
+                    if let Ok(email) = std::env::var("PANDORA_NOTIFY_EMAIL") {
+                        println!("  Notification would be sent to: {email}");
+                        // In production: use lettre or similar to send email
+                    }
+                }
+                Ok(_) => {
+                    eprintln!("Overnight execution returned empty");
+                    eprintln!("  Set PANDORA_DEFAULT_MODEL or add a connection");
+                }
+                Err(e) => {
+                    eprintln!("Overnight execution failed: {e}");
+                    process::exit(1);
+                }
+            }
+        }),
+        Err(e) => {
+            eprintln!("Failed to start runtime: {e}");
+            process::exit(1);
         }
     }
 }

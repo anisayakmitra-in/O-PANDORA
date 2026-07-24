@@ -53,6 +53,7 @@ pub mod provider_db;
 pub mod provider_health;
 pub mod session;
 pub mod signing;
+pub mod sqlite_session;
 pub mod trust;
 pub use gene::{
     Gene, GeneKind, GeneLineage, GeneLineageEntry, GeneManifest, GeneManifestBuilder,

@@ -252,6 +252,7 @@ pub struct PandoraRuntime {
     pub memory: pandora_types::hierarchical_memory::HierarchicalMemory,
     pub event_store: pandora_types::event_store::EventStore,
     pub healing: pandora_types::self_healing::HealingSession,
+    pub provider_failover_count: u32,
 }
 
 impl PandoraRuntime {
@@ -305,6 +306,7 @@ impl PandoraRuntime {
                     }),
             ),
             healing: pandora_types::self_healing::HealingSession::new("default"),
+            provider_failover_count: 0,
         }
     }
 
