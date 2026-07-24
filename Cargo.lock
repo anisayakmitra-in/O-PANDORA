@@ -1196,6 +1196,7 @@ dependencies = [
  "chrono",
  "pandora-orchestrator",
  "pandora-types",
+ "ring",
  "serde",
  "serde_json",
  "tokio",

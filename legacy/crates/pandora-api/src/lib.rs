@@ -33,7 +33,22 @@ fn require_auth(headers: &axum::http::HeaderMap) -> bool {
     };
     let auth = headers.get("authorization").and_then(|v| v.to_str().ok());
     auth.and_then(|a| a.strip_prefix("Bearer "))
-        .is_some_and(|t| t == expected)
+        .is_some_and(|t| constant_time_compare(t, &expected))
+}
+
+/// Constant-time string comparison to prevent timing attacks.
+fn constant_time_compare(a: &str, b: &str) -> bool {
+    let a_bytes = a.as_bytes();
+    let b_bytes = b.as_bytes();
+    let max_len = a_bytes.len().max(b_bytes.len());
+    let mut diff: u8 = 0;
+    for i in 0..max_len {
+        let a_byte = a_bytes.get(i).copied().unwrap_or(0);
+        let b_byte = b_bytes.get(i).copied().unwrap_or(0);
+        diff |= a_byte ^ b_byte;
+        diff |= (a_bytes.len() as u8) ^ (b_bytes.len() as u8);
+    }
+    diff == 0
 }
 use tokio::sync::Mutex;
 

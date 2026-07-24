@@ -14,3 +14,4 @@ tokio.workspace = true
 axum.workspace = true
 chrono.workspace = true
 anyhow.workspace = true
+ring.workspace = true

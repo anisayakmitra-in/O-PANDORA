@@ -153,15 +153,21 @@ impl Gene for FilesystemGene {
                 if raw_path.is_empty() {
                     return Err("Missing path".into());
                 }
-                let parent = std::path::Path::new(raw_path)
-                    .parent()
-                    .ok_or("Invalid path")?;
-                let canonical = std::fs::canonicalize(parent).map_err(|e| e.to_string())?;
+                let path_obj = std::path::Path::new(raw_path);
+                let canonical = std::fs::canonicalize(path_obj)
+                    .or_else(|_| {
+                        // File doesn't exist yet — create parent and canonicalize
+                        if let Some(parent) = path_obj.parent() {
+                            std::fs::create_dir_all(parent).ok();
+                        }
+                        std::fs::canonicalize(path_obj)
+                    })
+                    .map_err(|e| e.to_string())?;
                 if canonical.to_string_lossy().contains("..") {
                     return Err("Path traversal not allowed".into());
                 }
-                std::fs::write(raw_path, "content").map_err(|e| e.to_string())?;
-                Ok(format!("wrote {raw_path}"))
+                std::fs::write(&canonical, "content").map_err(|e| e.to_string())?;
+                Ok(format!("wrote {}", canonical.display()))
             }
             "list" => {
                 let dir = std::fs::read_dir(p.get(1).unwrap_or(&".")).map_err(|e| e.to_string())?;

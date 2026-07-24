@@ -23,10 +23,9 @@ fn random_hex(len: usize) -> String {
 }
 
 fn hash(s: &str) -> String {
-    use std::hash::{Hash, Hasher};
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    s.hash(&mut hasher);
-    format!("{:016x}", hasher.finish())
+    use ring::digest;
+    let digest = digest::digest(&digest::SHA256, s.as_bytes());
+    hex::encode(digest.as_ref())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,7 +148,10 @@ impl AuthStore {
         }
         let home = std::env::var("HOME")
             .or_else(|_| std::env::var("USERPROFILE"))
-            .unwrap_or_else(|_| "/tmp".into());
+            .unwrap_or_else(|_| {
+                // Last resort: use PANDORA_HOME if available
+                std::env::var("PANDORA_HOME").unwrap_or_else(|_| "/root/.pandora".into())
+            });
         PathBuf::from(home).join(".pandora/auth.json")
     }
 
@@ -266,14 +268,17 @@ pub fn is_loopback(addr: &str) -> bool {
 
 /// Constant-time string comparison to prevent timing attacks.
 fn constant_time_eq(a: &str, b: &str) -> bool {
-    if a.len() != b.len() {
-        return false;
+    let a_bytes = a.as_bytes();
+    let b_bytes = b.as_bytes();
+    let max_len = a_bytes.len().max(b_bytes.len());
+    let mut diff: u8 = 0;
+    for i in 0..max_len {
+        let a_byte = a_bytes.get(i).copied().unwrap_or(0);
+        let b_byte = b_bytes.get(i).copied().unwrap_or(0);
+        diff |= a_byte ^ b_byte;
+        diff |= (a_bytes.len() as u8) ^ (b_bytes.len() as u8);
     }
-    let mut result: u8 = 0;
-    for (x, y) in a.bytes().zip(b.bytes()) {
-        result |= x ^ y;
-    }
-    result == 0
+    diff == 0
 }
 
 #[cfg(test)]
