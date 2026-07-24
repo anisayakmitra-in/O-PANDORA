@@ -156,7 +156,7 @@ pandora connection test my-gpu
 
 12 provider types supported: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom.
 
-### K-O K-O Palace
+### K-O Palace
 
 A package registry built into the CLI. Discover, install, and publish genes and harnesses.
 
