@@ -249,6 +249,9 @@ pub struct PandoraRuntime {
     pub provider_db: ProviderDb,
     pub provider_intel: ProviderIntelligenceEngine,
     pub policy_engine: PolicyEngine,
+    pub memory: pandora_types::hierarchical_memory::HierarchicalMemory,
+    pub event_store: pandora_types::event_store::EventStore,
+    pub healing: pandora_types::self_healing::HealingSession,
 }
 
 impl PandoraRuntime {
@@ -290,6 +293,18 @@ impl PandoraRuntime {
             policy_engine: PolicyEngine::new(),
             cap_resolution: CapabilityResolutionEngine::new(),
             providers,
+            memory: pandora_types::hierarchical_memory::HierarchicalMemory::new(),
+            event_store: pandora_types::event_store::EventStore::new(
+                std::env::var("PANDORA_HOME")
+                    .map(|h| std::path::PathBuf::from(h).join("events"))
+                    .unwrap_or_else(|_| {
+                        std::path::PathBuf::from(
+                            std::env::var("HOME").unwrap_or_else(|_| ".".into()),
+                        )
+                        .join(".pandora/events")
+                    }),
+            ),
+            healing: pandora_types::self_healing::HealingSession::new("default"),
         }
     }
 
@@ -447,6 +462,21 @@ impl PandoraRuntime {
                 .generate(request)
                 .map_err(|e| anyhow::anyhow!("Provider {} failed: {}", provider_name, e))?
         } else {
+            // --- Load context from self-improvement modules ---
+            // Search memory for relevant facts about this task
+            let memory_hits = self.memory.search_by_content(task, None);
+            if !memory_hits.is_empty() {
+                info!(
+                    "[STAGE 4 - MEMORY] {} relevant memories loaded",
+                    memory_hits.len()
+                );
+            }
+            // Purge expired memories
+            self.memory.purge_expired();
+
+            // Start healing session for this execution
+            let healing_session = pandora_types::self_healing::HealingSession::new(&execution_id);
+
             // Run the agentic loop: LLM calls genes as tools
             let config = agentic_loop::AgenticConfig::default();
             let result = agentic_loop::run_agentic_loop(
@@ -458,17 +488,77 @@ impl PandoraRuntime {
                 &config,
             )
             .map_err(|e| anyhow::anyhow!("Agentic loop failed: {}", e))?;
+
             println!(
                 "[STAGE 4 - AGENTIC LOOP] {} turns, {} tool calls, {} tokens, {} ms",
                 result.turns_used, result.tool_calls_made, result.total_tokens, result.duration_ms
             );
-            // Record tool results as telemetry events
+
+            // --- Record tool results in self-improvement modules ---
             for tr in &result.tool_results {
+                // 1. EventStore: record each tool call as a pipeline event
+                self.event_store.push(
+                    &execution_id,
+                    pandora_types::events::PipelineEvent::GeneExecuted {
+                        gene: tr.tool_name.clone(),
+                        duration_ms: tr.duration_ms,
+                        success: tr.success,
+                    },
+                );
+
+                // 2. Telemetry: trace each tool call
                 let tid = self
                     .telemetry
                     .begin_trace(&execution_id, format!("tool:{}", tr.tool_name));
                 self.telemetry.begin_span(&tid, "gene-execute", "tool");
+
+                // 3. FailureIntelligence: classify tool failures
+                if !tr.success {
+                    let record = pandora_types::failure_intelligence::FailureRecord::new(
+                        tr.tool_name.clone(),
+                        domain,
+                    );
+                    self.failure_intel.ingest(record);
+                    self.failure_intel.cluster();
+                    info!(
+                        "[STAGE 4 - HEALING] gene '{}' failed, {} root causes tracked",
+                        tr.tool_name,
+                        self.failure_intel.root_cause_count()
+                    );
+                }
+
+                // 4. KnowledgeDistillation: distill tool results into knowledge
+                if tr.output.len() > 50 {
+                    let l1_id = self.knowledge.ingest_telemetry(
+                        format!("tool-{}", tr.tool_name),
+                        format!("Gene: {} | Input: {}", tr.tool_name, tr.input),
+                        vec![domain.to_string(), "tool".to_string(), tr.tool_name.clone()],
+                    );
+                    let _l2 = self.knowledge.distill_to_l1(
+                        vec![l1_id],
+                        format!("Tool execution: {}", tr.tool_name),
+                        &tr.output,
+                    );
+                }
             }
+
+            // 5. HierarchicalMemory: store session in episodic memory
+            self.memory.remember(
+                pandora_types::hierarchical_memory::MemoryLayer::Session,
+                format!(
+                    "Task: {} | Tools: {} | Turns: {}",
+                    task, result.tool_calls_made, result.turns_used
+                ),
+                vec![domain.to_string(), "execution".to_string()],
+                0.5,
+            );
+
+            // 6. SelfHealing: check if any failures were detected
+            let _can_retry = healing_session.can_retry();
+
+            // 7. Flush event store
+            let _ = self.event_store.flush();
+
             result.output
         };
 
