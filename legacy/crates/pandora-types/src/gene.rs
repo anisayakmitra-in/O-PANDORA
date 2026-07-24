@@ -7,6 +7,59 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+// ── Gene Category ──
+
+/// Top-level classification of a gene's domain.
+/// Every GeneKind belongs to exactly one category.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum GeneCategory {
+    /// Execution: workflow, planner, executor, scheduler, automation
+    Execution,
+    /// Memory: retrieval, embedding, compression, archive, cache
+    Memory,
+    /// Infrastructure: provider, connector, bridge, gateway, registry
+    Infrastructure,
+    /// Reasoning: reasoning, reflection, critic, judge, evaluation
+    Reasoning,
+    /// Security: policy, verification, sandbox, audit, redteam
+    Security,
+    /// Networking: communication, network, federation, replication, synchronization
+    Networking,
+    /// Multimodal: vision, voice, robotics, browser, shell
+    Multimodal,
+    /// Research: simulation, world_model, cognitive_model, benchmark, optimization
+    Research,
+}
+
+impl GeneCategory {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Execution => "execution",
+            Self::Memory => "memory",
+            Self::Infrastructure => "infrastructure",
+            Self::Reasoning => "reasoning",
+            Self::Security => "security",
+            Self::Networking => "networking",
+            Self::Multimodal => "multimodal",
+            Self::Research => "research",
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Execution => "Execution",
+            Self::Memory => "Memory",
+            Self::Infrastructure => "Infrastructure",
+            Self::Reasoning => "Reasoning",
+            Self::Security => "Security",
+            Self::Networking => "Networking",
+            Self::Multimodal => "Multimodal",
+            Self::Research => "Research",
+        }
+    }
+}
+
 // ── Gene Kind ──
 
 /// Classification of a gene's purpose.
@@ -70,6 +123,23 @@ impl GeneKind {
             Self::Custom(_) => "custom",
         }
     }
+
+    /// Which category this gene kind belongs to.
+    pub fn category(&self) -> GeneCategory {
+        match self {
+            Self::Tool | Self::Workflow | Self::SlashCommand => GeneCategory::Execution,
+            Self::Planner | Self::Execution | Self::Agent => GeneCategory::Execution,
+            Self::Memory | Self::Knowledge => GeneCategory::Memory,
+            Self::Provider | Self::Infrastructure | Self::Communication | Self::MCP => {
+                GeneCategory::Infrastructure
+            }
+            Self::Reasoner | Self::Cognitive | Self::Benchmark => GeneCategory::Reasoning,
+            Self::Governance | Self::Security | Self::Permission => GeneCategory::Security,
+            Self::Evolution => GeneCategory::Research,
+            Self::Skill => GeneCategory::Execution,
+            Self::Custom(_) => GeneCategory::Execution,
+        }
+    }
 }
 
 // ── Gene Metadata ──
@@ -88,6 +158,25 @@ pub struct GeneMetadata {
     pub examples: Vec<String>,
     pub custom: HashMap<String, String>,
     pub permissions: Vec<String>,
+    // ── Palace publishing metadata ──
+    /// Trust level: Experimental, Community, Verified, Official, Enterprise, Certified
+    pub trust_level: String,
+    /// Capabilities provided by this gene (e.g. ["filesystem.read", "filesystem.write"])
+    pub capabilities_provided: Vec<String>,
+    /// Capabilities required from other genes (dependency on capabilities, not names)
+    pub capabilities_required: Vec<String>,
+    /// Minimum Pandora version compatibility
+    pub min_pandora_version: Option<String>,
+    /// SHA256 hash of the published artifact
+    pub content_hash: Option<String>,
+    /// Ed25519 signature of the content hash
+    pub signature: Option<String>,
+    /// Publisher identity
+    pub publisher: Option<String>,
+    /// Download count from Palace
+    pub downloads: u64,
+    /// Success rate (0.0-1.0) from Palace telemetry
+    pub success_rate: f64,
 }
 
 // ── Gene Manifest — minimalist runtime record ──

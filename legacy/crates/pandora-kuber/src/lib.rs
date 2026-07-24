@@ -24,6 +24,77 @@ pub enum SourceKind {
     Remote,
 }
 
+/// What kind of artifact can be published to Palace.
+/// Every Pandora component is packageable.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum PackageKind {
+    /// Atomic executable capability — does one thing well
+    Gene,
+    /// Domain-specific orchestration — policies, workflows, preferred genes
+    DomainHarness,
+    /// Meta harness — coordination between harnesses
+    MetaHarness,
+    /// Source harness — defines how Pandora itself operates (replacing one changes the substrate)
+    SourceHarness,
+    /// Bundle of genes + harness + policies + benchmarks + datasets + workflows
+    Package,
+    /// Provider backend (Ollama, OpenAI, etc.)
+    Provider,
+    /// SKILL.md loaded capability
+    Skill,
+    /// Memory schema template
+    MemorySchema,
+    /// Runtime extension
+    RuntimeExtension,
+    /// Capability pack — bundles multiple capabilities
+    CapabilityPack,
+    /// Project template
+    Template,
+    /// AI persona definition
+    Persona,
+    /// Governance policy definition
+    Policy,
+    /// Performance benchmark
+    Benchmark,
+    /// Training/eval dataset
+    Dataset,
+    /// Dynamically loaded plugin
+    Plugin,
+    /// External protocol connector (MCP, API, bridge)
+    Connector,
+    /// SDK library
+    Sdk,
+    /// Complete runtime distribution (Research Edition, Medical Edition, etc.)
+    Distribution,
+}
+
+impl PackageKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Gene => "gene",
+            Self::DomainHarness => "domain_harness",
+            Self::MetaHarness => "meta_harness",
+            Self::SourceHarness => "source_harness",
+            Self::Package => "package",
+            Self::Provider => "provider",
+            Self::Skill => "skill",
+            Self::MemorySchema => "memory_schema",
+            Self::RuntimeExtension => "runtime_extension",
+            Self::CapabilityPack => "capability_pack",
+            Self::Template => "template",
+            Self::Persona => "persona",
+            Self::Policy => "policy",
+            Self::Benchmark => "benchmark",
+            Self::Dataset => "dataset",
+            Self::Plugin => "plugin",
+            Self::Connector => "connector",
+            Self::Sdk => "sdk",
+            Self::Distribution => "distribution",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PackageInfo {
     pub id: String,
