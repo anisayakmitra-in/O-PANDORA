@@ -3,7 +3,7 @@
 //! SKILL.md is the industry standard format (used by Hermes, Superpowers, etc.)
 //! In Pandora, skills are genes with GeneKind::Skill.
 
-use crate::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
+use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
 use std::path::Path;
 
 /// A gene that wraps a SKILL.md file.
@@ -23,7 +23,8 @@ impl SkillGene {
 
         // Parse frontmatter (YAML between --- markers)
         let (frontmatter, body) = if content.starts_with("---") {
-            let end = content[3..].find("---").map(|i| i + 3);
+            let after_prefix = content.strip_prefix("---").unwrap_or("");
+            let end = after_prefix.find("---").map(|i| i + 3);
             if let Some(end_idx) = end {
                 let fm = &content[3..end_idx];
                 let body = &content[end_idx + 3..].trim();
@@ -64,14 +65,15 @@ impl SkillGene {
             .version("0.1.0")
             .author("skill")
             .description(if description.is_empty() {
-                format!("Skill loaded from SKILL.md")
+                "Skill loaded from SKILL.md".to_string()
             } else {
                 description
             })
-            .capabilities(triggers)
             .build()
             .map_err(|e| format!("Skill manifest build failed: {e}"))?;
 
+        let mut manifest = manifest;
+        manifest.capabilities = triggers;
         Ok(Self {
             manifest,
             skill_content: body,
