@@ -71,4 +71,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Execution Risk Engine for command classification
 - SECURITY.md with threat model and 8 documented attack surfaces
 
-[0.1.0]: https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/releases/tag/v0.1.0
+[0.1.0]: https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.1.0

@@ -2,7 +2,7 @@
 //!
 //! Every Pandora component advertises capabilities. Registries index them,
 //! intent routing matches them, permissions authorize them, policies evaluate
-//! them, nodes expose them, providers declare them, Palace searches by them.
+//! them, nodes expose them, providers declare them, K-O Palace searches by them.
 //!
 //! Capabilities are string identifiers (e.g. "filesystem.read", "gpu.cuda").
 //! No hardcoded capability lists — the well-known set is documented, but the

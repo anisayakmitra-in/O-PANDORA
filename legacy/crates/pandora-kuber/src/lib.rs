@@ -24,7 +24,7 @@ pub enum SourceKind {
     Remote,
 }
 
-/// What kind of artifact can be published to Palace.
+/// What kind of artifact can be published to K-O Palace.
 /// Every Pandora component is packageable.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[non_exhaustive]

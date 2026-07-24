@@ -3,7 +3,7 @@
 //! Every `pandora publish` runs through: schema → compatibility →
 //! permissions → SBOM → static analysis → benchmarks → security scan →
 //! signature verification → sandbox → integration tests → telemetry →
-//! publish. No broken packages enter Palace.
+//! publish. No broken packages enter K-O Palace.
 
 use serde::{Deserialize, Serialize};
 

@@ -31,7 +31,7 @@ Will not be fixed in this release:
 - **Tokio 1.52 WSL runtime teardown**:  prints a spurious
   "Cannot drop a runtime" message on stderr when run under WSL. The pipeline
   completes successfully (exit code 0). This is a tokio platform bug.
-- **Zero tests in 4 crates**: pandora-api, pandora-fleet, pandora-palace,
+- **Zero tests in 4 crates**: pandora-api, pandora-fleet, k-o-palace,
   pandora-services have no test coverage. Functionality is exercised through
   the pandora-types integration tests and E2E tests.
 - **No CHANGELOG entries for pre-0.1.0 work**: Development history prior to

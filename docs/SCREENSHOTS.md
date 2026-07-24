@@ -36,8 +36,8 @@ COMMANDS:
         explain <id>          Explain execution decisions
 
     Packages:
-        install <pkg>         Install a package (local or Palace)
-        search <query>        Search Palace registry
+        install <pkg>         Install a package (local or K-O Palace)
+        search <query>        Search K-O Palace registry
         publish               Publish current package
 
     Providers:

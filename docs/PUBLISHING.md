@@ -2,7 +2,7 @@
 
 ## What is this?
 
-How to publish a package to Palace, Pandora's package registry.
+How to publish a package to K-O Palace, Pandora's package registry.
 
 ## When is it used?
 
@@ -10,8 +10,8 @@ When you've built a gene, harness, or skill and want to share it with other Pand
 
 ## Prerequisites
 
-1. A Palace server running (default: `http://localhost:3000`)
-2. An account on the Palace instance
+1. A K-O Palace server running (default: `http://localhost:3000`)
+2. An account on the K-O Palace instance
 3. Ed25519 keypair for signing (`pandora keygen`)
 
 ## Steps
@@ -38,11 +38,11 @@ cd my-package
 pandora sign my-package 1.0.0
 ```
 
-### 4. Login to Palace
+### 4. Login to K-O Palace
 
 ```bash
 pandora login
-# Enter your Palace URL and credentials
+# Enter your K-O Palace URL and credentials
 ```
 
 ### 5. Publish
@@ -60,7 +60,7 @@ See [Manifest Specification](MANIFESTS.md) for the full `pandora.toml` schema.
 | Level | Badge | Meaning |
 |-------|-------|---------|
 | None | | No trust information |
-| PublisherVerified | ✓ Publisher | Palace verified the publisher identity |
+| PublisherVerified | ✓ Publisher | K-O Palace verified the publisher identity |
 | Signed | 🔏 Signed | Package is Ed25519 signed |
 | SourceAvailable | 📂 Source | Source code is public |
 | ReproducibleBuild | 🔁 Reproducible | Build is reproducible |
@@ -70,5 +70,5 @@ See [Manifest Specification](MANIFESTS.md) for the full `pandora.toml` schema.
 ## Known limitations
 
 - Full Ed25519 signature verification is deferred (v0.1.0 checks signature presence)
-- Palace storage is in-memory (no persistence yet)
+- K-O Palace storage is in-memory (no persistence yet)
 - No SemVer dependency resolution yet

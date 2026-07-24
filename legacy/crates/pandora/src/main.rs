@@ -42,11 +42,11 @@ enum Commands {
     Explain { id: String },
     /// Show execution timeline
     Timeline { id: Option<String> },
-    /// Install a package (local or Palace with --palace=URL)
+    /// Install a package (local or K-O Palace with --registry=URL)
     Install {
         id: String,
         #[arg(long)]
-        palace: Option<String>,
+        registry: Option<String>,
     },
     /// Remove a package
     Uninstall { id: String },
@@ -56,7 +56,7 @@ enum Commands {
     List,
     /// Show package details
     Info { id: String },
-    /// Search Palace registry
+    /// Search K-O Palace registry
     Search { query: String },
     /// Publish current package
     Publish,
@@ -126,9 +126,9 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         args: Vec<String>,
     },
-    /// Login to Palace
+    /// Login to K-O Palace
     Login,
-    /// Browse Palace marketplace
+    /// Browse K-O Palace marketplace
     Featured,
     /// Browse trending packages
     Trending,
@@ -197,11 +197,11 @@ fn build_args(cmd: &Commands) -> Vec<String> {
                 a.push(i.clone());
             }
         }
-        Commands::Install { id, palace } => {
+        Commands::Install { id, registry } => {
             a.push("install".into());
             a.push(id.clone());
-            if let Some(p) = palace {
-                a.push(format!("--palace={p}"));
+            if let Some(p) = registry {
+                a.push(format!("--registry={p}"));
             }
         }
         Commands::Uninstall { id } => {
@@ -453,13 +453,13 @@ fn usage() {
     eprintln!();
     eprintln!("    Packages:");
     eprintln!(
-        "        install <pkg>         Install a package (local or Palace with --palace=URL)"
+        "        install <pkg>         Install a package (local or K-O Palace with --registry=URL)"
     );
     eprintln!("        uninstall <pkg>       Remove a package");
     eprintln!("        update <pkg>          Update a package");
     eprintln!("        list                  List installed packages");
     eprintln!("        info <pkg>            Show package details");
-    eprintln!("        search <query>       Search Palace registry");
+    eprintln!("        search <query>       Search K-O Palace registry");
     eprintln!("        publish               Publish current package");
     eprintln!();
     eprintln!("    Providers:");
@@ -521,13 +521,13 @@ fn home_dir() -> Option<std::path::PathBuf> {
 
 fn cmd_install(args: &[String]) {
     if args.len() < 3 {
-        eprintln!("Usage: pandora install <id> [--palace=URL]");
+        eprintln!("Usage: pandora install <id> [--registry=URL]");
         process::exit(1);
     }
     let pkg_id = &args[2];
-    let palace_url = args
+    let registry_url = args
         .iter()
-        .find_map(|a| a.strip_prefix("--palace=").map(|s| s.to_string()))
+        .find_map(|a| a.strip_prefix("--registry=").map(|s| s.to_string()))
         .or_else(|| std::env::var("PANDORA_PALACE_URL").ok())
         .unwrap_or_else(|| "http://localhost:3000".to_string());
 
@@ -542,21 +542,21 @@ fn cmd_install(args: &[String]) {
         return;
     }
 
-    // 2. Try remote Palace lookup
-    eprintln!("Not found locally. Trying Palace at {} ...", palace_url);
-    let url = format!("{}/api/packages/{}", palace_url, pkg_id);
+    // 2. Try remote K-O Palace lookup
+    eprintln!("Not found locally. Trying K-O Palace at {} ...", registry_url);
+    let url = format!("{}/api/packages/{}", registry_url, pkg_id);
     match reqwest::blocking::get(&url) {
         Ok(resp) if resp.status().is_success() => {
-            eprintln!("Found {} on Palace.", pkg_id);
+            eprintln!("Found {} on K-O Palace.", pkg_id);
             eprintln!("Remote download not yet implemented.");
-            eprintln!("Package URL: {}/api/packages/{}", palace_url, pkg_id);
+            eprintln!("Package URL: {}/api/packages/{}", registry_url, pkg_id);
         }
         Ok(_) => {
-            eprintln!("Package '{}' not found on Palace.", pkg_id);
+            eprintln!("Package '{}' not found on K-O Palace.", pkg_id);
             process::exit(1);
         }
         Err(e) => {
-            eprintln!("Could not connect to Palace: {}", e);
+            eprintln!("Could not connect to K-O Palace: {}", e);
             eprintln!("Local install also failed.");
             process::exit(1);
         }
@@ -1674,7 +1674,7 @@ fn cmd_publish(args: &[String]) {
 }
 
 fn cmd_login(_args: &[String]) {
-    println!("KUBER Palace Login");
+    println!("KUBER K-O Palace Login");
     println!("  Registry: https://palace.pandora.dev (default)");
     println!("  Use: PANDORA_TOKEN=<token> to authenticate");
     println!("  Or set: pandora config palace.token <token>");
@@ -1979,7 +1979,7 @@ fn cmd_keygen(_args: &[String]) {
     println!();
     println!("  Save the secret key securely:");
     println!("    export PANDORA_SECRET_KEY={}", kp.secret_key);
-    println!("  Publish your public key to Palace:");
+    println!("  Publish your public key to K-O Palace:");
     println!("    pandora login && pandora publish .");
 }
 

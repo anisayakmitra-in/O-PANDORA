@@ -7,8 +7,8 @@ Pandora v0.1.0 is under architecture freeze. See `ARCHITECTURE_FREEZE.md` for th
 ## Getting Started
 
 ```bash
-git clone https://github.com/anisayakmitra-in/PANDORA-SYSTEMS.git
-cd PANDORA-SYSTEMS
+git clone https://github.com/anisayakmitra-in/O-PANDORA.git
+cd O-PANDORA
 cargo build --release -p pandora
 ./target/release/pandora --version
 ```
@@ -34,7 +34,7 @@ cargo build --release -p pandora
 | `pandora` | CLI binary | Adding a new command |
 | `pandora-tui` | Terminal UI | Changing the dashboard |
 | `pandora-kuber` | Package registry | Registry operations |
-| `pandora-palace` | Registry server | Palace HTTP API |
+| `k-o-palace` | Registry server | K-O Palace HTTP API |
 | `pandora-fleet` | Worker pool | Distributed execution |
 | `pandora-api` | MCP server | Protocol integration |
 | `pandora-services` | Parliament services | Governance services |

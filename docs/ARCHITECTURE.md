@@ -77,7 +77,7 @@ Atomic tools. Each gene does one thing: `shell` runs commands, `git` handles ver
 
 LLM backends. 12 types supported: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom. Pandora auto-discovers models from healthy connections.
 
-### KUBER Palace
+### K-O K-O Palace
 
 Package registry. Discover, install, and publish genes and harnesses. Free — monetization comes later.
 
@@ -108,7 +108,7 @@ Task: build a REST API
 ║                 PANDORA SYSTEMS                          ║
 ║           Governed Execution Runtime                      ║
 ╠══════════════════════════════════════════════════════════╣
-║  Runtime │ Genes │ Harnesses │ Plans │ Palace │ Exit     ║
+║  Runtime │ Genes │ Harnesses │ Plans │ K-O Palace │ Exit     ║
 ╠══════════════════════════════════════════════════════════╣
 ║  Runtime: Running    Providers: 1 active                 ║
 ║  Session: exec-123   Model: ollama/default               ║

@@ -158,7 +158,7 @@ pub struct GeneMetadata {
     pub examples: Vec<String>,
     pub custom: HashMap<String, String>,
     pub permissions: Vec<String>,
-    // ── Palace publishing metadata ──
+    // ── K-O Palace publishing metadata ──
     /// Trust level: Experimental, Community, Verified, Official, Enterprise, Certified
     pub trust_level: String,
     /// Capabilities provided by this gene (e.g. ["filesystem.read", "filesystem.write"])
@@ -173,9 +173,9 @@ pub struct GeneMetadata {
     pub signature: Option<String>,
     /// Publisher identity
     pub publisher: Option<String>,
-    /// Download count from Palace
+    /// Download count from K-O Palace
     pub downloads: u64,
-    /// Success rate (0.0-1.0) from Palace telemetry
+    /// Success rate (0.0-1.0) from K-O Palace telemetry
     pub success_rate: f64,
 }
 

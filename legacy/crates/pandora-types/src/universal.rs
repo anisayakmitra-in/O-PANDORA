@@ -403,7 +403,7 @@ pub struct TelemetryTimestamps {
     pub last_health_check_ms: u64,
 }
 
-/// Marketplace metadata for KUBER Palace publishing.
+/// Marketplace metadata for KUBER K-O Palace publishing.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct KuberMetadata {
     pub publisher: String,

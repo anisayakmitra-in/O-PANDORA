@@ -33,8 +33,8 @@
 - [Security](../SECURITY.md) - threat model, attack surfaces
 
 ## Packages and Ecosystem
-- [Publishing Guide](PUBLISHING.md) - how to publish to Palace
-- [Palace Deployment](PALACE_DEPLOYMENT.md) - running a Palace server
+- [Publishing Guide](PUBLISHING.md) - how to publish to K-O Palace
+- [K-O Palace Deployment](PALACE_DEPLOYMENT.md) - running a K-O Palace server
 - [TUI Reference](TUI.md) - terminal UI dashboard
 
 ## Release

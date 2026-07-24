@@ -9,7 +9,7 @@
 | SDK: harness scaffold | ⚠️ | Match arm exists, template escaping needed |
 | SDK: package scaffold | ⚠️ | Match arm exists, template escaping needed |
 | SDK: evaluator/policy/provider | ⚠️ | Match arms exist, template escaping needed |
-| Palace protocol frozen | ✅ | PalaceState + package registry API |
+| K-O Palace protocol frozen | ✅ | K-O PalaceState + package registry API |
 | Runtime API versioned | ✅ | v0.2.0 tagged |
 | MCP protocol stable | ✅ | Server compiles, McpTool types defined |
 | Fleet protocol stable | ✅ | WorkerCapability, health checks compile |

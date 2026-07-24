@@ -25,9 +25,9 @@ pub struct PandoraConfig {
     /// Maximum tokens per generation
     #[serde(default)]
     pub max_tokens: Option<usize>,
-    /// Palace registry URL
+    /// K-O Palace registry URL
     #[serde(default)]
-    pub palace_url: Option<String>,
+    pub registry_url: Option<String>,
     /// Whether to persist events to disk
     #[serde(default)]
     pub persist_events: Option<bool>,

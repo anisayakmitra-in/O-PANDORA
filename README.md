@@ -4,9 +4,9 @@
   <img src="assets/logo.png" alt="Pandora" width="200"/>
 </p>
 
-[![CI](https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/actions/workflows/ci.yml/badge.svg)](https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/actions)
+[![CI](https://github.com/anisayakmitra-in/O-PANDORA/actions/workflows/ci.yml/badge.svg)](https://github.com/anisayakmitra-in/O-PANDORA/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/anisayakmitra-in/PANDORA-SYSTEMS/releases/tag/v0.1.0)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.1.0)
 
 A governed execution runtime for AI agents. You give it a task, it runs through a pipeline of harnesses and genes, and tells you exactly what it did and why.
 
@@ -35,8 +35,8 @@ source ~/.cargo/env
 
 **From source (Linux, macOS, WSL2):**
 ```bash
-git clone https://github.com/anisayakmitra-in/PANDORA-SYSTEMS.git
-cd PANDORA-SYSTEMS
+git clone https://github.com/anisayakmitra-in/O-PANDORA.git
+cd O-PANDORA
 cargo build --release -p pandora
 cp target/release/pandora ~/.local/bin/
 ```
@@ -162,14 +162,14 @@ pandora connection test my-gpu
 
 12 provider types supported: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom.
 
-### KUBER Palace
+### K-O K-O Palace
 
 A package registry built into the CLI. Discover, install, and publish genes and harnesses.
 
 ```bash
 pandora shell
 /kuber-palace          # browse marketplace
-/install coding-domain # install from Palace
+/install coding-domain # install from K-O Palace
 ```
 
 Everything is free. Monetization comes later, once the ecosystem grows.
@@ -240,11 +240,17 @@ pandora-shadow-council (Harness/gene registry)
 pandora-genes (Built-in genes)
 pandora-harnesses (Domain harnesses)
 pandora-kuber (Registry, resolver, builtins)
-pandora-palace (Package registry server)
+k-o-palace (Package registry server)
 pandora-fleet (Distributed worker nodes)
 ```
 
 ## License
+
+O-PANDORA is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+
+K-O Palace is also licensed under Apache 2.0.
+
+## Old License
 
 MIT © 2026 Pandora Systems
 

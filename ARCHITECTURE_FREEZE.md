@@ -61,7 +61,7 @@ No stage may be removed; new stages append at the end.
 | `pandora-genes` | Built-in gene implementations (66+ genes) | `Gene` trait, each gene struct |
 | `pandora-services` | Parliamentary services (Memory, Planning, Execution, Governance, Identity) | Each service struct |
 | `pandora-kuber` | Package registry CLI + resolver | `Kuber`, `skill` |
-| `pandora-palace` | Package registry HTTP server | `PalaceState` |
+| `k-o-palace` | Package registry HTTP server | `K-O PalaceState` |
 | `pandora-fleet` | Distributed worker management | `FleetController`, `WorkerCapability` |
 | `pandora-api` | MCP protocol server | `McpState`, `McpTool` |
 | `pandora` | CLI binary — command dispatch | `main.rs` (25+ commands) |
@@ -197,7 +197,7 @@ The following APIs are frozen as of v0.3. Changes require an RFC.
 
 Every subsystem communicates through capability strings. Registries index them,
 intents match them, permissions authorize them, policies evaluate them, nodes
-advertise them, Palace searches by them. See RFC-0001 for the design.
+advertise them, K-O Palace searches by them. See RFC-0001 for the design.
 
 ### Invariants (unchanged)
 

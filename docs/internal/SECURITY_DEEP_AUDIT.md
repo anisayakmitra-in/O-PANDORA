@@ -10,7 +10,7 @@
 | Severity | Count | Description |
 |----------|-------|-------------|
 | **Critical** | 1 | `random_hex()` not cryptographically secure — all session/auth tokens predictable |
-| **High** | 2 | Palace signature stored but never verified; path traversal in filesystem gene |
+| **High** | 2 | K-O Palace signature stored but never verified; path traversal in filesystem gene |
 | **Medium** | 3 | No constant-time comparison; loopback detection bypass; Ed25519 verify not wired |
 | **Low** | 3 | Event bus no auth; no canonicalization; placeholder checksums |
 
@@ -60,14 +60,14 @@ fn random_hex(len: usize) -> String {
 
 ## HIGH
 
-### H1 — Palace signature stored but never verified
+### H1 — K-O Palace signature stored but never verified
 
-**File:** `legacy/crates/pandora-palace/src/lib.rs:203`
+**File:** `legacy/crates/k-o-palace/src/lib.rs:203`
 ```rust
 signature: req.signature,   // Stored from HTTP request, NEVER verified
 ```
 
-**Issue:** The Palace publish endpoint accepts a `signature` field from the HTTP request body and stores it in the package registry. It never calls `verify_signature()` from the existing `pandora_types::signing` module. Anyone can publish a package with any signature — the `verified: false` field is set but no verification ever runs.
+**Issue:** The K-O Palace publish endpoint accepts a `signature` field from the HTTP request body and stores it in the package registry. It never calls `verify_signature()` from the existing `pandora_types::signing` module. Anyone can publish a package with any signature — the `verified: false` field is set but no verification ever runs.
 
 **Fix:** After receiving a publish request, call `verify_signature()` before storing. Requires the publisher's public key to be registered or included in the request.
 
@@ -128,14 +128,14 @@ addr.starts_with("127.") || addr.starts_with("::1") || addr == "localhost"
 
 **Impact:** Weak loopback detection for `pandora serve` API.
 
-### M3 — Ed25519 verify not wired into Palace
+### M3 — Ed25519 verify not wired into K-O Palace
 
 **File:** `legacy/crates/pandora-types/src/signing.rs:74-90` (existing verify function)
-**Related:** `legacy/crates/pandora-palace/src/lib.rs:203`
+**Related:** `legacy/crates/k-o-palace/src/lib.rs:203`
 
-**Issue:** The `verify_signature()` function exists in `pandora_types::signing` and works correctly (tested in unit tests — `sign_and_verify_roundtrip` passes, `tampered_signature_fails` passes). But Palace never calls it during publish. The infrastructure exists but is disconnected.
+**Issue:** The `verify_signature()` function exists in `pandora_types::signing` and works correctly (tested in unit tests — `sign_and_verify_roundtrip` passes, `tampered_signature_fails` passes). But K-O Palace never calls it during publish. The infrastructure exists but is disconnected.
 
-**Fix:** Wire `verify_signature()` into the Palace publish handler after receiving the package manifest.
+**Fix:** Wire `verify_signature()` into the K-O Palace publish handler after receiving the package manifest.
 
 **Impact:** Package authenticity is aspirational, not enforced.
 
@@ -199,7 +199,7 @@ checksum: format!("sha256:{}", v),  // placeholder
 | Priority | Fix | Effort | Impact |
 |----------|-----|--------|--------|
 | **P0** | Replace `random_hex` with `ring::rand::SystemRandom` | 15 min | Stops session hijack |
-| **P0** | Wire `verify_signature()` into Palace publish | 30 min | Enables package authenticity |
+| **P0** | Wire `verify_signature()` into K-O Palace publish | 30 min | Enables package authenticity |
 | **P0** | Add path canonicalization to filesystem gene | 15 min | Prevents arbitrary file read |
 | **P1** | Add constant-time comparison for tokens | 15 min | Prevents timing attacks |
 | **P1** | Strengthen loopback detection with proper IP parsing | 10 min | Better API security |
