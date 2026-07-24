@@ -54,6 +54,6 @@ artifacts/           — gene output artifacts
 
 ## Related
 
-- [CLI reference](CLI.md)
+- [CLI reference](SDK.md)
 - [Permissions](PERMISSIONS.md)
 - [SDK guide](SDK.md)

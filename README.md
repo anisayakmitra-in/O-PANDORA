@@ -202,7 +202,7 @@ Version:   --version, version
 /goal <objective>  multi-turn until done (Claurst pattern)
 /agent <task>      spawn background subagent
 /overnight <task>  run 10 turns, go to sleep (GNHF pattern)
-/kuber-palace      browse marketplace
+/market      browse marketplace
 /connections       manage providers
 /sessions          view execution history
 /help              list commands
@@ -246,7 +246,7 @@ K-O Palace is also licensed under Apache 2.0.
 
 ## Old License
 
-MIT © 2026 Pandora Systems
+Apache 2.0 © 2026 O-PANDORA
 
 See [LICENSE](LICENSE) for full terms.
 

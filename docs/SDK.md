@@ -39,5 +39,5 @@ All scaffolds are immediately publishable via `pandora publish`.
 
 ## Related
 
-- [CLI reference](CLI.md) — full command reference
-- [Manifests](MANIFESTS.md)
+- [CLI reference](ARCHITECTURE.md) — full command reference
+- [Manifests](ARCHITECTURE.md)

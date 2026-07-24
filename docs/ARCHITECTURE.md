@@ -6,7 +6,7 @@ Pandora is a governed execution runtime. You give it a task, it runs through a p
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    PANDORA SYSTEMS                       │
+│                    O-PANDORA                       │
 │              Governed Execution Runtime                  │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
@@ -105,7 +105,7 @@ Task: build a REST API
 
 ```
 ╔══════════════════════════════════════════════════════════╗
-║                 PANDORA SYSTEMS                          ║
+║                 O-PANDORA                          ║
 ║           Governed Execution Runtime                      ║
 ╠══════════════════════════════════════════════════════════╣
 ║  Runtime │ Genes │ Harnesses │ Plans │ K-O Palace │ Exit     ║

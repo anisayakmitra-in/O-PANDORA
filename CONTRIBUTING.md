@@ -70,4 +70,4 @@ cargo clippy --workspace -- -D warnings  # Strict lint
 
 ## Architecture Decision Records
 
-Propose changes in `docs/adr/NNNN-title.md`. See `ARCHITECTURE_FREEZE.md` for the ADR process.
+Propose changes in `docs/NNNN-title.md`. See `ARCHITECTURE_FREEZE.md` for the ADR process.

@@ -45,4 +45,4 @@ Default is deny.
 ## Related
 
 - [Capabilities](CAPABILITIES.md)
-- [CLI reference](CLI.md)
+- [CLI reference](SDK.md)
