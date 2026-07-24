@@ -499,7 +499,7 @@ fn usage() {
     eprintln!("    pandora new gene my-gene");
     eprintln!("    pandora connection add local-ollama ollama http://localhost:11434");
     eprintln!();
-    eprintln!("Full docs: https://github.com/anisayakmitra-in/PANDORA-SYSTEMS");
+    eprintln!("Full docs: https://github.com/anisayakmitra-in/O-PANDORA");
 }
 
 fn sessions_dir() -> std::path::PathBuf {
@@ -543,7 +543,10 @@ fn cmd_install(args: &[String]) {
     }
 
     // 2. Try remote K-O Palace lookup
-    eprintln!("Not found locally. Trying K-O Palace at {} ...", registry_url);
+    eprintln!(
+        "Not found locally. Trying K-O Palace at {} ...",
+        registry_url
+    );
     let url = format!("{}/api/v1/packages/{}", registry_url, pkg_id);
     match reqwest::blocking::get(&url) {
         Ok(resp) if resp.status().is_success() => {

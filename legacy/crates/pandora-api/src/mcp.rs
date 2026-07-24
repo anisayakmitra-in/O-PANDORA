@@ -76,7 +76,7 @@ async fn mcp_handler(
             id: req.id,
             result: Some(serde_json::json!({
                 "protocolVersion": "2024-11-05",
-                "serverInfo": {"name":"pandora-mcp","version":"1.0.0"},
+                "serverInfo": {"name":"pandora-mcp","version":"0.1.0"},
                 "capabilities": {"tools": {}}
             })),
             error: None,

@@ -20,7 +20,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Pandora Contributors"]
 license = "Apache-2.0"
-repository = "https://github.com/anisayakmitra-in/PANDORA-SYSTEMS"
+repository = "https://github.com/anisayakmitra-in/O-PANDORA"
 rust-version = "1.81"
 
 

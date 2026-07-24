@@ -34,7 +34,7 @@
 
 ## Packages and Ecosystem
 - [Publishing Guide](PUBLISHING.md) - how to publish to K-O Palace
-- [K-O Palace Deployment](PALACE_DEPLOYMENT.md) - running a K-O Palace server
+- [K-O Palace Deployment](REGISTRY_DEPLOYMENT.md) - running a K-O Palace server
 - [TUI Reference](TUI.md) - terminal UI dashboard
 
 ## Release
