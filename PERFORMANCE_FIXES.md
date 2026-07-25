@@ -1,6 +1,51 @@
-# O-PANDORA — Concrete Fixes for Remaining Areas
+# O-PANDORA — Performance Optimization Plan (Revised)
 
-## 1. Clone() in Agentic Loop
+**Date:** 2026-07-25
+**Status:** Revised per profiling-first methodology.
+
+---
+
+## Revised Sequencing
+
+| Step | Action | Status |
+|------|--------|--------|
+| 1 | Benchmark baseline at `6d6691c` | **NEXT** |
+| 2 | Agentic-loop ownership cleanup | Do after baseline |
+| 3 | `Arc<BusEvent>` for fan-out | Do after baseline |
+| 4 | Benchmark again — retain only measurable improvements | After steps 2-3 |
+| 5 | Stress capability resolution before adding indices | Deferred |
+| 6 | Profile hashing before touching HashMap | Deferred |
+
+---
+
+## Performance Invariant
+
+**Genes, Harnesses, Parliament, Shadow Council, registries, and package extensibility must never be hardcoded or structurally weakened for benchmark gains.**
+
+Optimization changes representation and execution strategy, not the extensibility model.
+
+---
+
+## Measurement Buckets
+
+Separate these two categories in all benchmarks:
+
+```
+O-PANDORA overhead              External latency
+──────────────────              ────────────────
+planning/routing                LLM inference
+governance                      HTTP
+capability resolution           MCP
+eventing                        filesystem
+memory                          shell/process startup
+serialization
+```
+
+A 2ms improvement inside a 2s model call is noise. Focus on areas that determine whether O-PANDORA *feels* fast.
+
+---
+
+## 1. Agentic-Loop Ownership Cleanup (DO NEXT)
 
 **Current problem:** Three unnecessary clones per tool call iteration.
 
@@ -99,33 +144,7 @@ messages.push(ChatMessage {
 
 ---
 
-## 2. HashMap → FxHashMap
-
-**Current:** `std::collections::HashMap` used in:
-- `agentic_loop.rs` — `gene_map` (20 entries, built once)
-- `shadow-council/src/lib.rs` — `SlashCommandRegistry`, `CapabilityRegistry`, `GeneRouter`, `HarnessRegistry`
-- `policy_engine.rs` — `PolicyEngine.policies`, `evaluate()` local HashMaps
-
-**Fix:** Add `rustc-hash` to Cargo.toml and replace `HashMap` with `FxHashMap` everywhere.
-
-`FxHashMap` uses Fx hashing — a 6x faster hash for small keys like strings and integers. It's a drop-in replacement.
-
-```toml
-# Cargo.toml (workspace)
-[workspace.dependencies]
-rustc-hash = "2"
-```
-
-```rust
-use rustc_hash::FxHashMap;
-// Then: FxHashMap<String, ...> instead of HashMap<String, ...>
-```
-
-**Impact:** ~2-3x faster lookups for small maps. Measurable on the gene_map lookups in the hot loop.
-
----
-
-## 3. Event Bus Allocation
+## 2. `Arc<BusEvent>` for Fan-Out (DO NEXT)
 
 **Current:** `EventBus::publish()` creates a `BusEvent` with `source: String` (heap allocation) and `payload: serde_json::Value` (heap allocation) on every publish.
 
@@ -141,33 +160,9 @@ pub fn publish(&self, kind: BusEventKind, payload: serde_json::Value, source: &s
 }
 ```
 
-**Fix:** Two options:
+The `broadcast::channel` already handles allocation. The real cost is the `BusEvent` clone that happens inside `broadcast::send()` (every subscriber gets a clone).
 
-### Option A: Pre-allocated event pool (moderate change)
-```rust
-pub struct EventBus {
-    sender: broadcast::Sender<BusEvent>,
-}
-
-impl EventBus {
-    pub fn publish(&self, kind: BusEventKind, payload: serde_json::Value, source: &str) {
-        let event = BusEvent {
-            kind,
-            payload,
-            timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
-            source: source.into(),
-        };
-        let _ = self.sender.send(event);
-    }
-}
-```
-
-The `broadcast::channel` already handles allocation. The real cost is the `BusEvent` clone that happens inside `broadcast::send()` (every subscriber gets a clone). 
-
-**Better fix:** Use `Arc<BusEvent>` to share the event instead of cloning it.
+**Fix:** Use `Arc<BusEvent>` to share the event instead of cloning it.
 
 ```rust
 pub fn publish(&self, kind: BusEventKind, payload: serde_json::Value, source: &str) {
@@ -190,9 +185,9 @@ This requires changing `broadcast::Sender<BusEvent>` to `broadcast::Sender<Arc<B
 
 ---
 
-## 4. Capability Registry Linear Scan
+## 3. Capability Registry Index (DEFERRED — PROFILING REQUIRED)
 
-**Current:** `CapabilityRegistry::find_providers()` does a HashMap lookup (fast), but `CapabilityRegistry::get()` does a linear scan of `declarations: Vec<CapabilityDeclaration>`.
+**Current:** `CapabilityRegistry::get()` does a linear scan of `declarations: Vec<CapabilityDeclaration>`.
 
 ```rust
 pub fn get(&self, hid: &str) -> Option<&CapabilityDeclaration> {
@@ -200,57 +195,67 @@ pub fn get(&self, hid: &str) -> Option<&CapabilityDeclaration> {
 }
 ```
 
-**Fix:** Add a reverse index.
+**Previous proposal (WRONG):** `HashMap<String, usize>` — positional indices are invalidated by mutation.
+
+**Correct approach (if profiling justifies it):** `HashMap<String, Vec<String>>` mapping harness_id to capabilities.
 
 ```rust
 pub struct CapabilityRegistry {
     declarations: Vec<CapabilityDeclaration>,
     providers: HashMap<String, Vec<String>>,
-    by_harness: HashMap<String, usize>,  // NEW: harness_id → index into declarations
-}
-
-impl CapabilityRegistry {
-    pub fn register(&mut self, decl: CapabilityDeclaration) {
-        let idx = self.declarations.len();
-        self.by_harness.insert(decl.harness_id.clone(), idx);
-        for cap in &decl.provides {
-            self.providers
-                .entry(cap.clone())
-                .or_default()
-                .push(decl.harness_id.clone());
-        }
-        self.declarations.push(decl);
-    }
-
-    pub fn get(&self, hid: &str) -> Option<&CapabilityDeclaration> {
-        self.by_harness.get(hid).and_then(|&idx| self.declarations.get(idx))
-    }
-
-    pub fn remove(&mut self, hid: &str) {
-        self.declarations.retain(|d| d.harness_id != hid);
-        self.by_harness.remove(hid);
-        // Rebuild indices after retain (indices shift)
-        self.by_harness.clear();
-        for (idx, d) in self.declarations.iter().enumerate() {
-            self.by_harness.insert(d.harness_id.clone(), idx);
-        }
-        self.providers.retain(|_, v| {
-            v.retain(|id| id != hid);
-            !v.is_empty()
-        });
-    }
+    harness_capabilities: HashMap<String, Vec<String>>,  // harness_id → capability IDs
 }
 ```
 
-**Impact:** `get()` goes from O(n) to O(1). `remove()` is still O(n) but that's rare (harness uninstall). The tradeoff is worth it because `get()` may be called during dependency resolution.
+**Why deferred:** The registry is small and mutations are rare. O(n) lookup on ~20 entries is nanoseconds. Don't add complexity without evidence.
 
 ---
 
-## Summary
+## 4. FxHashMap Migration (DEFERRED — PROFILING REQUIRED)
 
-| Area | Fix | Impact | Risk |
-|------|-----|--------|------|
-| Clone() in agentic loop | Restructure ownership, move instead of clone | 2-3 String clones saved per tool call | Low — same semantics |
-| HashMap → FxHashMap | Drop-in replacement with rustc-hash | 2-3x faster hashing | Low — same API |
-| Event bus | Arc<BusEvent> shared across subscribers | N-1 clones eliminated per publish | Medium — type change propagates |
-| Capability registry | Add reverse index HashMap | O(n) → O(1) lookups | Low — extra 8 bytes per entry |
+**Previous proposal:** Replace `std::collections::HashMap` with `FxHashMap` everywhere.
+
+**Why deferred:** 2-3x faster hashing does not imply meaningful runtime speedup. Network/model latency dominates most agent workloads. Profile before introducing another hash implementation.
+
+---
+
+## Benchmarking Plan
+
+Before implementing any optimization, establish baseline with Criterion:
+
+```rust
+// benches/agentic_loop.rs
+use criterion::{criterion_group, criterion_main, Criterion};
+
+fn bench_agentic_loop_turn(c: &mut Criterion) {
+    // Measure: planning/routing overhead per turn
+    // Exclude: LLM inference time
+    // Record: p50, p95, p99, allocations, peak memory
+}
+
+fn bench_policy_evaluation(c: &mut Criterion) {
+    // Measure: policy evaluation at 5, 20, 100 policies
+}
+
+fn bench_capability_resolution(c: &mut Criterion) {
+    // Measure: capability lookup at 10, 50, 200 capabilities
+}
+
+fn bench_event_publication(c: &mut Criterion) {
+    // Measure: event pub at 1, 10, 100 subscribers
+}
+
+criterion_group!(benches, bench_agentic_loop_turn, bench_policy_evaluation, bench_capability_resolution, bench_event_publication);
+criterion_main!(benches);
+```
+
+---
+
+## What's Already Implemented (at `6d6691c`)
+
+| Optimization | File | Impact |
+|---|---|---|
+| Provider client reuse | `provider.rs` | 10-20ms saved per request |
+| CancellationToken | `provider.rs` | AtomicBool instead of Mutex |
+| Policy engine pre-sort | `policy_engine.rs` | Sorting on register, not evaluate |
+| Agentic loop allocation | `agentic_loop.rs` | Pre-allocated HashMap and Vecs |
