@@ -355,6 +355,7 @@ impl GeneLineage {
 /// ```rust,no_run
 /// use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
 ///
+/// #[derive(Debug)]
 /// struct MyGene { m: GeneManifest }
 /// impl Gene for MyGene {
 ///     fn manifest(&self) -> &GeneManifest { &self.m }

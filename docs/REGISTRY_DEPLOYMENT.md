@@ -33,7 +33,7 @@ Default port: `3000`.
 
 ```bash
 # Point the CLI at your K-O Palace
-export PANDORA_PALACE_URL=http://your-palace:3000
+export PANDORA_REGISTRY_URL=http://your-palace:3000
 
 # Or per-command
 pandora install my-package --registry=http://your-palace:3000

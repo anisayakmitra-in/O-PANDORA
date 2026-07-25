@@ -569,6 +569,7 @@ mod tests {
 
     #[test]
     fn shell_echo() {
+        std::env::set_var("PANDORA_SHELL_UNSAFE", "1");
         assert_eq!(
             ShellGene::new().execute("echo hi").expect("genes").trim(),
             "hi"
@@ -586,6 +587,7 @@ mod tests {
     }
     #[test]
     fn workflow_steps() {
+        std::env::set_var("PANDORA_SHELL_UNSAFE", "1");
         let r = WorkflowGene::new()
             .execute("echo a\necho b")
             .expect("genes");

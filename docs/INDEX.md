@@ -23,7 +23,7 @@
 
 ## Components
 - [Harnesses](../README.md#harnesses) - source, meta, domain (12 built-in)
-- [Genes](../README.md#genes) - built-in atomic tools
+- [Genes](../README.md#genes-21-built-in) - built-in atomic tools
 - [SDK](SDK.md) - scaffolding guide for all component types
 - [Capabilities](CAPABILITIES.md) - capability system reference
 - [Manifest Specification](MANIFESTS.md) - gene.toml, harness.toml, pandora.toml schemas
