@@ -90,8 +90,10 @@ pub fn run_agentic_loop(
 ) -> Result<AgenticResult, String> {
     let start = Instant::now();
     let tools = genes_to_tool_definitions(genes);
-    let gene_map: HashMap<String, &dyn Gene> =
-        genes.iter().map(|g| (g.id().to_string(), *g)).collect();
+    let mut gene_map: HashMap<String, &dyn Gene> = HashMap::with_capacity(genes.len());
+    for g in genes {
+        gene_map.insert(g.id().to_string(), *g);
+    }
 
     let mut ctx_mgr = ContextManager::new(config.context_max_tokens, config.context_strategy);
 
@@ -102,20 +104,19 @@ pub fn run_agentic_loop(
          When you are done, respond with a summary without calling any more tools."
     );
 
-    let mut messages: Vec<ChatMessage> = vec![
-        ChatMessage {
-            role: "system".into(),
-            content: system_prompt,
-            tool_calls: vec![],
-            tool_call_id: None,
-        },
-        ChatMessage {
-            role: "user".into(),
-            content: task.into(),
-            tool_calls: vec![],
-            tool_call_id: None,
-        },
-    ];
+    let mut messages: Vec<ChatMessage> = Vec::with_capacity(config.max_turns as usize * 2);
+    messages.push(ChatMessage {
+        role: "system".into(),
+        content: system_prompt,
+        tool_calls: vec![],
+        tool_call_id: None,
+    });
+    messages.push(ChatMessage {
+        role: "user".into(),
+        content: task.into(),
+        tool_calls: vec![],
+        tool_call_id: None,
+    });
 
     for m in &messages {
         ctx_mgr.push(ContextMessage {
@@ -128,7 +129,7 @@ pub fn run_agentic_loop(
 
     let mut turns_used: u32 = 0;
     let mut tool_calls_made: u32 = 0;
-    let mut tool_results: Vec<ToolResult> = Vec::new();
+    let mut tool_results: Vec<ToolResult> = Vec::with_capacity(config.max_turns as usize);
     let mut total_tokens: usize = 0;
     let mut governance_warnings: usize = 0;
     let final_output: String;
@@ -261,7 +262,7 @@ pub fn run_agentic_loop(
             tool_results.push(ToolResult {
                 tool_name: tc.name.clone(),
                 tool_call_id: tc.id.clone(),
-                input: input.clone(),
+                input,
                 output: output.clone(),
                 success,
                 duration_ms: exec_ms,

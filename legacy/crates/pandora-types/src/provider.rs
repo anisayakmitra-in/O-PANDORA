@@ -144,6 +144,7 @@ pub mod ollama {
     pub struct OllamaProvider {
         pub endpoint: String,
         pub model: String,
+        client: reqwest::blocking::Client,
     }
 
     impl OllamaProvider {
@@ -151,12 +152,14 @@ pub mod ollama {
             Self {
                 endpoint: endpoint.to_string(),
                 model: model.to_string(),
+                client: reqwest::blocking::Client::new(),
             }
         }
         pub fn new_default() -> Self {
             Self {
                 endpoint: "http://localhost:11434".into(),
                 model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()),
+                client: reqwest::blocking::Client::new(),
             }
         }
     }
@@ -181,8 +184,8 @@ pub mod ollama {
                 "options": { "temperature": request.temperature, "num_predict": request.max_tokens },
                 "stream": false
             });
-            let client = reqwest::blocking::Client::new();
-            let resp = client
+            let resp = self
+                .client
                 .post(&url)
                 .json(&body)
                 .send()
@@ -210,8 +213,8 @@ pub mod ollama {
                 "options": { "temperature": request.temperature, "num_predict": request.max_tokens },
                 "stream": true
             });
-            let client = reqwest::blocking::Client::new();
-            let resp = client
+            let resp = self
+                .client
                 .post(&url)
                 .json(&body)
                 .send()
@@ -307,8 +310,8 @@ pub mod ollama {
                 "stream": false
             });
 
-            let client = reqwest::blocking::Client::new();
-            let resp = client
+            let resp = self
+                .client
                 .post(&url)
                 .json(&body)
                 .send()
@@ -404,11 +407,12 @@ pub struct ChatCompletion {
 }
 
 /// Simple cancellation token — replaces tokio_util::sync::CancellationToken.
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct CancellationToken {
-    cancelled: Arc<Mutex<bool>>,
+    cancelled: Arc<AtomicBool>,
 }
 
 impl Default for CancellationToken {
@@ -420,13 +424,13 @@ impl Default for CancellationToken {
 impl CancellationToken {
     pub fn new() -> Self {
         Self {
-            cancelled: Arc::new(Mutex::new(false)),
+            cancelled: Arc::new(AtomicBool::new(false)),
         }
     }
     pub fn cancel(&self) {
-        *self.cancelled.lock().expect("cancel lock") = true;
+        self.cancelled.store(true, Ordering::Relaxed);
     }
     pub fn is_cancelled(&self) -> bool {
-        *self.cancelled.lock().expect("cancel lock")
+        self.cancelled.load(Ordering::Relaxed)
     }
 }

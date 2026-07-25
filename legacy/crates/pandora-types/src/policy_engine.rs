@@ -102,16 +102,15 @@ impl PolicyEngine {
     /// Register a policy.
     pub fn register(&mut self, policy: Policy) {
         self.policies.push(policy);
+        self.policies.sort_by_key(|p| std::cmp::Reverse(p.priority));
     }
 
     /// Evaluate all policies against the given context. Returns the first
     /// Deny verdict, or the aggregate of all Allow verdicts.
     pub fn evaluate(&self, context: &HashMap<String, serde_json::Value>) -> Vec<PolicyVerdict> {
         let mut results = Vec::new();
-        let mut sorted: Vec<&Policy> = self.policies.iter().filter(|p| p.enabled).collect();
-        sorted.sort_by_key(|p| std::cmp::Reverse(p.priority));
 
-        for policy in &sorted {
+        for policy in self.policies.iter().filter(|p| p.enabled) {
             let mut conditions_met = true;
             let mut evidence = HashMap::new();
 
