@@ -441,7 +441,7 @@ impl Default for KuberMetadata {
             official: false,
             verified: false,
             compatibility: vec![],
-            min_version: "0.1.0".into(),
+            min_version: "0.2.0".into(),
             max_version: "2.0.0".into(),
         }
     }

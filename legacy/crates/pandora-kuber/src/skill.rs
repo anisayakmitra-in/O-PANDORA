@@ -36,6 +36,6 @@ pub fn install(kuber: &mut Kuber, path: &str) -> Result<Skill, String> {
 pub fn scaffold(name: &str, dir: &str) -> Result<String, String> {
     let sd = std::path::Path::new(dir).join(name);
     std::fs::create_dir_all(&sd).map_err(|e| format!("Cannot create: {e}"))?;
-    std::fs::write(sd.join("skill.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nversion = \"0.1.0\"\nauthor = \"\"\ndescription = \"\"\n\n[[genes]]\nid = \"\"\nversion = \"\"\n")).map_err(|e| format!("Cannot write: {e}"))?;
+    std::fs::write(sd.join("skill.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nversion = \"0.2.0\"\nauthor = \"\"\ndescription = \"\"\n\n[[genes]]\nid = \"\"\nversion = \"\"\n")).map_err(|e| format!("Cannot write: {e}"))?;
     Ok(sd.to_string_lossy().to_string())
 }

@@ -20,7 +20,7 @@ impl DefaultMemoryService {
         Self {
             store: Mutex::new(HashMap::new()),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -116,7 +116,7 @@ impl DefaultExecutionService {
                 checkpoints: HashMap::new(),
             }),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -259,7 +259,7 @@ impl DefaultPlanningService {
         Self {
             engine: PlanningEngine::new(),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -457,7 +457,7 @@ impl DefaultGovernanceService {
             ]),
             audit_log: Mutex::new(Vec::new()),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -517,7 +517,7 @@ impl DefaultIdentityService {
         Self {
             store: Mutex::new(HashMap::new()),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -585,7 +585,7 @@ impl DefaultWorkflowService {
     pub fn new() -> Self {
         Self {
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -631,7 +631,7 @@ impl DefaultProviderRegistryService {
     pub fn new() -> Self {
         Self {
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -688,7 +688,7 @@ impl DefaultSchedulerService {
         Self {
             jobs: Mutex::new(HashMap::new()),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }
@@ -752,7 +752,7 @@ impl DefaultLedgerService {
         Self {
             log: Mutex::new(Vec::new()),
             provider: "pandora".into(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
         }
     }
 }

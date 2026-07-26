@@ -1,4 +1,4 @@
-# Pandora
+# O-PANDORA
 
 <p align="center">
   <img src="assets/logo.png" alt="Pandora" width="200"/>
@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/anisayakmitra-in/O-PANDORA/actions/workflows/ci.yml/badge.svg)](https://github.com/anisayakmitra-in/O-PANDORA/actions)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.1.0)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.2.0)
 
 A governed execution runtime for AI agents. You give it a task, it runs through a pipeline of harnesses and genes, and tells you exactly what it did and why.
 

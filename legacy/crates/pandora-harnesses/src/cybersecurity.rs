@@ -17,7 +17,7 @@ impl CybersecurityDomainHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("cybersecurity-domain")
                 .name("Cybersecurity Domain")
-                .version("0.1.0")
+                .version("0.2.0")
                 .author("pandora")
                 .kind(HarnessKind::Domain)
                 .description(
@@ -42,7 +42,7 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .id(id)
         .name(desc)
         .kind(GeneKind::Tool)
-        .version("0.1.0")
+        .version("0.2.0")
         .author("pandora")
         .description(desc)
         .build()

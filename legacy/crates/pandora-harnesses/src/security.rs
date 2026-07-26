@@ -34,7 +34,7 @@ impl SecurityDomainHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("security-domain")
                 .name("Security")
-                .version("0.1.0")
+                .version("0.2.0")
                 .author("pandora")
                 .kind(HarnessKind::Domain)
                 .description("Security analysis — audit, scan, secrets, threat model")

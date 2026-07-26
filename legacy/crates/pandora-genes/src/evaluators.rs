@@ -10,7 +10,7 @@ use std::process::Command;
 
 fn mk(id: &str, kind: GeneKind, desc: &str) -> GeneManifest {
     GeneManifestBuilder::default()
-        .id(id).name(id).kind(kind).version("0.1.0").author("pandora")
+        .id(id).name(id).kind(kind).version("0.2.0").author("pandora")
         .description(desc).build().expect("hardcoded evaluator manifest must build")
 }
 

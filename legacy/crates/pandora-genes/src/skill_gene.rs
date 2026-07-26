@@ -62,7 +62,7 @@ impl SkillGene {
             .id(name.clone())
             .name(name)
             .kind(GeneKind::Skill)
-            .version("0.1.0")
+            .version("0.2.0")
             .author("skill")
             .description(if description.is_empty() {
                 "Skill loaded from SKILL.md".to_string()

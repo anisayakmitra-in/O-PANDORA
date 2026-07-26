@@ -29,7 +29,7 @@ impl SandboxGene {
             .id("sandbox.docker")
             .name("Docker Sandbox")
             .kind(GeneKind::Security)
-            .version("0.1.0")
+            .version("0.2.0")
             .author("pandora")
             .description("Disposable Docker container for isolated command execution")
             .capability("sandbox.execute")

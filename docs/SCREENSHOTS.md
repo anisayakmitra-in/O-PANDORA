@@ -14,7 +14,7 @@ $ pandora --version
      |  ╚══╝ |
      |___|||||
 
-pandora 0.1.0
+pandora 0.2.0
 Platform: linux
 Arch: x86_64
 ```
@@ -68,7 +68,7 @@ python3... OK
 rustc... OK
 
 Sessions: 25 stored
-Architecture: v0.1.0 — frozen
+Architecture: frozen (since v0.1.0)
 ```
 
 ```bash
@@ -83,7 +83,7 @@ $ pandora shell
      |  ╚══╝ |
      |___|||||
 
-PANDORA v0.1.0 Interactive Shell
+O-PANDORA Interactive Shell
 Commands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit
 pandora> /quit
 Goodbye.

@@ -171,7 +171,7 @@ impl WorkflowDefinition {
         Self {
             name: name.into(),
             description: String::new(),
-            version: "0.1.0".into(),
+            version: "0.2.0".into(),
             tags: Vec::new(),
             steps: Vec::new(),
         }

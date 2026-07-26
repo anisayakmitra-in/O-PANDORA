@@ -807,7 +807,7 @@ impl ShadowCouncil {
             GeneKind::Workflow => WORKFLOW_TMPL,
             _ => GENE_TMPL,
         };
-        std::fs::write(gene_dir.join("gene.toml"), format!(r#"id = "{name}" name = "{name}" kind = "{}" version = "0.1.0" author = "" description = "" [[slash_commands]] command = "{name}.run" description = "Run the {name} gene""#, kind.as_str())).map_err(|e| format!("Cannot write gene.toml: {e}"))?;
+        std::fs::write(gene_dir.join("gene.toml"), format!(r#"id = "{name}" name = "{name}" kind = "{}" version = "0.2.0" author = "" description = "" [[slash_commands]] command = "{name}.run" description = "Run the {name} gene""#, kind.as_str())).map_err(|e| format!("Cannot write gene.toml: {e}"))?;
         std::fs::write(gene_dir.join("src").join("lib.rs"), module)
             .map_err(|e| format!("Cannot write lib.rs: {e}"))?;
         let _ = std::fs::write(gene_dir.join("src").join("mod.rs"), "pub mod lib;\n");
@@ -874,7 +874,7 @@ mod tests {
                     .id(id)
                     .name(id)
                     .kind(kind)
-                    .version("0.1.0")
+                    .version("0.2.0")
                     .author("test")
                     .build()
                     .unwrap(),
@@ -892,7 +892,7 @@ mod tests {
             manifest: HarnessManifestBuilder::default()
                 .id(id)
                 .name(id)
-                .version("0.1.0")
+                .version("0.2.0")
                 .author("test")
                 .kind(kind)
                 .build()
@@ -903,7 +903,7 @@ mod tests {
         let mut b = HarnessManifestBuilder::default()
             .id(id)
             .name(id)
-            .version("0.1.0")
+            .version("0.2.0")
             .author("test")
             .kind(kind);
         for &(c, d) in cmds {

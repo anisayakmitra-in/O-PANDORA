@@ -92,7 +92,7 @@ struct SessionInfo {
 // ── Handlers ──
 
 async fn health() -> impl IntoResponse {
-    Json(serde_json::json!({"status":"ok","runtime":"pandora-api","version":"0.1.0"}))
+    Json(serde_json::json!({"status":"ok","runtime":"pandora-api","version":"0.2.0"}))
 }
 
 async fn execute(

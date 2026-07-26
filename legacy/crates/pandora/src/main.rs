@@ -876,7 +876,7 @@ fn cmd_doctor(_args: &[String]) {
     let sd = sessions_dir();
     let session_count = std::fs::read_dir(&sd).map(|d| d.count()).unwrap_or(0);
     println!("\nSessions: {session_count} stored");
-    println!("Architecture: v0.1.0 — frozen");
+    println!("Architecture: frozen (since v0.1.0)");
     println!("Runtime: {}", env!("CARGO_PKG_VERSION"));
     // Check config env vars
     for var in &[
@@ -936,7 +936,7 @@ fn cmd_inspect(args: &[String]) {
     }
 }
 fn cmd_architecture(_args: &[String]) {
-    println!("Pandora Architecture v0.1.0\n  Constitutional Services -> Shadow Council -> Harnesses -> Genes -> Providers");
+    println!("O-PANDORA Architecture\n  Constitutional Services -> Shadow Council -> Harnesses -> Genes -> Providers");
 }
 fn cmd_status(_args: &[String]) {
     let built = pandora_kuber::builtin::all().len();
@@ -1104,7 +1104,7 @@ fn cmd_package(args: &[String]) {
 publisher = \"you\"
 name = \"{name}\"
 kind = \"gene\"
-version = \"0.1.0\"
+version = \"0.2.0\"
 author = \"you\"
 description = \"A {name} gene\"
 license = \"MIT\"
@@ -1133,8 +1133,8 @@ fn cmd_new(args: &[String]) {
                 process::exit(1);
             }
             let _ = std::fs::create_dir_all(dir.join("src"));
-            std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.1.0\nauthor = \"\"\ndescription = \"\"\n")).expect("CLI I/O");
-            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.1.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
+            std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.2.0\nauthor = \"\"\ndescription = \"\"\n")).expect("CLI I/O");
+            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.2.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
             println!("Created: {name}/");
         }
         "harness" => {
@@ -1142,7 +1142,7 @@ fn cmd_new(args: &[String]) {
             std::fs::create_dir_all(dir.join("src")).expect("CLI I/O");
             std::fs::write(
                 dir.join("harness.toml"),
-                format!("id = {name}\nname = {name}\nkind = Domain\nversion = 0.1.0\n"),
+                format!("id = {name}\nname = {name}\nkind = Domain\nversion = 0.2.0\n"),
             )
             .expect("CLI I/O");
             std::fs::write(
@@ -1157,7 +1157,7 @@ fn cmd_new(args: &[String]) {
             std::fs::create_dir_all(&dir).expect("CLI I/O");
             std::fs::write(
                 dir.join("pandora.toml"),
-                format!("[package]\nid = {name}\nname = {name}\nversion = 0.1.0\nkind = gene\n"),
+                format!("[package]\nid = {name}\nname = {name}\nversion = 0.2.0\nkind = gene\n"),
             )
             .expect("CLI I/O");
             println!("Created: {name}/");
@@ -1570,7 +1570,7 @@ fn cmd_shell(_args: &[String]) {
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
     history.reverse();
-    println!("{PANDORA_ASCII}\nO-PANDORA v0.1.0 Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genes, /help, /quit");
+    println!("{PANDORA_ASCII}\nO-PANDORA Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genes, /help, /quit");
     // Check if stdin is a terminal before entering interactive mode
     use std::io::IsTerminal;
     if !std::io::stdin().is_terminal() {

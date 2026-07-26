@@ -17,7 +17,7 @@ impl HelloGene {
             .id("hello-gene")
             .name("Hello Gene")
             .kind(GeneKind::Tool)
-            .version("0.1.0")
+            .version("0.2.0")
             .author("you")
             .description("A simple greeting gene")
             .build()

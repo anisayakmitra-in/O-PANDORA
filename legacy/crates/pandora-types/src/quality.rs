@@ -47,7 +47,7 @@ pub fn run_pipeline(package_dir: &str) -> QualityReport {
 
     QualityReport {
         package_id: package_dir.to_string(),
-        version: "0.1.0".into(),
+        version: "0.2.0".into(),
         passed,
         total_duration_ms: start.elapsed().as_millis() as u64,
         gates,

@@ -6,7 +6,7 @@
 id = "my-tool"
 name = "My Tool"
 kind = "Tool"           # Tool | Workflow | Provider
-version = "0.1.0"
+version = "0.2.0"
 author = "you"
 description = "What this gene does"
 
@@ -22,7 +22,7 @@ network = { blocked_hosts = ["evil.com"] }
 id = "my-domain"
 name = "My Domain"
 kind = "Domain"         # Source | Meta | Domain
-version = "0.1.0"
+version = "0.2.0"
 author = "you"
 description = "What this harness covers"
 capabilities = ["code.gen", "code.review"]

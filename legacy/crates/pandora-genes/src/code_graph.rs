@@ -229,7 +229,7 @@ impl CodeGraphGene {
                 .description(
                     "Map code into a knowledge graph — detects functions, imports, and calls",
                 )
-                .version("0.1.0")
+                .version("0.2.0")
                 .author("pandora")
                 .build()
                 .expect("hardcoded manifest must build"),

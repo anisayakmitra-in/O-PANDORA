@@ -9,7 +9,7 @@ fn mk(id: &str, kind: GeneKind) -> GeneManifest {
         .id(id)
         .name(id)
         .kind(kind)
-        .version("0.1.0")
+        .version("0.2.0")
         .author("pandora")
         .description(format!("{id} gene"))
         .build()
