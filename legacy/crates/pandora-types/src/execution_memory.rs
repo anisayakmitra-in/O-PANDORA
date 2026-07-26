@@ -30,6 +30,7 @@ pub struct ExecutionArtifact {
     pub created_at_ms: u64,
 }
 
+#[non_exhaustive]
 /// Kinds of execution artifacts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArtifactKind {

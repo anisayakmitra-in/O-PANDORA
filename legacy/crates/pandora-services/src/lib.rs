@@ -426,6 +426,7 @@ impl Default for ExecutionController {
     }
 }
 
+#[non_exhaustive]
 /// Result of evaluating execution output.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Evaluation {

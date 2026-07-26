@@ -394,6 +394,7 @@ pub trait Gene: Send + Sync + std::fmt::Debug {
     }
 }
 
+#[non_exhaustive]
 /// Who owns a slash command.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SlashCommandOwner {

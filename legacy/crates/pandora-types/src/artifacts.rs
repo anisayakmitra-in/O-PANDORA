@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::SystemTime;
 
 /// The kind of artifact produced.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArtifactKind {
     Code,

@@ -10,6 +10,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[non_exhaustive]
 /// A permission a package requests.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Permission {

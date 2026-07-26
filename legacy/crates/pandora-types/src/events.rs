@@ -9,6 +9,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Events emitted during execution pipeline.
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PipelineEvent {
     /// Execution started with the given plan specification.

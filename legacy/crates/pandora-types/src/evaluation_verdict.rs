@@ -99,6 +99,7 @@ impl Diagnostic {
     }
 }
 
+#[non_exhaustive]
 /// Severity level for diagnostics.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Severity {

@@ -25,6 +25,7 @@ pub struct RegistryEntry {
 }
 
 /// Health status of a registry entry.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HealthStatus {
     Healthy,

@@ -7,6 +7,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+#[non_exhaustive]
 /// The canonical health model for every constitutional object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum Health {
@@ -56,6 +57,7 @@ impl std::fmt::Display for Health {
     }
 }
 
+#[non_exhaustive]
 /// The canonical lifecycle model for every constitutional object.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum Lifecycle {
@@ -110,6 +112,7 @@ impl std::fmt::Display for Lifecycle {
     }
 }
 
+#[non_exhaustive]
 /// Execution classification for constitutional objects.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum ExecutionProfile {
@@ -123,6 +126,7 @@ pub enum ExecutionProfile {
     Experimental,
 }
 
+#[non_exhaustive]
 /// Debug pipeline phase for source harnesses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum DebugPhase {
@@ -286,6 +290,7 @@ pub struct CapabilityManifest {
     pub evolution: EvolutionConfig,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum CapabilityKind {
     Filesystem,
@@ -330,6 +335,7 @@ pub struct GeneManifest {
     pub governance: GovernanceMetadata,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum GeneExecutionMode {
     #[default]
@@ -387,6 +393,7 @@ pub struct TelemetryEvent {
     pub message: String,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum TelemetryLevel {
     Debug,
@@ -420,6 +427,7 @@ pub struct KuberMetadata {
     pub max_version: String,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum Visibility {
     #[default]
@@ -458,6 +466,7 @@ pub struct ShadowCouncilDecision {
     pub trust_score: f64,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum CouncilAction {
     Approve,

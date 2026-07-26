@@ -77,6 +77,7 @@ const TOOL_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub f
 const WORKFLOW_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "workflow".into() } } pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("workflow: {}", input)) } }"#;
 const PROVIDER_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "provider".into() } } pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("provider: {}", input)) } }"#;
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HarnessEvent {
     BeforeExecution,
@@ -146,6 +147,7 @@ impl Default for EventBus {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LifecycleState {
     Registered,
@@ -193,6 +195,7 @@ impl DependencySpec {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DependencyStatus {
     Satisfied,
@@ -370,6 +373,7 @@ impl Default for CapabilityRegistry {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HarnessState {
     Registered,
@@ -731,6 +735,7 @@ impl ShadowCouncil {
             match &owner {
                 SlashCommandOwner::Harness(hid) => self.slash_commands.register(hid, cmd).ok(),
                 SlashCommandOwner::Gene(_) => self.slash_commands.register(&id, cmd).ok(),
+                _ => None,
             };
         }
         self.gene_router.register(&id, &manifest.capabilities);

@@ -151,6 +151,7 @@ impl PackageManifest {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum PackageKind {
     #[default]
@@ -345,6 +346,7 @@ pub struct RegistryListing {
     pub updated_at: String,
 }
 
+#[non_exhaustive]
 /// Trending period for discovery.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum TrendingPeriod {
@@ -403,6 +405,7 @@ pub struct RegistryUser {
     pub joined_at: String,
     pub tier: AccountTier,
 }
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum AccountTier {
     #[default]
@@ -434,6 +437,7 @@ pub struct ApiError {
     pub message: String,
 }
 
+#[non_exhaustive]
 /// Package lifecycle — like Cargo/NPM.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum PackageLifecycle {

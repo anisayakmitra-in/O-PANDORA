@@ -19,6 +19,7 @@ pub struct ExecutionSession {
 }
 
 /// Status of an execution.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ExecutionStatus {
     Pending,

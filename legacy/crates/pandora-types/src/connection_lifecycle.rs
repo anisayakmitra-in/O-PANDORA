@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
 /// Connection state for a fleet worker or runtime node.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConnectionState {
     Connected,

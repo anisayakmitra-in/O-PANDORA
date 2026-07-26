@@ -19,6 +19,7 @@ pub struct CapabilityLease {
     pub status: LeaseStatus,
 }
 
+#[non_exhaustive]
 /// Status of a capability lease.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LeaseStatus {
@@ -30,6 +31,7 @@ pub enum LeaseStatus {
     Failed,
 }
 
+#[non_exhaustive]
 /// Priority levels for capability requests.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
@@ -108,6 +110,7 @@ pub struct CapabilityFailure {
     pub retryable: bool,
 }
 
+#[non_exhaustive]
 /// Reasons a capability lease can fail.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum FailureReason {

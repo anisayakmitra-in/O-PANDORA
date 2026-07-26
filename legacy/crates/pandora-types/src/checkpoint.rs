@@ -19,6 +19,7 @@ pub struct Checkpoint {
     pub data_hash: Option<String>, // hash of stage output
 }
 
+#[non_exhaustive]
 /// Ordered pipeline stages (must match orchestrator flow).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PipelineStage {

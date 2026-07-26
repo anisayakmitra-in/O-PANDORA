@@ -57,6 +57,7 @@ pub struct ProvenanceNode {
     pub metadata: HashMap<String, String>,
 }
 
+#[non_exhaustive]
 /// The kind of a provenance node.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum NodeKind {

@@ -9,6 +9,7 @@ use crate::PandoraError;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
+#[non_exhaustive]
 /// Execution status.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SessionStatus {

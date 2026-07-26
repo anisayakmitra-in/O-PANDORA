@@ -92,6 +92,7 @@ impl fmt::Display for ManifestKind {
 }
 
 /// The role of a Source Harness in the constitutional architecture.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SourceHarnessRole {
     Cognition,
@@ -115,18 +116,7 @@ impl SourceHarnessRole {
     }
 }
 
-/// Pre-freeze Source Harness trait. Use `Harness` trait in `pandora_types::harness` instead.
-#[deprecated(note = "Use the single Harness trait in pandora_types::harness instead.")]
-pub trait SourceHarness: Send + Sync + std::fmt::Debug {
-    fn role(&self) -> SourceHarnessRole;
-    fn manifest(&self) -> &ConstitutionalManifest;
-    fn health(&self) -> &ManifestHealth;
-    fn lifecycle(&self) -> &ManifestLifecycle;
-    fn telemetry(&self) -> &ManifestTelemetry;
-    fn capabilities(&self) -> &[ManifestCapability];
-    fn dependencies(&self) -> &[SourceHarnessRole];
-}
-
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MetaHarnessKind {
     Security,
@@ -148,18 +138,6 @@ impl MetaHarnessKind {
             Self::Custom(s) => s.clone(),
         }
     }
-}
-
-/// Pre-freeze Meta Harness trait. Use `Harness` trait in `pandora_types::harness` instead.
-#[deprecated(note = "Use the single Harness trait in pandora_types::harness instead.")]
-pub trait MetaHarness: Send + Sync + std::fmt::Debug {
-    fn kind(&self) -> MetaHarnessKind;
-    fn manifest(&self) -> &ConstitutionalManifest;
-    fn health(&self) -> &ManifestHealth;
-    fn lifecycle(&self) -> &ManifestLifecycle;
-    fn telemetry(&self) -> &ManifestTelemetry;
-    fn capabilities(&self) -> &[ManifestCapability];
-    fn parent_source_harness(&self) -> SourceHarnessRole;
 }
 
 /// Pre-freeze Gene trait. Use `Gene` trait in `pandora_types::gene` instead.
@@ -419,6 +397,7 @@ impl ManifestProvenance {
 
 // ── Lifecycle ──
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum ManifestLifecycleState {
     #[default]

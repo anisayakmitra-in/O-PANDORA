@@ -10,6 +10,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[non_exhaustive]
 /// Where the provider runs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ConnectionCategory {
@@ -29,6 +30,7 @@ impl ConnectionCategory {
     }
 }
 
+#[non_exhaustive]
 /// The protocol the provider speaks.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ConnectionKind {

@@ -8,6 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[non_exhaustive]
 /// Strategy for managing context when it exceeds token limits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ContextStrategy {

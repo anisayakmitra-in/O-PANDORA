@@ -5,6 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[non_exhaustive]
 /// Tier of distilled knowledge.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum KnowledgeTier {
@@ -163,6 +164,7 @@ pub struct KnowledgeStatistics {
     pub newest_node: Option<DateTime<Utc>>,
 }
 
+#[non_exhaustive]
 /// Events emitted during knowledge distillation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum KnowledgeEvent {

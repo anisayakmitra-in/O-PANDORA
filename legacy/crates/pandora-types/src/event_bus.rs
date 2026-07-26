@@ -20,6 +20,7 @@ pub struct BusEvent {
 }
 
 /// Event types — extensible via Custom variant.
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BusEventKind {
     // Execution lifecycle

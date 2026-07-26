@@ -92,6 +92,7 @@ impl ExecutionBudget {
 
 // ── Enums ──
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum ExecutionTrigger {
     #[default]
@@ -100,6 +101,7 @@ pub enum ExecutionTrigger {
     Event,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum ControlStrategy {
     #[default]
@@ -110,6 +112,7 @@ pub enum ControlStrategy {
     Autonomous,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum ExecutionMode {
     #[default]
@@ -118,6 +121,7 @@ pub enum ExecutionMode {
     Fleet,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum StopCondition {
     GoalMet,
@@ -127,6 +131,7 @@ pub enum StopCondition {
     Governance,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub enum EvaluatorKind {
     #[default]
