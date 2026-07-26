@@ -222,7 +222,7 @@ Version:   --version, version
 ## Architecture
 
 ```
-11 crates, 0 build errors when the workspace is green
+Workspace crates, 0 build errors when the workspace is green
 
 pandora (CLI)
 pandora-tui (Dashboard)
