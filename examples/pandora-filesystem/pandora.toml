@@ -1,0 +1,33 @@
+# Reference Package — pandora/filesystem
+#
+# Filesystem gene — read/write/list files with path traversal protection.
+#
+# Install: pandora-kuber install pandora/filesystem
+
+[package]
+id = "filesystem"
+name = "Filesystem"
+version = "0.2.0"
+author = "pandora"
+description = "Read, write, and list files with path traversal protection"
+kind = "gene"
+license = "Apache-2.0"
+repository = "https://github.com/anisayakmitra-in/O-PANDORA"
+pandora_version = ">=0.2.0"
+tags = ["filesystem", "io", "read", "write", "files"]
+categories = ["tool", "system"]
+
+[[package.genes]]
+id = "filesystem"
+name = "Filesystem"
+description = "Read, write, and list files"
+path = "."
+
+[package.permissions]
+allow = ["filesystem.read", "filesystem.write"]
+deny = ["shell.execute", "network.external"]
+
+[package.trust]
+min_level = "publisher-verified"
+require_source = true
+require_audit = false

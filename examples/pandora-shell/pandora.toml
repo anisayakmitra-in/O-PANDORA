@@ -1,0 +1,37 @@
+# Reference Package — pandora/shell
+#
+# Shell gene — executes shell commands with safety guard.
+# This is the simplest possible reference package.
+#
+# Install: pandora-kuber install pandora/shell
+
+[package]
+id = "shell"
+name = "Shell"
+version = "0.2.0"
+author = "pandora"
+description = "Execute shell commands — requires PANDORA_SHELL_UNSAFE=1"
+kind = "gene"
+license = "Apache-2.0"
+repository = "https://github.com/anisayakmitra-in/O-PANDORA"
+pandora_version = ">=0.2.0"
+tags = ["shell", "execution", "terminal", "command"]
+categories = ["tool", "system"]
+
+[[package.genes]]
+id = "shell"
+name = "Shell"
+description = "Execute arbitrary shell commands"
+path = "."
+
+[package.permissions]
+allow = ["shell.execute"]
+deny = ["filesystem.write", "network.external"]
+
+[package.trust]
+min_level = "signed"
+require_source = true
+require_audit = false
+
+[package.dependencies]
+# No dependencies — standalone gene
