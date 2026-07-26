@@ -2,7 +2,7 @@
 
 ## Architecture Freeze
 
-Pandora v0.1.0 is under architecture freeze. See `ARCHITECTURE_FREEZE.md` for the canonical execution pipeline, crate responsibilities, and frozen APIs. Changes to frozen surfaces require an ADR.
+Pandora is under architecture freeze since v0.1.0. See `ARCHITECTURE_FREEZE.md` for the canonical execution pipeline, crate responsibilities, and frozen APIs. Changes to frozen surfaces require an ADR.
 
 ## Getting Started
 
@@ -34,11 +34,12 @@ cargo build --release -p pandora
 | `pandora` | CLI binary | Adding a new command |
 | `pandora-tui` | Terminal UI | Changing the dashboard |
 | `pandora-kuber` | Package registry | Registry operations |
-| `k-o-palace` | Registry server | K-O Palace HTTP API |
 | `pandora-fleet` | Worker pool | Distributed execution |
 | `pandora-api` | MCP server | Protocol integration |
 | `pandora-services` | Parliament services | Governance services |
 | `pandora-shadow-council` | Harness dispatch | Council routing |
+
+K-O Palace is a separate repo (github.com/anisayakmitra-in/k-o-palace).
 
 ## SDK — Creating Components
 
@@ -56,7 +57,7 @@ pandora new provider my-prov       # Provider scaffold
 
 - No `.unwrap()` in production paths — use `.expect("reason")`
 - All public APIs return `PandoraError`, not `String`
-- Lock operations use `read_safe()`/`write_safe()` from `pandora_types::lock`
+- Use `read_safe()`/`write_safe()` from `pandora_types::lock` for lock operations
 - Pipeline stages use `tracing::info!` not `println!`
 - Every new type has a doc comment and at least one test
 

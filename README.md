@@ -234,8 +234,9 @@ pandora-shadow-council (Harness/gene registry)
 pandora-genes (Built-in genes)
 pandora-harnesses (Domain harnesses)
 pandora-kuber (Registry, resolver, builtins)
-k-o-palace (Package registry server)
 pandora-fleet (Distributed worker nodes)
+
+K-O Palace is a separate repo: github.com/anisayakmitra-in/k-o-palace
 ```
 
 ## License
@@ -243,12 +244,6 @@ pandora-fleet (Distributed worker nodes)
 O-PANDORA is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 K-O Palace is also licensed under Apache 2.0.
-
-## Old License
-
-Apache 2.0 © 2026 O-PANDORA
-
-See [LICENSE](LICENSE) for full terms.
 
 ---
 

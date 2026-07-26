@@ -1,4 +1,4 @@
-# Security Model — Pandora v0.1.0
+# Security Model
 
 ## Trust Boundaries
 
@@ -48,14 +48,18 @@ User → CLI → PandoraRuntime → Provider (LLM API)
 
 ## Secure Defaults
 
-- Ed25519 signing keys generated with OS randomness (ring crate)
+- Ed25519 signing keys use OS randomness (ring crate)
 - Policy Engine blocks on Deny by default
 - Sandbox level 2 requires explicit approval
-- Package verification runs hash check + signature check before unpack
-- All I/O operations use `.expect("reason")` — no silent failures
+- Package verification checks hash + signature before unpack
+- All I/O operations use `.expect("reason")` so failures are visible, not silent
 
-## Threat Model Version
+## Threat Model Status
 
-- v0.2.0: Trust-on-first-use for packages. Plaintext API keys.
-- v0.1.0: Package signing mandatory. OS keychain for API keys.
-- v1.1.0: Sandbox isolation for gene execution.
+| Version | Feature | Status |
+|---------|---------|--------|
+| v0.2.0 | Trust-on-first-use for packages | Current |
+| v0.2.0 | Ed25519 signing via ring crate | Current |
+| v0.2.0 | Plaintext API keys (local dev) | Current |
+| Future | OS keychain integration | Planned |
+| Future | Sandbox isolation for gene execution | Planned |
