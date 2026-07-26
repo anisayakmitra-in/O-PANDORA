@@ -1,9 +1,84 @@
 # Changelog
 
-All notable changes to Pandora will be documented in this file.
+All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [0.2.0] — 2026-07-14
+
+### Added
+
+- Agentic loop: LLM calls genes as tools, multi-turn execution with tool results
+- ContextManager integration in agentic loop for unlimited-scale execution
+- Parliament governance over tool calls (pre/post-flight validation)
+- Shadow Council gene routing into agentic loop
+- Self-improvement modules wired: HierarchicalMemory, EventStore, FailureIntelligence, KnowledgeDistillation, SelfHealing
+- Streaming LLM responses via NDJSON (StreamChunk, StreamCallback)
+- SQLite session storage (SqliteSessionStore)
+- Provider failover field on PandoraRuntime
+- Gene SKILL.md loading with YAML frontmatter parsing
+- MCP server exposure (7 tools for external control)
+- Overnight execution mode (`pandora overnight <task>`)
+- Import from other tools (`pandora import <tool>`)
+- Docker sandboxing gene (SandboxGene with run_in_sandbox, run_with_mount)
+- GeneKind enum expanded +6 variants (Governance, Security, Infrastructure, Communication, Evolution, Cognitive)
+- GeneCategory enum (8 categories: Execution, Memory, Infrastructure, Reasoning, Security, Networking, Multimodal, Research)
+- PackageKind enum (19 variants for K-O Palace)
+- Dynamic harness registration (register_defaults + register_dynamic)
+- K-O Palace registry integration (pandora install with remote fallback)
+- ASCII cat+box logo to CLI --version and shell
+- Official Pandora logo (1024x1024 PNG)
+- SDK improvements: prelude module, #[non_exhaustive] on 7 enums, module docs on 14 modules
+- 6 sample apps (file-analyzer, shell-scripter, test-runner, git-helper, docs-writer, data-processor)
+- `pandora doctor` for installation health checks
+- `pandora new` scaffolding for genes, harnesses, skills, evaluators, policies
+- `pandora publish` with K-O Palace upload
+- `pandora overnight` for long-running tasks
+
+### Changed
+
+- Repository renamed: PANDORA-SYSTEMS → O-PANDORA
+- License changed: MIT → Apache 2.0
+- pandora-palace crate removed (K-O Palace is separate repository)
+- PANDORA_PALACE_URL → PANDORA_REGISTRY_URL
+- Shell banner: "PANDORA" → "O-PANDORA"
+- Provider client reuse (reqwest Client stored, not created per-request)
+- CancellationToken: Arc<Mutex<bool>> → Arc<AtomicBool> (zero contention)
+- Policy engine: policies sorted once on register() instead of every evaluate()
+- Agentic loop: HashMap::with_capacity and Vec::with_capacity for pre-allocation
+- Clap derive CLI replacing manual match args[1]
+- Goal continuation: multi-turn budget guards, /goal resume, /goal status
+
+### Fixed
+
+- Shell infinite loop when stdin is not a TTY (is_terminal check)
+- Inverted shell guard logic (PANDORA_SHELL_UNSAFE must be SET to allow)
+- run-palace.sh missing $PORT and $! variable expansions
+- dev.sh duplicate fmt/clippy runs
+- 7 files with stale "v1.0" references
+- README/CHANGELOG harness count (12→13)
+- AGENTS.md claims about API error types
+- AGENTS.md reference to non-existent docs/specs/adr/
+- SCREENSHOTS.md stale commit hash
+- Deleted redundant fmt.sh, lint.sh, test.sh scripts
+- 6 files with #[allow(dead_code)] removed
+
+### Security
+
+- random_hex() replaced with ring::rand::SystemRandom (cryptographic randomness)
+- constant_time_eq() for token comparison (prevents timing attacks)
+- Filesystem gene path canonicalization + .. traversal check
+- Loopback detection expanded: 127.*, ::1, [::1], localhost, 0.0.0.0
+- Palace publish handler checks signature presence
+- auth.json fallback uses USERPROFILE before /tmp
+
+### Performance
+
+- Provider client reuse: ~10-20ms saved per request
+- CancellationToken: zero-contention AtomicBool instead of Mutex
+- Policy engine pre-sort: sorting on register(), not evaluate()
+- Agentic loop pre-allocation: HashMap and Vec with_capacity
 
 ## [0.1.0] — 2026-07-20
 
@@ -71,4 +146,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Execution Risk Engine for command classification
 - SECURITY.md with threat model and 8 documented attack surfaces
 
+[0.2.0]: https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.2.0
 [0.1.0]: https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.1.0
