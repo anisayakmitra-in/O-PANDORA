@@ -83,7 +83,7 @@ def check_identity():
 
     stale_refs = []
     # Files that may legitimately contain PANDORA-SYSTEMS
-    historical_files = {"CHANGELOG.md", "TAG_HISTORY.md", "VERSION_ARCHAEOLOGY.md",
+    historical_files = {"CHANGELOG.md", "TAG_HISTORY.md", "VERSION_ARCHAEOLOGY.md", "VERSION_ALIGNMENT_REPORT.md", "OSS_POLISH.md",
                         "OSS_POLISH.md", "FINAL_RELEASE_CHECKLIST.md"}
 
     for md_file in REPO_ROOT.rglob("*.md"):
