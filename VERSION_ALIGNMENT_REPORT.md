@@ -33,9 +33,25 @@
 
 ## Post-v0.2.0 Commits
 
-**YES** — 122 commits since v0.2.0 tag.
+**125 commits** since v0.2.0 tag. HEAD is a direct descendant of v0.2.0:
 
-Current main contains unreleased changes:
+
+
+v0.2.0 is already a **historical release**. Current main contains unreleased work.
+
+### Ancestry verification
+
+| Check | Result |
+|-------|--------|
+|  | YES — v0.2.0 is ancestor |
+|  | NO — separate lineage |
+|  | NO — separate lineage |
+|  | NO — separate lineage |
+
+Only v0.2.0 belongs to the current O-PANDORA lineage.
+
+### What changed since v0.2.0
+
 - Agentic loop (multi-turn LLM ↔ gene execution)
 - Streaming LLM responses
 - Security hardening (constant-time auth, SHA-256, path canonicalization)
@@ -47,8 +63,13 @@ Current main contains unreleased changes:
 - Self-improvement modules wired
 - Repository renamed: PANDORA-SYSTEMS → O-PANDORA
 - License changed: MIT → Apache 2.0
+- Version alignment pass (this session)
 
-**Next release should be v0.3.0** (after these changes are released).
+### Version policy
+
+- **v0.2.0 tag must not be moved** — it is a historical release
+- **package metadata stays at 0.2.0** until the next release process selects 0.3.0
+- **next release should be v0.3.0** — but only after the stale tag problem is resolved
 
 ---
 
