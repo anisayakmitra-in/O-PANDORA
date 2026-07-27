@@ -1,0 +1,9 @@
+id = "custom-harness-meta"
+name = "Custom Meta Harness"
+kind = "meta"
+version = "0.1.0"
+author = ""
+description = "A custom meta harness for communication and orchestration between harnesses."
+capabilities = ["routing", "mesh"]
+dependencies = []
+owned_genes = []

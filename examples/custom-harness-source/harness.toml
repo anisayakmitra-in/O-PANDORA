@@ -1,0 +1,9 @@
+id = "custom-harness-source"
+name = "Custom Source Harness"
+kind = "source"
+version = "0.1.0"
+author = ""
+description = "A custom source harness that augments constitutional services. Source harnesses require explicit approval to enable."
+capabilities = ["governance", "audit"]
+dependencies = []
+owned_genes = []

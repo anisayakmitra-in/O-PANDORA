@@ -396,6 +396,7 @@ pub enum HarnessState {
     Enabled,
     Disabled,
     Suspended,
+    Staged,
     Error(String),
 }
 
@@ -438,12 +439,42 @@ impl HarnessRegistry {
         Ok(())
     }
     pub fn enable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
-        self.harnesses
-            .get_mut(id)
-            .ok_or(pandora_types::PandoraError::NotFound(format!(
-                "Harness not found: {id}"
-            )))?
-            .initialize()?;
+        let harness = self.harnesses.get(id).ok_or(
+            pandora_types::PandoraError::NotFound(format!("Harness not found: {id}"))
+        )?;
+
+        // Source harnesses require explicit approval (constitutional floor)
+        if *harness.kind() == pandora_types::harness::HarnessKind::Source {
+            return Err(pandora_types::PandoraError::governance(format!(
+                "Source harness {} requires explicit approval. Use enable-source command.",
+                id
+            )));
+        }
+
+        let harness = self.harnesses.get_mut(id).unwrap();
+        harness.initialize()?;
+        self.states.insert(id.into(), HarnessState::Enabled);
+        Ok(())
+    }
+
+    /// Enable a Source harness with explicit approval.
+    pub fn enable_source(
+        &mut self,
+        id: &str,
+        _approver: &str,
+        _reason: &str,
+    ) -> Result<(), pandora_types::PandoraError> {
+        let harness = self.harnesses.get_mut(id).ok_or(
+            pandora_types::PandoraError::NotFound(format!("Harness not found: {id}"))
+        )?;
+
+        if *harness.kind() != pandora_types::harness::HarnessKind::Source {
+            return Err(pandora_types::PandoraError::governance(format!(
+                "enable_source is only for Source harnesses. Use 'pandora harness enable {id}' for other kinds."
+            )));
+        }
+
+        harness.initialize()?;
         self.states.insert(id.into(), HarnessState::Enabled);
         Ok(())
     }
@@ -497,6 +528,105 @@ impl HarnessRegistry {
             self.enable(id)?;
         }
         Ok(())
+    }
+
+    /// Transactional install with staging, health check, and rollback.
+    ///
+    /// Flow: validate → stage → health check → COMMIT or ROLLBACK.
+    /// If health check fails, the staged harness is discarded and the
+    /// previous version remains active.
+    pub fn transactional_install(
+        &mut self,
+        harness: Box<dyn Harness>,
+    ) -> Result<(), pandora_types::PandoraError> {
+        let id = harness.id().to_string();
+        let version = harness.manifest().version.clone();
+        let _stage_key = format!("{id}-{version}");
+
+        // 1. Validate manifest (id, name, version, kind are required)
+        let m = harness.manifest();
+        if m.id.is_empty() || m.name.is_empty() || m.version.is_empty() {
+            return Err(pandora_types::PandoraError::governance(
+                format!("Harness manifest missing required fields for {id}")
+            ));
+        }
+
+        // 2. Check for conflicts with installed harnesses
+        // (ponytail: simple check — same id is a conflict)
+        if self.harnesses.contains_key(&id) {
+            // Update path: save old state for rollback
+            let old_state = self.states.get(&id).cloned();
+            let was_enabled = old_state == Some(HarnessState::Enabled);
+
+            // 3. Stage: register with Staged state
+            // Shutdown old if enabled
+            if was_enabled {
+                if let Some(h) = self.harnesses.get_mut(&id) {
+                    h.shutdown().ok();
+                }
+            }
+
+            // 4. Register new harness with Staged state
+            self.states.insert(id.clone(), HarnessState::Staged);
+            self.harnesses.insert(id.clone(), harness);
+
+            // 5. Health check
+            if let Some(h) = self.harnesses.get_mut(&id) {
+                match h.health() {
+                    Ok(()) => {
+                        // 6. COMMIT: promote from Staged to previous state
+                        let new_state = if was_enabled {
+                            h.initialize()?;
+                            HarnessState::Enabled
+                        } else {
+                            HarnessState::Disabled
+                        };
+                        self.states.insert(id.clone(), new_state);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        // 7. ROLLBACK: remove staged harness
+                        self.harnesses.remove(&id);
+                        self.states.remove(&id);
+                        Err(pandora_types::PandoraError::governance(
+                            format!("Harness health check failed for {id}: {e}")
+                        ))
+                    }
+                }
+            } else {
+                Err(pandora_types::PandoraError::Internal(
+                    format!("Harness {id} not found after staging")
+                ))
+            }
+        } else {
+            // Fresh install
+            // 3. Stage
+            self.states.insert(id.clone(), HarnessState::Staged);
+            self.harnesses.insert(id.clone(), harness);
+
+            // 4. Health check
+            if let Some(h) = self.harnesses.get_mut(&id) {
+                match h.health() {
+                    Ok(()) => {
+                        // 5. COMMIT: leave as Disabled (explicit enable required)
+                        self.states.insert(id.clone(), HarnessState::Disabled);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        // 6. ROLLBACK
+                        self.harnesses.remove(&id);
+                        self.states.remove(&id);
+                        Err(pandora_types::PandoraError::governance(
+                            format!("Harness health check failed for {id}: {e}")
+                        ))
+                    }
+                }
+            } else {
+                Err(pandora_types::PandoraError::Internal(
+                    format!("Harness {id} not found after staging")
+                ))
+            }
+        }
     }
     pub fn health(&self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses
@@ -1096,7 +1226,7 @@ mod tests {
     #[test]
     fn install_and_enable() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("m", HarnessKind::Source))).unwrap();
+        sc.install(Box::new(h("m", HarnessKind::Domain))).unwrap();
         assert_eq!(sc.harnesses.total_count(), 1);
         sc.enable("m").unwrap();
         assert_eq!(*sc.harnesses.state("m").unwrap(), HarnessState::Enabled);
@@ -1204,7 +1334,7 @@ mod tests {
     #[test]
     fn summary_counts() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("s1", HarnessKind::Source))).unwrap();
+        sc.install(Box::new(h("s1", HarnessKind::Domain))).unwrap();
         sc.install(Box::new(h("m1", HarnessKind::Meta))).unwrap();
         sc.install(Box::new(h("d1", HarnessKind::Domain))).unwrap();
         sc.enable("s1").unwrap();

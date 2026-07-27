@@ -1,0 +1,9 @@
+id = "custom-harness-domain"
+name = "Custom Domain Harness"
+kind = "domain"
+version = "0.1.0"
+author = ""
+description = "A custom domain harness that packages policies, workflows, and genes for a specific domain."
+capabilities = []
+dependencies = []
+owned_genes = []
