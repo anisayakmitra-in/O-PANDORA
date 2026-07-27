@@ -431,7 +431,7 @@ impl ExecutionController {
         self.max_retries = n;
     }
     pub fn decide(&mut self, stage: &str, chosen: &str, reason: &str, rejected: Vec<(&str, &str)>) {
-        let mut d = Decision::new(stage, chosen, reason);
+        let mut d = Decision::new("default", 0, stage, chosen, reason);
         for (name, r) in rejected {
             d = d.reject(name, r);
         }

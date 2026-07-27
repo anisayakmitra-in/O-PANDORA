@@ -385,6 +385,7 @@ fn dispatch(args: &[String]) {
         Some("genes") => cmd_genes(args),
         Some("doctor") => cmd_doctor(args),
         Some("keychain") => cmd_keychain(args),
+        Some("mutation") => cmd_mutation(args),
         Some("inspect") => cmd_inspect(args),
         Some("status") => cmd_status(args),
         Some("stop") => cmd_stop(args),
@@ -898,6 +899,77 @@ fn cmd_keychain(args: &[String]) {
 fn base64_encode(data: &[u8]) -> String {
     use base64::Engine;
     base64::engine::general_purpose::STANDARD.encode(data)
+}
+
+fn cmd_mutation(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora mutation <list|show|apply> [id]");
+        eprintln!("  list              — list mutation candidates");
+        eprintln!("  show <id>         — show a candidate's details");
+        eprintln!("  apply <id>        — apply a candidate (requires Parliament approval)");
+        return;
+    }
+    let sub = &args[2];
+    let observer = pandora_orchestrator::gepa::GepaObserver::new(
+        pandora_orchestrator::gepa::GepaObserver::default_dir(),
+    );
+
+    match sub.as_str() {
+        "list" => {
+            let candidates = observer.list();
+            if candidates.is_empty() {
+                println!("No mutation candidates yet. Run some tasks and failures will generate proposals.");
+                return;
+            }
+            println!("{} mutation candidate(s):", candidates.len());
+            for c in &candidates {
+                let status = if c.applied { "✓" } else { " " };
+                println!(
+                    "  [{}] {} — {} ({:.0}% confidence, {} failures)",
+                    status, c.id, c.description, c.confidence * 100.0, c.failure_count
+                );
+            }
+        }
+        "show" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora mutation show <id>");
+                return;
+            }
+            let id = &args[3];
+            match observer.get(id) {
+                Some(c) => {
+                    println!("Mutation: {}", c.id);
+                    println!("  Target:    {:?} '{}'", c.target_kind, c.target_id);
+                    println!("  Description: {}", c.description);
+                    println!("  Proposal:    {}", c.proposal);
+                    println!("  Failures:    {}", c.failure_count);
+                    println!("  Confidence:  {:.0}%", c.confidence * 100.0);
+                    println!("  Applied:     {}", if c.applied { "yes" } else { "no" });
+                    println!("  Generated:   {}", c.generated_at);
+                }
+                None => eprintln!("Mutation candidate not found: {id}"),
+            }
+        }
+        "apply" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora mutation apply <id>");
+                return;
+            }
+            let id = &args[3];
+            println!("Applying mutation: {id}");
+            println!("This requires Parliament governance approval.");
+            println!("(Phase 8: approval gate via Parliament to be wired in Phase 8 completion)");
+
+            match observer.mark_applied(id) {
+                Ok(()) => println!("Marked as applied: {id}"),
+                Err(e) => eprintln!("Error: {e}"),
+            }
+        }
+        _ => {
+            eprintln!("Unknown mutation command: {sub}");
+            eprintln!("Available: list, show, apply");
+        }
+    }
 }
 
 fn base64_decode(data: &str) -> Result<Vec<u8>, String> {

@@ -27,7 +27,7 @@
 pub mod approval_store;
 pub mod harness;
 pub use approval_store::{ApprovalStatus, ApprovalStore, PendingApproval};
-pub use decision::{Decision, DecisionLog, RejectedOption};
+pub use decision::{Decision, DecisionLog, Outcome, RejectedOption};
 pub use error::PandoraError;
 pub use harness::{
     generate_harness_toml, Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder,
