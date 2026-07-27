@@ -12,6 +12,7 @@
 //! - Diamond dependency conflict detection
 
 pub mod builtin;
+pub mod package_loaders;
 pub mod checksum;
 pub mod import;
 pub mod lockfile_wiring;
@@ -139,6 +140,7 @@ pub struct Kuber {
     council: Arc<RwLock<ShadowCouncil>>,
     sources: Vec<PackageSource>,
     trust_policy: TrustPolicy,
+    loaders: package_loaders::LoaderRegistry,
 }
 
 impl Kuber {
@@ -148,6 +150,7 @@ impl Kuber {
             council,
             sources: Vec::new(),
             trust_policy,
+            loaders: package_loaders::LoaderRegistry::new(),
         };
         let pkg_dir = pandora_types::gene_package::packages_dir();
         if pkg_dir.exists() {
@@ -238,7 +241,18 @@ impl Kuber {
     /// 6. Resolve dependencies
     /// 7. Wire lockfile
     /// 8. Install via ShadowCouncil
+    /// Install a package with full validation pipeline.
+    /// Auto-detects package kind (gene, harness, skill, provider) and
+    /// dispatches to the correct loader.
     pub fn install(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
+        // If id looks like a path (contains / or \), try auto-detect
+        let path = std::path::Path::new(id);
+        if path.exists() {
+            // Auto-detect from path
+            let mut council = self.council_write();
+            return self.loaders.install(&mut council, path);
+        }
+
         // Step 1: Find package
         let mut found_pkg = None;
         let mut found_source = String::new();
