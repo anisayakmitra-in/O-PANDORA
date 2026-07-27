@@ -26,6 +26,7 @@ pub enum PandoraError {
     Permission(String),
     Fleet(String),
     Mcp(String),
+    Governance(String),
 }
 
 impl fmt::Display for PandoraError {
@@ -47,6 +48,7 @@ impl fmt::Display for PandoraError {
             Self::Permission(msg) => write!(f, "permission: {msg}"),
             Self::Fleet(msg) => write!(f, "fleet: {msg}"),
             Self::Mcp(msg) => write!(f, "mcp: {msg}"),
+            Self::Governance(msg) => write!(f, "governance: {msg}"),
         }
     }
 }

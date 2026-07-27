@@ -977,14 +977,55 @@ fn cmd_approve(args: &[String]) {
         eprintln!("Usage: pandora approve <id>");
         return;
     }
-    println!("Approved: {}", args[2]);
+    let approval_id = &args[2];
+    
+    // Check if this is a session approval or a general approval
+    let sessions_dir = sessions_dir();
+    let session_file = sessions_dir.join(format!("{}.json", approval_id));
+    
+    if session_file.exists() {
+        // Load session, update metadata with approval
+        let session_json = std::fs::read_to_string(&session_file).unwrap();
+        let mut session: serde_json::Value = serde_json::from_str(&session_json).unwrap();
+        
+        if let Some(metadata) = session.get_mut("metadata") {
+            metadata["approval_status"] = serde_json::json!("approved");
+            metadata["approved_at"] = serde_json::json!(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string());
+        }
+        
+        std::fs::write(&session_file, serde_json::to_string_pretty(&session).unwrap()).unwrap();
+        println!("Approved session: {}", approval_id);
+    } else {
+        // Try to find in pending approvals (for future implementation)
+        println!("Approved: {}", approval_id);
+        println!("(Note: full approval workflow requires pending approval store)");
+    }
 }
 fn cmd_reject(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora reject <id>");
         return;
     }
-    println!("Rejected: {}", args[2]);
+    let approval_id = &args[2];
+    
+    let sessions_dir = sessions_dir();
+    let session_file = sessions_dir.join(format!("{}.json", approval_id));
+    
+    if session_file.exists() {
+        let session_json = std::fs::read_to_string(&session_file).unwrap();
+        let mut session: serde_json::Value = serde_json::from_str(&session_json).unwrap();
+        
+        if let Some(metadata) = session.get_mut("metadata") {
+            metadata["approval_status"] = serde_json::json!("rejected");
+            metadata["rejected_at"] = serde_json::json!(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string());
+        }
+        
+        std::fs::write(&session_file, serde_json::to_string_pretty(&session).unwrap()).unwrap();
+        println!("Rejected session: {}", approval_id);
+    } else {
+        println!("Rejected: {}", approval_id);
+        println!("(Note: full approval workflow requires pending approval store)");
+    }
 }
 fn cmd_gene(args: &[String]) {
     if args.len() < 3 {
