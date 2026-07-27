@@ -7,6 +7,7 @@
 
 use pandora_types::context_strategy::{ContextManager, ContextMessage, ContextStrategy};
 use pandora_types::gene::Gene;
+use crate::constitutional_floor::ConstitutionalFloor;
 use pandora_types::parliament::{Parliament, ParliamentVerdict};
 use pandora_types::permissions_manifest::{PermissionManifest, PermissionVerdict};
 use pandora_types::provider::{
@@ -79,6 +80,7 @@ pub struct AgenticResult {
     pub governance_warnings: usize,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn run_agentic_loop(
     task: &str,
     domain: &str,
@@ -87,6 +89,7 @@ pub fn run_agentic_loop(
     permissions: Option<&PermissionManifest>,
     parliament: Option<&Parliament>,
     config: &AgenticConfig,
+    mut constitutional_floor: Option<&mut ConstitutionalFloor>,
 ) -> Result<AgenticResult, pandora_types::PandoraError> {
     let start = Instant::now();
     let tools = genes_to_tool_definitions(genes);
@@ -273,6 +276,23 @@ pub fn run_agentic_loop(
             }
 
             let exec_start = Instant::now();
+            // Constitutional floor: audit before execution (cannot be bypassed)
+            if let Some(ref mut floor) = constitutional_floor {
+                let verdict_str = parliament.map(|p| {
+                    let v = p.pre_flight(&tc.name, &tc.arguments);
+                    format!("{:?}", v)
+                }).unwrap_or_else(|| "Allow".to_string());
+                floor.audit_tool_call(
+                    "", // execution_id is implicit from floor's genesis
+                    &tc.name,
+                    &tc.id,
+                    &input,
+                    &tc.arguments,
+                    &verdict_str,
+                    true, // allowed after passing all checks above
+                );
+            }
+
             let result = gene.execute(&input);
             let exec_ms = exec_start.elapsed().as_millis() as u64;
 

@@ -9,6 +9,7 @@
 //! Every stage returns a StageOutput. Parliament merges deltas.
 
 pub mod agentic_loop;
+pub mod constitutional_floor;
 
 use anyhow::Result;
 use pandora_services::ExecutionController;
@@ -252,6 +253,7 @@ pub struct PandoraRuntime {
     pub memory: pandora_types::hierarchical_memory::HierarchicalMemory,
     pub event_store: pandora_types::event_store::EventStore,
     pub healing: pandora_types::self_healing::HealingSession,
+    pub constitutional_floor: crate::constitutional_floor::ConstitutionalFloor,
     pub provider_failover_count: u32,
 }
 
@@ -306,6 +308,7 @@ impl PandoraRuntime {
                     }),
             ),
             healing: pandora_types::self_healing::HealingSession::new("default"),
+            constitutional_floor: crate::constitutional_floor::ConstitutionalFloor::new("default"),
             provider_failover_count: 0,
         }
     }
@@ -516,6 +519,7 @@ impl PandoraRuntime {
 
             // Start healing session for this execution
             let healing_session = pandora_types::self_healing::HealingSession::new(&execution_id);
+            self.constitutional_floor = crate::constitutional_floor::ConstitutionalFloor::new(&execution_id);
 
             // Run the agentic loop: LLM calls genes as tools
             let config = agentic_loop::AgenticConfig::default();
@@ -527,6 +531,7 @@ impl PandoraRuntime {
                 None,
                 Some(&self.parliament),
                 &config,
+                Some(&mut self.constitutional_floor),
             )
             .map_err(|e| anyhow::anyhow!("Agentic loop failed: {}", e))?;
 
