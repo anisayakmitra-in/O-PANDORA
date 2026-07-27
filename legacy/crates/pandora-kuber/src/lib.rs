@@ -217,7 +217,8 @@ impl Kuber {
                 r.push(info_from(pkg, &src.name));
             }
         }
-        r.extend(crate::builtin::all());
+        // Built-in genes are seeded on first run to packages/default/
+        // They appear via the local package source.
         r
     }
 
@@ -265,10 +266,7 @@ impl Kuber {
         let pkg = match found_pkg {
             Some(p) => p,
             None => {
-                if crate::builtin::find(id).is_some() {
-                    return Ok(());
-                }
-                return Err(to_err(format!("Package not found: {id}")));
+                return Err(to_err(format!("Package not found: {id}. Add a source with 'pandora connection add source' or install from a local path.")));
             }
         };
 
