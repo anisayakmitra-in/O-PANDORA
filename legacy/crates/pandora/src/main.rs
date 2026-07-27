@@ -422,6 +422,7 @@ fn dispatch(args: &[String]) {
         Some("benchmark") => cmd_benchmark(args),
         Some("profiles") => cmd_profiles(args),
         Some("overnight") => cmd_overnight(args),
+        Some("setup") => cmd_setup(args),
         Some("import") => cmd_import(args),
         _ => {
             usage();
@@ -1870,6 +1871,88 @@ fn cmd_explain(args: &[String]) {
             last.step_label, last.provider, last.model
         );
     }
+}
+
+fn cmd_setup(_args: &[String]) {
+    println!("╔══════════════════════════════════════════╗");
+    println!("║       Pandora Setup Wizard v0.2.0       ║");
+    println!("╚══════════════════════════════════════════╝");
+    println!();
+    println!("This will guide you through setting up Pandora.");
+    println!("It takes about 2 minutes.");
+    println!();
+
+    // ── Step 0: Check for existing connections ──
+    let cr = pandora_types::connection_manager::ConnectionRegistry::load();
+    if !cr.connections.is_empty() {
+        println!("Step 0: Existing connections found ({} total)", cr.connections.len());
+        for conn in &cr.connections {
+            let healthy = cr.healthy().iter().any(|c| c.name == conn.name);
+            println!("  {} {} — {} ({})",
+                if healthy { "OK" } else { "?" },
+                conn.name,
+                conn.endpoint,
+                conn.kind.label()
+            );
+        }
+        println!();
+        println!("Skipping connection setup. Run 'pandora connection add' to add more.");
+    } else {
+        println!("Step 1: No LLM connections found. Let's add one.");
+        println!();
+        println!("  What kind of provider do you want to use?");
+        println!("  1. Local Ollama (http://localhost:11434)");
+        println!("  2. OpenAI (requires API key)");
+        println!("  3. OpenRouter (requires API key)");
+        println!("  4. OpenCompatible (any OpenAI-compatible endpoint)");
+        println!("  5. DeepSeek (requires API key)");
+        println!("  6. Skip for now");
+        println!();
+        println!("  Run one of these:");
+        println!("  pandora connection add local ollama http://localhost:11434");
+        println!("  pandora connection add openai openai https://api.openai.com");
+        println!("  pandora connection add my-api openai-compatible <your-endpoint>");
+        println!();
+    }
+
+    // ── Step 2: Import from another agent ──
+    println!("Step 2: Import from another AI agent?");
+    println!("  Pandora can import connections and config from:");
+    println!("  - Hermes:  pandora import hermes");
+    println!("  - Claude Code / OpenCode / Goose / Cline");
+    println!();
+    let hermes_config = shellexpand::tilde("~/.hermes").to_string();
+    if std::path::Path::new(&hermes_config).exists() {
+        println!("  Hermes config found! Run: pandora import hermes");
+    }
+    println!();
+
+    // ── Step 3: Security ──
+    println!("Step 3: Security hardening");
+    let token_set = std::env::var("PANDORA_API_TOKEN").is_ok_and(|t| !t.is_empty());
+    if token_set {
+        println!("  OK PANDORA_API_TOKEN is set — API is protected");
+    } else {
+        println!("  ! PANDORA_API_TOKEN not set — API runs in dev mode");
+        println!("    Set one: export PANDORA_API_TOKEN=your-secret-token");
+    }
+    println!();
+
+    // ── Step 4: Verify ──
+    println!("Step 4: Running health check...");
+    println!();
+    cmd_doctor(&[]);
+    println!();
+
+    // ── Done ──
+    println!("Setup complete!");
+    println!();
+    println!("Next steps:");
+    println!("  pandora run \"say hello\"        — your first task");
+    println!("  pandora new gene my-tool        — create a custom gene");
+    println!("  pandora harness list            — see installed harnesses");
+    println!("  pandora doctor                  — system health check");
+    println!("  pandora --help                  — all commands");
 }
 
 fn cmd_import(args: &[String]) {
