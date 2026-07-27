@@ -455,10 +455,8 @@ pub mod openai_compat {
             let mut headers = reqwest::header::HeaderMap::new();
             if let Some(key) = api_key {
                 if !key.is_empty() {
-                    let auth = reqwest::header::HeaderValue::from_str(
-                        &format!("Bearer {key}"),
-                    )
-                    .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static(""));
+                    let auth = reqwest::header::HeaderValue::from_str(&format!("Bearer {key}"))
+                        .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static(""));
                     headers.insert(reqwest::header::AUTHORIZATION, auth);
                 }
             }
@@ -477,11 +475,7 @@ pub mod openai_compat {
         }
 
         fn chat_url(&self) -> String {
-            // Most providers support /v1/chat/completions.
-            // If the endpoint already has /v1, use it as-is.
-            if self.endpoint.ends_with("/v1") {
-                format!("{}/chat/completions", self.endpoint)
-            } else if self.endpoint.contains("/v1") {
+            if self.endpoint.contains("/v1") {
                 format!("{}/chat/completions", self.endpoint)
             } else {
                 format!("{}/v1/chat/completions", self.endpoint)
@@ -632,9 +626,9 @@ pub mod openai_compat {
                 .map_err(|e| crate::PandoraError::provider(format!("HTTP error: {e}")))?;
 
             let status = resp.status();
-            let json: serde_json::Value = resp
-                .json()
-                .map_err(|e| crate::PandoraError::provider(format!("JSON parse error ({status}): {e}")))?;
+            let json: serde_json::Value = resp.json().map_err(|e| {
+                crate::PandoraError::provider(format!("JSON parse error ({status}): {e}"))
+            })?;
 
             // Check for API errors
             if let Some(err) = json["error"]["message"].as_str() {
@@ -658,7 +652,10 @@ pub mod openai_compat {
                     tool_calls.push(ToolCall {
                         id: tc["id"].as_str().unwrap_or("").to_string(),
                         name: tc["function"]["name"].as_str().unwrap_or("").to_string(),
-                        arguments: tc["function"]["arguments"].as_str().unwrap_or("{}").to_string(),
+                        arguments: tc["function"]["arguments"]
+                            .as_str()
+                            .unwrap_or("{}")
+                            .to_string(),
                     });
                 }
             }

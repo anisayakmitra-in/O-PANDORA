@@ -5,9 +5,9 @@
 //! - Parliament (governance over tool calls)
 //! - PermissionManifest (per-gene permission checks)
 
+use crate::constitutional_floor::ConstitutionalFloor;
 use pandora_types::context_strategy::{ContextManager, ContextMessage, ContextStrategy};
 use pandora_types::gene::Gene;
-use crate::constitutional_floor::ConstitutionalFloor;
 use pandora_types::parliament::{Parliament, ParliamentVerdict};
 use pandora_types::permissions_manifest::{PermissionManifest, PermissionVerdict};
 use pandora_types::provider::{
@@ -205,14 +205,15 @@ pub fn run_agentic_loop(
                 match verdict {
                     ParliamentVerdict::Deny { reason } => {
                         tracing::warn!("[GOVERNANCE] Tool {} denied: {}", tc.name, reason);
-                        return Err(pandora_types::PandoraError::governance(
-                            format!("Tool '{}' denied by Parliament: {}", tc.name, reason)
-                        ));
+                        return Err(pandora_types::PandoraError::governance(format!(
+                            "Tool '{}' denied by Parliament: {}",
+                            tc.name, reason
+                        )));
                     }
                     ParliamentVerdict::RequireApproval { who, .. } => {
                         let who_str = format!("{:?}", who);
                         let _approval_id = format!("{}-{}", "session", tc.name);
-                        
+
                         // Persist pending approval so CLI can resolve it
                         let store = pandora_types::ApprovalStore::new(
                             pandora_types::ApprovalStore::default_location(),
@@ -226,7 +227,9 @@ pub fn run_agentic_loop(
 
                         tracing::warn!(
                             "[GOVERNANCE] Tool {} requires approval from {} — approval id: {}",
-                            tc.name, who_str, pending.id
+                            tc.name,
+                            who_str,
+                            pending.id
                         );
                         return Err(pandora_types::PandoraError::governance(
                             format!(
@@ -287,10 +290,12 @@ pub fn run_agentic_loop(
             let exec_start = Instant::now();
             // Constitutional floor: audit before execution (cannot be bypassed)
             if let Some(ref mut floor) = constitutional_floor {
-                let verdict_str = parliament.map(|p| {
-                    let v = p.pre_flight(&tc.name, &tc.arguments);
-                    format!("{:?}", v)
-                }).unwrap_or_else(|| "Allow".to_string());
+                let verdict_str = parliament
+                    .map(|p| {
+                        let v = p.pre_flight(&tc.name, &tc.arguments);
+                        format!("{:?}", v)
+                    })
+                    .unwrap_or_else(|| "Allow".to_string());
                 floor.audit_tool_call(
                     "", // execution_id is implicit from floor's genesis
                     &tc.name,

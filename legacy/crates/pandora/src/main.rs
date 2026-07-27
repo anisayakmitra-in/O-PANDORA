@@ -979,9 +979,7 @@ fn cmd_approve(args: &[String]) {
     }
     let approval_id = &args[2];
 
-    let store = pandora_types::ApprovalStore::new(
-        pandora_types::ApprovalStore::default_location(),
-    );
+    let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
 
     match store.approve(approval_id) {
         Ok(approval) => {
@@ -1000,9 +998,17 @@ fn cmd_approve(args: &[String]) {
                 let mut session: serde_json::Value = serde_json::from_str(&session_json).unwrap();
                 if let Some(metadata) = session.get_mut("metadata") {
                     metadata["approval_status"] = serde_json::json!("approved");
-                    metadata["approved_at"] = serde_json::json!(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string());
+                    metadata["approved_at"] = serde_json::json!(std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .to_string());
                 }
-                std::fs::write(&session_file, serde_json::to_string_pretty(&session).unwrap()).unwrap();
+                std::fs::write(
+                    &session_file,
+                    serde_json::to_string_pretty(&session).unwrap(),
+                )
+                .unwrap();
                 println!("Approved session: {}", approval_id);
             } else {
                 eprintln!("Error: {e}");
@@ -1017,9 +1023,7 @@ fn cmd_reject(args: &[String]) {
     }
     let approval_id = &args[2];
 
-    let store = pandora_types::ApprovalStore::new(
-        pandora_types::ApprovalStore::default_location(),
-    );
+    let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
 
     match store.reject(approval_id) {
         Ok(approval) => {
@@ -1036,9 +1040,17 @@ fn cmd_reject(args: &[String]) {
                 let mut session: serde_json::Value = serde_json::from_str(&session_json).unwrap();
                 if let Some(metadata) = session.get_mut("metadata") {
                     metadata["approval_status"] = serde_json::json!("rejected");
-                    metadata["rejected_at"] = serde_json::json!(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string());
+                    metadata["rejected_at"] = serde_json::json!(std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .to_string());
                 }
-                std::fs::write(&session_file, serde_json::to_string_pretty(&session).unwrap()).unwrap();
+                std::fs::write(
+                    &session_file,
+                    serde_json::to_string_pretty(&session).unwrap(),
+                )
+                .unwrap();
                 println!("Rejected session: {}", approval_id);
             } else {
                 eprintln!("Error: {e}");
@@ -1104,7 +1116,10 @@ fn cmd_harness(args: &[String]) {
             let s = council.summary();
             println!(
                 "{} total ({} source, {} meta, {} domain) | {} enabled",
-                s.total_harnesses, s.source_count, s.meta_count, s.domain_count,
+                s.total_harnesses,
+                s.source_count,
+                s.meta_count,
+                s.domain_count,
                 council.harnesses.enabled_count()
             );
             println!();
@@ -1126,7 +1141,11 @@ fn cmd_harness(args: &[String]) {
                 };
                 println!(
                     "  {} {} v{} — {} ({})",
-                    kind_icon, h.id(), h.manifest().version, state_str, h.manifest().name
+                    kind_icon,
+                    h.id(),
+                    h.manifest().version,
+                    state_str,
+                    h.manifest().name
                 );
             }
         }
@@ -1205,7 +1224,9 @@ fn cmd_harness(args: &[String]) {
             let mut council = sc.write().expect("council lock write");
 
             match council.harnesses.enable_source(id, approver, reason) {
-                Ok(()) => println!("Source harness enabled: {id} (approved by {approver}: {reason})"),
+                Ok(()) => {
+                    println!("Source harness enabled: {id} (approved by {approver}: {reason})")
+                }
                 Err(e) => eprintln!("Error: {e}"),
             }
         }
@@ -1251,7 +1272,9 @@ fn cmd_harness(args: &[String]) {
 
             // ponytail: disable and note that rollback is a future feature
             match council.disable(id) {
-                Ok(()) => println!("Rolled back: {id} (disabled — re-enable previous version manually)"),
+                Ok(()) => {
+                    println!("Rolled back: {id} (disabled — re-enable previous version manually)")
+                }
                 Err(e) => eprintln!("Error: {e}"),
             }
             println!("Note: full rollback to previous version requires versioned staging.");

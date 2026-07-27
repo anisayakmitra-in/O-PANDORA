@@ -78,12 +78,13 @@ const TOOL_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub f
 const WORKFLOW_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "workflow".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("workflow: {}", input)) } }"#;
 const PROVIDER_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "provider".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("provider: {}", input)) } }"#;
 
-
-
 fn score_gene(installed: &InstalledGene, required: &[String]) -> f32 {
     let mut score = 0.0_f32;
     for cap in required {
-        if installed.manifest().capabilities.iter().any(|c| c.to_lowercase().contains(&cap.to_lowercase()) || cap.to_lowercase().contains(&c.to_lowercase())) {
+        if installed.manifest().capabilities.iter().any(|c| {
+            c.to_lowercase().contains(&cap.to_lowercase())
+                || cap.to_lowercase().contains(&c.to_lowercase())
+        }) {
             score += 1.0;
         }
     }
@@ -439,9 +440,12 @@ impl HarnessRegistry {
         Ok(())
     }
     pub fn enable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
-        let harness = self.harnesses.get(id).ok_or(
-            pandora_types::PandoraError::NotFound(format!("Harness not found: {id}"))
-        )?;
+        let harness = self
+            .harnesses
+            .get(id)
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Harness not found: {id}"
+            )))?;
 
         // Source harnesses require explicit approval (constitutional floor)
         if *harness.kind() == pandora_types::harness::HarnessKind::Source {
@@ -464,9 +468,12 @@ impl HarnessRegistry {
         _approver: &str,
         _reason: &str,
     ) -> Result<(), pandora_types::PandoraError> {
-        let harness = self.harnesses.get_mut(id).ok_or(
-            pandora_types::PandoraError::NotFound(format!("Harness not found: {id}"))
-        )?;
+        let harness = self
+            .harnesses
+            .get_mut(id)
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Harness not found: {id}"
+            )))?;
 
         if *harness.kind() != pandora_types::harness::HarnessKind::Source {
             return Err(pandora_types::PandoraError::governance(format!(
@@ -546,9 +553,9 @@ impl HarnessRegistry {
         // 1. Validate manifest (id, name, version, kind are required)
         let m = harness.manifest();
         if m.id.is_empty() || m.name.is_empty() || m.version.is_empty() {
-            return Err(pandora_types::PandoraError::governance(
-                format!("Harness manifest missing required fields for {id}")
-            ));
+            return Err(pandora_types::PandoraError::governance(format!(
+                "Harness manifest missing required fields for {id}"
+            )));
         }
 
         // 2. Check for conflicts with installed harnesses
@@ -588,15 +595,15 @@ impl HarnessRegistry {
                         // 7. ROLLBACK: remove staged harness
                         self.harnesses.remove(&id);
                         self.states.remove(&id);
-                        Err(pandora_types::PandoraError::governance(
-                            format!("Harness health check failed for {id}: {e}")
-                        ))
+                        Err(pandora_types::PandoraError::governance(format!(
+                            "Harness health check failed for {id}: {e}"
+                        )))
                     }
                 }
             } else {
-                Err(pandora_types::PandoraError::Internal(
-                    format!("Harness {id} not found after staging")
-                ))
+                Err(pandora_types::PandoraError::Internal(format!(
+                    "Harness {id} not found after staging"
+                )))
             }
         } else {
             // Fresh install
@@ -616,15 +623,15 @@ impl HarnessRegistry {
                         // 6. ROLLBACK
                         self.harnesses.remove(&id);
                         self.states.remove(&id);
-                        Err(pandora_types::PandoraError::governance(
-                            format!("Harness health check failed for {id}: {e}")
-                        ))
+                        Err(pandora_types::PandoraError::governance(format!(
+                            "Harness health check failed for {id}: {e}"
+                        )))
                     }
                 }
             } else {
-                Err(pandora_types::PandoraError::Internal(
-                    format!("Harness {id} not found after staging")
-                ))
+                Err(pandora_types::PandoraError::Internal(format!(
+                    "Harness {id} not found after staging"
+                )))
             }
         }
     }
@@ -666,7 +673,10 @@ impl HarnessRegistry {
         self.all_entries()
             .into_iter()
             .filter(|(_, s)| {
-                matches!(s, HarnessState::Disabled | HarnessState::Staged | HarnessState::Suspended)
+                matches!(
+                    s,
+                    HarnessState::Disabled | HarnessState::Staged | HarnessState::Suspended
+                )
             })
             .collect()
     }
@@ -1011,7 +1021,6 @@ impl ShadowCouncil {
         Ok(gene_dir.to_string_lossy().to_string())
     }
 
-
     /// Route a capability request to the best harness and optional gene.
     ///
     /// Scoring considers:
@@ -1027,9 +1036,10 @@ impl ShadowCouncil {
         };
 
         if required.is_empty() || required.iter().all(|c| c == "general") {
-            return Err(pandora_types::PandoraError::governance(
-                format!("no capabilities resolved from intent: {}", request.intent)
-            ));
+            return Err(pandora_types::PandoraError::governance(format!(
+                "no capabilities resolved from intent: {}",
+                request.intent
+            )));
         }
 
         let mut best: Option<(String, f32, Vec<String>)> = None;
@@ -1045,7 +1055,10 @@ impl ShadowCouncil {
             let mut matched = Vec::new();
 
             for cap in &required {
-                if manifest.capabilities.iter().any(|c| c.to_lowercase().contains(&cap.to_lowercase()) || cap.to_lowercase().contains(&c.to_lowercase())) {
+                if manifest.capabilities.iter().any(|c| {
+                    c.to_lowercase().contains(&cap.to_lowercase())
+                        || cap.to_lowercase().contains(&c.to_lowercase())
+                }) {
                     score += 1.0;
                     matched.push(cap.clone());
                 }
@@ -1081,9 +1094,10 @@ impl ShadowCouncil {
         }
 
         let (harness_id, score, matched) = best.ok_or_else(|| {
-            pandora_types::PandoraError::governance(
-                format!("no harness matches required capabilities: {:?}", required)
-            )
+            pandora_types::PandoraError::governance(format!(
+                "no harness matches required capabilities: {:?}",
+                required
+            ))
         })?;
 
         // Try to find the best gene inside or outside the selected harness
@@ -1177,9 +1191,9 @@ pub struct CouncilSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pandora_types::PandoraError;
     use pandora_types::gene::*;
     use pandora_types::harness::HarnessManifestBuilder;
+    use pandora_types::PandoraError;
 
     #[derive(Debug)]
     struct TestHarness {
@@ -1415,16 +1429,19 @@ mod tests {
     #[test]
     fn route_coding_intent() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("coding-domain", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(h("coding-domain", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("coding-domain").unwrap();
 
-        let route = sc.route(CapabilityRequest {
-            intent: "write a rust function".into(),
-            required: vec![],
-            preferred: vec![],
-            budget: None,
-            policy: None,
-        }).unwrap();
+        let route = sc
+            .route(CapabilityRequest {
+                intent: "write a rust function".into(),
+                required: vec![],
+                preferred: vec![],
+                budget: None,
+                policy: None,
+            })
+            .unwrap();
 
         assert_eq!(route.harness_id, "coding-domain");
         assert!(route.rationale.contains("coding-domain"));
@@ -1434,16 +1451,19 @@ mod tests {
     #[test]
     fn route_security_intent() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("security-domain", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(h("security-domain", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("security-domain").unwrap();
 
-        let route = sc.route(CapabilityRequest {
-            intent: "scan for vulnerabilities".into(),
-            required: vec![],
-            preferred: vec![],
-            budget: None,
-            policy: None,
-        }).unwrap();
+        let route = sc
+            .route(CapabilityRequest {
+                intent: "scan for vulnerabilities".into(),
+                required: vec![],
+                preferred: vec![],
+                budget: None,
+                policy: None,
+            })
+            .unwrap();
 
         assert_eq!(route.harness_id, "security-domain");
     }
@@ -1451,16 +1471,19 @@ mod tests {
     #[test]
     fn route_design_intent() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("design-domain", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(h("design-domain", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("design-domain").unwrap();
 
-        let route = sc.route(CapabilityRequest {
-            intent: "design a website".into(),
-            required: vec![],
-            preferred: vec![],
-            budget: None,
-            policy: None,
-        }).unwrap();
+        let route = sc
+            .route(CapabilityRequest {
+                intent: "design a website".into(),
+                required: vec![],
+                preferred: vec![],
+                budget: None,
+                policy: None,
+            })
+            .unwrap();
 
         assert_eq!(route.harness_id, "design-domain");
     }
@@ -1468,36 +1491,42 @@ mod tests {
     #[test]
     fn route_unknown_intent_fails() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("coding-domain", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(h("coding-domain", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("coding-domain").unwrap();
 
-        let err = sc.route(CapabilityRequest {
-            intent: "xyzabcdefg unknown thing".into(),
-            required: vec![],
-            preferred: vec![],
-            budget: None,
-            policy: None,
-        }).unwrap_err();
+        let err = sc
+            .route(CapabilityRequest {
+                intent: "xyzabcdefg unknown thing".into(),
+                required: vec![],
+                preferred: vec![],
+                budget: None,
+                policy: None,
+            })
+            .unwrap_err();
 
         assert!(
-            err.to_string().contains("no harness matches") ||
-            err.to_string().contains("no capabilities resolved")
+            err.to_string().contains("no harness matches")
+                || err.to_string().contains("no capabilities resolved")
         );
     }
 
     #[test]
     fn route_disabled_harness_not_selected() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(h("coding-domain", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(h("coding-domain", HarnessKind::Domain)))
+            .unwrap();
         // left disabled
 
-        let err = sc.route(CapabilityRequest {
-            intent: "write a rust function".into(),
-            required: vec![],
-            preferred: vec![],
-            budget: None,
-            policy: None,
-        }).unwrap_err();
+        let err = sc
+            .route(CapabilityRequest {
+                intent: "write a rust function".into(),
+                required: vec![],
+                preferred: vec![],
+                budget: None,
+                policy: None,
+            })
+            .unwrap_err();
 
         assert!(err.to_string().contains("no harness matches"));
     }
@@ -1505,18 +1534,30 @@ mod tests {
     #[test]
     fn route_selects_best_harness_by_score() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(hc("coding-domain", HarnessKind::Domain, &[("/code", "Code")]))).unwrap();
-        sc.install(Box::new(hc("design-domain", HarnessKind::Domain, &[("/design", "Design")]))).unwrap();
+        sc.install(Box::new(hc(
+            "coding-domain",
+            HarnessKind::Domain,
+            &[("/code", "Code")],
+        )))
+        .unwrap();
+        sc.install(Box::new(hc(
+            "design-domain",
+            HarnessKind::Domain,
+            &[("/design", "Design")],
+        )))
+        .unwrap();
         sc.enable("coding-domain").unwrap();
         sc.enable("design-domain").unwrap();
 
-        let route = sc.route(CapabilityRequest {
-            intent: "write a python function".into(),
-            required: vec![],
-            preferred: vec![],
-            budget: None,
-            policy: None,
-        }).unwrap();
+        let route = sc
+            .route(CapabilityRequest {
+                intent: "write a python function".into(),
+                required: vec![],
+                preferred: vec![],
+                budget: None,
+                policy: None,
+            })
+            .unwrap();
 
         assert_eq!(route.harness_id, "coding-domain");
     }
@@ -1535,34 +1576,51 @@ mod tests {
         fn new(id: &str, kind: HarnessKind) -> Self {
             Self {
                 manifest: HarnessManifestBuilder::default()
-                    .id(id).name(id).kind(kind).version("0.1.0").author("test")
+                    .id(id)
+                    .name(id)
+                    .kind(kind)
+                    .version("0.1.0")
+                    .author("test")
                     .description("spy")
-                    .build().unwrap(),
+                    .build()
+                    .unwrap(),
                 health_ok: true,
             }
         }
     }
 
     impl Harness for SpyHarness {
-        fn manifest(&self) -> &HarnessManifest { &self.manifest }
-        fn initialize(&mut self) -> Result<(), PandoraError> { Ok(()) }
-        fn shutdown(&mut self) -> Result<(), PandoraError> { Ok(()) }
+        fn manifest(&self) -> &HarnessManifest {
+            &self.manifest
+        }
+        fn initialize(&mut self) -> Result<(), PandoraError> {
+            Ok(())
+        }
+        fn shutdown(&mut self) -> Result<(), PandoraError> {
+            Ok(())
+        }
         fn health(&self) -> Result<(), PandoraError> {
-            if self.health_ok { Ok(()) } else { Err(PandoraError::internal("unhealthy")) }
+            if self.health_ok {
+                Ok(())
+            } else {
+                Err(PandoraError::internal("unhealthy"))
+            }
         }
     }
 
     #[test]
     fn lifecycle_fresh_install_is_disabled() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain)))
+            .unwrap();
         assert_eq!(*sc.harnesses.state("t").unwrap(), HarnessState::Disabled);
     }
 
     #[test]
     fn lifecycle_enable_then_disable() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("t").unwrap();
         assert_eq!(*sc.harnesses.state("t").unwrap(), HarnessState::Enabled);
         sc.disable("t").unwrap();
@@ -1572,7 +1630,8 @@ mod tests {
     #[test]
     fn lifecycle_source_harness_requires_approval() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("src", HarnessKind::Source))).unwrap();
+        sc.install(Box::new(SpyHarness::new("src", HarnessKind::Source)))
+            .unwrap();
         let err = sc.enable("src").unwrap_err();
         assert!(err.to_string().contains("Source harness"));
     }
@@ -1580,7 +1639,8 @@ mod tests {
     #[test]
     fn lifecycle_enable_source_works() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("src", HarnessKind::Source))).unwrap();
+        sc.install(Box::new(SpyHarness::new("src", HarnessKind::Source)))
+            .unwrap();
         sc.harnesses.enable_source("src", "admin", "test").unwrap();
         assert_eq!(*sc.harnesses.state("src").unwrap(), HarnessState::Enabled);
     }
@@ -1588,7 +1648,8 @@ mod tests {
     #[test]
     fn lifecycle_uninstall_removes() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain)))
+            .unwrap();
         sc.uninstall("t").unwrap();
         assert!(sc.harnesses.get("t").is_none());
     }
@@ -1596,8 +1657,10 @@ mod tests {
     #[test]
     fn lifecycle_enabled_entries_filter() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("a", HarnessKind::Domain))).unwrap();
-        sc.install(Box::new(SpyHarness::new("b", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("a", HarnessKind::Domain)))
+            .unwrap();
+        sc.install(Box::new(SpyHarness::new("b", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("a").unwrap();
         assert_eq!(sc.harnesses.enabled_entries().len(), 1);
     }
@@ -1605,8 +1668,10 @@ mod tests {
     #[test]
     fn lifecycle_installed_entries_filter() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("a", HarnessKind::Domain))).unwrap();
-        sc.install(Box::new(SpyHarness::new("b", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("a", HarnessKind::Domain)))
+            .unwrap();
+        sc.install(Box::new(SpyHarness::new("b", HarnessKind::Domain)))
+            .unwrap();
         sc.enable("a").unwrap();
         assert_eq!(sc.harnesses.installed_entries().len(), 1);
     }
@@ -1614,7 +1679,9 @@ mod tests {
     #[test]
     fn lifecycle_tx_install_health_ok() {
         let mut sc = ShadowCouncil::new();
-        sc.harnesses.transactional_install(Box::new(SpyHarness::new("tx", HarnessKind::Domain))).unwrap();
+        sc.harnesses
+            .transactional_install(Box::new(SpyHarness::new("tx", HarnessKind::Domain)))
+            .unwrap();
         assert_eq!(*sc.harnesses.state("tx").unwrap(), HarnessState::Disabled);
     }
 
@@ -1623,7 +1690,10 @@ mod tests {
         let mut sc = ShadowCouncil::new();
         let mut bad = SpyHarness::new("bad", HarnessKind::Domain);
         bad.health_ok = false;
-        let err = sc.harnesses.transactional_install(Box::new(bad)).unwrap_err();
+        let err = sc
+            .harnesses
+            .transactional_install(Box::new(bad))
+            .unwrap_err();
         assert!(err.to_string().contains("health check"));
         assert!(sc.harnesses.get("bad").is_none());
     }
@@ -1631,12 +1701,13 @@ mod tests {
     #[test]
     fn lifecycle_count_by_kind() {
         let mut sc = ShadowCouncil::new();
-        sc.install(Box::new(SpyHarness::new("d1", HarnessKind::Domain))).unwrap();
-        sc.install(Box::new(SpyHarness::new("m1", HarnessKind::Meta))).unwrap();
+        sc.install(Box::new(SpyHarness::new("d1", HarnessKind::Domain)))
+            .unwrap();
+        sc.install(Box::new(SpyHarness::new("m1", HarnessKind::Meta)))
+            .unwrap();
         let s = sc.summary();
         assert_eq!(s.domain_count, 1);
         assert_eq!(s.meta_count, 1);
         assert_eq!(s.source_count, 0);
     }
-
 }

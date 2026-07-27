@@ -9,8 +9,8 @@
 //! Every stage returns a StageOutput. Parliament merges deltas.
 
 pub mod agentic_loop;
-pub mod provider_adapter;
 pub mod constitutional_floor;
+pub mod provider_adapter;
 
 use anyhow::Result;
 use pandora_services::ExecutionController;
@@ -360,7 +360,8 @@ impl PandoraRuntime {
             ParliamentVerdict::RequireApproval { who, expires } => {
                 return Err(anyhow::anyhow!(
                     "Parliament requires approval from {:?} (expires: {:?})",
-                    who, expires
+                    who,
+                    expires
                 ));
             }
             ParliamentVerdict::Modify { amended_plan } => {
@@ -418,9 +419,10 @@ impl PandoraRuntime {
             policy: None,
         };
 
-        let route = self.council.route(route_request).map_err(|e| {
-            anyhow::anyhow!("Shadow Council could not route task: {}", e)
-        })?;
+        let route = self
+            .council
+            .route(route_request)
+            .map_err(|e| anyhow::anyhow!("Shadow Council could not route task: {}", e))?;
 
         info!(
             "[STAGE 2b - COUNCIL] routed to harness '{}' (gene: {:?}): {}",
@@ -531,7 +533,8 @@ impl PandoraRuntime {
 
             // Start healing session for this execution
             let healing_session = pandora_types::self_healing::HealingSession::new(&execution_id);
-            self.constitutional_floor = crate::constitutional_floor::ConstitutionalFloor::new(&execution_id);
+            self.constitutional_floor =
+                crate::constitutional_floor::ConstitutionalFloor::new(&execution_id);
 
             // Run the agentic loop: LLM calls genes as tools
             let config = agentic_loop::AgenticConfig::default();
@@ -792,7 +795,11 @@ impl PandoraRuntime {
                 tracing::warn!("[PARLIAMENT] Post-flight denied: {}", reason);
             }
             ParliamentVerdict::RequireApproval { who, expires } => {
-                tracing::warn!("[PARLIAMENT] Post-flight requires approval from {:?} (expires: {:?})", who, expires);
+                tracing::warn!(
+                    "[PARLIAMENT] Post-flight requires approval from {:?} (expires: {:?})",
+                    who,
+                    expires
+                );
             }
             ParliamentVerdict::Modify { .. } => {
                 tracing::info!("[PARLIAMENT] Post-flight plan amended");

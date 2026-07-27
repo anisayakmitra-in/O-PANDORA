@@ -236,7 +236,6 @@ mod tests {
     }
 }
 
-
 // ── Phase 3 additions ──
 
 /// A request for the Shadow Council to route to a concrete harness + gene.
@@ -282,13 +281,59 @@ impl IntentRouter {
         let mut caps = Vec::new();
 
         let keywords: Vec<(&str, &[&str])> = vec![
-            ("code-review", &["review", "audit", "refactor", "simplify", "debt", "gain", "quality"]),
-            ("coding", &["code", "function", "rust", "python", "program", "implement", "write"]),
-            ("security-audit", &["security", "vulnerability", "pentest", "audit", "scan", "secrets"]),
-            ("research", &["research", "paper", "literature", "summarize", "study"]),
-            ("design", &["design", "ui", "ux", "brand", "color", "typography", "accessibility"]),
-            ("computer-use", &["click", "screenshot", "desktop", "browser", "automation"]),
-            ("android", &["android", "adb", "phone", "mobile", "tap", "swipe"]),
+            (
+                "code-review",
+                &[
+                    "review", "audit", "refactor", "simplify", "debt", "gain", "quality",
+                ],
+            ),
+            (
+                "coding",
+                &[
+                    "code",
+                    "function",
+                    "rust",
+                    "python",
+                    "program",
+                    "implement",
+                    "write",
+                ],
+            ),
+            (
+                "security-audit",
+                &[
+                    "security",
+                    "vulnerability",
+                    "pentest",
+                    "audit",
+                    "scan",
+                    "secrets",
+                ],
+            ),
+            (
+                "research",
+                &["research", "paper", "literature", "summarize", "study"],
+            ),
+            (
+                "design",
+                &[
+                    "design",
+                    "ui",
+                    "ux",
+                    "brand",
+                    "color",
+                    "typography",
+                    "accessibility",
+                ],
+            ),
+            (
+                "computer-use",
+                &["click", "screenshot", "desktop", "browser", "automation"],
+            ),
+            (
+                "android",
+                &["android", "adb", "phone", "mobile", "tap", "swipe"],
+            ),
         ];
 
         for (cap, words) in keywords {
@@ -303,4 +348,3 @@ impl IntentRouter {
         caps
     }
 }
-

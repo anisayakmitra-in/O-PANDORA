@@ -249,38 +249,52 @@ impl HarnessSpecBuilder {
         self
     }
 
-/// Generate a harness.toml from a HarnessPackage for scaffolding.
-pub fn generate_harness_toml(pkg: &HarnessPackage) -> String {
-    let mut lines = Vec::new();
-    lines.push(format!("id = \"{}\"" , pkg.manifest.id));
-    lines.push(format!("name = \"{}\"" , pkg.manifest.name));
-    lines.push(format!("version = \"{}\"" , pkg.manifest.version));
-    lines.push(format!("author = \"{}\"" , pkg.manifest.author));
-    lines.push(format!("kind = \"{}\"" , pkg.manifest.kind.as_str()));
-    if let Some(ref class) = pkg.class {
-        lines.push(format!("class = \"{}\"" , class));
+    /// Generate a harness.toml from a HarnessPackage for scaffolding.
+    pub fn generate_harness_toml(pkg: &HarnessPackage) -> String {
+        let mut lines = Vec::new();
+        lines.push(format!("id = \"{}\"", pkg.manifest.id));
+        lines.push(format!("name = \"{}\"", pkg.manifest.name));
+        lines.push(format!("version = \"{}\"", pkg.manifest.version));
+        lines.push(format!("author = \"{}\"", pkg.manifest.author));
+        lines.push(format!("kind = \"{}\"", pkg.manifest.kind.as_str()));
+        if let Some(ref class) = pkg.class {
+            lines.push(format!("class = \"{}\"", class));
+        }
+        lines.push(format!("description = \"{}\"", pkg.metadata.description));
+        if !pkg.manifest.capabilities.is_empty() {
+            lines.push(format!(
+                "capabilities = [{}]",
+                pkg.manifest
+                    .capabilities
+                    .iter()
+                    .map(|c| format!("\"{}\"", c))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        if !pkg.manifest.owned_genes.is_empty() {
+            lines.push(format!(
+                "owned_genes = [{}]",
+                pkg.manifest
+                    .owned_genes
+                    .iter()
+                    .map(|g| format!("\"{}\"", g))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        if !pkg.dependencies.is_empty() {
+            lines.push(format!(
+                "dependencies = [{}]",
+                pkg.dependencies
+                    .iter()
+                    .map(|d| format!("\"{}\"", d))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        lines.join("\n")
     }
-    lines.push(format!("description = \"{}\"" , pkg.metadata.description));
-    if !pkg.manifest.capabilities.is_empty() {
-        lines.push(format!(
-            "capabilities = [{}]",
-            pkg.manifest.capabilities.iter().map(|c| format!("\"{}\"" , c)).collect::<Vec<_>>().join(", ")
-        ));
-    }
-    if !pkg.manifest.owned_genes.is_empty() {
-        lines.push(format!(
-            "owned_genes = [{}]",
-            pkg.manifest.owned_genes.iter().map(|g| format!("\"{}\"" , g)).collect::<Vec<_>>().join(", ")
-        ));
-    }
-    if !pkg.dependencies.is_empty() {
-        lines.push(format!(
-            "dependencies = [{}]",
-            pkg.dependencies.iter().map(|d| format!("\"{}\"" , d)).collect::<Vec<_>>().join(", ")
-        ));
-    }
-    lines.join("\n")
-}
 
     pub fn build(self) -> Result<HarnessSpec, crate::PandoraError> {
         Ok(HarnessSpec {
@@ -310,19 +324,33 @@ pub fn generate_harness_toml(pkg: &HarnessPackage) -> String {
     if !pkg.manifest.capabilities.is_empty() {
         lines.push(format!(
             "capabilities = [{}]",
-            pkg.manifest.capabilities.iter().map(|c| format!("\"{}\"", c)).collect::<Vec<_>>().join(", ")
+            pkg.manifest
+                .capabilities
+                .iter()
+                .map(|c| format!("\"{}\"", c))
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
     if !pkg.manifest.owned_genes.is_empty() {
         lines.push(format!(
             "owned_genes = [{}]",
-            pkg.manifest.owned_genes.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
+            pkg.manifest
+                .owned_genes
+                .iter()
+                .map(|g| format!("\"{}\"", g))
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
     if !pkg.dependencies.is_empty() {
         lines.push(format!(
             "dependencies = [{}]",
-            pkg.dependencies.iter().map(|d| format!("\"{}\"", d)).collect::<Vec<_>>().join(", ")
+            pkg.dependencies
+                .iter()
+                .map(|d| format!("\"{}\"", d))
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
     if !pkg.manifest.slash_commands.is_empty() {

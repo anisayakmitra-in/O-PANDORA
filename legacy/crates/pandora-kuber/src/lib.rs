@@ -12,10 +12,10 @@
 //! - Diamond dependency conflict detection
 
 pub mod builtin;
-pub mod package_loaders;
 pub mod checksum;
 pub mod import;
 pub mod lockfile_wiring;
+pub mod package_loaders;
 pub mod resolver;
 pub mod skill;
 pub mod trust_policy;
@@ -233,17 +233,10 @@ impl Kuber {
     }
 
     /// Install a package with full validation pipeline:
-    /// 1. Find package in sources
-    /// 2. Validate manifest
-    /// 3. Verify checksum (if lockfile exists)
-    /// 4. Verify signature (if available)
-    /// 5. Check trust policy
-    /// 6. Resolve dependencies
-    /// 7. Wire lockfile
-    /// 8. Install via ShadowCouncil
-    /// Install a package with full validation pipeline.
-    /// Auto-detects package kind (gene, harness, skill, provider) and
-    /// dispatches to the correct loader.
+    /// Install a package with full validation pipeline:
+    /// finds package, validates manifest, verifies checksum and signature,
+    /// checks trust policy, resolves dependencies, wires lockfile,
+    /// auto-detects package kind, and dispatches to the correct loader.
     pub fn install(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         // If id looks like a path (contains / or \), try auto-detect
         let path = std::path::Path::new(id);

@@ -208,7 +208,15 @@ mod tests {
         let mut floor = ConstitutionalFloor::new("exec-1");
 
         floor.audit_tool_call("exec-1", "bash", "tc-1", "ls", "{}", "Allow", true);
-        floor.audit_tool_call("exec-1", "read_file", "tc-2", "README.md", "{}", "Allow", true);
+        floor.audit_tool_call(
+            "exec-1",
+            "read_file",
+            "tc-2",
+            "README.md",
+            "{}",
+            "Allow",
+            true,
+        );
         floor.audit_tool_call("exec-1", "rm", "tc-3", "/tmp/x", "{}", "Deny", false);
 
         assert_eq!(floor.audit_count(), 3);
@@ -223,7 +231,15 @@ mod tests {
         let mut floor = ConstitutionalFloor::new("exec-1");
 
         floor.audit_tool_call("exec-1", "bash", "tc-1", "ls", "{}", "Allow", true);
-        floor.audit_tool_call("exec-1", "read_file", "tc-2", "README.md", "{}", "Allow", true);
+        floor.audit_tool_call(
+            "exec-1",
+            "read_file",
+            "tc-2",
+            "README.md",
+            "{}",
+            "Allow",
+            true,
+        );
 
         // Tamper with the first audit entry's verdict
         floor.entries[1].verdict = "Allow".to_string(); // was "Allow", change to "Allow" no change but let's do something real

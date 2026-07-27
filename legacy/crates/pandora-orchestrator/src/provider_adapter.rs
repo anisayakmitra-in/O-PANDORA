@@ -6,6 +6,9 @@ use pandora_types::provider::openai_compat::OpenAiCompatibleProvider;
 use pandora_types::provider::Provider;
 use std::sync::Arc;
 
+/// A provider + its connection name.
+pub type ProviderEntry = (Arc<dyn Provider>, String);
+
 pub fn create_provider_for(conn: &Connection) -> Option<Arc<dyn Provider>> {
     match conn.kind {
         ConnectionKind::Ollama => {
@@ -48,14 +51,15 @@ pub fn create_provider_for(conn: &Connection) -> Option<Arc<dyn Provider>> {
         _ => {
             tracing::warn!(
                 "[PROVIDER] unsupported connection kind for '{}': {:?}",
-                conn.name, conn.kind
+                conn.name,
+                conn.kind
             );
             None
         }
     }
 }
 
-pub fn load_providers_from_connections() -> Vec<(Arc<dyn Provider>, String)> {
+pub fn load_providers_from_connections() -> Vec<ProviderEntry> {
     let cr = pandora_types::connection_manager::ConnectionRegistry::load();
     let mut providers = Vec::new();
     for conn in cr.healthy() {
@@ -66,7 +70,7 @@ pub fn load_providers_from_connections() -> Vec<(Arc<dyn Provider>, String)> {
     providers
 }
 
-pub fn require_providers() -> Result<Vec<(Arc<dyn Provider>, String)>, pandora_types::PandoraError> {
+pub fn require_providers() -> Result<Vec<ProviderEntry>, pandora_types::PandoraError> {
     let providers = load_providers_from_connections();
     if providers.is_empty() {
         let msg = String::from(

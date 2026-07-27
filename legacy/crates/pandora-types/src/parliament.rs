@@ -10,11 +10,19 @@ use std::collections::HashMap;
 pub trait ParliamentService: Send + Sync {
     fn name(&self) -> &str;
     /// Called before execution begins. Returns a verdict that can block or modify execution.
-    fn pre_flight(&self, _session: &str, _task: &str) -> Result<ParliamentVerdict, crate::PandoraError> {
+    fn pre_flight(
+        &self,
+        _session: &str,
+        _task: &str,
+    ) -> Result<ParliamentVerdict, crate::PandoraError> {
         Ok(ParliamentVerdict::Allow)
     }
     /// Called after execution completes. Returns a verdict that can record decisions or request follow-up.
-    fn post_flight(&self, _session: &str, _outcome: &str) -> Result<ParliamentVerdict, crate::PandoraError> {
+    fn post_flight(
+        &self,
+        _session: &str,
+        _outcome: &str,
+    ) -> Result<ParliamentVerdict, crate::PandoraError> {
         Ok(ParliamentVerdict::Allow)
     }
 }
@@ -98,7 +106,11 @@ impl Parliament {
                     modify_verdict = ParliamentVerdict::Modify { amended_plan };
                 }
                 Ok(ParliamentVerdict::Escalate { to }) => {
-                    eprintln!("[PARLIAMENT] Service {} escalated to: {:?}", service.name(), to);
+                    eprintln!(
+                        "[PARLIAMENT] Service {} escalated to: {:?}",
+                        service.name(),
+                        to
+                    );
                     // Escalate doesn't change verdict unless combined with Deny
                 }
                 Err(e) => {
@@ -135,7 +147,11 @@ impl Parliament {
                     // Post-flight modifications are advisory only
                 }
                 Ok(ParliamentVerdict::Escalate { to }) => {
-                    eprintln!("[PARLIAMENT] Service {} escalated to: {:?}", service.name(), to);
+                    eprintln!(
+                        "[PARLIAMENT] Service {} escalated to: {:?}",
+                        service.name(),
+                        to
+                    );
                 }
                 Err(e) => {
                     return ParliamentVerdict::Deny {
@@ -160,7 +176,11 @@ impl ParliamentService for GovernanceService {
     fn name(&self) -> &str {
         "governance"
     }
-    fn pre_flight(&self, _session: &str, task: &str) -> Result<ParliamentVerdict, crate::PandoraError> {
+    fn pre_flight(
+        &self,
+        _session: &str,
+        task: &str,
+    ) -> Result<ParliamentVerdict, crate::PandoraError> {
         if task.is_empty() {
             return Ok(ParliamentVerdict::Deny {
                 reason: "empty task".to_string(),
@@ -168,7 +188,11 @@ impl ParliamentService for GovernanceService {
         }
         Ok(ParliamentVerdict::Allow)
     }
-    fn post_flight(&self, _session: &str, outcome: &str) -> Result<ParliamentVerdict, crate::PandoraError> {
+    fn post_flight(
+        &self,
+        _session: &str,
+        outcome: &str,
+    ) -> Result<ParliamentVerdict, crate::PandoraError> {
         if outcome.is_empty() {
             return Ok(ParliamentVerdict::Deny {
                 reason: "empty outcome — possible pipeline failure".to_string(),
@@ -193,12 +217,18 @@ mod tests {
 
     impl StaticService {
         fn new(name: &str, pre: ParliamentVerdict, post: ParliamentVerdict) -> Self {
-            Self { name: name.into(), pre_reply: pre, post_reply: post }
+            Self {
+                name: name.into(),
+                pre_reply: pre,
+                post_reply: post,
+            }
         }
     }
 
     impl ParliamentService for StaticService {
-        fn name(&self) -> &str { &self.name }
+        fn name(&self) -> &str {
+            &self.name
+        }
         fn pre_flight(&self, _: &str, _: &str) -> Result<ParliamentVerdict, PandoraError> {
             Ok(self.pre_reply.clone())
         }
@@ -212,7 +242,9 @@ mod tests {
     struct ErrorService(String);
 
     impl ParliamentService for ErrorService {
-        fn name(&self) -> &str { &self.0 }
+        fn name(&self) -> &str {
+            &self.0
+        }
         fn pre_flight(&self, _: &str, _: &str) -> Result<ParliamentVerdict, PandoraError> {
             Err(PandoraError::Governance(format!("{} failed", self.0)))
         }
@@ -226,7 +258,12 @@ mod tests {
     fn governance_denies_empty_task() {
         let g = GovernanceService;
         let v = g.pre_flight("s1", "").unwrap();
-        assert_eq!(v, ParliamentVerdict::Deny { reason: "empty task".into() });
+        assert_eq!(
+            v,
+            ParliamentVerdict::Deny {
+                reason: "empty task".into()
+            }
+        );
     }
 
     #[test]
@@ -240,7 +277,12 @@ mod tests {
     fn governance_denies_empty_outcome_postflight() {
         let g = GovernanceService;
         let v = g.post_flight("s1", "").unwrap();
-        assert_eq!(v, ParliamentVerdict::Deny { reason: "empty outcome — possible pipeline failure".into() });
+        assert_eq!(
+            v,
+            ParliamentVerdict::Deny {
+                reason: "empty outcome — possible pipeline failure".into()
+            }
+        );
     }
 
     #[test]
@@ -264,51 +306,95 @@ mod tests {
     #[test]
     fn single_allow_returns_allow() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("a", ParliamentVerdict::Allow, ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new(
+            "a",
+            ParliamentVerdict::Allow,
+            ParliamentVerdict::Allow,
+        )));
         assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Allow);
     }
 
     #[test]
     fn deny_blocks_immediately() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("a", ParliamentVerdict::Deny { reason: "no".into() }, ParliamentVerdict::Allow)));
-        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Deny { reason: "no".into() });
+        p.register(Box::new(StaticService::new(
+            "a",
+            ParliamentVerdict::Deny {
+                reason: "no".into(),
+            },
+            ParliamentVerdict::Allow,
+        )));
+        assert_eq!(
+            p.pre_flight("s1", "task"),
+            ParliamentVerdict::Deny {
+                reason: "no".into()
+            }
+        );
     }
 
     #[test]
     fn deny_overrides_approval() {
         let mut p = Parliament::new();
         // First service requests approval, second denies — deny wins
-        p.register(Box::new(StaticService::new("approver",
-            ParliamentVerdict::RequireApproval { who: ApprovalScope::User, expires: None },
-            ParliamentVerdict::Allow)));
-        p.register(Box::new(StaticService::new("denier",
-            ParliamentVerdict::Deny { reason: "overridden".into() },
-            ParliamentVerdict::Allow)));
-        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Deny { reason: "overridden".into() });
+        p.register(Box::new(StaticService::new(
+            "approver",
+            ParliamentVerdict::RequireApproval {
+                who: ApprovalScope::User,
+                expires: None,
+            },
+            ParliamentVerdict::Allow,
+        )));
+        p.register(Box::new(StaticService::new(
+            "denier",
+            ParliamentVerdict::Deny {
+                reason: "overridden".into(),
+            },
+            ParliamentVerdict::Allow,
+        )));
+        assert_eq!(
+            p.pre_flight("s1", "task"),
+            ParliamentVerdict::Deny {
+                reason: "overridden".into()
+            }
+        );
     }
 
     #[test]
     fn deny_overrides_modify() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("modifier",
-            ParliamentVerdict::Modify { amended_plan: json!({"x": 1}) },
-            ParliamentVerdict::Allow)));
-        p.register(Box::new(StaticService::new("denier",
-            ParliamentVerdict::Deny { reason: "no mods".into() },
-            ParliamentVerdict::Allow)));
-        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Deny { reason: "no mods".into() });
+        p.register(Box::new(StaticService::new(
+            "modifier",
+            ParliamentVerdict::Modify {
+                amended_plan: json!({"x": 1}),
+            },
+            ParliamentVerdict::Allow,
+        )));
+        p.register(Box::new(StaticService::new(
+            "denier",
+            ParliamentVerdict::Deny {
+                reason: "no mods".into(),
+            },
+            ParliamentVerdict::Allow,
+        )));
+        assert_eq!(
+            p.pre_flight("s1", "task"),
+            ParliamentVerdict::Deny {
+                reason: "no mods".into()
+            }
+        );
     }
 
     #[test]
     fn require_approval_surfaces() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("gate",
+        p.register(Box::new(StaticService::new(
+            "gate",
             ParliamentVerdict::RequireApproval {
                 who: ApprovalScope::Role("auditor".into()),
                 expires: Some(Duration::from_secs(300)),
             },
-            ParliamentVerdict::Allow)));
+            ParliamentVerdict::Allow,
+        )));
         assert_eq!(
             p.pre_flight("s1", "task"),
             ParliamentVerdict::RequireApproval {
@@ -321,12 +407,18 @@ mod tests {
     #[test]
     fn modify_replaces_plan() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("planner",
-            ParliamentVerdict::Modify { amended_plan: json!({"steps": ["a", "b"]}) },
-            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new(
+            "planner",
+            ParliamentVerdict::Modify {
+                amended_plan: json!({"steps": ["a", "b"]}),
+            },
+            ParliamentVerdict::Allow,
+        )));
         assert_eq!(
             p.pre_flight("s1", "task"),
-            ParliamentVerdict::Modify { amended_plan: json!({"steps": ["a", "b"]}) }
+            ParliamentVerdict::Modify {
+                amended_plan: json!({"steps": ["a", "b"]})
+            }
         );
     }
 
@@ -334,18 +426,26 @@ mod tests {
     fn escalate_is_logged_does_not_block() {
         // Escalate alone should not change the aggregate — still Allow
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("alerter",
-            ParliamentVerdict::Escalate { to: vec!["human-ops".into()] },
-            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new(
+            "alerter",
+            ParliamentVerdict::Escalate {
+                to: vec!["human-ops".into()],
+            },
+            ParliamentVerdict::Allow,
+        )));
         assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Allow);
     }
 
     #[test]
     fn modify_is_returned_when_service_requests_it() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("planner",
-            ParliamentVerdict::Modify { amended_plan: json!({"steps": 3}) },
-            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new(
+            "planner",
+            ParliamentVerdict::Modify {
+                amended_plan: json!({"steps": 3}),
+            },
+            ParliamentVerdict::Allow,
+        )));
         let result = p.pre_flight("s1", "task");
         // A Modify verdict is returned (not Allow, not Deny)
         assert!(matches!(result, ParliamentVerdict::Modify { .. }));
@@ -354,12 +454,20 @@ mod tests {
     #[test]
     fn modify_with_escalate_returns_modify() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("planner",
-            ParliamentVerdict::Modify { amended_plan: json!({"x": 1}) },
-            ParliamentVerdict::Allow)));
-        p.register(Box::new(StaticService::new("alerter",
-            ParliamentVerdict::Escalate { to: vec!["ops".into()] },
-            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new(
+            "planner",
+            ParliamentVerdict::Modify {
+                amended_plan: json!({"x": 1}),
+            },
+            ParliamentVerdict::Allow,
+        )));
+        p.register(Box::new(StaticService::new(
+            "alerter",
+            ParliamentVerdict::Escalate {
+                to: vec!["ops".into()],
+            },
+            ParliamentVerdict::Allow,
+        )));
         // Modify takes precedence over Escalate
         let result = p.pre_flight("s1", "task");
         assert!(matches!(result, ParliamentVerdict::Modify { .. }));
@@ -381,9 +489,14 @@ mod tests {
     #[test]
     fn error_overrides_approval() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("gate",
-            ParliamentVerdict::RequireApproval { who: ApprovalScope::User, expires: None },
-            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new(
+            "gate",
+            ParliamentVerdict::RequireApproval {
+                who: ApprovalScope::User,
+                expires: None,
+            },
+            ParliamentVerdict::Allow,
+        )));
         p.register(Box::new(ErrorService("broken".into())));
         match p.pre_flight("s1", "task") {
             ParliamentVerdict::Deny { .. } => {} // expected
@@ -404,19 +517,32 @@ mod tests {
     #[test]
     fn post_flight_deny_blocks() {
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("auditor",
+        p.register(Box::new(StaticService::new(
+            "auditor",
             ParliamentVerdict::Allow,
-            ParliamentVerdict::Deny { reason: "bad outcome".into() })));
-        assert_eq!(p.post_flight("s1", "outcome"), ParliamentVerdict::Deny { reason: "bad outcome".into() });
+            ParliamentVerdict::Deny {
+                reason: "bad outcome".into(),
+            },
+        )));
+        assert_eq!(
+            p.post_flight("s1", "outcome"),
+            ParliamentVerdict::Deny {
+                reason: "bad outcome".into()
+            }
+        );
     }
 
     #[test]
     fn post_flight_modify_is_advisory_only() {
         // Post-flight Modify should not change the aggregate — it's advisory
         let mut p = Parliament::new();
-        p.register(Box::new(StaticService::new("advisor",
+        p.register(Box::new(StaticService::new(
+            "advisor",
             ParliamentVerdict::Allow,
-            ParliamentVerdict::Modify { amended_plan: json!({"fix": true}) })));
+            ParliamentVerdict::Modify {
+                amended_plan: json!({"fix": true}),
+            },
+        )));
         assert_eq!(p.post_flight("s1", "outcome"), ParliamentVerdict::Allow);
     }
 
@@ -448,10 +574,17 @@ mod tests {
 
     #[test]
     fn verdict_roundtrip_deny() {
-        let v = ParliamentVerdict::Deny { reason: "test".into() };
+        let v = ParliamentVerdict::Deny {
+            reason: "test".into(),
+        };
         let s = serde_json::to_string(&v).unwrap();
         let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
-        assert_eq!(back, ParliamentVerdict::Deny { reason: "test".into() });
+        assert_eq!(
+            back,
+            ParliamentVerdict::Deny {
+                reason: "test".into()
+            }
+        );
     }
 
     #[test]
@@ -467,7 +600,9 @@ mod tests {
 
     #[test]
     fn verdict_roundtrip_modify() {
-        let v = ParliamentVerdict::Modify { amended_plan: json!({"x": [1, 2, 3]}) };
+        let v = ParliamentVerdict::Modify {
+            amended_plan: json!({"x": [1, 2, 3]}),
+        };
         let s = serde_json::to_string(&v).unwrap();
         let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
         assert_eq!(back, v);
@@ -475,7 +610,9 @@ mod tests {
 
     #[test]
     fn verdict_roundtrip_escalate() {
-        let v = ParliamentVerdict::Escalate { to: vec!["ops".into(), "legal".into()] };
+        let v = ParliamentVerdict::Escalate {
+            to: vec!["ops".into(), "legal".into()],
+        };
         let s = serde_json::to_string(&v).unwrap();
         let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
         assert_eq!(back, v);
