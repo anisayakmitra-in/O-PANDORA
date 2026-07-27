@@ -1909,9 +1909,9 @@ fn cmd_setup(_args: &[String]) {
         println!("  6. Skip for now");
         println!();
         println!("  Run one of these:");
-        println!("  pandora connection add local ollama http://localhost:11434");
-        println!("  pandora connection add openai openai https://api.openai.com");
-        println!("  pandora connection add my-api openai-compatible <your-endpoint>");
+        println!("  pandora connection add local ollama http://localhost:11434 --model llama3");
+        println!("  pandora connection add openai openai https://api.openai.com --api-key sk-... --model gpt-4o");
+        println!("  pandora connection add my-api custom https://my-api.example.com/v1 --model my-model --api-key sk-...");
         println!();
     }
 
@@ -2807,11 +2807,23 @@ fn cmd_connection(args: &[String]) {
     }
     match args[2].as_str() {
         "add" => {
-            if args.len() < 6 {
-                eprintln!("Usage: pandora connection add <name> <kind> <endpoint> [model]");
+            // Support: pandora connection add <name> <kind> <endpoint> [--model <model>] [--api-key <key>]
+            let flag_args: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
+            if flag_args.len() < 6 {
+                eprintln!("Usage: pandora connection add <name> <kind> <endpoint> [--model <model>] [--api-key <key>]");
+                eprintln!("Kinds: ollama, openai, openai-compatible, anthropic, gemini, openrouter, groq, together, deepseek, mistral, llamacpp, custom");
+                eprintln!();
+                eprintln!("Examples:");
+                eprintln!("  pandora connection add local ollama http://localhost:11434 --model llama3");
+                eprintln!("  pandora connection add openai openai https://api.openai.com --api-key sk-... --model gpt-4o");
+                eprintln!("  pandora connection add my-api custom https://my-api.example.com/v1 --model my-model --api-key sk-...");
                 return;
             }
-            let kind = match args[4].as_str() {
+            let name = flag_args[3].as_str();
+            let kind_str = flag_args[4].as_str();
+            let endpoint = flag_args[5].as_str();
+
+            let kind = match kind_str {
                 "ollama" => ConnectionKind::Ollama,
                 "llamacpp" => ConnectionKind::LlamaCpp,
                 "openai-compatible" => ConnectionKind::OpenAICompatible,
@@ -2829,14 +2841,22 @@ fn cmd_connection(args: &[String]) {
                     return;
                 }
             };
-            let conn = Connection::new(&args[3], kind, &args[5]).with_model(if args.len() > 6 {
-                &args[6]
-            } else {
-                ""
-            });
+            // Extract --model and --api-key flags
+            let model = args.iter().position(|a| a == "--model")
+                .and_then(|i| args.get(i + 1))
+                .map(|s| s.as_str())
+                .unwrap_or("");
+            let api_key = args.iter().position(|a| a == "--api-key")
+                .and_then(|i| args.get(i + 1))
+                .map(|s| s.as_str());
+
+            let mut conn = Connection::new(name, kind, endpoint).with_model(model);
+            if let Some(key) = api_key {
+                conn = conn.with_api_key(key);
+            }
             let mut reg = ConnectionRegistry::load();
             match reg.add(conn) {
-                Ok(()) => println!("Added: {}", args[3]),
+                Ok(()) => println!("Added: {}", name),
                 Err(e) => eprintln!("Error: {e}"),
             }
         }
