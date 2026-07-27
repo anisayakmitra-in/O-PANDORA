@@ -44,7 +44,7 @@ impl ArtifactStore {
     }
 
     /// Store data and return its content hash.
-    pub fn put(&mut self, data: &[u8]) -> Result<String, String> {
+    pub fn put(&mut self, data: &[u8]) -> Result<String, crate::PandoraError> {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
         let mut h = DefaultHasher::new();

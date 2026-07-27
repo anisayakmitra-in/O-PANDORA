@@ -1,0 +1,20 @@
+[package]
+id = "workflow"
+name = "Workflow"
+kind = "workflow"
+version = "0.2.0"
+author = "pandora"
+description = "Multi-step shell workflows with PANDORA_SHELL_UNSAFE guard"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["workflow", "automation"]
+
+[capabilities]
+provided = ["workflow.execute"]
+
+[permissions]
+required = ["shell.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

@@ -278,7 +278,7 @@ impl GeneManifestBuilder {
 
     /// Consume the builder and produce a validated `GeneManifest`.
     /// Returns an error if required fields (`id`, `name`, `kind`, `version`) are missing.
-    pub fn build(self) -> Result<GeneManifest, String> {
+    pub fn build(self) -> Result<GeneManifest, crate::PandoraError> {
         let metadata = GeneMetadata {
             description: self.description.unwrap_or_default(),
             permissions: self.permissions,
@@ -359,7 +359,7 @@ impl GeneLineage {
 /// struct MyGene { m: GeneManifest }
 /// impl Gene for MyGene {
 ///     fn manifest(&self) -> &GeneManifest { &self.m }
-///     fn execute(&self, input: &str) -> Result<String, String> {
+///     fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
 ///         Ok(format!("hello: {input}"))
 ///     }
 /// }
@@ -372,12 +372,12 @@ pub trait Gene: Send + Sync + std::fmt::Debug {
     fn manifest(&self) -> &GeneManifest;
 
     /// Execute the gene with the given input. Returns a JSON-serializable result.
-    fn execute(&self, _input: &str) -> Result<String, String> {
-        Err("execute not implemented".into())
+    fn execute(&self, _input: &str) -> Result<String, crate::PandoraError> {
+        Err(crate::PandoraError::gene("execute not implemented"))
     }
 
     /// Validate the gene's configuration.
-    fn validate(&self) -> Result<(), String> {
+    fn validate(&self) -> Result<(), crate::PandoraError> {
         Ok(())
     }
 

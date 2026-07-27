@@ -1,10 +1,10 @@
 //! Trust Verification — validates package trust levels.
 //!
-//! Every package has a set of TrustLevel badges. This module verifies
+//! Every package has a set of PackageTrustLevel badges. This module verifies
 //! those badges against the package metadata and optional signatures.
 //! ExecutionController can enforce trust policies via `TrustPolicy`.
 
-use crate::package_format::{RegistryPackage, TrustLevel};
+use crate::package_format::{PackageTrustLevel, RegistryPackage};
 use serde::{Deserialize, Serialize};
 
 /// A trust policy defines what the ExecutionController requires
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustPolicy {
     /// Minimum required trust level.
-    pub min_trust: TrustLevel,
+    pub min_trust: PackageTrustLevel,
     /// Require the publisher to be verified.
     pub require_publisher_verified: bool,
     /// Require cryptographic signature.
@@ -34,7 +34,7 @@ pub struct TrustPolicy {
 impl Default for TrustPolicy {
     fn default() -> Self {
         Self {
-            min_trust: TrustLevel::None,
+            min_trust: PackageTrustLevel::None,
             require_publisher_verified: false,
             require_signed: false,
             require_source: false,
@@ -51,7 +51,7 @@ impl TrustPolicy {
     /// Strict: require Pandora verified + signed + free.
     pub fn strict() -> Self {
         Self {
-            min_trust: TrustLevel::PandoraVerified,
+            min_trust: PackageTrustLevel::PandoraVerified,
             require_signed: true,
             max_price_usd: 0.0,
             ..Default::default()
@@ -65,13 +65,19 @@ impl TrustPolicy {
 
     /// Evaluate a package against this policy.
     /// Returns Ok(()) if the package passes, Err(reason) if not.
-    pub fn evaluate(&self, pkg: &RegistryPackage) -> Result<(), String> {
+    pub fn evaluate(&self, pkg: &RegistryPackage) -> Result<(), crate::PandoraError> {
         // Check publisher allow/block lists
         if !self.allow_publishers.is_empty() && !self.allow_publishers.contains(&pkg.publisher) {
-            return Err(format!("Publisher {} not in allow list", pkg.publisher));
+            return Err(crate::PandoraError::Policy(format!(
+                "Publisher {} not in allow list",
+                pkg.publisher
+            )));
         }
         if self.block_publishers.contains(&pkg.publisher) {
-            return Err(format!("Publisher {} is blocked", pkg.publisher));
+            return Err(crate::PandoraError::Policy(format!(
+                "Publisher {} is blocked",
+                pkg.publisher
+            )));
         }
 
         // Check price
@@ -80,41 +86,41 @@ impl TrustPolicy {
         }
         if let Some(price) = pkg.price_usd {
             if price > self.max_price_usd {
-                return Err(format!(
+                return Err(crate::PandoraError::Policy(format!(
                     "Price ${price:.2} exceeds max ${:.2}",
                     self.max_price_usd
-                ));
+                )));
             }
         }
 
         // Check trust levels
-        let has = |lvl: TrustLevel| pkg.trust_levels.contains(&lvl);
+        let has = |lvl: PackageTrustLevel| pkg.trust_levels.contains(&lvl);
 
-        if self.require_publisher_verified && !has(TrustLevel::PublisherVerified) {
+        if self.require_publisher_verified && !has(PackageTrustLevel::PublisherVerified) {
             return Err("Publisher not verified".into());
         }
-        if self.require_signed && !has(TrustLevel::Signed) {
+        if self.require_signed && !has(PackageTrustLevel::Signed) {
             return Err("Package not signed".into());
         }
-        if self.require_source && !has(TrustLevel::SourceAvailable) {
+        if self.require_source && !has(PackageTrustLevel::SourceAvailable) {
             return Err("Source not available".into());
         }
-        if self.require_reproducible && !has(TrustLevel::ReproducibleBuild) {
+        if self.require_reproducible && !has(PackageTrustLevel::ReproducibleBuild) {
             return Err("Build not reproducible".into());
         }
-        if self.require_audit && !has(TrustLevel::SecurityAudited) {
+        if self.require_audit && !has(PackageTrustLevel::SecurityAudited) {
             return Err("No security audit".into());
         }
 
         // Check minimum trust rank
         if pkg.top_trust().rank() < self.min_trust.rank() {
-            return Err(format!(
+            return Err(crate::PandoraError::Policy(format!(
                 "Trust level {:?} (rank {}) below minimum {:?} (rank {})",
                 pkg.top_trust(),
                 pkg.top_trust().rank(),
                 self.min_trust,
                 self.min_trust.rank()
-            ));
+            )));
         }
 
         Ok(())
@@ -135,7 +141,7 @@ impl TrustPolicy {
                 package_id: pkg.full_id(),
                 top_trust: Some(pkg.top_trust()),
                 badges: pkg.trust_badges(),
-                reason: Some(reason),
+                reason: Some(reason.to_string()),
             },
         }
     }
@@ -146,7 +152,7 @@ impl TrustPolicy {
 pub struct TrustVerdict {
     pub passed: bool,
     pub package_id: String,
-    pub top_trust: Option<TrustLevel>,
+    pub top_trust: Option<PackageTrustLevel>,
     pub badges: String,
     pub reason: Option<String>,
 }
@@ -156,7 +162,7 @@ mod tests {
     use super::*;
     use crate::package_format::PackageManifest;
 
-    fn pkg(paid: bool, trust: Vec<TrustLevel>, publisher: &str) -> RegistryPackage {
+    fn pkg(paid: bool, trust: Vec<PackageTrustLevel>, publisher: &str) -> RegistryPackage {
         RegistryPackage {
             manifest: PackageManifest {
                 id: "test".into(),
@@ -204,7 +210,10 @@ mod tests {
         assert!(TrustPolicy::strict()
             .evaluate(&pkg(
                 false,
-                vec![TrustLevel::PandoraVerified, TrustLevel::Signed],
+                vec![
+                    PackageTrustLevel::PandoraVerified,
+                    PackageTrustLevel::Signed
+                ],
                 "pandora"
             ))
             .is_ok());

@@ -1,0 +1,20 @@
+[package]
+id = "mcp"
+name = "MCP"
+kind = "mcp"
+version = "0.2.0"
+author = "pandora"
+description = "MCP tools via npx"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["mcp", "protocol", "tools"]
+
+[capabilities]
+provided = ["mcp.execute"]
+
+[permissions]
+required = ["mcp.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

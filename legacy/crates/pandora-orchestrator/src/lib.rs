@@ -26,7 +26,7 @@ use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureReco
 use pandora_types::harness::HarnessKind;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::policy_engine::PolicyEngine;
-use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
+use pandora_types::provenance::{ExecutionProvenanceGraph, ProvenanceNodeKind};
 
 use pandora_types::provider_db::{ProviderDb, ProviderObservation};
 use pandora_types::provider_intel::ProviderIntelligenceEngine;
@@ -324,13 +324,15 @@ impl PandoraRuntime {
         self.provenance = ExecutionProvenanceGraph::new(&execution_id);
         let tid = format!("task-{execution_id}");
         let oid = format!("outcome-{execution_id}");
-        self.provenance.add_node(NodeKind::Task, &tid, task);
+        self.provenance
+            .add_node(ProvenanceNodeKind::Task, &tid, task);
         self.provenance.add_node(
-            NodeKind::ExecutionPlan,
+            ProvenanceNodeKind::ExecutionPlan,
             format!("plan-{execution_id}"),
             "plan",
         );
-        self.provenance.add_node(NodeKind::Outcome, &oid, "Pending");
+        self.provenance
+            .add_node(ProvenanceNodeKind::Outcome, &oid, "Pending");
         self.provenance
             .connect(&tid, format!("plan-{execution_id}"), "controller initiated");
 

@@ -16,10 +16,11 @@ pub struct SkillGene {
 
 impl SkillGene {
     /// Load a SKILL.md file from a directory.
-    pub fn load(dir: &Path) -> Result<Self, String> {
+    pub fn load(dir: &Path) -> Result<Self, pandora_types::PandoraError> {
         let skill_path = dir.join("SKILL.md");
-        let content = std::fs::read_to_string(&skill_path)
-            .map_err(|e| format!("Cannot read SKILL.md: {e}"))?;
+        let content = std::fs::read_to_string(&skill_path).map_err(|e| {
+            pandora_types::PandoraError::Internal(format!("Cannot read SKILL.md: {e}"))
+        })?;
 
         // Parse frontmatter (YAML between --- markers)
         let (frontmatter, body) = if content.starts_with("---") {
@@ -70,7 +71,9 @@ impl SkillGene {
                 description
             })
             .build()
-            .map_err(|e| format!("Skill manifest build failed: {e}"))?;
+            .map_err(|e| {
+                pandora_types::PandoraError::Internal(format!("Skill manifest build failed: {e}"))
+            })?;
 
         let mut manifest = manifest;
         manifest.capabilities = triggers;
@@ -90,7 +93,7 @@ impl Gene for SkillGene {
     fn manifest(&self) -> &GeneManifest {
         &self.manifest
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         // Skill genes return their content for system prompt injection
         Ok(format!("{}\n\nTask: {}", self.skill_content, input))
     }

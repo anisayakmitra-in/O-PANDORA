@@ -1,0 +1,20 @@
+[package]
+id = "sqlite"
+name = "SQLite"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "SQLite database queries"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["sqlite", "database", "sql"]
+
+[capabilities]
+provided = ["sqlite.query"]
+
+[permissions]
+required = ["sqlite.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

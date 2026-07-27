@@ -14,9 +14,9 @@ fn mk(id: &str, kind: GeneKind, desc: &str) -> GeneManifest {
         .description(desc).build().expect("hardcoded evaluator manifest must build")
 }
 
-fn run(args: &[&str]) -> Result<String, String> {
+fn run(args: &[&str]) -> Result<String, pandora_types::PandoraError> {
     let out = Command::new(args[0]).args(&args[1..]).output()
-        .map_err(|e| format!("{} not found: {}", args[0], e))?;
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("{} not found: {}", args[0], e)))?;
     let stdout = String::from_utf8_lossy(&out.stdout).to_string();
     let stderr = String::from_utf8_lossy(&out.stderr).to_string();
     if out.status.success() { Ok(stdout) }
@@ -28,7 +28,7 @@ fn run(args: &[&str]) -> Result<String, String> {
 pub trait Evaluator: Gene {
     /// Evaluate whether the output meets the goal.
     /// Returns Ok(pass) with details, or Err(fail) with reason.
-    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String>;
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, pandora_types::PandoraError>;
 }
 
 // ── Rust Tests Evaluator ──
@@ -48,7 +48,7 @@ impl RustTestsEvaluator {
 impl Gene for RustTestsEvaluator {
     fn id(&self) -> &str { &self.m.id }
     fn manifest(&self) -> &GeneManifest { &self.m }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         let dir = if input.trim().is_empty() { "." } else { input.trim() };
         let cmd = std::env::var("CARGO_CMD").unwrap_or_else(|_| "cargo".into());
         let mut args = vec![cmd.as_str(), "test"];
@@ -58,16 +58,16 @@ impl Gene for RustTestsEvaluator {
         let result = run(&args);
         match &result {
             Ok(_) => Ok("✓ Rust tests passed".into()),
-            Err(e) => Err(format!("✗ Rust tests failed: {}", e)),
+            Err(e) => Err(format!("✗ Rust tests failed: {}", e).into()),
         }
     }
 }
 impl Evaluator for RustTestsEvaluator {
-    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String> {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, pandora_types::PandoraError> {
         if output.contains("test result: ok") {
             Ok(format!("✓ Goal met: {} (all tests pass)", goal))
         } else {
-            Err(format!("✗ Goal not met: {}. Tests failed or never ran.", goal))
+            Err(format!("✗ Goal not met: {}. Tests failed or never ran.", goal).into())
         }
     }
 }
@@ -89,18 +89,18 @@ impl PythonTestsEvaluator {
 impl Gene for PythonTestsEvaluator {
     fn id(&self) -> &str { &self.m.id }
     fn manifest(&self) -> &GeneManifest { &self.m }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         let dir = if input.trim().is_empty() { "." } else { input.trim() };
         let cmd = std::env::var("PYTEST_CMD").unwrap_or_else(|_| "pytest".into());
         let mut args = vec![cmd.as_str()];
         if !self.flags.is_empty() { args.extend(self.flags.split_whitespace()); }
         args.push(&format!("{}/tests", dir));
         run(&args).map(|_| "✓ Python tests passed".into())
-            .map_err(|e| format!("✗ Python tests failed: {}", e))
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("✗ Python tests failed: {}", e)))
     }
 }
 impl Evaluator for PythonTestsEvaluator {
-    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String> {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, pandora_types::PandoraError> {
         if output.contains("passed") && !output.contains("failed") {
             Ok(format!("✓ Goal met: {} (pytest passed)", goal))
         } else {
@@ -123,17 +123,17 @@ impl OutputMatchEvaluator {
 impl Gene for OutputMatchEvaluator {
     fn id(&self) -> &str { &self.m.id }
     fn manifest(&self) -> &GeneManifest { &self.m }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         if input.trim().is_empty() { return Err("Usage: <expected-text>".into()); }
         Ok(format!("Expecting output to contain: {}", input))
     }
 }
 impl Evaluator for OutputMatchEvaluator {
-    fn evaluate(&self, output: &str, goal: &str) -> Result<String, String> {
+    fn evaluate(&self, output: &str, goal: &str) -> Result<String, pandora_types::PandoraError> {
         if output.contains(goal) {
             Ok(format!("✓ Goal met: output contains '{}'", goal))
         } else {
-            Err(format!("✗ Goal not met: output does not contain '{}'", goal))
+            Err(format!("✗ Goal not met: output does not contain '{}'", goal).into())
         }
     }
 }

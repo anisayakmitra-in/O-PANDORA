@@ -23,21 +23,10 @@ pub enum MemoryMode {
 
 /// How the execution is scheduled.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-pub enum ExecutionMode {
+pub enum RuntimeMode {
     #[default]
     Single,
     Parallel,
-}
-
-/// When the execution should stop.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
-pub enum ControlStrategy {
-    #[default]
-    SingleShot,
-    Closed,
-    Open,
-    Human,
-    Autonomous,
 }
 
 /// Safety level for execution.
@@ -118,7 +107,7 @@ impl Default for ContextWindowStrategy {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionProperties {
     pub memory_mode: MemoryMode,
-    pub exec_mode: ExecutionMode,
+    pub exec_mode: RuntimeMode,
     pub control: ControlStrategy,
     pub safety_level: SafetyLevel,
     pub execution_backend: ExecutionBackend,
@@ -140,7 +129,7 @@ impl Default for ExecutionProperties {
     fn default() -> Self {
         Self {
             memory_mode: MemoryMode::default(),
-            exec_mode: ExecutionMode::default(),
+            exec_mode: RuntimeMode::default(),
             control: ControlStrategy::default(),
             safety_level: SafetyLevel::default(),
             execution_backend: ExecutionBackend::default(),
@@ -307,7 +296,7 @@ mod tests {
     fn execution_properties_defaults() {
         let props = ExecutionProperties::default();
         assert_eq!(props.memory_mode, MemoryMode::Local);
-        assert_eq!(props.exec_mode, ExecutionMode::Single);
+        assert_eq!(props.exec_mode, RuntimeMode::Single);
         assert_eq!(props.safety_level, SafetyLevel::Medium);
     }
 
@@ -324,12 +313,12 @@ mod tests {
     #[test]
     fn custom_properties_override() {
         let props = ExecutionProperties {
-            exec_mode: ExecutionMode::Single,
+            exec_mode: RuntimeMode::Single,
             control: ControlStrategy::Open,
             reasoning_depth: 5,
             ..Default::default()
         };
-        assert_eq!(props.exec_mode, ExecutionMode::Single);
+        assert_eq!(props.exec_mode, RuntimeMode::Single);
         assert_eq!(props.reasoning_depth, 5);
     }
 
@@ -352,3 +341,8 @@ mod tests {
         assert_eq!(format!("{:?}", MemoryMode::ANUBIS), "ANUBIS");
     }
 }
+
+// Re-export ControlStrategy from execution_plan (canonical definition).
+//
+// The duplicate in this module has been removed to avoid type confusion.
+pub use crate::execution_plan::ControlStrategy;

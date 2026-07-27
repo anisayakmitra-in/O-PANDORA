@@ -19,7 +19,7 @@ pub struct RegistryEntry {
     pub version: String,
     pub kind: String,
     pub capabilities: Vec<String>,
-    pub health: HealthStatus,
+    pub health: RegistryHealth,
     pub signature: Option<String>,
     pub metadata: HashMap<String, String>,
 }
@@ -27,7 +27,7 @@ pub struct RegistryEntry {
 /// Health status of a registry entry.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum HealthStatus {
+pub enum RegistryHealth {
     Healthy,
     Warning,
     Degraded,
@@ -35,7 +35,7 @@ pub enum HealthStatus {
     Unknown,
 }
 
-impl HealthStatus {
+impl RegistryHealth {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Healthy => "healthy",
@@ -50,7 +50,7 @@ impl HealthStatus {
 /// The universal registry interface.
 pub trait Registry {
     /// Register a new entry.
-    fn register(&mut self, entry: RegistryEntry) -> Result<(), String>;
+    fn register(&mut self, entry: RegistryEntry) -> Result<(), crate::PandoraError>;
 
     /// Discover entries matching a capability.
     fn discover_by_capability(&self, capability: &str) -> Vec<&RegistryEntry>;
@@ -62,7 +62,7 @@ pub trait Registry {
     fn list_by_kind(&self, kind: &str) -> Vec<&RegistryEntry>;
 
     /// Remove an entry.
-    fn unregister(&mut self, id: &str) -> Result<(), String>;
+    fn unregister(&mut self, id: &str) -> Result<(), crate::PandoraError>;
 
     /// Count total entries.
     fn count(&self) -> usize;
@@ -81,9 +81,9 @@ impl InMemoryRegistry {
 }
 
 impl Registry for InMemoryRegistry {
-    fn register(&mut self, entry: RegistryEntry) -> Result<(), String> {
+    fn register(&mut self, entry: RegistryEntry) -> Result<(), crate::PandoraError> {
         if self.entries.contains_key(&entry.id) {
-            return Err(format!("Duplicate entry: {}", entry.id));
+            return Err(format!("Duplicate entry: {}", entry.id).into());
         }
         self.entries.insert(entry.id.clone(), entry);
         Ok(())
@@ -104,11 +104,11 @@ impl Registry for InMemoryRegistry {
         self.entries.values().filter(|e| e.kind == kind).collect()
     }
 
-    fn unregister(&mut self, id: &str) -> Result<(), String> {
+    fn unregister(&mut self, id: &str) -> Result<(), crate::PandoraError> {
         self.entries
             .remove(id)
             .map(|_| ())
-            .ok_or_else(|| format!("Entry not found: {id}"))
+            .ok_or_else(|| crate::PandoraError::NotFound(format!("Entry not found: {id}")))
     }
 
     fn count(&self) -> usize {
@@ -127,7 +127,7 @@ mod tests {
             version: "1.0.0".into(),
             kind: kind.into(),
             capabilities: vec!["test".into()],
-            health: HealthStatus::Healthy,
+            health: RegistryHealth::Healthy,
             signature: None,
             metadata: HashMap::new(),
         }
@@ -157,7 +157,7 @@ mod tests {
             version: "1.0.0".into(),
             kind: "gene".into(),
             capabilities: vec!["code".into(), "lint".into()],
-            health: HealthStatus::Healthy,
+            health: RegistryHealth::Healthy,
             signature: None,
             metadata: HashMap::new(),
         })
@@ -168,7 +168,7 @@ mod tests {
             version: "1.0.0".into(),
             kind: "gene".into(),
             capabilities: vec!["browser".into()],
-            health: HealthStatus::Healthy,
+            health: RegistryHealth::Healthy,
             signature: None,
             metadata: HashMap::new(),
         })

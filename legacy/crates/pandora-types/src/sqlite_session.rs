@@ -12,7 +12,7 @@ pub struct SqliteSessionStore {
 }
 
 impl SqliteSessionStore {
-    pub fn new(db_path: PathBuf) -> Result<Self, String> {
+    pub fn new(db_path: PathBuf) -> Result<Self, crate::PandoraError> {
         let conn =
             Connection::open(&db_path).map_err(|e| format!("Cannot open session DB: {e}"))?;
         conn.execute_batch(
@@ -54,7 +54,12 @@ impl SqliteSessionStore {
         })
     }
 
-    pub fn create_session(&self, id: &str, task: &str, domain: &str) -> Result<(), String> {
+    pub fn create_session(
+        &self,
+        id: &str,
+        task: &str,
+        domain: &str,
+    ) -> Result<(), crate::PandoraError> {
         let conn = self.conn.lock().map_err(|e| format!("DB lock: {e}"))?;
         conn.execute(
             "INSERT OR REPLACE INTO sessions (id, task, status, domain, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -69,7 +74,7 @@ impl SqliteSessionStore {
         status: &str,
         provider: &str,
         model: &str,
-    ) -> Result<(), String> {
+    ) -> Result<(), crate::PandoraError> {
         let conn = self.conn.lock().map_err(|e| format!("DB lock: {e}"))?;
         conn.execute(
             "UPDATE sessions SET status = ?1, provider = ?2, model = ?3, completed_at = ?4 WHERE id = ?5",
@@ -137,7 +142,7 @@ impl SqliteSessionStore {
         duration_ms: u64,
         tokens: usize,
         success: bool,
-    ) -> Result<(), String> {
+    ) -> Result<(), crate::PandoraError> {
         let conn = self.conn.lock().map_err(|e| format!("DB lock: {e}"))?;
         conn.execute(
             "INSERT OR REPLACE INTO execution_frames (frame_id, session_id, step_kind, step_label, provider, model, duration_ms, tokens_used, success, timestamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
@@ -146,7 +151,7 @@ impl SqliteSessionStore {
         Ok(())
     }
 
-    pub fn session_count(&self) -> Result<usize, String> {
+    pub fn session_count(&self) -> Result<usize, crate::PandoraError> {
         let conn = self.conn.lock().map_err(|e| format!("DB lock: {e}"))?;
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))

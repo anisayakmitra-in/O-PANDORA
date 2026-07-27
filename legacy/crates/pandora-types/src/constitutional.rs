@@ -778,11 +778,11 @@ impl Default for ManifestValidator {
 
 pub trait ManifestSerializer: Send + Sync {
     fn format_name(&self) -> &str;
-    fn serialize(&self, m: &ConstitutionalManifest) -> Result<String, String>;
+    fn serialize(&self, m: &ConstitutionalManifest) -> Result<String, crate::PandoraError>;
 }
 pub trait ManifestDeserializer: Send + Sync {
     fn format_name(&self) -> &str;
-    fn deserialize(&self, s: &str) -> Result<ConstitutionalManifest, String>;
+    fn deserialize(&self, s: &str) -> Result<ConstitutionalManifest, crate::PandoraError>;
 }
 
 pub struct JsonManifestSerializer;
@@ -800,16 +800,16 @@ impl ManifestSerializer for JsonManifestSerializer {
     fn format_name(&self) -> &str {
         "json"
     }
-    fn serialize(&self, m: &ConstitutionalManifest) -> Result<String, String> {
-        serde_json::to_string_pretty(m).map_err(|e| e.to_string())
+    fn serialize(&self, m: &ConstitutionalManifest) -> Result<String, crate::PandoraError> {
+        serde_json::to_string_pretty(m).map_err(|e| crate::PandoraError::Internal(e.to_string()))
     }
 }
 impl ManifestDeserializer for JsonManifestSerializer {
     fn format_name(&self) -> &str {
         "json"
     }
-    fn deserialize(&self, s: &str) -> Result<ConstitutionalManifest, String> {
-        serde_json::from_str(s).map_err(|e| e.to_string())
+    fn deserialize(&self, s: &str) -> Result<ConstitutionalManifest, crate::PandoraError> {
+        serde_json::from_str(s).map_err(|e| crate::PandoraError::Internal(e.to_string()))
     }
 }
 
@@ -828,7 +828,7 @@ impl ManifestSerializer for YamlManifestSerializer {
     fn format_name(&self) -> &str {
         "yaml"
     }
-    fn serialize(&self, _m: &ConstitutionalManifest) -> Result<String, String> {
+    fn serialize(&self, _m: &ConstitutionalManifest) -> Result<String, crate::PandoraError> {
         Err("YAML support requires the serde_yaml feature".into())
     }
 }
@@ -836,7 +836,7 @@ impl ManifestDeserializer for YamlManifestSerializer {
     fn format_name(&self) -> &str {
         "yaml"
     }
-    fn deserialize(&self, _s: &str) -> Result<ConstitutionalManifest, String> {
+    fn deserialize(&self, _s: &str) -> Result<ConstitutionalManifest, crate::PandoraError> {
         Err("YAML support requires the serde_yaml feature".into())
     }
 }
@@ -856,7 +856,7 @@ impl ManifestSerializer for TomlManifestSerializer {
     fn format_name(&self) -> &str {
         "toml"
     }
-    fn serialize(&self, _m: &ConstitutionalManifest) -> Result<String, String> {
+    fn serialize(&self, _m: &ConstitutionalManifest) -> Result<String, crate::PandoraError> {
         Err("TOML support requires the toml feature".into())
     }
 }
@@ -864,7 +864,7 @@ impl ManifestDeserializer for TomlManifestSerializer {
     fn format_name(&self) -> &str {
         "toml"
     }
-    fn deserialize(&self, _s: &str) -> Result<ConstitutionalManifest, String> {
+    fn deserialize(&self, _s: &str) -> Result<ConstitutionalManifest, crate::PandoraError> {
         Err("TOML support requires the toml feature".into())
     }
 }

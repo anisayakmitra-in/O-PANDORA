@@ -23,7 +23,7 @@ impl AndroidUseHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("android-use")
                 .name("Android Use")
-                .version("0.2.0")
+                .version(env!("CARGO_PKG_VERSION"))
                 .author("pandora")
                 .kind(HarnessKind::Domain)
                 .description("Phone automation — tap, swipe, type, screenshot, app control via ADB")
@@ -47,25 +47,29 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .id(id)
         .name(desc)
         .kind(GeneKind::Tool)
-        .version("0.2.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
         .build()
         .unwrap()
 }
 
-fn adb(args: &[&str]) -> Result<String, String> {
+fn adb(args: &[&str]) -> Result<String, pandora_types::PandoraError> {
     std::process::Command::new("adb")
         .args(args)
         .output()
-        .map_err(|e| format!("adb not found: {e} — install Android SDK platform-tools"))
+        .map_err(|e| {
+            pandora_types::PandoraError::Internal(format!(
+                "adb not found: {e} — install Android SDK platform-tools"
+            ))
+        })
         .and_then(|o| {
             let out = String::from_utf8_lossy(&o.stdout).trim().to_string();
             let err = String::from_utf8_lossy(&o.stderr).trim().to_string();
             if !o.status.success() && !out.is_empty() {
                 Ok(out)
             } else if !err.is_empty() {
-                Err(err)
+                Err(err.into())
             } else {
                 Ok(out)
             }
@@ -92,7 +96,7 @@ macro_rules! android_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, input: &str) -> Result<String, String> {
+            fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
                 adb(&[
                     "shell",
                     "echo",

@@ -1,0 +1,20 @@
+[package]
+id = "github"
+name = "GitHub"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "GitHub CLI operations — pr, issue, repo"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["github", "devops", "ci"]
+
+[capabilities]
+provided = ["github.pr", "github.issue", "github.repo"]
+
+[permissions]
+required = ["github.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

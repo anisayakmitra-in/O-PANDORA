@@ -114,7 +114,7 @@ pub enum ControlStrategy {
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum ExecutionMode {
+pub enum RuntimeMode {
     #[default]
     Single,
     Parallel,
@@ -143,7 +143,7 @@ pub enum EvaluatorKind {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-pub enum ExecutionStatus {
+pub enum PlanExecutionStatus {
     #[default]
     Pending,
     Running,
@@ -161,7 +161,7 @@ pub enum ExecutionStatus {
 pub struct ExecutionPlan {
     pub instruction: String,
     pub workflow: String,
-    pub execution_mode: ExecutionMode,
+    pub execution_mode: RuntimeMode,
     pub control_strategy: ControlStrategy,
     pub trigger: ExecutionTrigger,
     pub evaluator: EvaluatorKind,
@@ -177,7 +177,7 @@ impl Default for ExecutionPlan {
         Self {
             instruction: String::new(),
             workflow: "default".into(),
-            execution_mode: ExecutionMode::Single,
+            execution_mode: RuntimeMode::Single,
             control_strategy: ControlStrategy::SingleShot,
             trigger: ExecutionTrigger::Manual,
             evaluator: EvaluatorKind::None,
@@ -229,7 +229,7 @@ pub struct ExecutionState {
     pub retries: u32,
     pub current_provider: String,
     pub current_harness: String,
-    pub status: ExecutionStatus,
+    pub status: PlanExecutionStatus,
     pub elapsed_ms: u64,
     pub started_at: String,
 }
@@ -242,7 +242,7 @@ impl Default for ExecutionState {
             retries: 0,
             current_provider: "none".into(),
             current_harness: "none".into(),
-            status: ExecutionStatus::Pending,
+            status: PlanExecutionStatus::Pending,
             elapsed_ms: 0,
             started_at: chrono::Utc::now().to_rfc3339(),
         }
@@ -254,7 +254,7 @@ impl Default for ExecutionState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExecutionOutcome {
     pub session_id: String,
-    pub status: ExecutionStatus,
+    pub status: PlanExecutionStatus,
     pub attempts: u32,
     pub retries: u32,
     pub evaluator_result: String,

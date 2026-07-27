@@ -52,7 +52,7 @@ pub struct ProvenanceNode {
     /// Human-readable label.
     pub label: String,
     /// The kind of node.
-    pub kind: NodeKind,
+    pub kind: ProvenanceNodeKind,
     /// Arbitrary key-value metadata (stage output, scores, timings).
     pub metadata: HashMap<String, String>,
 }
@@ -60,7 +60,7 @@ pub struct ProvenanceNode {
 #[non_exhaustive]
 /// The kind of a provenance node.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum NodeKind {
+pub enum ProvenanceNodeKind {
     Task,
     ExecutionPlan,
     Workflow,
@@ -137,7 +137,7 @@ impl ExecutionProvenanceGraph {
     /// Add a node to the graph. Returns the node ID.
     pub fn add_node(
         &mut self,
-        kind: NodeKind,
+        kind: ProvenanceNodeKind,
         id: impl Into<String>,
         label: impl Into<String>,
     ) -> String {
@@ -155,7 +155,7 @@ impl ExecutionProvenanceGraph {
     /// Add a node with metadata.
     pub fn add_node_with_meta(
         &mut self,
-        kind: NodeKind,
+        kind: ProvenanceNodeKind,
         id: impl Into<String>,
         label: impl Into<String>,
         meta: HashMap<String, String>,
@@ -202,13 +202,15 @@ impl ExecutionProvenanceGraph {
     }
 
     /// Find all nodes of a given kind.
-    pub fn nodes_by_kind(&self, kind: NodeKind) -> Vec<&ProvenanceNode> {
+    pub fn nodes_by_kind(&self, kind: ProvenanceNodeKind) -> Vec<&ProvenanceNode> {
         self.nodes.values().filter(|n| n.kind == kind).collect()
     }
 
     /// Get the root node (Task kind) if any.
     pub fn root(&self) -> Option<&ProvenanceNode> {
-        self.nodes.values().find(|n| n.kind == NodeKind::Task)
+        self.nodes
+            .values()
+            .find(|n| n.kind == ProvenanceNodeKind::Task)
     }
 
     /// Number of nodes in the graph.
@@ -234,7 +236,7 @@ impl ExecutionProvenanceGraph {
     pub fn render(&self) -> String {
         let mut out = format!("Execution Provenance Graph — {}\n\n", self.execution_id);
         // Group nodes by kind
-        let mut by_kind: HashMap<NodeKind, Vec<&ProvenanceNode>> = HashMap::new();
+        let mut by_kind: HashMap<ProvenanceNodeKind, Vec<&ProvenanceNode>> = HashMap::new();
         for node in self.nodes.values() {
             by_kind.entry(node.kind.clone()).or_default().push(node);
         }
@@ -263,7 +265,7 @@ impl ExecutionProvenanceGraph {
 /// Walks the graph and extracts decision nodes and their edges.
 pub fn extract_decision_log(graph: &ExecutionProvenanceGraph) -> Vec<String> {
     let mut log = Vec::new();
-    let decisions = graph.nodes_by_kind(NodeKind::Decision);
+    let decisions = graph.nodes_by_kind(ProvenanceNodeKind::Decision);
     for d in decisions {
         let incoming = graph.incoming(&d.id);
         let outgoing = graph.outgoing(&d.id);
@@ -290,27 +292,43 @@ mod tests {
 
     fn sample_graph() -> ExecutionProvenanceGraph {
         let mut g = ExecutionProvenanceGraph::new("exec-24af31");
-        g.add_node(NodeKind::Task, "task-1", "Implement JWT auth");
+        g.add_node(ProvenanceNodeKind::Task, "task-1", "Implement JWT auth");
         g.add_node(
-            NodeKind::ExecutionPlan,
+            ProvenanceNodeKind::ExecutionPlan,
             "plan-1",
             "SingleShot with RustTests evaluator",
         );
-        g.add_node(NodeKind::Workflow, "wf-1", "auto-workflow (2 steps)");
-        g.add_node(NodeKind::Harness, "harness-coding", "CodingDomainHarness");
-        g.add_node(NodeKind::Gene, "gene-shell", "ShellGene");
         g.add_node(
-            NodeKind::Provider,
+            ProvenanceNodeKind::Workflow,
+            "wf-1",
+            "auto-workflow (2 steps)",
+        );
+        g.add_node(
+            ProvenanceNodeKind::Harness,
+            "harness-coding",
+            "CodingDomainHarness",
+        );
+        g.add_node(ProvenanceNodeKind::Gene, "gene-shell", "ShellGene");
+        g.add_node(
+            ProvenanceNodeKind::Provider,
             "provider-ollama",
             "Ollama (default-model)",
         );
-        g.add_node(NodeKind::Evaluator, "eval-rust", "RustTestsEvaluator");
         g.add_node(
-            NodeKind::Decision,
+            ProvenanceNodeKind::Evaluator,
+            "eval-rust",
+            "RustTestsEvaluator",
+        );
+        g.add_node(
+            ProvenanceNodeKind::Decision,
             "dec-select-provider",
             "Provider Selection",
         );
-        g.add_node(NodeKind::Outcome, "outcome-1", "Completed — all tests pass");
+        g.add_node(
+            ProvenanceNodeKind::Outcome,
+            "outcome-1",
+            "Completed — all tests pass",
+        );
         g.connect("task-1", "plan-1", "controller call");
         g.connect("plan-1", "wf-1", "workflow instantiation");
         g.connect("wf-1", "harness-coding", "domain dispatch");
@@ -332,7 +350,7 @@ mod tests {
     fn graph_root() {
         let g = sample_graph();
         let root = g.root().unwrap();
-        assert_eq!(root.kind, NodeKind::Task);
+        assert_eq!(root.kind, ProvenanceNodeKind::Task);
         assert_eq!(root.label, "Implement JWT auth");
     }
 
@@ -355,7 +373,11 @@ mod tests {
     #[test]
     fn nodes_by_kind() {
         let g = sample_graph();
-        let kinds: Vec<NodeKind> = vec![NodeKind::Task, NodeKind::Decision, NodeKind::Outcome];
+        let kinds: Vec<ProvenanceNodeKind> = vec![
+            ProvenanceNodeKind::Task,
+            ProvenanceNodeKind::Decision,
+            ProvenanceNodeKind::Outcome,
+        ];
         for kind in &kinds {
             assert!(
                 !g.nodes_by_kind(kind.clone()).is_empty(),

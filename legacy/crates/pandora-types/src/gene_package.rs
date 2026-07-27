@@ -18,7 +18,7 @@ pub struct GenePackage {
 }
 
 /// The gene.toml manifest — mirrors GeneManifest for filesystem discovery.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GenePackageManifest {
     pub id: String,
     pub name: String,
@@ -41,7 +41,8 @@ pub struct GenePackageManifest {
     pub tags: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SlashCommandDef {
     pub command: String,
     pub description: String,

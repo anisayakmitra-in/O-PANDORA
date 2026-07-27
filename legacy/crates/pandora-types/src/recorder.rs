@@ -185,12 +185,17 @@ impl ExecutionRecorder {
         &mut self,
         replay_id: &ReplayId,
         frame: ExecutionFrame,
-    ) -> Result<(), String> {
+    ) -> Result<(), crate::PandoraError> {
         self.recordings
             .iter_mut()
             .find(|r| r.replay_id == *replay_id)
             .map(|rec| rec.frames.push(frame))
-            .ok_or_else(|| format!("no recording found for replay {}", replay_id.0))
+            .ok_or_else(|| {
+                crate::PandoraError::Internal(format!(
+                    "no recording found for replay {}",
+                    replay_id.0
+                ))
+            })
     }
 
     pub fn finalize(
@@ -201,7 +206,7 @@ impl ExecutionRecorder {
         total_cost: f64,
         total_retries: u32,
         success: bool,
-    ) -> Result<(), String> {
+    ) -> Result<(), crate::PandoraError> {
         self.recordings
             .iter_mut()
             .find(|r| r.replay_id == *replay_id)
@@ -212,7 +217,12 @@ impl ExecutionRecorder {
                 rec.total_retries = total_retries;
                 rec.success = success;
             })
-            .ok_or_else(|| format!("no recording found for replay {}", replay_id.0))
+            .ok_or_else(|| {
+                crate::PandoraError::Internal(format!(
+                    "no recording found for replay {}",
+                    replay_id.0
+                ))
+            })
     }
 
     pub fn get(&self, replay_id: &ReplayId) -> Option<&RecordedExecution> {

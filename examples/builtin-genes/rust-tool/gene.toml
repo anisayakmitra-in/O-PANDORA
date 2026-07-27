@@ -1,0 +1,20 @@
+[package]
+id = "rust-tool"
+name = "Rust Tool"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Cargo subcommands — build, test, clippy, fmt"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["rust", "cargo", "compilation"]
+
+[capabilities]
+provided = ["rust.build", "rust.test", "rust.lint"]
+
+[permissions]
+required = ["rust.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

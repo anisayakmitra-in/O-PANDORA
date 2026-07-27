@@ -42,21 +42,27 @@ impl SandboxGene {
 
     /// Run a command in a disposable container.
     /// Returns stdout + stderr.
-    pub fn run_in_sandbox(&self, image: &str, command: &str) -> Result<String, String> {
+    pub fn run_in_sandbox(
+        &self,
+        image: &str,
+        command: &str,
+    ) -> Result<String, pandora_types::PandoraError> {
         // Create and run a disposable container
         let output = Command::new("docker")
             .args(["run", "--rm", image, "sh", "-c", command])
             .output()
-            .map_err(|e| format!("Docker not available: {e}"))?;
+            .map_err(|e| {
+                pandora_types::PandoraError::Internal(format!("Docker not available: {e}"))
+            })?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
         if !output.status.success() {
-            return Err(format!(
+            return Err(pandora_types::PandoraError::Internal(format!(
                 "Sandbox exit code: {:?}\nstdout: {stdout}\nstderr: {stderr}",
                 output.status.code()
-            ));
+            )));
         }
 
         Ok(if stderr.is_empty() {
@@ -72,7 +78,7 @@ impl SandboxGene {
         image: &str,
         command: &str,
         mount_path: &str,
-    ) -> Result<String, String> {
+    ) -> Result<String, pandora_types::PandoraError> {
         let mount_arg = format!("{mount_path}:/workspace");
         let workdir_arg = "/workspace";
         let output = Command::new("docker")
@@ -89,16 +95,18 @@ impl SandboxGene {
                 command,
             ])
             .output()
-            .map_err(|e| format!("Docker not available: {e}"))?;
+            .map_err(|e| {
+                pandora_types::PandoraError::Internal(format!("Docker not available: {e}"))
+            })?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
         if !output.status.success() {
-            return Err(format!(
+            return Err(pandora_types::PandoraError::Internal(format!(
                 "Sandbox exit: {:?}\n{stdout}\n{stderr}",
                 output.status.code()
-            ));
+            )));
         }
 
         Ok(if stderr.is_empty() {
@@ -129,7 +137,7 @@ impl Gene for SandboxGene {
         &self.manifest
     }
 
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         // Parse input: "image:command" or just "command" (defaults to ubuntu)
         let (image, command) = if let Some(idx) = input.find(':') {
             if input[..idx].contains('/') || input[..idx].contains('.') {
@@ -149,7 +157,7 @@ impl Gene for SandboxGene {
         self.run_in_sandbox(image, command)
     }
 
-    fn validate(&self) -> Result<(), String> {
+    fn validate(&self) -> Result<(), pandora_types::PandoraError> {
         if Self::is_available() {
             Ok(())
         } else {

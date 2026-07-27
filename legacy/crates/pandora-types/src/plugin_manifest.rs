@@ -101,13 +101,15 @@ impl PluginManifest {
     }
 
     /// Serialize to JSON.
-    pub fn to_json(&self) -> Result<String, String> {
-        serde_json::to_string_pretty(self).map_err(|e| format!("serialize: {e}"))
+    pub fn to_json(&self) -> Result<String, crate::PandoraError> {
+        serde_json::to_string_pretty(self)
+            .map_err(|e| crate::PandoraError::Internal(format!("serialize: {e}")))
     }
 
     /// Deserialize from JSON.
-    pub fn from_json(json: &str) -> Result<Self, String> {
-        serde_json::from_str(json).map_err(|e| format!("deserialize: {e}"))
+    pub fn from_json(json: &str) -> Result<Self, crate::PandoraError> {
+        serde_json::from_str(json)
+            .map_err(|e| crate::PandoraError::Internal(format!("deserialize: {e}")))
     }
 
     /// Check if all required dependencies are present in a list of available plugins.

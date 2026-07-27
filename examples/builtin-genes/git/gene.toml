@@ -1,0 +1,20 @@
+[package]
+id = "git"
+name = "Git"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Git version control operations — commit, diff, log, branch, merge"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["git", "vcs", "version-control"]
+
+[capabilities]
+provided = ["git.version-control", "git.diff", "git.log"]
+
+[permissions]
+required = ["git.execute", "filesystem.read"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

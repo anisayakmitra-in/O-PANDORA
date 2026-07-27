@@ -62,13 +62,16 @@ impl ModelRegistry {
     }
 
     /// Save the registry to disk.
-    pub fn save(&self) -> Result<(), String> {
+    pub fn save(&self) -> Result<(), crate::PandoraError> {
         let path = Self::cache_path();
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| format!("mkdir: {e}"))?;
+            std::fs::create_dir_all(parent)
+                .map_err(|e| crate::PandoraError::Internal(format!("mkdir: {e}")))?;
         }
-        let json = serde_json::to_string_pretty(self).map_err(|e| format!("serialize: {e}"))?;
-        std::fs::write(&path, json).map_err(|e| format!("write: {e}"))
+        let json = serde_json::to_string_pretty(self)
+            .map_err(|e| crate::PandoraError::Internal(format!("serialize: {e}")))?;
+        std::fs::write(&path, json)
+            .map_err(|e| crate::PandoraError::Internal(format!("write: {e}")))
     }
 
     /// Register a model discovered from a provider.

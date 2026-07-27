@@ -56,7 +56,7 @@ pub fn sign_package(
     publisher: &str,
     secret_key_b64: &str,
     archive_hash: &str,
-) -> Result<PackageSignature, String> {
+) -> Result<PackageSignature, crate::PandoraError> {
     let pkcs8_bytes =
         base64_decode(secret_key_b64).map_err(|e| format!("Invalid secret key: {e}"))?;
     let key_pair =
@@ -83,7 +83,7 @@ pub fn sign_package(
 }
 
 /// Verify a package signature against the public key and original data.
-pub fn verify_signature(sig: &PackageSignature, data: &[u8]) -> Result<bool, String> {
+pub fn verify_signature(sig: &PackageSignature, data: &[u8]) -> Result<bool, crate::PandoraError> {
     let public_key_bytes =
         base64_decode(&sig.public_key).map_err(|e| format!("Invalid public key: {e}"))?;
     let signature_bytes =

@@ -25,7 +25,7 @@ pub struct ExecutionRecord {
 pub struct ExecutionArtifact {
     pub artifact_id: String,
     pub name: String,
-    pub kind: ArtifactKind,
+    pub kind: MemoryArtifactKind,
     pub size_bytes: u64,
     pub created_at_ms: u64,
 }
@@ -33,7 +33,7 @@ pub struct ExecutionArtifact {
 #[non_exhaustive]
 /// Kinds of execution artifacts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ArtifactKind {
+pub enum MemoryArtifactKind {
     Output,
     Log,
     Diagnostic,

@@ -41,36 +41,50 @@ impl EventStore {
     }
 
     /// Flush all buffered events to disk.
-    pub fn flush(&self) -> Result<(), String> {
-        let mut buf = self.buffer.lock().map_err(|e| e.to_string())?;
+    pub fn flush(&self) -> Result<(), crate::PandoraError> {
+        let mut buf = self
+            .buffer
+            .lock()
+            .map_err(|e| crate::PandoraError::Internal(e.to_string()))?;
         let events: Vec<(String, PipelineEvent)> = buf.drain(..).collect();
         for (session_id, event) in events {
             let path = self.dir.join(format!("{}.events.json", session_id));
-            let line = serde_json::to_string(&event).map_err(|e| e.to_string())?;
+            let line = serde_json::to_string(&event)
+                .map_err(|e| crate::PandoraError::Internal(e.to_string()))?;
             let mut file = fs::OpenOptions::new()
                 .create(true)
                 .append(true)
                 .open(&path)
-                .map_err(|e| format!("Cannot open event file: {e}"))?;
+                .map_err(|e| {
+                    crate::PandoraError::Internal(format!("Cannot open event file: {e}"))
+                })?;
             use std::io::Write;
-            writeln!(file, "{}", line).map_err(|e| format!("Cannot write event: {e}"))?;
+            writeln!(file, "{}", line)
+                .map_err(|e| crate::PandoraError::Internal(format!("Cannot write event: {e}")))?;
         }
         Ok(())
     }
 
     /// Read all events for a session, in order.
-    pub fn read_events(&self, session_id: &str) -> Result<Vec<PipelineEvent>, String> {
+    pub fn read_events(&self, session_id: &str) -> Result<Vec<PipelineEvent>, crate::PandoraError> {
         let path = self.dir.join(format!("{}.events.json", session_id));
-        let content = fs::read_to_string(&path).map_err(|e| format!("Cannot read events: {e}"))?;
+        let content = fs::read_to_string(&path)
+            .map_err(|e| crate::PandoraError::Internal(format!("Cannot read events: {e}")))?;
         content
             .lines()
             .filter(|l| !l.is_empty())
-            .map(|l| serde_json::from_str(l).map_err(|e| format!("Parse error: {e}")))
+            .map(|l| {
+                serde_json::from_str(l)
+                    .map_err(|e| crate::PandoraError::Internal(format!("Parse error: {e}")))
+            })
             .collect()
     }
 
     /// Reconstruct an execution timeline from events.
-    pub fn reconstruct_timeline(&self, session_id: &str) -> Result<Vec<String>, String> {
+    pub fn reconstruct_timeline(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<String>, crate::PandoraError> {
         let events = self.read_events(session_id)?;
         let mut timeline = Vec::new();
         for event in &events {
@@ -121,7 +135,7 @@ impl EventStore {
     }
 
     /// Count events for a session.
-    pub fn event_count(&self, session_id: &str) -> Result<usize, String> {
+    pub fn event_count(&self, session_id: &str) -> Result<usize, crate::PandoraError> {
         self.read_events(session_id).map(|e| e.len())
     }
 

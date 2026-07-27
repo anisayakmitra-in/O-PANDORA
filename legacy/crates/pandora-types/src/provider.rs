@@ -72,7 +72,7 @@ pub struct ExecutionTarget {
 /// The Provider trait — any LLM backend implements this.
 pub trait Provider: Send + Sync {
     fn name(&self) -> &str;
-    fn generate(&self, request: GenerationRequest) -> Result<String, String>;
+    fn generate(&self, request: GenerationRequest) -> Result<String, crate::PandoraError>;
     fn manifest(&self) -> ProviderManifest {
         ProviderManifest::default()
     }
@@ -85,7 +85,7 @@ pub trait Provider: Send + Sync {
         request: GenerationRequest,
         _tools: &[ToolDefinition],
         _messages: &[ChatMessage],
-    ) -> Result<ChatCompletion, String> {
+    ) -> Result<ChatCompletion, crate::PandoraError> {
         // Default: no tool support, just call generate and wrap the result.
         let text = self.generate(request)?;
         Ok(ChatCompletion {
@@ -107,7 +107,7 @@ pub trait Provider: Send + Sync {
         &self,
         request: GenerationRequest,
         callback: &StreamCallback,
-    ) -> Result<String, String> {
+    ) -> Result<String, crate::PandoraError> {
         let text = self.generate(request)?;
         callback(StreamChunk {
             text: text.clone(),
@@ -177,7 +177,7 @@ pub mod ollama {
                 locality: "local".into(),
             }
         }
-        fn generate(&self, request: GenerationRequest) -> Result<String, String> {
+        fn generate(&self, request: GenerationRequest) -> Result<String, crate::PandoraError> {
             let url = format!("{}/api/generate", self.endpoint);
             let body = serde_json::json!({
                 "model": self.model, "prompt": request.prompt,
@@ -206,7 +206,7 @@ pub mod ollama {
             &self,
             request: GenerationRequest,
             callback: &StreamCallback,
-        ) -> Result<String, String> {
+        ) -> Result<String, crate::PandoraError> {
             let url = format!("{}/api/generate", self.endpoint);
             let body = serde_json::json!({
                 "model": self.model, "prompt": request.prompt,
@@ -251,7 +251,7 @@ pub mod ollama {
             request: GenerationRequest,
             tools: &[ToolDefinition],
             messages: &[ChatMessage],
-        ) -> Result<ChatCompletion, String> {
+        ) -> Result<ChatCompletion, crate::PandoraError> {
             let url = format!("{}/api/chat", self.endpoint);
 
             // Convert messages to Ollama chat format

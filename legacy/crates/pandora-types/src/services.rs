@@ -63,69 +63,69 @@ pub trait Service: Send + Sync + std::fmt::Debug {
     /// Semantic version of this implementation.
     fn version(&self) -> &str;
     /// Health check. Returns `Ok(())` if healthy.
-    fn health(&self) -> Result<(), String> {
+    fn health(&self) -> Result<(), crate::PandoraError> {
         Ok(())
     }
 }
 
 /// Key-value memory for short-term and long-term storage.
 pub trait MemoryService: Service {
-    fn store(&self, namespace: &str, key: &str, value: &[u8]) -> Result<(), String>;
-    fn retrieve(&self, namespace: &str, key: &str) -> Result<Option<Vec<u8>>, String>;
-    fn forget(&self, namespace: &str, key: &str) -> Result<(), String>;
-    fn search(&self, namespace: &str, query: &str) -> Result<Vec<String>, String>;
-    fn archive(&self, namespace: &str, key: &str) -> Result<(), String>;
-    fn summarize(&self, namespace: &str) -> Result<String, String>;
+    fn store(&self, namespace: &str, key: &str, value: &[u8]) -> Result<(), crate::PandoraError>;
+    fn retrieve(&self, namespace: &str, key: &str) -> Result<Option<Vec<u8>>, crate::PandoraError>;
+    fn forget(&self, namespace: &str, key: &str) -> Result<(), crate::PandoraError>;
+    fn search(&self, namespace: &str, query: &str) -> Result<Vec<String>, crate::PandoraError>;
+    fn archive(&self, namespace: &str, key: &str) -> Result<(), crate::PandoraError>;
+    fn summarize(&self, namespace: &str) -> Result<String, crate::PandoraError>;
 }
 
 /// Execution lifecycle — spawn, run, checkpoint, restore, teardown.
 pub trait ExecutionService: Service {
-    fn spawn(&self, task: &str) -> Result<String, String>;
-    fn execute(&self, execution_id: &str, command: &str) -> Result<String, String>;
-    fn checkpoint(&self, execution_id: &str) -> Result<(), String>;
-    fn restore(&self, execution_id: &str, checkpoint_id: &str) -> Result<(), String>;
-    fn teardown(&self, execution_id: &str) -> Result<(), String>;
+    fn spawn(&self, task: &str) -> Result<String, crate::PandoraError>;
+    fn execute(&self, execution_id: &str, command: &str) -> Result<String, crate::PandoraError>;
+    fn checkpoint(&self, execution_id: &str) -> Result<(), crate::PandoraError>;
+    fn restore(&self, execution_id: &str, checkpoint_id: &str) -> Result<(), crate::PandoraError>;
+    fn teardown(&self, execution_id: &str) -> Result<(), crate::PandoraError>;
 }
 
 /// Planning — decompose goals into DAG workflows.
 pub trait PlanningService: Service {
-    fn plan(&self, goal: &str) -> Result<String, String>;
-    fn dag(&self, plan_id: &str) -> Result<Vec<String>, String>;
-    fn retry_plan(&self, plan_id: &str, failed_step: &str) -> Result<String, String>;
-    fn topology(&self, plan_id: &str) -> Result<String, String>;
+    fn plan(&self, goal: &str) -> Result<String, crate::PandoraError>;
+    fn dag(&self, plan_id: &str) -> Result<Vec<String>, crate::PandoraError>;
+    fn retry_plan(&self, plan_id: &str, failed_step: &str) -> Result<String, crate::PandoraError>;
+    fn topology(&self, plan_id: &str) -> Result<String, crate::PandoraError>;
 }
 
 /// Governance — evaluate, audit, score, and verify actions.
 pub trait GovernanceService: Service {
-    fn evaluate(&self, action: &str, context: &str) -> Result<bool, String>;
-    fn audit(&self, action: &str, decision: &str) -> Result<(), String>;
-    fn score(&self, target: &str) -> Result<f64, String>;
-    fn verify(&self, artifact: &str) -> Result<bool, String>;
+    fn evaluate(&self, action: &str, context: &str) -> Result<bool, crate::PandoraError>;
+    fn audit(&self, action: &str, decision: &str) -> Result<(), crate::PandoraError>;
+    fn score(&self, target: &str) -> Result<f64, crate::PandoraError>;
+    fn verify(&self, artifact: &str) -> Result<bool, crate::PandoraError>;
 }
 
 /// Identity — persist, resurrect, fork, and merge agent identities.
 pub trait IdentityService: Service {
-    fn persist(&self, identity: &str) -> Result<(), String>;
-    fn resurrect(&self, identity: &str) -> Result<String, String>;
-    fn fork(&self, identity: &str, name: &str) -> Result<String, String>;
-    fn merge(&self, source: &str, target: &str) -> Result<(), String>;
+    fn persist(&self, identity: &str) -> Result<(), crate::PandoraError>;
+    fn resurrect(&self, identity: &str) -> Result<String, crate::PandoraError>;
+    fn fork(&self, identity: &str, name: &str) -> Result<String, crate::PandoraError>;
+    fn merge(&self, source: &str, target: &str) -> Result<(), crate::PandoraError>;
 }
 
 /// Security — authenticate, authorize, and isolate contexts.
 pub trait SecurityService: Service {
-    fn authenticate(&self, credentials: &str) -> Result<String, String>;
-    fn authorize(&self, principal: &str, action: &str) -> Result<bool, String>;
-    fn isolate(&self, context: &str) -> Result<(), String>;
+    fn authenticate(&self, credentials: &str) -> Result<String, crate::PandoraError>;
+    fn authorize(&self, principal: &str, action: &str) -> Result<bool, crate::PandoraError>;
+    fn isolate(&self, context: &str) -> Result<(), crate::PandoraError>;
 }
 
 /// Model provider — list models, check health, invoke inference.
 pub trait ProviderService: Service {
-    fn list_models(&self) -> Result<Vec<String>, String>;
-    fn health(&self) -> Result<String, String>;
-    fn context_limit(&self, model: &str) -> Result<usize, String>;
-    fn cost(&self, model: &str) -> Result<f64, String>;
-    fn latency(&self, model: &str) -> Result<f64, String>;
-    fn invoke(&self, model: &str, prompt: &str) -> Result<String, String>;
+    fn list_models(&self) -> Result<Vec<String>, crate::PandoraError>;
+    fn health(&self) -> Result<String, crate::PandoraError>;
+    fn context_limit(&self, model: &str) -> Result<usize, crate::PandoraError>;
+    fn cost(&self, model: &str) -> Result<f64, crate::PandoraError>;
+    fn latency(&self, model: &str) -> Result<f64, crate::PandoraError>;
+    fn invoke(&self, model: &str, prompt: &str) -> Result<String, crate::PandoraError>;
     /// Whether this provider supports tool/function calls.
     fn supports_tools(&self) -> bool {
         false
@@ -142,39 +142,49 @@ pub trait ProviderService: Service {
 
 /// Benchmark — record and query performance scores.
 pub trait BenchmarkService: Service {
-    fn record(&self, model: &str, task: &str, score: f64, metadata: &str) -> Result<(), String>;
-    fn query(&self, model: &str, task: &str) -> Result<Vec<(String, f64)>, String>;
-    fn compare(&self, models: &[String], task: &str) -> Result<Vec<(String, f64)>, String>;
-    fn trend(&self, model: &str, task: &str) -> Result<Vec<(String, f64)>, String>;
+    fn record(
+        &self,
+        model: &str,
+        task: &str,
+        score: f64,
+        metadata: &str,
+    ) -> Result<(), crate::PandoraError>;
+    fn query(&self, model: &str, task: &str) -> Result<Vec<(String, f64)>, crate::PandoraError>;
+    fn compare(
+        &self,
+        models: &[String],
+        task: &str,
+    ) -> Result<Vec<(String, f64)>, crate::PandoraError>;
+    fn trend(&self, model: &str, task: &str) -> Result<Vec<(String, f64)>, crate::PandoraError>;
 }
 
 /// Scheduler — schedule, cancel, list, and history for cron-like jobs.
 pub trait SchedulerService: Service {
-    fn schedule(&self, spec: &str, action: &str) -> Result<String, String>;
-    fn cancel(&self, job_id: &str) -> Result<(), String>;
-    fn list(&self) -> Result<Vec<(String, String, String)>, String>;
-    fn history(&self, job_id: &str) -> Result<Vec<(String, String)>, String>;
+    fn schedule(&self, spec: &str, action: &str) -> Result<String, crate::PandoraError>;
+    fn cancel(&self, job_id: &str) -> Result<(), crate::PandoraError>;
+    fn list(&self) -> Result<Vec<(String, String, String)>, crate::PandoraError>;
+    fn history(&self, job_id: &str) -> Result<Vec<(String, String)>, crate::PandoraError>;
 }
 
 /// Telemetry — record, query, and aggregate metrics.
 pub trait TelemetryService: Service {
-    fn record(&self, metric: &str, value: f64, labels: &str) -> Result<(), String>;
-    fn query(&self, metric: &str, filter: &str) -> Result<Vec<(String, f64)>, String>;
-    fn aggregate(&self, metric: &str, window: &str) -> Result<f64, String>;
+    fn record(&self, metric: &str, value: f64, labels: &str) -> Result<(), crate::PandoraError>;
+    fn query(&self, metric: &str, filter: &str) -> Result<Vec<(String, f64)>, crate::PandoraError>;
+    fn aggregate(&self, metric: &str, window: &str) -> Result<f64, crate::PandoraError>;
 }
 
 /// Storage — read, write, delete, list files/blobs.
 pub trait StorageService: Service {
-    fn read(&self, path: &str) -> Result<Vec<u8>, String>;
-    fn write(&self, path: &str, data: &[u8]) -> Result<(), String>;
-    fn delete(&self, path: &str) -> Result<(), String>;
-    fn list(&self, prefix: &str) -> Result<Vec<String>, String>;
+    fn read(&self, path: &str) -> Result<Vec<u8>, crate::PandoraError>;
+    fn write(&self, path: &str, data: &[u8]) -> Result<(), crate::PandoraError>;
+    fn delete(&self, path: &str) -> Result<(), crate::PandoraError>;
+    fn list(&self, prefix: &str) -> Result<Vec<String>, crate::PandoraError>;
 }
 
 /// Communication — send messages, broadcast, subscribe to channels.
 pub trait CommunicationService: Service {
-    fn send(&self, recipient: &str, message: &str) -> Result<(), String>;
-    fn broadcast(&self, channel: &str, message: &str) -> Result<(), String>;
-    fn subscribe(&self, channel: &str) -> Result<String, String>;
-    fn unsubscribe(&self, subscription_id: &str) -> Result<(), String>;
+    fn send(&self, recipient: &str, message: &str) -> Result<(), crate::PandoraError>;
+    fn broadcast(&self, channel: &str, message: &str) -> Result<(), crate::PandoraError>;
+    fn subscribe(&self, channel: &str) -> Result<String, crate::PandoraError>;
+    fn unsubscribe(&self, subscription_id: &str) -> Result<(), crate::PandoraError>;
 }

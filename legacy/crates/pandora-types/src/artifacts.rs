@@ -11,7 +11,7 @@ use std::time::SystemTime;
 /// The kind of artifact produced.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ArtifactKind {
+pub enum MemoryArtifactKind {
     Code,
     Patch,
     Markdown,
@@ -29,7 +29,7 @@ pub enum ArtifactKind {
     Other,
 }
 
-impl ArtifactKind {
+impl MemoryArtifactKind {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Code => "code",
@@ -59,7 +59,7 @@ pub struct Artifact {
     /// Human-readable label.
     pub label: String,
     /// The kind of artifact.
-    pub kind: ArtifactKind,
+    pub kind: MemoryArtifactKind,
     /// The execution ID that produced this artifact.
     pub execution_id: String,
     /// The provider that generated it.
@@ -109,7 +109,7 @@ impl ArtifactGraph {
     pub fn record(
         &mut self,
         execution_id: &str,
-        kind: ArtifactKind,
+        kind: MemoryArtifactKind,
         label: &str,
         provider: &str,
         content: &str,
@@ -125,10 +125,10 @@ impl ArtifactGraph {
         content.hash(&mut h);
         let hash = format!("{:x}", h.finish());
         let ext = match kind {
-            ArtifactKind::Code => ".rs",
-            ArtifactKind::Patch => ".patch",
-            ArtifactKind::Markdown => ".md",
-            ArtifactKind::Sql => ".sql",
+            MemoryArtifactKind::Code => ".rs",
+            MemoryArtifactKind::Patch => ".patch",
+            MemoryArtifactKind::Markdown => ".md",
+            MemoryArtifactKind::Sql => ".sql",
             _ => ".txt",
         };
         let art = Artifact {
@@ -236,7 +236,7 @@ mod tests {
         let mut g = ArtifactGraph::new();
         g.record(
             "exec-1",
-            ArtifactKind::Code,
+            MemoryArtifactKind::Code,
             "main.rs",
             "ollama",
             "fn main() {}",
@@ -246,16 +246,28 @@ mod tests {
     #[test]
     fn for_execution() {
         let mut g = ArtifactGraph::new();
-        g.record("exec-1", ArtifactKind::Code, "a", "ollama", "a");
-        g.record("exec-1", ArtifactKind::Markdown, "b", "ollama", "b");
-        g.record("exec-2", ArtifactKind::Sql, "c", "ollama", "c");
+        g.record("exec-1", MemoryArtifactKind::Code, "a", "ollama", "a");
+        g.record("exec-1", MemoryArtifactKind::Markdown, "b", "ollama", "b");
+        g.record("exec-2", MemoryArtifactKind::Sql, "c", "ollama", "c");
         assert_eq!(g.for_execution("exec-1").len(), 2);
     }
     #[test]
     fn link_parent_child() {
         let mut g = ArtifactGraph::new();
-        let pid = g.record("exec-1", ArtifactKind::Code, "parent", "ollama", "parent");
-        let cid = g.record("exec-1", ArtifactKind::Patch, "child", "ollama", "child");
+        let pid = g.record(
+            "exec-1",
+            MemoryArtifactKind::Code,
+            "parent",
+            "ollama",
+            "parent",
+        );
+        let cid = g.record(
+            "exec-1",
+            MemoryArtifactKind::Patch,
+            "child",
+            "ollama",
+            "child",
+        );
         g.link(&pid, &cid);
         assert_eq!(g.artifacts.get(&pid).unwrap().derived.len(), 1);
         assert_eq!(g.artifacts.get(&cid).unwrap().depends_on.len(), 1);
@@ -263,8 +275,8 @@ mod tests {
     #[test]
     fn roots_and_leaves() {
         let mut g = ArtifactGraph::new();
-        let a = g.record("exec-1", ArtifactKind::Code, "a", "ollama", "a");
-        let b = g.record("exec-1", ArtifactKind::Code, "b", "ollama", "b");
+        let a = g.record("exec-1", MemoryArtifactKind::Code, "a", "ollama", "a");
+        let b = g.record("exec-1", MemoryArtifactKind::Code, "b", "ollama", "b");
         g.link(&a, &b);
         assert_eq!(g.roots().len(), 1);
         assert_eq!(g.leaves().len(), 1);
@@ -274,7 +286,7 @@ mod tests {
         let mut g = ArtifactGraph::new();
         g.record(
             "exec-1",
-            ArtifactKind::Code,
+            MemoryArtifactKind::Code,
             "test.rs",
             "ollama",
             "fn main() {}",

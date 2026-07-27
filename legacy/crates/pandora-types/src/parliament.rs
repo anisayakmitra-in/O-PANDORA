@@ -8,11 +8,11 @@ use std::collections::HashMap;
 pub trait ParliamentService: Send + Sync {
     fn name(&self) -> &str;
     /// Called before execution begins. Returns Ok(()) or an error that blocks execution.
-    fn pre_flight(&self, _session: &str, _task: &str) -> Result<(), String> {
+    fn pre_flight(&self, _session: &str, _task: &str) -> Result<(), crate::PandoraError> {
         Ok(())
     }
     /// Called after execution completes. Records decisions, enforces policies.
-    fn post_flight(&self, _session: &str, _outcome: &str) -> Result<(), String> {
+    fn post_flight(&self, _session: &str, _outcome: &str) -> Result<(), crate::PandoraError> {
         Ok(())
     }
 }
@@ -37,14 +37,14 @@ impl Parliament {
     pub fn pre_flight(&self, session: &str, task: &str) -> Vec<String> {
         self.services
             .values()
-            .filter_map(|s| s.pre_flight(session, task).err())
+            .filter_map(|s| s.pre_flight(session, task).err().map(|e| e.to_string()))
             .collect()
     }
 
     pub fn post_flight(&self, session: &str, outcome: &str) -> Vec<String> {
         self.services
             .values()
-            .filter_map(|s| s.post_flight(session, outcome).err())
+            .filter_map(|s| s.post_flight(session, outcome).err().map(|e| e.to_string()))
             .collect()
     }
 
@@ -60,13 +60,13 @@ impl ParliamentService for GovernanceService {
     fn name(&self) -> &str {
         "governance"
     }
-    fn pre_flight(&self, _session: &str, task: &str) -> Result<(), String> {
+    fn pre_flight(&self, _session: &str, task: &str) -> Result<(), crate::PandoraError> {
         if task.is_empty() {
             return Err("empty task".into());
         }
         Ok(())
     }
-    fn post_flight(&self, _session: &str, outcome: &str) -> Result<(), String> {
+    fn post_flight(&self, _session: &str, outcome: &str) -> Result<(), crate::PandoraError> {
         if outcome.is_empty() {
             return Err("empty outcome — possible pipeline failure".into());
         }

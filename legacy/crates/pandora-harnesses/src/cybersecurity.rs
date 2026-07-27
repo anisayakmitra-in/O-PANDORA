@@ -17,7 +17,7 @@ impl CybersecurityDomainHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("cybersecurity-domain")
                 .name("Cybersecurity Domain")
-                .version("0.2.0")
+                .version(env!("CARGO_PKG_VERSION"))
                 .author("pandora")
                 .kind(HarnessKind::Domain)
                 .description(
@@ -42,7 +42,7 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .id(id)
         .name(desc)
         .kind(GeneKind::Tool)
-        .version("0.2.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
         .build()
@@ -69,7 +69,7 @@ macro_rules! cyber_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, _input: &str) -> Result<String, String> {
+            fn execute(&self, _input: &str) -> Result<String, pandora_types::PandoraError> {
                 Ok(format!("{}: scan started — review output", $id))
             }
         }

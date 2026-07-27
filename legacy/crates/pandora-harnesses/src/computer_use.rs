@@ -19,7 +19,7 @@ impl ComputerUseHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("computer-use")
                 .name("Computer Use")
-                .version("0.2.0")
+                .version(env!("CARGO_PKG_VERSION"))
                 .author("pandora")
                 .kind(HarnessKind::Domain)
                 .description("Desktop automation — click, type, screenshot, find elements")
@@ -48,7 +48,7 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .id(id)
         .name(desc)
         .kind(GeneKind::Tool)
-        .version("0.2.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
         .build()
@@ -75,14 +75,14 @@ macro_rules! ghost_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, _input: &str) -> Result<String, String> {
+            fn execute(&self, _input: &str) -> Result<String, pandora_types::PandoraError> {
                 let os = platform();
                 let t = match os {
                     "linux" => "xdotool/imagemagick",
                     "macos" => "osascript/screencapture",
                     _ => "not available",
                 };
-                Err(format!("{} on {}: install {}", stringify!($name), os, t))
+                Err(format!("{} on {}: install {}", stringify!($name), os, t).into())
             }
         }
     };

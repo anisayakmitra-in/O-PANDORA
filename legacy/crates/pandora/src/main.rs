@@ -1050,18 +1050,22 @@ fn cmd_graph(args: &[String]) {
             if let Ok(s) = serde_json::from_str::<pandora_types::Session>(&json) {
                 let mut g = pandora_types::provenance::ExecutionProvenanceGraph::new(&s.id);
                 g.add_node(
-                    pandora_types::provenance::NodeKind::Task,
+                    pandora_types::provenance::ProvenanceNodeKind::Task,
                     format!("task-{}", s.id),
                     &s.prompt,
                 );
                 if let Some(r) = &s.replay_id {
-                    g.add_node(pandora_types::provenance::NodeKind::Session, r, &s.id);
+                    g.add_node(
+                        pandora_types::provenance::ProvenanceNodeKind::Session,
+                        r,
+                        &s.id,
+                    );
                     g.connect(format!("task-{}", s.id), r, "completed");
                 }
                 for (i, frame) in s.timeline.iter().enumerate() {
                     let fid = format!("frame-{}", i);
                     g.add_node(
-                        pandora_types::provenance::NodeKind::Gene,
+                        pandora_types::provenance::ProvenanceNodeKind::Gene,
                         &fid,
                         &frame.step_label,
                     );
@@ -1134,7 +1138,7 @@ fn cmd_new(args: &[String]) {
             }
             let _ = std::fs::create_dir_all(dir.join("src"));
             std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.2.0\nauthor = \"\"\ndescription = \"\"\n")).expect("CLI I/O");
-            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.2.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, String> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
+            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.2.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, pandora_types::PandoraError> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
             println!("Created: {name}/");
         }
         "harness" => {
@@ -1192,7 +1196,7 @@ fn cmd_new(args: &[String]) {
             let dir = std::path::Path::new(".").join(name);
             std::fs::create_dir_all(dir.join("src")).expect("CLI I/O");
             let sn2 = name.replace("-", "_");
-            let t = format!("pub struct {sn2}Provider;\nimpl Provider for {sn2}Provider {{ fn name(&self) -> &str {{ {name:?} }} fn execute(&self, p: &str) -> Result<String, String> {{ Ok(p.to_string()) }} }}\n");
+            let t = format!("pub struct {sn2}Provider;\nimpl Provider for {sn2}Provider {{ fn name(&self) -> &str {{ {name:?} }} fn execute(&self, p: &str) -> Result<String, pandora_types::PandoraError> {{ Ok(p.to_string()) }} }}\n");
             std::fs::write(dir.join("src").join("lib.rs"), t).expect("CLI I/O");
             println!("Created: {name}/");
         }

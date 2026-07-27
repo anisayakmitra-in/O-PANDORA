@@ -1,0 +1,20 @@
+[package]
+id = "benchmark"
+name = "Benchmark"
+kind = "benchmark"
+version = "0.2.0"
+author = "pandora"
+description = "Time command execution with wall-clock measurement"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["benchmark", "performance"]
+
+[capabilities]
+provided = ["benchmark.time"]
+
+[permissions]
+required = ["shell.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

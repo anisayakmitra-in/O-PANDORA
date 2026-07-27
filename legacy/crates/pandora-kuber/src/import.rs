@@ -13,10 +13,13 @@ pub struct ImportResult {
 }
 
 /// Detect and import settings from other AI agents.
-pub fn import_from(tool: &str, source_path: &str) -> Result<ImportResult, String> {
+pub fn import_from(
+    tool: &str,
+    source_path: &str,
+) -> Result<ImportResult, pandora_types::PandoraError> {
     let path = std::path::Path::new(source_path);
     if !path.exists() {
-        return Err(format!("Source path does not exist: {source_path}"));
+        return Err(format!("Source path does not exist: {source_path}").into());
     }
 
     match tool {
@@ -25,11 +28,11 @@ pub fn import_from(tool: &str, source_path: &str) -> Result<ImportResult, String
         "goose" => import_goose(path),
         "cline" => import_cline(path),
         "hermes" => import_hermes(path),
-        _ => Err(format!("Unknown tool: {tool}")),
+        _ => Err(format!("Unknown tool: {tool}").into()),
     }
 }
 
-fn import_claude_code(path: &std::path::Path) -> Result<ImportResult, String> {
+fn import_claude_code(path: &std::path::Path) -> Result<ImportResult, pandora_types::PandoraError> {
     let mut imported = Vec::new();
     let skipped = Vec::new();
 
@@ -60,7 +63,7 @@ fn import_claude_code(path: &std::path::Path) -> Result<ImportResult, String> {
     })
 }
 
-fn import_opencode(path: &std::path::Path) -> Result<ImportResult, String> {
+fn import_opencode(path: &std::path::Path) -> Result<ImportResult, pandora_types::PandoraError> {
     let mut imported = Vec::new();
 
     if let Ok(content) = std::fs::read_to_string(path.join("config.json")) {
@@ -80,7 +83,7 @@ fn import_opencode(path: &std::path::Path) -> Result<ImportResult, String> {
     })
 }
 
-fn import_goose(path: &std::path::Path) -> Result<ImportResult, String> {
+fn import_goose(path: &std::path::Path) -> Result<ImportResult, pandora_types::PandoraError> {
     let mut imported = Vec::new();
 
     // Goose stores config in ~/.config/goose/config.yaml
@@ -98,7 +101,7 @@ fn import_goose(path: &std::path::Path) -> Result<ImportResult, String> {
     })
 }
 
-fn import_cline(path: &std::path::Path) -> Result<ImportResult, String> {
+fn import_cline(path: &std::path::Path) -> Result<ImportResult, pandora_types::PandoraError> {
     let mut imported = Vec::new();
 
     // Cline stores settings in VS Code settings
@@ -119,7 +122,7 @@ fn import_cline(path: &std::path::Path) -> Result<ImportResult, String> {
     })
 }
 
-fn import_hermes(path: &std::path::Path) -> Result<ImportResult, String> {
+fn import_hermes(path: &std::path::Path) -> Result<ImportResult, pandora_types::PandoraError> {
     let mut imported = Vec::new();
 
     // Hermes stores config in ~/.hermes/.env

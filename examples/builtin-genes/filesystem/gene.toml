@@ -1,0 +1,20 @@
+[package]
+id = "filesystem"
+name = "Filesystem"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Read, write, and list files with path traversal protection"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["filesystem", "storage", "io"]
+
+[capabilities]
+provided = ["filesystem.read", "filesystem.write", "filesystem.list"]
+
+[permissions]
+required = ["filesystem.read", "filesystem.write"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

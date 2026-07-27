@@ -200,7 +200,7 @@ impl Connection {
     }
 
     /// Test the connection — send a minimal request to the endpoint.
-    pub fn test(&mut self) -> Result<(), String> {
+    pub fn test(&mut self) -> Result<(), crate::PandoraError> {
         use std::time::Instant;
         let start = Instant::now();
         let url = if self.kind == ConnectionKind::Ollama {
@@ -211,7 +211,7 @@ impl Connection {
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()
-            .map_err(|e| format!("client: {e}"))?;
+            .map_err(|e| crate::PandoraError::Internal(format!("client: {e}")))?;
         let mut req = client.get(&url);
         if let Some(key) = &self.api_key {
             req = req.header("Authorization", format!("Bearer {key}"));
@@ -219,7 +219,9 @@ impl Connection {
         for (k, v) in &self.headers {
             req = req.header(k.as_str(), v.as_str());
         }
-        let resp = req.send().map_err(|e| format!("unreachable: {e}"))?;
+        let resp = req
+            .send()
+            .map_err(|e| crate::PandoraError::Internal(format!("unreachable: {e}")))?;
         self.latency_ms = start.elapsed().as_millis() as u64;
         self.health_status = if resp.status().is_success() {
             "online".into()
@@ -261,33 +263,37 @@ impl ConnectionRegistry {
             .unwrap_or_default()
     }
 
-    pub fn save(&self) -> Result<(), String> {
+    pub fn save(&self) -> Result<(), crate::PandoraError> {
         let dir = std::env::var("HOME")
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
             .join(".pandora");
-        std::fs::create_dir_all(&dir).map_err(|e| format!("mkdir: {e}"))?;
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| crate::PandoraError::Internal(format!("mkdir: {e}")))?;
         let path = dir.join("connections.toml");
-        let toml = toml::to_string_pretty(self).map_err(|e| format!("serialize: {e}"))?;
-        std::fs::write(&path, toml).map_err(|e| format!("write: {e}"))
+        let toml = toml::to_string_pretty(self)
+            .map_err(|e| crate::PandoraError::Internal(format!("serialize: {e}")))?;
+        std::fs::write(&path, toml)
+            .map_err(|e| crate::PandoraError::Internal(format!("write: {e}")))
     }
 
-    pub fn add(&mut self, conn: Connection) -> Result<(), String> {
+    pub fn add(&mut self, conn: Connection) -> Result<(), crate::PandoraError> {
         if self.connections.iter().any(|c| c.name == conn.name) {
             return Err(format!(
                 "Connection '{}' already exists. Remove it first.",
                 conn.name
-            ));
+            )
+            .into());
         }
         self.connections.push(conn);
         self.save()
     }
 
-    pub fn remove(&mut self, name: &str) -> Result<(), String> {
+    pub fn remove(&mut self, name: &str) -> Result<(), crate::PandoraError> {
         let len = self.connections.len();
         self.connections.retain(|c| c.name != name);
         if self.connections.len() == len {
-            return Err(format!("Connection '{}' not found", name));
+            return Err(format!("Connection '{}' not found", name).into());
         }
         self.save()
     }

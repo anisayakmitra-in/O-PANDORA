@@ -12,7 +12,7 @@ impl CoordinationMetaHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("coordination-meta")
                 .name("Coordination")
-                .version("0.2.0")
+                .version(env!("CARGO_PKG_VERSION"))
                 .author("pandora")
                 .kind(HarnessKind::Meta)
                 .description("Inter-harness coordination — delegation, routing, orchestration")

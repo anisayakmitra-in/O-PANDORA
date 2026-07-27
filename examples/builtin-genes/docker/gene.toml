@@ -1,0 +1,20 @@
+[package]
+id = "docker"
+name = "Docker"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Docker container operations — build, run, ps, logs"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["docker", "containers", "devops"]
+
+[capabilities]
+provided = ["docker.build", "docker.run", "docker.ps"]
+
+[permissions]
+required = ["docker.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

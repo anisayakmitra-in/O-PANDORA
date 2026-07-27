@@ -1,0 +1,20 @@
+[package]
+id = "computer-use"
+name = "Computer Use"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Desktop automation harness — click, type, screenshot"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["desktop", "automation", "accessibility"]
+
+[capabilities]
+provided = ["desktop.click", "desktop.type", "desktop.screenshot"]
+
+[permissions]
+required = ["desktop.automation"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

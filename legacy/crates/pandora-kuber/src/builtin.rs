@@ -12,7 +12,7 @@ fn pkg(id: &str, desc: &str, caps: &[&str]) -> PackageInfo {
             _ => "Tool",
         }
         .into(),
-        version: "0.2.0".into(),
+        version: env!("CARGO_PKG_VERSION").into(),
         author: "pandora".into(),
         description: desc.into(),
         source: "builtin".into(),

@@ -60,14 +60,18 @@ impl Lockfile {
     }
 
     /// Read pandora.lock from the current directory.
-    pub fn load(path: &str) -> Result<Self, String> {
-        let c = std::fs::read_to_string(path).map_err(|e| format!("Cannot read lockfile: {e}"))?;
-        toml::from_str(&c).map_err(|e| format!("Invalid lockfile: {e}"))
+    pub fn load(path: &str) -> Result<Self, crate::PandoraError> {
+        let c = std::fs::read_to_string(path)
+            .map_err(|e| crate::PandoraError::Internal(format!("Cannot read lockfile: {e}")))?;
+        toml::from_str(&c)
+            .map_err(|e| crate::PandoraError::Internal(format!("Invalid lockfile: {e}")))
     }
     /// Write pandora.lock.
-    pub fn save(&self, path: &str) -> Result<(), String> {
-        let c = toml::to_string_pretty(self).map_err(|e| format!("Cannot serialize: {e}"))?;
-        std::fs::write(path, c).map_err(|e| format!("Cannot write: {e}"))
+    pub fn save(&self, path: &str) -> Result<(), crate::PandoraError> {
+        let c = toml::to_string_pretty(self)
+            .map_err(|e| crate::PandoraError::Internal(format!("Cannot serialize: {e}")))?;
+        std::fs::write(path, c)
+            .map_err(|e| crate::PandoraError::Internal(format!("Cannot write: {e}")))
     }
 }
 

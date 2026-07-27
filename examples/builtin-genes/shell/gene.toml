@@ -1,0 +1,20 @@
+[package]
+id = "shell"
+name = "Shell"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Execute shell commands with sandbox guard (PANDORA_SHELL_UNSAFE=1 required)"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["shell", "execution", "terminal"]
+
+[capabilities]
+provided = ["shell.execute"]
+
+[permissions]
+required = ["shell.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

@@ -9,18 +9,20 @@ fn mk(id: &str, kind: GeneKind) -> GeneManifest {
         .id(id)
         .name(id)
         .kind(kind)
-        .version("0.2.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(format!("{id} gene"))
+        .permission(format!("{id}.execute"))
+        .metadata("trust_level", "Official")
         .build()
         .expect("genes")
 }
 
-fn run(bin: &str, args: &[&str]) -> Result<String, String> {
+fn run(bin: &str, args: &[&str]) -> Result<String, pandora_types::PandoraError> {
     let o = Command::new(bin)
         .args(args)
         .output()
-        .map_err(|e| format!("{bin} not found: {e}"))?;
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("{bin} not found: {e}")))?;
     let sd = String::from_utf8_lossy(&o.stderr).to_string();
     if o.status.success() {
         Ok(String::from_utf8_lossy(&o.stdout).to_string())
@@ -29,7 +31,8 @@ fn run(bin: &str, args: &[&str]) -> Result<String, String> {
             format!("{bin} exit {}", o.status)
         } else {
             sd.trim().to_string()
-        })
+        }
+        .into())
     }
 }
 
@@ -53,10 +56,10 @@ macro_rules! cmd_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, input: &str) -> Result<String, String> {
+            fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
                 let a: Vec<&str> = input.split_whitespace().collect();
                 if a.is_empty() {
-                    return Err(format!("Usage: {} <args>", $id));
+                    return Err(format!("Usage: {} <args>", $id).into());
                 }
                 run($bin, &a)
             }
@@ -88,12 +91,12 @@ impl Gene for PythonToolGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         let o = Command::new("python3")
             .arg("-c")
             .arg(input)
             .output()
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
         Ok(String::from_utf8_lossy(&o.stdout).to_string())
     }
 }
@@ -131,7 +134,7 @@ impl Gene for FilesystemGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         let p: Vec<&str> = input.splitn(2, ' ').collect();
         if p.is_empty() || p[0] == "help" {
             return Ok("Usage: read|write|list <path>".into());
@@ -142,14 +145,21 @@ impl Gene for FilesystemGene {
                 if path.is_empty() {
                     return Err("Missing path".into());
                 }
-                let canonical = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
+                let canonical = std::fs::canonicalize(path)
+                    .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
                 if canonical.to_string_lossy().contains("..") {
                     return Err("Path traversal not allowed".into());
                 }
-                std::fs::read_to_string(&canonical).map_err(|e| e.to_string())
+                std::fs::read_to_string(&canonical)
+                    .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))
             }
             "write" => {
-                let raw_path = p.get(1).copied().ok_or("Missing path")?;
+                let raw_path = p
+                    .get(1)
+                    .copied()
+                    .ok_or(pandora_types::PandoraError::NotFound(
+                        "Missing path".to_string(),
+                    ))?;
                 if raw_path.is_empty() {
                     return Err("Missing path".into());
                 }
@@ -162,22 +172,24 @@ impl Gene for FilesystemGene {
                         }
                         std::fs::canonicalize(path_obj)
                     })
-                    .map_err(|e| e.to_string())?;
+                    .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
                 if canonical.to_string_lossy().contains("..") {
                     return Err("Path traversal not allowed".into());
                 }
-                std::fs::write(&canonical, "content").map_err(|e| e.to_string())?;
+                std::fs::write(&canonical, "content")
+                    .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
                 Ok(format!("wrote {}", canonical.display()))
             }
             "list" => {
-                let dir = std::fs::read_dir(p.get(1).unwrap_or(&".")).map_err(|e| e.to_string())?;
+                let dir = std::fs::read_dir(p.get(1).unwrap_or(&"."))
+                    .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
                 Ok(dir
                     .filter_map(|e| e.ok())
                     .map(|e| e.file_name().to_string_lossy().to_string())
                     .collect::<Vec<_>>()
                     .join("\n"))
             }
-            _ => Err(format!("Unknown: {}", p[0])),
+            _ => Err(format!("Unknown: {}", p[0]).into()),
         }
     }
 }
@@ -203,7 +215,7 @@ impl Gene for ShellGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         if std::env::var("PANDORA_SHELL_UNSAFE").is_err() {
             return Err(
                 "Shell execution requires PANDORA_SHELL_UNSAFE=1 to acknowledge risks".into(),
@@ -213,12 +225,12 @@ impl Gene for ShellGene {
             .arg("-c")
             .arg(input)
             .output()
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
         let sd = String::from_utf8_lossy(&o.stderr).to_string();
         if sd.is_empty() {
             Ok(String::from_utf8_lossy(&o.stdout).to_string())
         } else {
-            Err(sd)
+            Err(sd.into())
         }
     }
 }
@@ -244,7 +256,7 @@ impl Gene for WorkflowGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         if std::env::var("PANDORA_SHELL_UNSAFE").is_err() {
             return Err(
                 "Shell execution requires PANDORA_SHELL_UNSAFE=1 to acknowledge risks".into(),
@@ -256,7 +268,7 @@ impl Gene for WorkflowGene {
                 .arg("-c")
                 .arg(line)
                 .output()
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
             r.push(format!(
                 "step {}: {}",
                 i + 1,
@@ -288,7 +300,7 @@ impl Gene for MCPGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         if input.trim().is_empty() {
             return Err("Usage: mcp <package> [args]\nRequires Node.js (npx)".into());
         }
@@ -298,9 +310,9 @@ impl Gene for MCPGene {
         for a in &a {
             c.arg(a);
         }
-        let o = c
-            .output()
-            .map_err(|e| format!("npx not found: {e}. Install Node.js."))?;
+        let o = c.output().map_err(|e| {
+            pandora_types::PandoraError::Internal(format!("npx not found: {e}. Install Node.js."))
+        })?;
         let sd = String::from_utf8_lossy(&o.stderr).to_string();
         if o.status.success() {
             Ok(String::from_utf8_lossy(&o.stdout).to_string())
@@ -309,7 +321,8 @@ impl Gene for MCPGene {
                 format!("npx exit {}", o.status)
             } else {
                 sd.trim().to_string()
-            })
+            }
+            .into())
         }
     }
 }
@@ -335,12 +348,12 @@ impl Gene for CodeReviewGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         let o = Command::new("git")
             .arg("diff")
             .args(input.split_whitespace().collect::<Vec<_>>())
             .output()
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
         let d = String::from_utf8_lossy(&o.stdout);
         if d.is_empty() {
             return Ok("No changes.".into());
@@ -376,7 +389,7 @@ impl Gene for BenchmarkGene {
     fn manifest(&self) -> &GeneManifest {
         &self.m
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         if input.trim().is_empty() {
             return Err("Usage: benchmark <command>".into());
         }
@@ -390,10 +403,14 @@ impl Gene for BenchmarkGene {
             .arg("-c")
             .arg(input)
             .output()
-            .map_err(|e| format!("Failed: {e}"))?;
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("Failed: {e}")))?;
         let sd = String::from_utf8_lossy(&o.stderr).to_string();
         if !o.status.success() {
-            return Err(format!("Exit {}: {}", o.status, sd.trim()));
+            return Err(pandora_types::PandoraError::Internal(format!(
+                "Exit {}: {}",
+                o.status,
+                sd.trim()
+            )));
         }
         Ok(format!(
             "{:?}\n{}",
@@ -426,9 +443,9 @@ macro_rules! env_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, input: &str) -> Result<String, String> {
+            fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
                 if input.trim().is_empty() {
-                    return Err(format!("Usage: {} <args>", $id));
+                    return Err(format!("Usage: {} <args>", $id).into());
                 }
                 let mut p: Vec<String> = std::env::var($env)
                     .unwrap_or_else(|_| $id.into())
@@ -440,10 +457,9 @@ macro_rules! env_gene {
                 }
                 p.extend(input.split_whitespace().map(String::from));
                 let r: Vec<&str> = p.iter().map(String::as_str).collect();
-                let o = Command::new(r[0])
-                    .args(&r[1..])
-                    .output()
-                    .map_err(|e| format!("{} not found: {e}", r[0]))?;
+                let o = Command::new(r[0]).args(&r[1..]).output().map_err(|e| {
+                    pandora_types::PandoraError::Internal(format!("{} not found: {e}", r[0]))
+                })?;
                 let sd = String::from_utf8_lossy(&o.stderr).to_string();
                 if o.status.success() {
                     Ok(String::from_utf8_lossy(&o.stdout).to_string())
@@ -452,7 +468,8 @@ macro_rules! env_gene {
                         format!("exit {}", o.status)
                     } else {
                         sd.trim().to_string()
-                    })
+                    }
+                    .into())
                 }
             }
         }
@@ -492,7 +509,7 @@ macro_rules! eval_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, i: &str) -> Result<String, String> {
+            fn execute(&self, i: &str) -> Result<String, pandora_types::PandoraError> {
                 Ok(format!("eval: {i}"))
             }
         }

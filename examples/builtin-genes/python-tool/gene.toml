@@ -1,0 +1,20 @@
+[package]
+id = "python-tool"
+name = "Python Tool"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Python evaluation and scripting"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["python", "scripting"]
+
+[capabilities]
+provided = ["python.execute"]
+
+[permissions]
+required = ["python.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

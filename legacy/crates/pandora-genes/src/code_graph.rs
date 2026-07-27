@@ -242,10 +242,10 @@ impl Gene for CodeGraphGene {
         &self.m
     }
 
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         let path = std::path::Path::new(input.trim());
         if !path.exists() {
-            return Err(format!("Path not found: {}", input));
+            return Err(format!("Path not found: {}", input).into());
         }
 
         let mut graph = CodeGraph::new();
@@ -265,11 +265,14 @@ impl Gene for CodeGraphGene {
             graph.scan_file(path, &content);
         }
 
-        let json = serde_json::to_string_pretty(&graph).map_err(|e| format!("json: {e}"))?;
+        let json = serde_json::to_string_pretty(&graph)
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("json: {e}")))?;
         // Write output files
         let out_dir = std::path::Path::new("graphify-out");
-        std::fs::create_dir_all(out_dir).map_err(|e| format!("mkdir: {e}"))?;
-        std::fs::write(out_dir.join("graph.json"), &json).map_err(|e| format!("write: {e}"))?;
+        std::fs::create_dir_all(out_dir)
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("mkdir: {e}")))?;
+        std::fs::write(out_dir.join("graph.json"), &json)
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("write: {e}")))?;
 
         let report = format!(
             "# Code Graph Report\n\n{} nodes, {} edges\n\n## Key Functions\n\n",
@@ -277,7 +280,7 @@ impl Gene for CodeGraphGene {
             graph.edges.len()
         );
         std::fs::write(out_dir.join("GRAPH_REPORT.md"), &report)
-            .map_err(|e| format!("write: {e}"))?;
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("write: {e}")))?;
 
         Ok(format!(
             "Generated graphify-out/: {} nodes, {} edges",

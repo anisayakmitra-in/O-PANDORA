@@ -33,7 +33,7 @@ pub fn check_ollama() -> ProviderHealth {
                 status: "OFFLINE".into(),
                 model_count: 0,
                 latency_ms: 0,
-                error: Some(e),
+                error: Some(e.to_string()),
             };
         }
     };
@@ -87,7 +87,7 @@ pub fn check_openai_compat(name: &str, url: &str) -> ProviderHealth {
             status: "OFFLINE".into(),
             model_count: 0,
             latency_ms: 0,
-            error: Some(e),
+            error: Some(e.to_string()),
         },
     }
 }
@@ -98,7 +98,7 @@ pub fn benchmark_provider(
     host: &str,
     model: &str,
     prompt: &str,
-) -> Result<(u64, f64), String> {
+) -> Result<(u64, f64), crate::PandoraError> {
     let payload = serde_json::json!({
         "model": model,
         "prompt": prompt,
@@ -146,15 +146,15 @@ pub fn benchmark_all() -> Vec<(String, String, u64, f64)> {
 
 // ── Internal helpers ──
 
-fn curl_http_code(url: &str) -> Result<String, String> {
+fn curl_http_code(url: &str) -> Result<String, crate::PandoraError> {
     let out = Command::new("curl")
         .args(["-s", "-o", "/dev/null", "-w", "%{http_code}", url])
         .output()
-        .map_err(|e| format!("curl not found: {e}"))?;
+        .map_err(|e| crate::PandoraError::Internal(format!("curl not found: {e}")))?;
     Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
-fn curl_post(url: &str, data: &str) -> Result<String, String> {
+fn curl_post(url: &str, data: &str) -> Result<String, crate::PandoraError> {
     let out = Command::new("curl")
         .args([
             "-s",
@@ -167,9 +167,9 @@ fn curl_post(url: &str, data: &str) -> Result<String, String> {
             url,
         ])
         .output()
-        .map_err(|e| format!("curl not found: {e}"))?;
+        .map_err(|e| crate::PandoraError::Internal(format!("curl not found: {e}")))?;
     if !out.status.success() {
-        return Err(format!("HTTP {}/{}", url, out.status));
+        return Err(format!("HTTP {}/{}", url, out.status).into());
     }
     Ok(String::from_utf8_lossy(&out.stdout).to_string())
 }

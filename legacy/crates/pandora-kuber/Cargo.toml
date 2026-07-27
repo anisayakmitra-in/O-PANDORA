@@ -12,3 +12,4 @@ pandora-shadow-council = { path = "../pandora-shadow-council" }
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
+sha2.workspace = true

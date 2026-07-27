@@ -105,24 +105,31 @@ fn sessions_dir() -> std::path::PathBuf {
     base.join("sessions")
 }
 
-fn write_sessions(sessions: &HashMap<String, Session>) -> Result<(), String> {
+fn write_sessions(sessions: &HashMap<String, Session>) -> Result<(), crate::PandoraError> {
     let dir = sessions_dir();
-    std::fs::create_dir_all(&dir).map_err(|e| format!("Cannot create sessions dir: {e}"))?;
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| crate::PandoraError::Internal(format!("Cannot create sessions dir: {e}")))?;
     for session in sessions.values() {
         let path = dir.join(format!("{}.json", session.id));
-        let json = serde_json::to_string_pretty(session)
-            .map_err(|e| format!("Serialize session {}: {e}", session.id))?;
+        let json = serde_json::to_string_pretty(session).map_err(|e| {
+            crate::PandoraError::Internal(format!("Serialize session {}: {e}", session.id))
+        })?;
         let tmp = dir.join(format!("{}.tmp", session.id));
-        std::fs::write(&tmp, &json).map_err(|e| format!("Write session {}: {e}", session.id))?;
-        std::fs::rename(&tmp, &path).map_err(|e| format!("Rename session {}: {e}", session.id))?;
+        std::fs::write(&tmp, &json).map_err(|e| {
+            crate::PandoraError::Internal(format!("Write session {}: {e}", session.id))
+        })?;
+        std::fs::rename(&tmp, &path).map_err(|e| {
+            crate::PandoraError::Internal(format!("Rename session {}: {e}", session.id))
+        })?;
     }
     let index: Vec<String> = sessions.keys().cloned().collect();
     let index_path = dir.join("index.json");
     std::fs::write(
         &index_path,
-        serde_json::to_string_pretty(&index).map_err(|e| format!("Serialize index: {e}"))?,
+        serde_json::to_string_pretty(&index)
+            .map_err(|e| crate::PandoraError::Internal(format!("Serialize index: {e}")))?,
     )
-    .map_err(|e| format!("Write index: {e}"))
+    .map_err(|e| crate::PandoraError::Internal(format!("Write index: {e}")))
 }
 
 // ── SessionStore implementations ──
@@ -141,7 +148,7 @@ impl SessionStore {
     }
 
     /// Persist all sessions to disk as atomic JSON writes.
-    pub fn save(&self) -> Result<(), String> {
+    pub fn save(&self) -> Result<(), crate::PandoraError> {
         write_sessions(&self.sessions)
     }
 
@@ -149,38 +156,44 @@ impl SessionStore {
     ///
     /// First tries `index.json` for ordering, then falls back to a
     /// directory scan of `.json` files.
-    pub fn load(&mut self) -> Result<(), String> {
+    pub fn load(&mut self) -> Result<(), crate::PandoraError> {
         let dir = sessions_dir();
         if !dir.exists() {
             return Ok(());
         }
         let index_path = dir.join("index.json");
         if index_path.exists() {
-            let content =
-                std::fs::read_to_string(&index_path).map_err(|e| format!("Read index: {e}"))?;
-            let ids: Vec<String> =
-                serde_json::from_str(&content).map_err(|e| format!("Parse index: {e}"))?;
+            let content = std::fs::read_to_string(&index_path)
+                .map_err(|e| crate::PandoraError::Internal(format!("Read index: {e}")))?;
+            let ids: Vec<String> = serde_json::from_str(&content)
+                .map_err(|e| crate::PandoraError::Internal(format!("Parse index: {e}")))?;
             for id in &ids {
                 let path = dir.join(format!("{id}.json"));
                 if !path.exists() {
                     continue;
                 }
-                let json = std::fs::read_to_string(&path)
-                    .map_err(|e| format!("Read session {id}: {e}"))?;
-                let session: Session =
-                    serde_json::from_str(&json).map_err(|e| format!("Parse session {id}: {e}"))?;
+                let json = std::fs::read_to_string(&path).map_err(|e| {
+                    crate::PandoraError::Internal(format!("Read session {id}: {e}"))
+                })?;
+                let session: Session = serde_json::from_str(&json).map_err(|e| {
+                    crate::PandoraError::Internal(format!("Parse session {id}: {e}"))
+                })?;
                 self.sessions.insert(id.clone(), session);
             }
         } else {
-            for entry in std::fs::read_dir(&dir).map_err(|e| format!("Read sessions dir: {e}"))? {
-                let entry = entry.map_err(|e| format!("Entry: {e}"))?;
+            for entry in std::fs::read_dir(&dir)
+                .map_err(|e| crate::PandoraError::Internal(format!("Read sessions dir: {e}")))?
+            {
+                let entry =
+                    entry.map_err(|e| crate::PandoraError::Internal(format!("Entry: {e}")))?;
                 let path = entry.path();
                 let is_json = path.extension().is_some_and(|e| e == "json");
                 let is_index = path.file_stem() == Some(std::ffi::OsStr::new("index"));
                 if !is_json || is_index {
                     continue;
                 }
-                let json = std::fs::read_to_string(&path).map_err(|e| format!("Read: {e}"))?;
+                let json = std::fs::read_to_string(&path)
+                    .map_err(|e| crate::PandoraError::Internal(format!("Read: {e}")))?;
                 if let Ok(session) = serde_json::from_str::<Session>(&json) {
                     self.sessions.insert(session.id.clone(), session);
                 }

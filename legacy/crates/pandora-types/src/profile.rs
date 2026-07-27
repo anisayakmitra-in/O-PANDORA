@@ -46,21 +46,23 @@ pub fn profiles_dir() -> PathBuf {
 ///
 /// Reads `<profiles_dir>/<name>.toml` and deserializes it.
 /// Returns a descriptive error if the file is missing or malformed.
-pub fn load_profile(name: &str) -> Result<Profile, String> {
+pub fn load_profile(name: &str) -> Result<Profile, crate::PandoraError> {
     let path = profiles_dir().join(format!("{name}.toml"));
     let content = std::fs::read_to_string(&path)
         .map_err(|e| format!("Profile '{name}' not found ({}): {e}", path.display()))?;
-    toml::from_str(&content).map_err(|e| format!("Failed to parse profile '{name}': {e}"))
+    toml::from_str(&content).map_err(|e| {
+        crate::PandoraError::Internal(format!("Failed to parse profile '{name}': {e}"))
+    })
 }
 
 /// List all available profiles (files with `.toml` extension).
-pub fn list_profiles() -> Result<Vec<String>, String> {
+pub fn list_profiles() -> Result<Vec<String>, crate::PandoraError> {
     let dir = profiles_dir();
     let mut profiles = Vec::new();
-    for entry in std::fs::read_dir(&dir)
-        .map_err(|e| format!("Cannot read profiles dir {}: {}", dir.display(), e))?
-    {
-        let entry = entry.map_err(|e| e.to_string())?;
+    for entry in std::fs::read_dir(&dir).map_err(|e| {
+        crate::PandoraError::Internal(format!("Cannot read profiles dir {}: {}", dir.display(), e))
+    })? {
+        let entry = entry.map_err(|e| crate::PandoraError::Internal(e.to_string()))?;
         let path = entry.path();
         if path.extension().is_some_and(|ext| ext == "toml") {
             if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {

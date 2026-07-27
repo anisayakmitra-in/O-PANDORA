@@ -87,7 +87,7 @@ pub fn run_agentic_loop(
     permissions: Option<&PermissionManifest>,
     parliament: Option<&Parliament>,
     config: &AgenticConfig,
-) -> Result<AgenticResult, String> {
+) -> Result<AgenticResult, pandora_types::PandoraError> {
     let start = Instant::now();
     let tools = genes_to_tool_definitions(genes);
     let mut gene_map: HashMap<String, &dyn Gene> = HashMap::with_capacity(genes.len());

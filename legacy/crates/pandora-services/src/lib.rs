@@ -43,40 +43,53 @@ impl Service for DefaultMemoryService {
 }
 
 impl MemoryService for DefaultMemoryService {
-    fn store(&self, namespace: &str, key: &str, value: &[u8]) -> Result<(), String> {
+    fn store(
+        &self,
+        namespace: &str,
+        key: &str,
+        value: &[u8],
+    ) -> Result<(), pandora_types::PandoraError> {
         self.store
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .entry(namespace.into())
             .or_default()
             .insert(key.into(), value.to_vec());
         Ok(())
     }
-    fn retrieve(&self, namespace: &str, key: &str) -> Result<Option<Vec<u8>>, String> {
+    fn retrieve(
+        &self,
+        namespace: &str,
+        key: &str,
+    ) -> Result<Option<Vec<u8>>, pandora_types::PandoraError> {
         Ok(self
             .store
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .get(namespace)
             .and_then(|ns| ns.get(key).cloned()))
     }
-    fn forget(&self, namespace: &str, key: &str) -> Result<(), String> {
+    fn forget(&self, namespace: &str, key: &str) -> Result<(), pandora_types::PandoraError> {
         if let Some(ns) = self
             .store
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .get_mut(namespace)
         {
             ns.remove(key);
         }
         Ok(())
     }
-    fn search(&self, namespace: &str, query: &str) -> Result<Vec<String>, String> {
+    fn search(
+        &self,
+        namespace: &str,
+        query: &str,
+    ) -> Result<Vec<String>, pandora_types::PandoraError> {
         let q = query.to_lowercase();
         Ok(self
             .store
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .get(namespace)
             .map(|ns| {
                 ns.keys()
@@ -86,10 +99,10 @@ impl MemoryService for DefaultMemoryService {
             })
             .unwrap_or_default())
     }
-    fn archive(&self, _ns: &str, _k: &str) -> Result<(), String> {
+    fn archive(&self, _ns: &str, _k: &str) -> Result<(), pandora_types::PandoraError> {
         Ok(())
     }
-    fn summarize(&self, _ns: &str) -> Result<String, String> {
+    fn summarize(&self, _ns: &str) -> Result<String, pandora_types::PandoraError> {
         Ok("in-memory".into())
     }
 }
@@ -139,56 +152,63 @@ impl Service for DefaultExecutionService {
 }
 
 impl ExecutionService for DefaultExecutionService {
-    fn spawn(&self, task: &str) -> Result<String, String> {
+    fn spawn(&self, task: &str) -> Result<String, pandora_types::PandoraError> {
         let id = format!("exec-{}", task.len());
         self.state
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .spawned
             .insert(id.clone(), task.into());
         Ok(id)
     }
-    fn execute(&self, _id: &str, cmd: &str) -> Result<String, String> {
+    fn execute(&self, _id: &str, cmd: &str) -> Result<String, pandora_types::PandoraError> {
         let out = Command::new("sh")
             .arg("-c")
             .arg(cmd)
             .output()
-            .map_err(|e| format!("execution failed: {e}"))?;
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("execution failed: {e}")))?;
         if out.status.success() {
             Ok(String::from_utf8_lossy(&out.stdout).to_string())
         } else {
-            Err(String::from_utf8_lossy(&out.stderr).to_string())
+            Err(String::from_utf8_lossy(&out.stderr).to_string().into())
         }
     }
-    fn checkpoint(&self, id: &str) -> Result<(), String> {
+    fn checkpoint(&self, id: &str) -> Result<(), pandora_types::PandoraError> {
         let task = self
             .state
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .spawned
             .get(id)
-            .ok_or(format!("unknown: {id}"))?
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "unknown: {id}"
+            )))?
             .clone();
         self.state
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .checkpoints
             .entry(id.into())
             .or_default()
             .push((format!("cp-{id}"), task));
         Ok(())
     }
-    fn restore(&self, id: &str, _cp: &str) -> Result<(), String> {
+    fn restore(&self, id: &str, _cp: &str) -> Result<(), pandora_types::PandoraError> {
         self.state
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .checkpoints
             .get(id)
-            .ok_or(format!("no cps for {id}"))?;
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "no cps for {id}"
+            )))?;
         Ok(())
     }
-    fn teardown(&self, id: &str) -> Result<(), String> {
-        let mut s = self.state.lock().map_err(|e| e.to_string())?;
+    fn teardown(&self, id: &str) -> Result<(), pandora_types::PandoraError> {
+        let mut s = self
+            .state
+            .lock()
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
         s.spawned.remove(id);
         s.checkpoints.remove(id);
         Ok(())
@@ -282,31 +302,43 @@ impl Service for DefaultPlanningService {
 }
 
 impl PlanningService for DefaultPlanningService {
-    fn plan(&self, goal: &str) -> Result<String, String> {
+    fn plan(&self, goal: &str) -> Result<String, pandora_types::PandoraError> {
         let steps = self.engine.decompose(goal);
         let plan_id = format!("plan-{:x}", goal.len());
         self.engine
             .plans
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .insert(plan_id.clone(), steps);
         Ok(plan_id)
     }
-    fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
-        let guard = self.engine.plans.lock().map_err(|e| e.to_string())?;
-        let steps = guard
-            .get(plan_id)
-            .ok_or_else(|| format!("Plan not found: {plan_id}"))?;
+    fn dag(&self, plan_id: &str) -> Result<Vec<String>, pandora_types::PandoraError> {
+        let guard = self
+            .engine
+            .plans
+            .lock()
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
+        let steps = guard.get(plan_id).ok_or_else(|| {
+            pandora_types::PandoraError::Internal(format!("Plan not found: {plan_id}"))
+        })?;
         Ok(steps
             .iter()
             .map(|s| format!("{} -> [{}]", s.id, s.depends_on.join(",")))
             .collect())
     }
-    fn retry_plan(&self, plan_id: &str, failed_step: &str) -> Result<String, String> {
-        let guard = self.engine.plans.lock().map_err(|e| e.to_string())?;
-        let steps = guard
-            .get(plan_id)
-            .ok_or_else(|| format!("Plan not found: {plan_id}"))?;
+    fn retry_plan(
+        &self,
+        plan_id: &str,
+        failed_step: &str,
+    ) -> Result<String, pandora_types::PandoraError> {
+        let guard = self
+            .engine
+            .plans
+            .lock()
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
+        let steps = guard.get(plan_id).ok_or_else(|| {
+            pandora_types::PandoraError::Internal(format!("Plan not found: {plan_id}"))
+        })?;
         let retry_steps: Vec<PlanStep> = steps
             .iter()
             .skip_while(|s| s.id != failed_step)
@@ -314,7 +346,7 @@ impl PlanningService for DefaultPlanningService {
             .collect();
         Ok(format!("Retry plan {plan_id}: {} steps", retry_steps.len()))
     }
-    fn topology(&self, plan_id: &str) -> Result<String, String> {
+    fn topology(&self, plan_id: &str) -> Result<String, pandora_types::PandoraError> {
         Ok(format!("Plan {plan_id}: {}", self.dag(plan_id)?.join("  ")))
     }
 }
@@ -322,7 +354,7 @@ impl PlanningService for DefaultPlanningService {
 // ── ExecutionController ──
 
 use pandora_types::decision::{Decision, DecisionLog};
-use pandora_types::provenance::{ExecutionProvenanceGraph, NodeKind};
+use pandora_types::provenance::{ExecutionProvenanceGraph, ProvenanceNodeKind};
 
 #[derive(Debug)]
 pub struct ExecutionController {
@@ -382,8 +414,9 @@ impl ExecutionController {
         self.graph = ExecutionProvenanceGraph::new(execution_id);
         let tid = format!("task-{execution_id}");
         let oid = format!("outcome-{execution_id}");
-        self.graph.add_node(NodeKind::Task, tid, task);
-        self.graph.add_node(NodeKind::Outcome, oid, "Pending");
+        self.graph.add_node(ProvenanceNodeKind::Task, tid, task);
+        self.graph
+            .add_node(ProvenanceNodeKind::Outcome, oid, "Pending");
     }
 
     pub fn finish_trace(&mut self, execution_id: &str, success: bool) {
@@ -479,25 +512,25 @@ impl Service for DefaultGovernanceService {
     }
 }
 impl GovernanceService for DefaultGovernanceService {
-    fn evaluate(&self, action: &str, _ctx: &str) -> Result<bool, String> {
+    fn evaluate(&self, action: &str, _ctx: &str) -> Result<bool, pandora_types::PandoraError> {
         Ok(self
             .allowed_actions
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .iter()
             .any(|a| action.contains(a.as_str())))
     }
-    fn audit(&self, action: &str, decision: &str) -> Result<(), String> {
+    fn audit(&self, action: &str, decision: &str) -> Result<(), pandora_types::PandoraError> {
         self.audit_log
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .push((action.into(), decision.into()));
         Ok(())
     }
-    fn score(&self, target: &str) -> Result<f64, String> {
+    fn score(&self, target: &str) -> Result<f64, pandora_types::PandoraError> {
         Ok(1.0 - (target.len() as f64 / 1000.0).min(0.9))
     }
-    fn verify(&self, artifact: &str) -> Result<bool, String> {
+    fn verify(&self, artifact: &str) -> Result<bool, pandora_types::PandoraError> {
         Ok(!artifact.is_empty()
             && artifact
                 .chars()
@@ -539,36 +572,48 @@ impl Service for DefaultIdentityService {
     }
 }
 impl IdentityService for DefaultIdentityService {
-    fn persist(&self, identity: &str) -> Result<(), String> {
+    fn persist(&self, identity: &str) -> Result<(), pandora_types::PandoraError> {
         self.store
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .insert(identity.into(), identity.into());
         Ok(())
     }
-    fn resurrect(&self, identity: &str) -> Result<String, String> {
+    fn resurrect(&self, identity: &str) -> Result<String, pandora_types::PandoraError> {
         self.store
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .get(identity)
             .cloned()
-            .ok_or(format!("Identity not found: {identity}"))
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Identity not found: {identity}"
+            )))
     }
-    fn fork(&self, identity: &str, name: &str) -> Result<String, String> {
-        let mut store = self.store.lock().map_err(|e| e.to_string())?;
+    fn fork(&self, identity: &str, name: &str) -> Result<String, pandora_types::PandoraError> {
+        let mut store = self
+            .store
+            .lock()
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
         let original = store
             .get(identity)
-            .ok_or(format!("Identity not found: {identity}"))?
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Identity not found: {identity}"
+            )))?
             .clone();
         let forked_id = format!("{name}--{identity}");
         store.insert(forked_id.clone(), original);
         Ok(forked_id)
     }
-    fn merge(&self, source: &str, target: &str) -> Result<(), String> {
-        let mut store = self.store.lock().map_err(|e| e.to_string())?;
+    fn merge(&self, source: &str, target: &str) -> Result<(), pandora_types::PandoraError> {
+        let mut store = self
+            .store
+            .lock()
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
         let src = store
             .get(source)
-            .ok_or(format!("Source not found: {source}"))?
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Source not found: {source}"
+            )))?
             .clone();
         store.insert(target.into(), src);
         Ok(())
@@ -607,16 +652,20 @@ impl Service for DefaultWorkflowService {
     }
 }
 impl PlanningService for DefaultWorkflowService {
-    fn plan(&self, goal: &str) -> Result<String, String> {
+    fn plan(&self, goal: &str) -> Result<String, pandora_types::PandoraError> {
         Ok(format!("wf-{:x}", goal.len()))
     }
-    fn dag(&self, plan_id: &str) -> Result<Vec<String>, String> {
+    fn dag(&self, plan_id: &str) -> Result<Vec<String>, pandora_types::PandoraError> {
         Ok(vec![format!("{plan_id}: start -> execute -> finish")])
     }
-    fn retry_plan(&self, plan_id: &str, _failed: &str) -> Result<String, String> {
+    fn retry_plan(
+        &self,
+        plan_id: &str,
+        _failed: &str,
+    ) -> Result<String, pandora_types::PandoraError> {
         Ok(format!("retry-{plan_id}"))
     }
-    fn topology(&self, plan_id: &str) -> Result<String, String> {
+    fn topology(&self, plan_id: &str) -> Result<String, pandora_types::PandoraError> {
         Ok(format!("Workflow {plan_id}: sequential"))
     }
 }
@@ -653,22 +702,22 @@ impl Service for DefaultProviderRegistryService {
     }
 }
 impl ProviderService for DefaultProviderRegistryService {
-    fn list_models(&self) -> Result<Vec<String>, String> {
+    fn list_models(&self) -> Result<Vec<String>, pandora_types::PandoraError> {
         Ok(vec!["ollama/default".into()])
     }
-    fn health(&self) -> Result<String, String> {
+    fn health(&self) -> Result<String, pandora_types::PandoraError> {
         Ok("operational".into())
     }
-    fn context_limit(&self, _m: &str) -> Result<usize, String> {
+    fn context_limit(&self, _m: &str) -> Result<usize, pandora_types::PandoraError> {
         Ok(8192)
     }
-    fn cost(&self, _m: &str) -> Result<f64, String> {
+    fn cost(&self, _m: &str) -> Result<f64, pandora_types::PandoraError> {
         Ok(0.0)
     }
-    fn latency(&self, _m: &str) -> Result<f64, String> {
+    fn latency(&self, _m: &str) -> Result<f64, pandora_types::PandoraError> {
         Ok(1000.0)
     }
-    fn invoke(&self, model: &str, prompt: &str) -> Result<String, String> {
+    fn invoke(&self, model: &str, prompt: &str) -> Result<String, pandora_types::PandoraError> {
         Ok(format!(
             "[{model}] simulated: {}",
             &prompt[..prompt.len().min(100)]
@@ -710,32 +759,34 @@ impl Service for DefaultSchedulerService {
     }
 }
 impl SchedulerService for DefaultSchedulerService {
-    fn schedule(&self, spec: &str, action: &str) -> Result<String, String> {
+    fn schedule(&self, spec: &str, action: &str) -> Result<String, pandora_types::PandoraError> {
         let job_id = format!("job-{:x}", spec.len() + action.len());
         self.jobs
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .insert(job_id.clone(), (spec.into(), action.into()));
         Ok(job_id)
     }
-    fn cancel(&self, job_id: &str) -> Result<(), String> {
+    fn cancel(&self, job_id: &str) -> Result<(), pandora_types::PandoraError> {
         self.jobs
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .remove(job_id)
-            .ok_or(format!("Job not found: {job_id}"))?;
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Job not found: {job_id}"
+            )))?;
         Ok(())
     }
-    fn list(&self) -> Result<Vec<(String, String, String)>, String> {
+    fn list(&self) -> Result<Vec<(String, String, String)>, pandora_types::PandoraError> {
         Ok(self
             .jobs
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .iter()
             .map(|(id, (s, a))| (id.clone(), s.clone(), a.clone()))
             .collect())
     }
-    fn history(&self, _id: &str) -> Result<Vec<(String, String)>, String> {
+    fn history(&self, _id: &str) -> Result<Vec<(String, String)>, pandora_types::PandoraError> {
         Ok(vec![])
     }
 }
@@ -774,11 +825,11 @@ impl Service for DefaultLedgerService {
     }
 }
 impl StorageService for DefaultLedgerService {
-    fn read(&self, path: &str) -> Result<Vec<u8>, String> {
+    fn read(&self, path: &str) -> Result<Vec<u8>, pandora_types::PandoraError> {
         Ok(self
             .log
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .iter()
             .filter(|e| e.contains(path))
             .cloned()
@@ -786,21 +837,21 @@ impl StorageService for DefaultLedgerService {
             .join("\n")
             .into_bytes())
     }
-    fn write(&self, _p: &str, data: &[u8]) -> Result<(), String> {
+    fn write(&self, _p: &str, data: &[u8]) -> Result<(), pandora_types::PandoraError> {
         self.log
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .push(String::from_utf8_lossy(data).to_string());
         Ok(())
     }
-    fn delete(&self, _p: &str) -> Result<(), String> {
+    fn delete(&self, _p: &str) -> Result<(), pandora_types::PandoraError> {
         Ok(())
     }
-    fn list(&self, _p: &str) -> Result<Vec<String>, String> {
+    fn list(&self, _p: &str) -> Result<Vec<String>, pandora_types::PandoraError> {
         Ok(self
             .log
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?
             .iter()
             .map(|e| e.split('\n').next().unwrap_or(e).to_string())
             .collect())

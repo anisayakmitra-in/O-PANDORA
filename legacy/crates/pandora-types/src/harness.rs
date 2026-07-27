@@ -125,7 +125,7 @@ impl HarnessManifestBuilder {
     }
 
     /// Consume builder and produce a validated manifest.
-    pub fn build(self) -> Result<HarnessManifest, String> {
+    pub fn build(self) -> Result<HarnessManifest, crate::PandoraError> {
         Ok(HarnessManifest {
             id: self.id.ok_or("Missing required field: id")?,
             name: self.name.ok_or("Missing required field: name")?,
@@ -148,15 +148,15 @@ pub trait Harness: Send + Sync + std::fmt::Debug {
     fn manifest(&self) -> &HarnessManifest;
 
     /// Initialize — called on install or load.
-    fn initialize(&mut self) -> Result<(), String> {
+    fn initialize(&mut self) -> Result<(), crate::PandoraError> {
         Ok(())
     }
     /// Shutdown — called on uninstall or disable.
-    fn shutdown(&mut self) -> Result<(), String> {
+    fn shutdown(&mut self) -> Result<(), crate::PandoraError> {
         Ok(())
     }
     /// Health check.
-    fn health(&self) -> Result<(), String> {
+    fn health(&self) -> Result<(), crate::PandoraError> {
         Ok(())
     }
 
@@ -225,7 +225,7 @@ impl HarnessSpecBuilder {
         self.requires_validation = Some(requires);
         self
     }
-    pub fn build(self) -> Result<HarnessSpec, String> {
+    pub fn build(self) -> Result<HarnessSpec, crate::PandoraError> {
         Ok(HarnessSpec {
             name: self.name.ok_or("Missing: name")?,
             domain: self.domain.ok_or("Missing: domain")?,

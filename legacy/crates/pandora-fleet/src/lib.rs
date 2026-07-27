@@ -240,12 +240,17 @@ impl FleetController {
 
     /// Execute a plan across the fleet. Returns immediately with task status;
     /// the caller polls task_status() for completion.
-    pub async fn execute(&self, plan: ExecutionPlan) -> Result<ScheduledTask, String> {
-        let worker = self
-            .scheduler
-            .schedule(&plan)
-            .await
-            .ok_or("No available workers")?;
+    pub async fn execute(
+        &self,
+        plan: ExecutionPlan,
+    ) -> Result<ScheduledTask, pandora_types::PandoraError> {
+        let worker =
+            self.scheduler
+                .schedule(&plan)
+                .await
+                .ok_or(pandora_types::PandoraError::NotFound(
+                    "No available workers".to_string(),
+                ))?;
         let task_id = format!("task-{:016x}", rand::random::<u64>());
         let task = ScheduledTask {
             task_id: task_id.clone(),
@@ -327,21 +332,21 @@ pub async fn dispatch_task(
     task_id: &str,
     plan: &ExecutionPlan,
     worker_endpoint: &str,
-) -> Result<ExecutionOutcome, String> {
+) -> Result<ExecutionOutcome, pandora_types::PandoraError> {
     let client = reqwest::Client::new();
     let resp = client
         .post(&format!("{}/execute", worker_endpoint))
         .json(plan)
         .send()
         .await
-        .map_err(|e| format!("Dispatch failed: {e}"))?;
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("Dispatch failed: {e}")))?;
     if !resp.status().is_success() {
         return Err(format!("Worker returned {}", resp.status()));
     }
     let outcome: ExecutionOutcome = resp
         .json()
         .await
-        .map_err(|e| format!("Bad response: {e}"))?;
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("Bad response: {e}")))?;
     controller.complete_task(task_id, outcome.clone()).await;
     Ok(outcome)
 }

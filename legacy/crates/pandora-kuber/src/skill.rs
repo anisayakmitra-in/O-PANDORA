@@ -19,10 +19,11 @@ pub fn discover(root: &str) -> Vec<SkillManifest> {
     r
 }
 
-pub fn install(kuber: &mut Kuber, path: &str) -> Result<Skill, String> {
-    let content = std::fs::read_to_string(path).map_err(|e| format!("Cannot read skill: {e}"))?;
-    let manifest: SkillManifest =
-        toml::from_str(&content).map_err(|e| format!("Invalid skill.toml: {e}"))?;
+pub fn install(kuber: &mut Kuber, path: &str) -> Result<Skill, pandora_types::PandoraError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("Cannot read skill: {e}")))?;
+    let manifest: SkillManifest = toml::from_str(&content)
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("Invalid skill.toml: {e}")))?;
     for gene in &manifest.genes {
         match kuber.install(&gene.id) {
             Ok(_) => println!("  [gene] {}", gene.id),
@@ -33,9 +34,10 @@ pub fn install(kuber: &mut Kuber, path: &str) -> Result<Skill, String> {
     Ok(Skill { manifest })
 }
 
-pub fn scaffold(name: &str, dir: &str) -> Result<String, String> {
+pub fn scaffold(name: &str, dir: &str) -> Result<String, pandora_types::PandoraError> {
     let sd = std::path::Path::new(dir).join(name);
-    std::fs::create_dir_all(&sd).map_err(|e| format!("Cannot create: {e}"))?;
-    std::fs::write(sd.join("skill.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nversion = \"0.2.0\"\nauthor = \"\"\ndescription = \"\"\n\n[[genes]]\nid = \"\"\nversion = \"\"\n")).map_err(|e| format!("Cannot write: {e}"))?;
+    std::fs::create_dir_all(&sd)
+        .map_err(|e| pandora_types::PandoraError::Internal(format!("Cannot create: {e}")))?;
+    std::fs::write(sd.join("skill.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nversion = \"0.2.0\"\nauthor = \"\"\ndescription = \"\"\n\n[[genes]]\nid = \"\"\nversion = \"\"\n")).map_err(|e| pandora_types::PandoraError::Internal(format!("Cannot write: {e}")))?;
     Ok(sd.to_string_lossy().to_string())
 }

@@ -1,0 +1,20 @@
+[package]
+id = "code-review"
+name = "Code Review"
+kind = "agent"
+version = "0.2.0"
+author = "pandora"
+description = "Git diff analysis for code review"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["code-review", "quality", "analysis"]
+
+[capabilities]
+provided = ["code-review.analyze"]
+
+[permissions]
+required = ["git.execute"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

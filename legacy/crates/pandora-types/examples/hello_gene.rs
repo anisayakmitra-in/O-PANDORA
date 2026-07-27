@@ -30,7 +30,7 @@ impl Gene for HelloGene {
     fn manifest(&self) -> &GeneManifest {
         &self.manifest
     }
-    fn execute(&self, input: &str) -> Result<String, String> {
+    fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
         Ok(format!("Hello from gene! Input was: {}", input))
     }
 }

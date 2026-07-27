@@ -15,7 +15,10 @@ use pandora_types::permissions_manifest::{
 };
 use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
 use pandora_types::runtime_node::{NodeCapabilities, NodeKind, NodeRegistry, RuntimeNode};
-use pandora_types::universal_registry::{HealthStatus, InMemoryRegistry, Registry, RegistryEntry};
+use pandora_types::universal_registry::{
+    InMemoryRegistry, Registry, RegistryEntry, RegistryHealth,
+};
+
 use pandora_types::workflow_lifecycle::{Lifecycle, LifecycleState};
 use std::collections::HashMap;
 
@@ -205,7 +208,7 @@ fn scenario_universal_registry() {
         version: "1.0.0".to_string(),
         kind: "gene".to_string(),
         capabilities: vec![well_known::CODE_PARSE.to_string()],
-        health: HealthStatus::Healthy,
+        health: RegistryHealth::Healthy,
         signature: None,
         metadata: HashMap::new(),
     })

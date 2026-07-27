@@ -88,13 +88,13 @@ impl Lifecycle {
             completed_at: None,
         }
     }
-    pub fn transition(&mut self, next: LifecycleState) -> Result<(), String> {
+    pub fn transition(&mut self, next: LifecycleState) -> Result<(), crate::PandoraError> {
         if !self.state.next_states().contains(&next) {
-            return Err(format!(
+            return Err(crate::PandoraError::Execution(format!(
                 "Invalid transition: {} → {}",
                 self.state.label(),
                 next.label()
-            ));
+            )));
         }
         self.state = next;
         if next.is_terminal() {

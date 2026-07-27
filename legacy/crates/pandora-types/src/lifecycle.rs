@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum PackageLifecycle {
+pub enum PackageStatus {
     #[default]
     Draft,
     Testing,
@@ -21,12 +21,12 @@ pub enum PackageLifecycle {
     Yanked,
 }
 
-impl PackageLifecycle {
-    pub fn can_transition_to(&self, next: PackageLifecycle) -> bool {
+impl PackageStatus {
+    pub fn can_transition_to(&self, next: PackageStatus) -> bool {
         matches!(
             (self, next),
-            (_, PackageLifecycle::Broken)
-                | (_, PackageLifecycle::Yanked)
+            (_, PackageStatus::Broken)
+                | (_, PackageStatus::Yanked)
                 | (Self::Draft, Self::Testing)
                 | (Self::Testing, Self::Beta)
                 | (Self::Testing, Self::Draft)
@@ -66,18 +66,18 @@ mod lifecycle_tests {
 
     #[test]
     fn draft_to_testing() {
-        assert!(PackageLifecycle::Draft.can_transition_to(PackageLifecycle::Testing));
+        assert!(PackageStatus::Draft.can_transition_to(PackageStatus::Testing));
     }
     #[test]
     fn published_to_verified() {
-        assert!(PackageLifecycle::Published.can_transition_to(PackageLifecycle::Verified));
+        assert!(PackageStatus::Published.can_transition_to(PackageStatus::Verified));
     }
     #[test]
     fn cannot_skip_states() {
-        assert!(!PackageLifecycle::Draft.can_transition_to(PackageLifecycle::Published));
+        assert!(!PackageStatus::Draft.can_transition_to(PackageStatus::Published));
     }
     #[test]
     fn any_to_broken() {
-        assert!(PackageLifecycle::Published.can_transition_to(PackageLifecycle::Broken));
+        assert!(PackageStatus::Published.can_transition_to(PackageStatus::Broken));
     }
 }

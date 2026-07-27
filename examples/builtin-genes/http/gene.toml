@@ -1,0 +1,20 @@
+[package]
+id = "http"
+name = "HTTP"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "HTTP requests via curl"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["http", "network", "api"]
+
+[capabilities]
+provided = ["http.request"]
+
+[permissions]
+required = ["http.request"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

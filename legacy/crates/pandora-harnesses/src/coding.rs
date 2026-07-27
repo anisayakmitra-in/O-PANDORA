@@ -18,7 +18,7 @@ impl CodingDomainHarness {
             manifest: HarnessManifestBuilder::default()
                 .id("coding-domain")
                 .name("Coding Domain")
-                .version("0.2.0")
+                .version(env!("CARGO_PKG_VERSION"))
                 .author("pandora")
                 .kind(HarnessKind::Domain)
                 .description(
@@ -44,7 +44,7 @@ fn mk(id: &str, kind: GeneKind, desc: &str) -> GeneManifest {
         .id(id)
         .name(desc)
         .kind(kind)
-        .version("0.2.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
         .build()
@@ -75,7 +75,7 @@ macro_rules! coding_gene {
             fn manifest(&self) -> &GeneManifest {
                 &self.m
             }
-            fn execute(&self, _input: &str) -> Result<String, String> {
+            fn execute(&self, _input: &str) -> Result<String, pandora_types::PandoraError> {
                 Ok(format!(
                     "{}: analysis complete — see report",
                     stringify!($name)
@@ -86,7 +86,7 @@ macro_rules! coding_gene {
 }
 
 coding_gene!(
-    CodeReviewGene,
+    CodingCodeReviewGene,
     "code-review",
     "Review code for bugs, patterns, and anti-patterns"
 );
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn gene_count() {
         let genes: [&dyn Gene; 10] = [
-            &CodeReviewGene::new(),
+            &CodingCodeReviewGene::new(),
             &CodeAuditGene::new(),
             &CodeDebtGene::new(),
             &CodeGainGene::new(),

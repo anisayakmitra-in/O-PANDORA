@@ -72,10 +72,10 @@ impl InstalledGene {
     }
 }
 
-const GENE_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "gene".into() } } pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("gene: {}", input)) } }"#;
-const TOOL_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "tool".into() } } pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("tool: {}", input)) } }"#;
-const WORKFLOW_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "workflow".into() } } pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("workflow: {}", input)) } }"#;
-const PROVIDER_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "provider".into() } } pub fn execute(&self, input: &str) -> Result<String, String> { Ok(format!("provider: {}", input)) } }"#;
+const GENE_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "gene".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("gene: {}", input)) } }"#;
+const TOOL_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "tool".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("tool: {}", input)) } }"#;
+const WORKFLOW_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "workflow".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("workflow: {}", input)) } }"#;
+const PROVIDER_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "provider".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("provider: {}", input)) } }"#;
 
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -263,9 +263,13 @@ impl SlashCommandRegistry {
             owners: HashMap::new(),
         }
     }
-    pub fn register(&mut self, harness_id: &str, cmd: &SlashCommand) -> Result<(), String> {
+    pub fn register(
+        &mut self,
+        harness_id: &str,
+        cmd: &SlashCommand,
+    ) -> Result<(), pandora_types::PandoraError> {
         if self.commands.contains_key(&cmd.command) {
-            return Err(format!("Slash command already registered: {}", cmd.command));
+            return Err(format!("Slash command already registered: {}", cmd.command).into());
         }
         self.commands.insert(cmd.command.clone(), cmd.clone());
         self.owners.insert(cmd.command.clone(), harness_id.into());
@@ -403,37 +407,42 @@ impl HarnessRegistry {
             suspend_data: HashMap::new(),
         }
     }
-    pub fn register(&mut self, harness: Box<dyn Harness>) -> Result<(), String> {
+    pub fn register(
+        &mut self,
+        harness: Box<dyn Harness>,
+    ) -> Result<(), pandora_types::PandoraError> {
         let id = harness.id().to_string();
         if self.harnesses.contains_key(&id) {
-            return Err(format!("Harness already registered: {id}"));
+            return Err(format!("Harness already registered: {id}").into());
         }
         self.states.insert(id.clone(), HarnessState::Registered);
         self.harnesses.insert(id, harness);
         Ok(())
     }
-    pub fn install(&mut self, h: Box<dyn Harness>) -> Result<(), String> {
+    pub fn install(&mut self, h: Box<dyn Harness>) -> Result<(), pandora_types::PandoraError> {
         let id = h.id().to_string();
         self.register(h)?;
         self.states.insert(id, HarnessState::Disabled);
         Ok(())
     }
-    pub fn enable(&mut self, id: &str) -> Result<(), String> {
+    pub fn enable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses
             .get_mut(id)
-            .ok_or(format!("Harness not found: {id}"))?
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Harness not found: {id}"
+            )))?
             .initialize()?;
         self.states.insert(id.into(), HarnessState::Enabled);
         Ok(())
     }
-    pub fn disable(&mut self, id: &str) -> Result<(), String> {
+    pub fn disable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         if let Some(h) = self.harnesses.get_mut(id) {
             h.shutdown().ok();
         }
         self.states.insert(id.into(), HarnessState::Disabled);
         Ok(())
     }
-    pub fn suspend(&mut self, id: &str) -> Result<(), String> {
+    pub fn suspend(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         if let Some(h) = self.harnesses.get_mut(id) {
             h.shutdown().ok();
         }
@@ -441,16 +450,18 @@ impl HarnessRegistry {
         self.states.insert(id.into(), HarnessState::Suspended);
         Ok(())
     }
-    pub fn resume(&mut self, id: &str) -> Result<(), String> {
+    pub fn resume(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses
             .get_mut(id)
-            .ok_or(format!("Harness not found: {id}"))?
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Harness not found: {id}"
+            )))?
             .initialize()?;
         self.suspend_data.remove(id);
         self.states.insert(id.into(), HarnessState::Enabled);
         Ok(())
     }
-    pub fn uninstall(&mut self, id: &str) -> Result<(), String> {
+    pub fn uninstall(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         if let Some(mut h) = self.harnesses.remove(id) {
             h.shutdown().ok();
         }
@@ -458,7 +469,11 @@ impl HarnessRegistry {
         self.suspend_data.remove(id);
         Ok(())
     }
-    pub fn update(&mut self, id: &str, new: Box<dyn Harness>) -> Result<(), String> {
+    pub fn update(
+        &mut self,
+        id: &str,
+        new: Box<dyn Harness>,
+    ) -> Result<(), pandora_types::PandoraError> {
         let old = self
             .states
             .get(id)
@@ -471,10 +486,12 @@ impl HarnessRegistry {
         }
         Ok(())
     }
-    pub fn health(&self, id: &str) -> Result<(), String> {
+    pub fn health(&self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses
             .get(id)
-            .ok_or(format!("Harness not found: {id}"))?
+            .ok_or(pandora_types::PandoraError::NotFound(format!(
+                "Harness not found: {id}"
+            )))?
             .health()
     }
     pub fn list_by_kind(&self, kind: &HarnessKind) -> Vec<&dyn Harness> {
@@ -528,27 +545,28 @@ impl GeneRegistry {
             genes: HashMap::new(),
         }
     }
-    pub fn register(&mut self, installed: InstalledGene) -> Result<(), String> {
+    pub fn register(
+        &mut self,
+        installed: InstalledGene,
+    ) -> Result<(), pandora_types::PandoraError> {
         let id = installed.id().to_string();
         if self.genes.contains_key(&id) {
-            return Err(format!("Gene already installed: {id}"));
+            return Err(format!("Gene already installed: {id}").into());
         }
         self.genes.insert(id, installed);
         Ok(())
     }
-    pub fn enable(&mut self, id: &str) -> Result<(), String> {
-        self.genes
-            .get_mut(id)
-            .map(|g| g.enabled = true)
-            .ok_or(format!("Gene not found: {id}"))
+    pub fn enable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
+        self.genes.get_mut(id).map(|g| g.enabled = true).ok_or(
+            pandora_types::PandoraError::NotFound(format!("Gene not found: {id}")),
+        )
     }
-    pub fn disable(&mut self, id: &str) -> Result<(), String> {
-        self.genes
-            .get_mut(id)
-            .map(|g| g.enabled = false)
-            .ok_or(format!("Gene not found: {id}"))
+    pub fn disable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
+        self.genes.get_mut(id).map(|g| g.enabled = false).ok_or(
+            pandora_types::PandoraError::NotFound(format!("Gene not found: {id}")),
+        )
     }
-    pub fn unregister(&mut self, id: &str) -> Result<(), String> {
+    pub fn unregister(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.genes.remove(id);
         Ok(())
     }
@@ -635,7 +653,10 @@ impl ShadowCouncil {
         }
     }
 
-    pub fn install(&mut self, harness: Box<dyn Harness>) -> Result<(), String> {
+    pub fn install(
+        &mut self,
+        harness: Box<dyn Harness>,
+    ) -> Result<(), pandora_types::PandoraError> {
         let id = harness.id().to_string();
         let kind = harness.kind().clone();
         let manifest = harness.manifest().clone();
@@ -643,12 +664,12 @@ impl ShadowCouncil {
         if self.dependencies.specs.contains_key(&id) {
             for status in &self.dependencies.resolve(&id, &deps) {
                 if let DependencyStatus::MissingRequired(dep) = status {
-                    return Err(format!(
-                        "Missing required dependency {dep} for harness {id}"
-                    ));
+                    return Err(
+                        format!("Missing required dependency {dep} for harness {id}").into(),
+                    );
                 }
                 if let DependencyStatus::Conflict(a, b) = status {
-                    return Err(format!("Conflict: {a} conflicts with {b}"));
+                    return Err(format!("Conflict: {a} conflicts with {b}").into());
                 }
             }
         }
@@ -660,33 +681,33 @@ impl ShadowCouncil {
         Ok(())
     }
 
-    pub fn enable(&mut self, id: &str) -> Result<(), String> {
+    pub fn enable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.enable(id)?;
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessEnabled));
         println!("[SHADOW-COUNCIL] enabled: {id}");
         Ok(())
     }
-    pub fn disable(&mut self, id: &str) -> Result<(), String> {
+    pub fn disable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.disable(id)?;
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessDisabled));
         println!("[SHADOW-COUNCIL] disabled: {id}");
         Ok(())
     }
-    pub fn suspend(&mut self, id: &str) -> Result<(), String> {
+    pub fn suspend(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.suspend(id)?;
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessSuspended));
         Ok(())
     }
-    pub fn resume(&mut self, id: &str) -> Result<(), String> {
+    pub fn resume(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.resume(id)?;
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessResumed));
         Ok(())
     }
-    pub fn uninstall(&mut self, id: &str) -> Result<(), String> {
+    pub fn uninstall(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.uninstall(id)?;
         self.slash_commands.remove_owner(id);
         self.capabilities.remove(id);
@@ -696,7 +717,11 @@ impl ShadowCouncil {
         println!("[SHADOW-COUNCIL] uninstalled: {id}");
         Ok(())
     }
-    pub fn update(&mut self, id: &str, new: Box<dyn Harness>) -> Result<(), String> {
+    pub fn update(
+        &mut self,
+        id: &str,
+        new: Box<dyn Harness>,
+    ) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.update(id, new)?;
         println!("[SHADOW-COUNCIL] updated: {id}");
         Ok(())
@@ -719,7 +744,7 @@ impl ShadowCouncil {
         self.harnesses.list_by_kind(kind)
     }
 
-    pub fn install_gene(&mut self, gene: Box<dyn Gene>) -> Result<(), String> {
+    pub fn install_gene(&mut self, gene: Box<dyn Gene>) -> Result<(), pandora_types::PandoraError> {
         let id = gene.id().to_string();
         let package_id = gene.manifest().name.clone();
         let version = gene.manifest().version.clone();
@@ -757,20 +782,20 @@ impl ShadowCouncil {
     pub fn genes_by_kind(&self, kind: &GeneKind) -> Vec<&InstalledGene> {
         self.genes.list_by_kind(kind)
     }
-    pub fn enable_gene(&mut self, id: &str) -> Result<(), String> {
+    pub fn enable_gene(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.genes.enable(id)
     }
-    pub fn disable_gene(&mut self, id: &str) -> Result<(), String> {
+    pub fn disable_gene(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.genes.disable(id)
     }
-    pub fn uninstall_gene(&mut self, id: &str) -> Result<(), String> {
+    pub fn uninstall_gene(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.genes.unregister(id)?;
         self.slash_commands.remove_owner(id);
         self.gene_router.remove(id);
         Ok(())
     }
 
-    pub fn load_gene_packages(&mut self, root: &str) -> Result<usize, String> {
+    pub fn load_gene_packages(&mut self, root: &str) -> Result<usize, pandora_types::PandoraError> {
         let mut count = 0;
         for pkg in &pandora_types::gene_package::discover_gene_packages(root) {
             let kind = parse_gene_kind(&pkg.manifest.kind);
@@ -790,9 +815,9 @@ impl ShadowCouncil {
             for sc in &pkg.manifest.slash_commands {
                 b = b.slash_command(&sc.command, &sc.description);
             }
-            let manifest = b
-                .build()
-                .map_err(|e| format!("Skipping {}: {e}", pkg.manifest.id))?;
+            let manifest = b.build().map_err(|e| {
+                pandora_types::PandoraError::Internal(format!("Skipping {}: {e}", pkg.manifest.id))
+            })?;
             self.install_gene(Box::new(PackageGene::new(
                 manifest,
                 pkg.root.to_string_lossy().to_string(),
@@ -802,19 +827,26 @@ impl ShadowCouncil {
         Ok(count)
     }
 
-    pub fn scaffold_gene(&self, kind: &GeneKind, name: &str, dir: &str) -> Result<String, String> {
+    pub fn scaffold_gene(
+        &self,
+        kind: &GeneKind,
+        name: &str,
+        dir: &str,
+    ) -> Result<String, pandora_types::PandoraError> {
         let gene_dir = std::path::Path::new(dir).join(name);
-        std::fs::create_dir_all(gene_dir.join("src"))
-            .map_err(|e| format!("Cannot create directory: {e}"))?;
+        std::fs::create_dir_all(gene_dir.join("src")).map_err(|e| {
+            pandora_types::PandoraError::Internal(format!("Cannot create directory: {e}"))
+        })?;
         let module = match kind {
             GeneKind::Tool => TOOL_TMPL,
             GeneKind::Provider => PROVIDER_TMPL,
             GeneKind::Workflow => WORKFLOW_TMPL,
             _ => GENE_TMPL,
         };
-        std::fs::write(gene_dir.join("gene.toml"), format!(r#"id = "{name}" name = "{name}" kind = "{}" version = "0.2.0" author = "" description = "" [[slash_commands]] command = "{name}.run" description = "Run the {name} gene""#, kind.as_str())).map_err(|e| format!("Cannot write gene.toml: {e}"))?;
-        std::fs::write(gene_dir.join("src").join("lib.rs"), module)
-            .map_err(|e| format!("Cannot write lib.rs: {e}"))?;
+        std::fs::write(gene_dir.join("gene.toml"), format!(r#"id = "{name}" name = "{name}" kind = "{}" version = "0.2.0" author = "" description = "" [[slash_commands]] command = "{name}.run" description = "Run the {name} gene""#, kind.as_str())).map_err(|e| pandora_types::PandoraError::Internal(format!("Cannot write gene.toml: {e}")))?;
+        std::fs::write(gene_dir.join("src").join("lib.rs"), module).map_err(|e| {
+            pandora_types::PandoraError::Internal(format!("Cannot write lib.rs: {e}"))
+        })?;
         let _ = std::fs::write(gene_dir.join("src").join("mod.rs"), "pub mod lib;\n");
         Ok(gene_dir.to_string_lossy().to_string())
     }

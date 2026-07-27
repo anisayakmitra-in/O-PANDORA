@@ -108,7 +108,7 @@ impl AuthStore {
         }
     }
 
-    pub fn save(&self) -> Result<(), String> {
+    pub fn save(&self) -> Result<(), crate::PandoraError> {
         let path = self
             .config_path
             .as_ref()

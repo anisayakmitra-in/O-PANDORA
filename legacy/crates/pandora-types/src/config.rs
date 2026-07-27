@@ -50,11 +50,14 @@ impl PandoraConfig {
     }
 
     /// Save current config to disk.
-    pub fn save(&self) -> Result<(), String> {
+    pub fn save(&self) -> Result<(), crate::PandoraError> {
         let dir = config_dir();
-        std::fs::create_dir_all(&dir).map_err(|e| format!("mkdir: {e}"))?;
-        let toml_str = toml::to_string_pretty(self).map_err(|e| format!("toml: {e}"))?;
-        std::fs::write(Self::path(), toml_str).map_err(|e| format!("write: {e}"))
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| crate::PandoraError::Internal(format!("mkdir: {e}")))?;
+        let toml_str = toml::to_string_pretty(self)
+            .map_err(|e| crate::PandoraError::Internal(format!("toml: {e}")))?;
+        std::fs::write(Self::path(), toml_str)
+            .map_err(|e| crate::PandoraError::Internal(format!("write: {e}")))
     }
 
     fn path() -> PathBuf {

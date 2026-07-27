@@ -1,0 +1,20 @@
+[package]
+id = "browser"
+name = "Browser"
+kind = "tool"
+version = "0.2.0"
+author = "pandora"
+description = "Web page content via curl (HTTP fetch)"
+homepage = "https://github.com/anisayakmitra-in/O-PANDORA"
+license = "Apache-2.0"
+tags = ["browser", "scraping", "web"]
+
+[capabilities]
+provided = ["browser.fetch"]
+
+[permissions]
+required = ["http.request"]
+
+[trust]
+level = "Official"
+min_pandora_version = "0.2.0"

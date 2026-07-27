@@ -30,7 +30,7 @@ pub fn package_id(publisher: &str, name: &str) -> String {
 /// Trust level assigned to a package.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum TrustLevel {
+pub enum PackageTrustLevel {
     #[default]
     None,
     /// Publisher is verified by K-O Palace.
@@ -47,7 +47,7 @@ pub enum TrustLevel {
     PandoraVerified,
 }
 
-impl TrustLevel {
+impl PackageTrustLevel {
     pub fn badge(&self) -> &'static str {
         match self {
             Self::None => "",
@@ -109,7 +109,7 @@ pub struct PackageManifest {
     /// Minimum Pandora runtime version required.
     #[serde(default)]
     pub pandora_version: String,
-    pub lifecycle: PackageLifecycle,
+    pub lifecycle: PackageStatus,
     /// Tags for discovery.
     #[serde(default)]
     pub tags: Vec<String>,
@@ -279,7 +279,7 @@ pub struct RegistryPackage {
     pub weekly_downloads: u64,
     pub stars: u64,
     pub verified: bool,
-    pub trust_levels: Vec<TrustLevel>,
+    pub trust_levels: Vec<PackageTrustLevel>,
     pub signature: Option<String>,
     pub checksum_sha256: String,
     pub archive_url: String,
@@ -315,12 +315,12 @@ impl RegistryPackage {
             .collect::<Vec<_>>()
             .join("  ")
     }
-    pub fn top_trust(&self) -> TrustLevel {
+    pub fn top_trust(&self) -> PackageTrustLevel {
         self.trust_levels
             .iter()
             .max_by_key(|t| t.rank())
             .copied()
-            .unwrap_or(TrustLevel::None)
+            .unwrap_or(PackageTrustLevel::None)
     }
 }
 
@@ -337,7 +337,7 @@ pub struct RegistryListing {
     pub weekly_downloads: u64,
     pub stars: u64,
     pub verified: bool,
-    pub trust_levels: Vec<TrustLevel>,
+    pub trust_levels: Vec<PackageTrustLevel>,
     pub tags: Vec<String>,
     pub success_rate: f64,
     pub avg_latency_ms: f64,
@@ -440,7 +440,7 @@ pub struct ApiError {
 #[non_exhaustive]
 /// Package lifecycle — like Cargo/NPM.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum PackageLifecycle {
+pub enum PackageStatus {
     #[default]
     Draft,
     Published,
@@ -450,7 +450,7 @@ pub enum PackageLifecycle {
     Broken,
     Yanked,
 }
-impl PackageLifecycle {
+impl PackageStatus {
     pub fn can_install(&self) -> bool {
         matches!(self, Self::Draft | Self::Published)
     }
