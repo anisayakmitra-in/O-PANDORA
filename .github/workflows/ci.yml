@@ -14,6 +14,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python scripts/validate_repo.py
+      - run: python scripts/validate_docs.py
 
   test:
     needs: [validate]
@@ -27,7 +28,7 @@ jobs:
       - run: rustup component add clippy rustfmt
       - run: cargo fmt --all -- --check
       - run: cargo check --workspace
-      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       - run: cargo build --release -p pandora -p pandora-tui
       - run: cargo check --examples -p pandora-types
