@@ -9,3 +9,4 @@ legacy/archive/root-files/
 .idea/
 *.pyc
 __pycache__/
+.hermes/
