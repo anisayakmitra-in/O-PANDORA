@@ -28,7 +28,7 @@ pub mod harness;
 pub use decision::{Decision, DecisionLog, RejectedOption};
 pub use error::PandoraError;
 pub use harness::{
-    Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessSpec, SlashCommand,
+    Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessPackage, HarnessSpec, SlashCommand, generate_harness_toml,
 };
 pub use session::{Session, SessionStatus, SessionStore};
 

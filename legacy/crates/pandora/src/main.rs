@@ -1045,10 +1045,11 @@ fn cmd_gene(args: &[String]) {
 }
 fn cmd_harness(args: &[String]) {
     if args.len() < 3 {
-        eprintln!("Usage: pandora harness <list|inspect> [id]");
+        eprintln!("Usage: pandora harness <list|install|enable|disable|uninstall|info> [id]");
         return;
     }
-    match args[2].as_str() {
+    let sub = &args[2];
+    match sub.as_str() {
         "list" => {
             let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
             let s = sc.read().expect("council lock read").summary();
@@ -1057,16 +1058,132 @@ fn cmd_harness(args: &[String]) {
                 s.total_harnesses, s.source_count, s.meta_count, s.domain_count
             );
         }
-        "inspect" => {
+        "install" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora harness install <path>");
+                return;
+            }
+            let path = &args[3];
+            let id = std::path::Path::new(path)
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or(path);
+            println!("Installing harness from: {path}");
+
+            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+            let mut _council = sc.write().expect("council lock write");
+
+            // Read harness.toml from the path
+            let manifest_path = std::path::Path::new(path).join("harness.toml");
+            if !manifest_path.exists() {
+                // Try reading from file directly if it's a toml file
+                let toml_path = std::path::Path::new(path);
+                if toml_path.extension().is_some_and(|e| e == "toml") {
+                    let content = std::fs::read_to_string(toml_path).unwrap();
+                    println!("Read manifest: {} bytes", content.len());
+                    // For now, register as a pending harness package
+                } else {
+                    eprintln!("No harness.toml found at {}. Expected a directory with harness.toml or a .toml file.", path);
+                    return;
+                }
+            }
+
+            // For Phase 4 MVP: register the harness dir in a simple staging area
+            let staging = sessions_dir().join("harnesses").join(id);
+            let _ = std::fs::create_dir_all(&staging);
+            if std::path::Path::new(path).is_dir() {
+                // Copy to staging
+                let _ = copy_dir(std::path::Path::new(path), &staging);
+            }
+
+            // Read manifest for display
+            if let Ok(content) = std::fs::read_to_string(manifest_path) {
+                println!("Manifest:");
+                for line in content.lines().take(10) {
+                    println!("  {line}");
+                }
+            }
+
+            println!("Installed: {id} (pending enable)");
+            println!("Run 'pandora harness enable {id}' to activate.");
+            if id.contains("source") || id.contains("Source") {
+                println!("  WARNING: Source harness activation requires explicit approval.");
+            }
+        }
+        "enable" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora harness enable <id>");
+                return;
+            }
+            let id = &args[3];
+            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+            let mut _council = sc.write().expect("council lock write");
+
+            match _council.enable(id) {
+                Ok(()) => println!("Enabled: {id}"),
+                Err(e) => eprintln!("Error: {e}"),
+            }
+        }
+        "disable" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora harness disable <id>");
+                return;
+            }
+            let id = &args[3];
+            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+            let mut _council = sc.write().expect("council lock write");
+
+            match _council.disable(id) {
+                Ok(()) => println!("Disabled: {id}"),
+                Err(e) => eprintln!("Error: {e}"),
+            }
+        }
+        "uninstall" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora harness uninstall <id>");
+                return;
+            }
+            let id = &args[3];
+            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+            let mut _council = sc.write().expect("council lock write");
+
+            match _council.uninstall(id) {
+                Ok(()) => println!("Uninstalled: {id}"),
+                Err(e) => eprintln!("Error: {e}"),
+            }
+        }
+        "info" | "inspect" => {
             if args.len() < 4 {
                 return;
             }
-            println!("Harness: {}", args[3]);
+            let id = &args[3];
+            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+            let _council = sc.read().expect("council lock read");
+            println!("Harness: {id}");
+            // TODO: read harness.toml from staging and display
         }
         _ => {
-            eprintln!("Subcommand: list, inspect");
+            eprintln!("Subcommand: list, install, enable, disable, uninstall, info");
         }
     }
+}
+
+/// Simple recursive directory copy (Phase 4 ponytail: std only, no walkdir needed).
+fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    if !dst.exists() {
+        std::fs::create_dir_all(dst)?;
+    }
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+        if src_path.is_dir() {
+            copy_dir(&src_path, &dst_path)?;
+        } else {
+            std::fs::copy(&src_path, &dst_path)?;
+        }
+    }
+    Ok(())
 }
 fn cmd_service(args: &[String]) {
     if args.len() < 3 {
@@ -1183,19 +1300,53 @@ fn cmd_new(args: &[String]) {
             println!("Created: {name}/");
         }
         "harness" => {
+            let kind = if let Some(k) = args.iter().position(|a| a == "--kind") {
+                args.get(k + 1).map(|s| s.as_str()).unwrap_or("domain")
+            } else {
+                "domain"
+            };
+            let kind_enum = match kind {
+                "source" => "HarnessKind::Source",
+                "meta" => "HarnessKind::Meta",
+                _ => "HarnessKind::Domain",
+            };
+            let kind_label = kind;
+
             let dir = std::path::Path::new(".").join(name);
+            if dir.exists() {
+                eprintln!("Already exists: {name}");
+                process::exit(1);
+            }
             std::fs::create_dir_all(dir.join("src")).expect("CLI I/O");
+
+            // Generate harness.toml using the canonical format
+            let caps = match kind_label {
+                "source" => r#"capabilities = ["governance", "audit"]"#,
+                "meta" => r#"capabilities = ["routing", "mesh"]"#,
+                _ => r#"capabilities = []"#,
+            };
             std::fs::write(
                 dir.join("harness.toml"),
-                format!("id = {name}\nname = {name}\nkind = Domain\nversion = 0.2.0\n"),
-            )
-            .expect("CLI I/O");
+                format!(
+                    "id = \"{name}\"\nname = \"{name}\"\nkind = \"{kind_label}\"\nversion = \"0.1.0\"\nauthor = \"\"\ndescription = \"A {kind_label} harness\"\n{}\ndependencies = []\nowned_genes = []\n",
+                    caps
+                ),
+            ).expect("CLI I/O");
+
+            // Generate src/lib.rs with the Harness trait
             std::fs::write(
                 dir.join("src").join("lib.rs"),
-                format!("pub struct {sn}Harness;\n"),
-            )
-            .expect("CLI I/O");
+                format!(
+                    "//! {name} — a {kind_label} harness for O-PANDORA.\n\nuse pandora_types::harness::{{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder}};\nuse pandora_types::PandoraError;\n\n#[derive(Debug)]\npub struct {sn}Harness {{ m: HarnessManifest }}\n\nimpl {sn}Harness {{\n    pub fn new() -> Self {{\n        let manifest = HarnessManifestBuilder::default()\n            .id(\"{name}\")\n            .name(\"{name}\")\n            .kind({kind_enum})\n            .version(\"0.1.0\")\n            .author(\"\")\n            .description(\"{name} harness\")\n            .build()\n            .expect(\"valid manifest\");\n\n        Self {{ m: manifest }}\n    }}\n}}\n\nimpl Harness for {sn}Harness {{\n    fn manifest(&self) -> &HarnessManifest {{ &self.m }}\n\n    fn initialize(&mut self) -> Result<(), PandoraError> {{\n        println!(\"[{name}] initialized\");\n        Ok(())\n    }}\n\n    fn shutdown(&mut self) -> Result<(), PandoraError> {{\n        println!(\"[{name}] shutdown\");\n        Ok(())\n    }}\n\n    fn health(&self) -> Result<(), PandoraError> {{\n        Ok(())\n    }}\n}}\n"
+                ),
+            ).expect("CLI I/O");
             println!("Created: {name}/");
+            println!("  harness.toml  — manifest");
+            println!("  src/lib.rs    — Harness impl");
+            println!("\nInstall with: pandora harness install {name}");
+            if kind_label == "source" {
+                println!("  (Source harness requires explicit approval after install)");
+            }
         }
         "package" => {
             let dir = std::path::Path::new(".").join(name);

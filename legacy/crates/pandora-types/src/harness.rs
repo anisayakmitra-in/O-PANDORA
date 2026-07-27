@@ -54,6 +54,29 @@ impl HarnessManifest {
     }
 }
 
+/// An installable harness package — manifest + distribution metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HarnessPackage {
+    /// Canonical manifest (id, name, version, kind, capabilities, etc.)
+    pub manifest: HarnessManifest,
+    /// Rich metadata for display.
+    pub metadata: HarnessMetadata,
+    /// Optional class label (e.g., "alternative-planner", "swarm")
+    pub class: Option<String>,
+    /// Dependencies on other packages.
+    pub dependencies: Vec<String>,
+    /// Packages this one conflicts with.
+    pub conflicts: Vec<String>,
+    /// Source location (path, git URL, K-O Palace id).
+    pub source: String,
+    /// Ed25519 signature (if signed).
+    pub signature: Option<String>,
+    /// Installation timestamp.
+    pub installed_at: Option<String>,
+    /// Whether the harness is currently enabled.
+    pub enabled: bool,
+}
+
 /// Rich metadata for display and distribution — not used at runtime.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HarnessMetadata {
@@ -225,6 +248,40 @@ impl HarnessSpecBuilder {
         self.requires_validation = Some(requires);
         self
     }
+
+/// Generate a harness.toml from a HarnessPackage for scaffolding.
+pub fn generate_harness_toml(pkg: &HarnessPackage) -> String {
+    let mut lines = Vec::new();
+    lines.push(format!("id = \"{}\"" , pkg.manifest.id));
+    lines.push(format!("name = \"{}\"" , pkg.manifest.name));
+    lines.push(format!("version = \"{}\"" , pkg.manifest.version));
+    lines.push(format!("author = \"{}\"" , pkg.manifest.author));
+    lines.push(format!("kind = \"{}\"" , pkg.manifest.kind.as_str()));
+    if let Some(ref class) = pkg.class {
+        lines.push(format!("class = \"{}\"" , class));
+    }
+    lines.push(format!("description = \"{}\"" , pkg.metadata.description));
+    if !pkg.manifest.capabilities.is_empty() {
+        lines.push(format!(
+            "capabilities = [{}]",
+            pkg.manifest.capabilities.iter().map(|c| format!("\"{}\"" , c)).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    if !pkg.manifest.owned_genes.is_empty() {
+        lines.push(format!(
+            "owned_genes = [{}]",
+            pkg.manifest.owned_genes.iter().map(|g| format!("\"{}\"" , g)).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    if !pkg.dependencies.is_empty() {
+        lines.push(format!(
+            "dependencies = [{}]",
+            pkg.dependencies.iter().map(|d| format!("\"{}\"" , d)).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    lines.join("\n")
+}
+
     pub fn build(self) -> Result<HarnessSpec, crate::PandoraError> {
         Ok(HarnessSpec {
             name: self.name.ok_or("Missing: name")?,
@@ -236,4 +293,44 @@ impl HarnessSpecBuilder {
                 .ok_or("Missing: requires_validation")?,
         })
     }
+}
+
+/// Generate a harness.toml from a HarnessPackage for scaffolding.
+pub fn generate_harness_toml(pkg: &HarnessPackage) -> String {
+    let mut lines = Vec::new();
+    lines.push(format!("id = \"{}\"", pkg.manifest.id));
+    lines.push(format!("name = \"{}\"", pkg.manifest.name));
+    lines.push(format!("version = \"{}\"", pkg.manifest.version));
+    lines.push(format!("author = \"{}\"", pkg.manifest.author));
+    lines.push(format!("kind = \"{}\"", pkg.manifest.kind.as_str()));
+    if let Some(ref class) = pkg.class {
+        lines.push(format!("class = \"{}\"", class));
+    }
+    lines.push(format!("description = \"{}\"", pkg.metadata.description));
+    if !pkg.manifest.capabilities.is_empty() {
+        lines.push(format!(
+            "capabilities = [{}]",
+            pkg.manifest.capabilities.iter().map(|c| format!("\"{}\"", c)).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    if !pkg.manifest.owned_genes.is_empty() {
+        lines.push(format!(
+            "owned_genes = [{}]",
+            pkg.manifest.owned_genes.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    if !pkg.dependencies.is_empty() {
+        lines.push(format!(
+            "dependencies = [{}]",
+            pkg.dependencies.iter().map(|d| format!("\"{}\"", d)).collect::<Vec<_>>().join(", ")
+        ));
+    }
+    if !pkg.manifest.slash_commands.is_empty() {
+        for cmd in &pkg.manifest.slash_commands {
+            lines.push("[[slash_commands]]".to_string());
+            lines.push(format!("command = \"{}\"", cmd.command));
+            lines.push(format!("description = \"{}\"", cmd.description));
+        }
+    }
+    lines.join("\n")
 }
