@@ -177,3 +177,307 @@ impl ParliamentService for GovernanceService {
         Ok(ParliamentVerdict::Allow)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::PandoraError;
+    use serde_json::json;
+
+    // ── Helper: create a service that returns a fixed verdict ──
+
+    struct StaticService {
+        name: String,
+        pre_reply: ParliamentVerdict,
+        post_reply: ParliamentVerdict,
+    }
+
+    impl StaticService {
+        fn new(name: &str, pre: ParliamentVerdict, post: ParliamentVerdict) -> Self {
+            Self { name: name.into(), pre_reply: pre, post_reply: post }
+        }
+    }
+
+    impl ParliamentService for StaticService {
+        fn name(&self) -> &str { &self.name }
+        fn pre_flight(&self, _: &str, _: &str) -> Result<ParliamentVerdict, PandoraError> {
+            Ok(self.pre_reply.clone())
+        }
+        fn post_flight(&self, _: &str, _: &str) -> Result<ParliamentVerdict, PandoraError> {
+            Ok(self.post_reply.clone())
+        }
+    }
+
+    // ── Helper: service that returns Err ──
+
+    struct ErrorService(String);
+
+    impl ParliamentService for ErrorService {
+        fn name(&self) -> &str { &self.0 }
+        fn pre_flight(&self, _: &str, _: &str) -> Result<ParliamentVerdict, PandoraError> {
+            Err(PandoraError::Governance(format!("{} failed", self.0)))
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  GovernanceService
+    // ═══════════════════════════════════════════════════════════
+
+    #[test]
+    fn governance_denies_empty_task() {
+        let g = GovernanceService;
+        let v = g.pre_flight("s1", "").unwrap();
+        assert_eq!(v, ParliamentVerdict::Deny { reason: "empty task".into() });
+    }
+
+    #[test]
+    fn governance_allows_nonempty_task() {
+        let g = GovernanceService;
+        let v = g.pre_flight("s1", "build a thing").unwrap();
+        assert_eq!(v, ParliamentVerdict::Allow);
+    }
+
+    #[test]
+    fn governance_denies_empty_outcome_postflight() {
+        let g = GovernanceService;
+        let v = g.post_flight("s1", "").unwrap();
+        assert_eq!(v, ParliamentVerdict::Deny { reason: "empty outcome — possible pipeline failure".into() });
+    }
+
+    #[test]
+    fn governance_allows_nonempty_outcome_postflight() {
+        let g = GovernanceService;
+        let v = g.post_flight("s1", "task completed").unwrap();
+        assert_eq!(v, ParliamentVerdict::Allow);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  Parliament verdict aggregation — pre_flight
+    // ═══════════════════════════════════════════════════════════
+
+    #[test]
+    fn empty_parliament_returns_allow() {
+        let p = Parliament::new();
+        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Allow);
+        assert_eq!(p.service_count(), 0);
+    }
+
+    #[test]
+    fn single_allow_returns_allow() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("a", ParliamentVerdict::Allow, ParliamentVerdict::Allow)));
+        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Allow);
+    }
+
+    #[test]
+    fn deny_blocks_immediately() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("a", ParliamentVerdict::Deny { reason: "no".into() }, ParliamentVerdict::Allow)));
+        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Deny { reason: "no".into() });
+    }
+
+    #[test]
+    fn deny_overrides_approval() {
+        let mut p = Parliament::new();
+        // First service requests approval, second denies — deny wins
+        p.register(Box::new(StaticService::new("approver",
+            ParliamentVerdict::RequireApproval { who: ApprovalScope::User, expires: None },
+            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new("denier",
+            ParliamentVerdict::Deny { reason: "overridden".into() },
+            ParliamentVerdict::Allow)));
+        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Deny { reason: "overridden".into() });
+    }
+
+    #[test]
+    fn deny_overrides_modify() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("modifier",
+            ParliamentVerdict::Modify { amended_plan: json!({"x": 1}) },
+            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new("denier",
+            ParliamentVerdict::Deny { reason: "no mods".into() },
+            ParliamentVerdict::Allow)));
+        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Deny { reason: "no mods".into() });
+    }
+
+    #[test]
+    fn require_approval_surfaces() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("gate",
+            ParliamentVerdict::RequireApproval {
+                who: ApprovalScope::Role("auditor".into()),
+                expires: Some(Duration::from_secs(300)),
+            },
+            ParliamentVerdict::Allow)));
+        assert_eq!(
+            p.pre_flight("s1", "task"),
+            ParliamentVerdict::RequireApproval {
+                who: ApprovalScope::Role("auditor".into()),
+                expires: Some(Duration::from_secs(300)),
+            }
+        );
+    }
+
+    #[test]
+    fn modify_replaces_plan() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("planner",
+            ParliamentVerdict::Modify { amended_plan: json!({"steps": ["a", "b"]}) },
+            ParliamentVerdict::Allow)));
+        assert_eq!(
+            p.pre_flight("s1", "task"),
+            ParliamentVerdict::Modify { amended_plan: json!({"steps": ["a", "b"]}) }
+        );
+    }
+
+    #[test]
+    fn escalate_is_logged_does_not_block() {
+        // Escalate alone should not change the aggregate — still Allow
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("alerter",
+            ParliamentVerdict::Escalate { to: vec!["human-ops".into()] },
+            ParliamentVerdict::Allow)));
+        assert_eq!(p.pre_flight("s1", "task"), ParliamentVerdict::Allow);
+    }
+
+    #[test]
+    fn modify_is_returned_when_service_requests_it() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("planner",
+            ParliamentVerdict::Modify { amended_plan: json!({"steps": 3}) },
+            ParliamentVerdict::Allow)));
+        let result = p.pre_flight("s1", "task");
+        // A Modify verdict is returned (not Allow, not Deny)
+        assert!(matches!(result, ParliamentVerdict::Modify { .. }));
+    }
+
+    #[test]
+    fn modify_with_escalate_returns_modify() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("planner",
+            ParliamentVerdict::Modify { amended_plan: json!({"x": 1}) },
+            ParliamentVerdict::Allow)));
+        p.register(Box::new(StaticService::new("alerter",
+            ParliamentVerdict::Escalate { to: vec!["ops".into()] },
+            ParliamentVerdict::Allow)));
+        // Modify takes precedence over Escalate
+        let result = p.pre_flight("s1", "task");
+        assert!(matches!(result, ParliamentVerdict::Modify { .. }));
+    }
+
+    #[test]
+    fn service_error_returns_deny() {
+        let mut p = Parliament::new();
+        p.register(Box::new(ErrorService("broken".into())));
+        match p.pre_flight("s1", "task") {
+            ParliamentVerdict::Deny { reason } => {
+                assert!(reason.contains("broken"));
+                assert!(reason.contains("error"));
+            }
+            other => panic!("expected Deny, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn error_overrides_approval() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("gate",
+            ParliamentVerdict::RequireApproval { who: ApprovalScope::User, expires: None },
+            ParliamentVerdict::Allow)));
+        p.register(Box::new(ErrorService("broken".into())));
+        match p.pre_flight("s1", "task") {
+            ParliamentVerdict::Deny { .. } => {} // expected
+            other => panic!("expected Deny, got {:?}", other),
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  Parliament verdict aggregation — post_flight
+    // ═══════════════════════════════════════════════════════════
+
+    #[test]
+    fn post_flight_empty_returns_allow() {
+        let p = Parliament::new();
+        assert_eq!(p.post_flight("s1", "outcome"), ParliamentVerdict::Allow);
+    }
+
+    #[test]
+    fn post_flight_deny_blocks() {
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("auditor",
+            ParliamentVerdict::Allow,
+            ParliamentVerdict::Deny { reason: "bad outcome".into() })));
+        assert_eq!(p.post_flight("s1", "outcome"), ParliamentVerdict::Deny { reason: "bad outcome".into() });
+    }
+
+    #[test]
+    fn post_flight_modify_is_advisory_only() {
+        // Post-flight Modify should not change the aggregate — it's advisory
+        let mut p = Parliament::new();
+        p.register(Box::new(StaticService::new("advisor",
+            ParliamentVerdict::Allow,
+            ParliamentVerdict::Modify { amended_plan: json!({"fix": true}) })));
+        assert_eq!(p.post_flight("s1", "outcome"), ParliamentVerdict::Allow);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ApprovalScope
+    // ═══════════════════════════════════════════════════════════
+
+    #[test]
+    fn approval_scope_variants() {
+        let u = ApprovalScope::User;
+        let p = ApprovalScope::Parliament;
+        let r = ApprovalScope::Role("admin".into());
+        assert_eq!(format!("{:?}", u), "User");
+        assert_eq!(format!("{:?}", p), "Parliament");
+        assert_eq!(format!("{:?}", r), "Role(\"admin\")");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ParliamentVerdict serialization roundtrip
+    // ═══════════════════════════════════════════════════════════
+
+    #[test]
+    fn verdict_roundtrip_allow() {
+        let v = ParliamentVerdict::Allow;
+        let s = serde_json::to_string(&v).unwrap();
+        let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
+        assert_eq!(back, ParliamentVerdict::Allow);
+    }
+
+    #[test]
+    fn verdict_roundtrip_deny() {
+        let v = ParliamentVerdict::Deny { reason: "test".into() };
+        let s = serde_json::to_string(&v).unwrap();
+        let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
+        assert_eq!(back, ParliamentVerdict::Deny { reason: "test".into() });
+    }
+
+    #[test]
+    fn verdict_roundtrip_require_approval() {
+        let v = ParliamentVerdict::RequireApproval {
+            who: ApprovalScope::Role("auditor".into()),
+            expires: None,
+        };
+        let s = serde_json::to_string(&v).unwrap();
+        let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
+        assert_eq!(back, v);
+    }
+
+    #[test]
+    fn verdict_roundtrip_modify() {
+        let v = ParliamentVerdict::Modify { amended_plan: json!({"x": [1, 2, 3]}) };
+        let s = serde_json::to_string(&v).unwrap();
+        let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
+        assert_eq!(back, v);
+    }
+
+    #[test]
+    fn verdict_roundtrip_escalate() {
+        let v = ParliamentVerdict::Escalate { to: vec!["ops".into(), "legal".into()] };
+        let s = serde_json::to_string(&v).unwrap();
+        let back: ParliamentVerdict = serde_json::from_str(&s).unwrap();
+        assert_eq!(back, v);
+    }
+}
