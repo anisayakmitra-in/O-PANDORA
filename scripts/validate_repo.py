@@ -180,19 +180,30 @@ def check_architecture_claims():
 
     text = readme.read_text()
 
-    # Check for hardcoded counts
+    # Check architecture claims against source
     count_patterns = [
-        (r'(\d+)\s+built-in\s+harness', "harness count"),
-        (r'(\d+)\s+built-in\s+gene', "gene count"),
-        (r'(\d+)\s+crate', "crate count"),
+        (r'(\d+)\s+built-in\s+harness', "harness count", None),
+        (r'(\d+)\s+built-in\s+gene', "gene count", None),
+        (r'(\d+)\s+crate', "crate count", "workspace.members"),
     ]
 
-    for pattern, desc in count_patterns:
+    for pattern, desc, source_key in count_patterns:
         m = re.search(pattern, text)
         if m:
             count = int(m.group(1))
             print(f"  README claims {desc}: {count}")
-            WARNINGS.append(f"README hardcodes {desc} = {count} — should be derived from source")
+            if source_key == "workspace.members":
+                import tomllib
+                cargo_toml = REPO_ROOT / "Cargo.toml"
+                with open(cargo_toml, "rb") as f:
+                    manifest = tomllib.load(f)
+                actual = len(manifest.get("workspace", {}).get("members", []))
+                if count != actual:
+                    WARNINGS.append(f"README claims {count} crates but workspace has {actual}")
+                else:
+                    print(f"  OK: matches workspace member count ({actual})")
+            else:
+                WARNINGS.append(f"README hardcodes {desc} = {count} — should be derived from source")
 
 
 def main():
