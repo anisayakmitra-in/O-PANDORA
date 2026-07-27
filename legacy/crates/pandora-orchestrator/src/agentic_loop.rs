@@ -7,7 +7,7 @@
 
 use pandora_types::context_strategy::{ContextManager, ContextMessage, ContextStrategy};
 use pandora_types::gene::Gene;
-use pandora_types::parliament::Parliament;
+use pandora_types::parliament::{Parliament, ParliamentVerdict};
 use pandora_types::permissions_manifest::{PermissionManifest, PermissionVerdict};
 use pandora_types::provider::{
     ChatCompletion, ChatMessage, GenerationRequest, Provider, ToolDefinition,
@@ -198,12 +198,41 @@ pub fn run_agentic_loop(
 
             // Parliament governance check
             if let Some(parl) = parliament {
-                let warnings = parl.pre_flight(&format!("tool-{}", tc.name), &tc.arguments);
-                if !warnings.is_empty() {
-                    governance_warnings += warnings.len();
-                    for w in &warnings {
-                        tracing::warn!("[GOVERNANCE] Tool {} warning: {}", tc.name, w);
+                let verdict = parl.pre_flight(&format!("tool-{}", tc.name), &tc.arguments);
+                match verdict {
+                    ParliamentVerdict::Deny { reason } => {
+                        tracing::warn!("[GOVERNANCE] Tool {} denied: {}", tc.name, reason);
+                        governance_warnings += 1;
+                        // Return error to caller or handle appropriately
+                        messages.push(ChatMessage {
+                            role: "tool".into(),
+                            content: format!("Governance denied tool {}: {}", tc.name, reason),
+                            tool_calls: vec![],
+                            tool_call_id: Some(tc.id.clone()),
+                        });
+                        continue;
                     }
+                    ParliamentVerdict::RequireApproval { who, expires } => {
+                        tracing::warn!("[GOVERNANCE] Tool {} requires approval from {:?} (expires: {:?})", tc.name, who, expires);
+                        governance_warnings += 1;
+                        messages.push(ChatMessage {
+                            role: "tool".into(),
+                            content: format!("Governance requires approval for tool {} from {:?}", tc.name, who),
+                            tool_calls: vec![],
+                            tool_call_id: Some(tc.id.clone()),
+                        });
+                        continue;
+                    }
+                    ParliamentVerdict::Modify { .. } => {
+                        // Amendment - log and continue
+                        tracing::info!("[GOVERNANCE] Tool {} plan amended", tc.name);
+                    }
+                    ParliamentVerdict::Escalate { to } => {
+                        tracing::warn!("[GOVERNANCE] Tool {} escalated to: {:?}", tc.name, to);
+                        governance_warnings += 1;
+                    }
+                    ParliamentVerdict::Allow => {}
+                    _ => {} // non_exhaustive
                 }
             }
 

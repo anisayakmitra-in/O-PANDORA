@@ -28,6 +28,7 @@ use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::policy_engine::PolicyEngine;
 use pandora_types::provenance::{ExecutionProvenanceGraph, ProvenanceNodeKind};
 
+use pandora_types::parliament::ParliamentVerdict;
 use pandora_types::provider_db::{ProviderDb, ProviderObservation};
 use pandora_types::provider_intel::ProviderIntelligenceEngine;
 use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
@@ -335,6 +336,32 @@ impl PandoraRuntime {
             .add_node(ProvenanceNodeKind::Outcome, &oid, "Pending");
         self.provenance
             .connect(&tid, format!("plan-{execution_id}"), "controller initiated");
+
+        // ── Parliament pre-flight: constitutional check before any execution ──
+        let pre_verdict = self.parliament.pre_flight(&execution_id, task);
+        match pre_verdict {
+            ParliamentVerdict::Deny { reason } => {
+                return Err(anyhow::anyhow!("Parliament pre-flight denied: {}", reason));
+            }
+            ParliamentVerdict::RequireApproval { who, expires } => {
+                return Err(anyhow::anyhow!(
+                    "Parliament requires approval from {:?} (expires: {:?})",
+                    who, expires
+                ));
+            }
+            ParliamentVerdict::Modify { amended_plan } => {
+                // Apply the amended plan if provided
+                if let Ok(plan) = serde_json::from_value(amended_plan) {
+                    self.plan = plan;
+                    tracing::info!("[PARLIAMENT] Execution plan amended by Parliament");
+                }
+            }
+            ParliamentVerdict::Escalate { to } => {
+                tracing::warn!("[PARLIAMENT] Pre-flight escalated to: {:?}", to);
+            }
+            ParliamentVerdict::Allow => {}
+            _ => {} // non_exhaustive
+        }
 
         // ── Session: first-class execution object ──
         let mut session = pandora_types::Session::new(&execution_id, task);
@@ -733,8 +760,23 @@ impl PandoraRuntime {
             success,
         };
         delta.merge_into(&mut self.ctx);
-        let _pw = self.parliament.post_flight(&self.ctx.session_id, &response);
-        info!("[PARLIAMENT] governance — {} warnings", _pw.len());
+        let verdict = self.parliament.post_flight(&self.ctx.session_id, &response);
+        match verdict {
+            ParliamentVerdict::Deny { reason } => {
+                tracing::warn!("[PARLIAMENT] Post-flight denied: {}", reason);
+            }
+            ParliamentVerdict::RequireApproval { who, expires } => {
+                tracing::warn!("[PARLIAMENT] Post-flight requires approval from {:?} (expires: {:?})", who, expires);
+            }
+            ParliamentVerdict::Modify { .. } => {
+                tracing::info!("[PARLIAMENT] Post-flight plan amended");
+            }
+            ParliamentVerdict::Escalate { to } => {
+                tracing::warn!("[PARLIAMENT] Post-flight escalated to: {:?}", to);
+            }
+            ParliamentVerdict::Allow => {}
+            _ => {} // non_exhaustive
+        }
 
         let total = start.elapsed();
 
