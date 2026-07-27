@@ -1,0 +1,16 @@
+id = "form-fill"
+name = "Form Filler"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Fills web forms programmatically from structured data."
+capabilities = ["forms", "automation", "computer-use"]
+
+[permissions]
+filesystem = "read"
+network = "outbound"
+shell = "allow"
+
+[trust]
+level = "medium"
+require_signature = false

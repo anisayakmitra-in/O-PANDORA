@@ -1,0 +1,16 @@
+id = "rust-gen"
+name = "Rust Code Generator"
+kind = "Agent"
+version = "0.1.0"
+author = "pandora"
+description = "Generates Rust functions, types, and modules from natural language descriptions."
+capabilities = ["rust", "code-generation", "cargo"]
+
+[permissions]
+filesystem = "write"
+network = "none"
+shell = "allow"
+
+[trust]
+level = "medium"
+require_signature = false

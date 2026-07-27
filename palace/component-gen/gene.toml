@@ -1,0 +1,16 @@
+id = "component-gen"
+name = "Component Generator"
+kind = "Agent"
+version = "0.1.0"
+author = "pandora"
+description = "Generates UI components from descriptions and design specs."
+capabilities = ["design", "ui", "component-generation"]
+
+[permissions]
+filesystem = "write"
+network = "none"
+shell = "deny"
+
+[trust]
+level = "medium"
+require_signature = false

@@ -1,0 +1,16 @@
+id = "secret-scan"
+name = "Secret Scanner"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Scans codebases for accidentally committed secrets and API keys."
+capabilities = ["security", "secrets", "scanning"]
+
+[permissions]
+filesystem = "read"
+network = "none"
+shell = "allow"
+
+[trust]
+level = "high"
+require_signature = false

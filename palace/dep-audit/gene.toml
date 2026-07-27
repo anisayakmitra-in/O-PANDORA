@@ -1,0 +1,16 @@
+id = "dep-audit"
+name = "Dependency Auditor"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Audits project dependencies for known vulnerabilities."
+capabilities = ["security", "dependencies", "audit"]
+
+[permissions]
+filesystem = "read"
+network = "outbound"
+shell = "allow"
+
+[trust]
+level = "high"
+require_signature = false

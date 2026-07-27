@@ -1,0 +1,16 @@
+id = "summarize"
+name = "Document Summarizer"
+kind = "Agent"
+version = "0.1.0"
+author = "pandora"
+description = "Summarizes long documents and articles into concise overviews."
+capabilities = ["summarization", "nlp", "research"]
+
+[permissions]
+filesystem = "read"
+network = "none"
+shell = "deny"
+
+[trust]
+level = "low"
+require_signature = false

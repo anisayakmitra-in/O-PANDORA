@@ -1,0 +1,16 @@
+id = "vuln-check"
+name = "Vulnerability Checker"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Checks code for common vulnerability patterns."
+capabilities = ["security", "vulnerabilities", "static-analysis"]
+
+[permissions]
+filesystem = "read"
+network = "none"
+shell = "allow"
+
+[trust]
+level = "high"
+require_signature = false

@@ -1,0 +1,16 @@
+id = "code-review"
+name = "Code Review Agent"
+kind = "Agent"
+version = "0.1.0"
+author = "pandora"
+description = "Reviews git diffs for bugs, style, security, and performance issues."
+capabilities = ["code-review", "git", "quality"]
+
+[permissions]
+filesystem = "read"
+network = "none"
+shell = "allow"
+
+[trust]
+level = "high"
+require_signature = false

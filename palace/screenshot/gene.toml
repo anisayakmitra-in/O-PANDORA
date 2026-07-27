@@ -1,0 +1,16 @@
+id = "screenshot"
+name = "Screenshot Tool"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Captures screenshots of web pages or desktop applications."
+capabilities = ["screenshot", "computer-use", "visual"]
+
+[permissions]
+filesystem = "write"
+network = "outbound"
+shell = "allow"
+
+[trust]
+level = "medium"
+require_signature = false

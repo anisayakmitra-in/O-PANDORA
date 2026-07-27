@@ -1,0 +1,16 @@
+id = "web-search"
+name = "Web Search Agent"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Searches the web using configurable search backends."
+capabilities = ["research", "web-search", "information-retrieval"]
+
+[permissions]
+filesystem = "none"
+network = "outbound"
+shell = "deny"
+
+[trust]
+level = "low"
+require_signature = false

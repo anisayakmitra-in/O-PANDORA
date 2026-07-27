@@ -1,0 +1,16 @@
+id = "extract"
+name = "Data Extractor"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Extracts structured data from unstructured text and files."
+capabilities = ["extraction", "parsing", "data"]
+
+[permissions]
+filesystem = "read"
+network = "none"
+shell = "deny"
+
+[trust]
+level = "low"
+require_signature = false

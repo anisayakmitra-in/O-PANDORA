@@ -1,0 +1,16 @@
+id = "accessibility-check"
+name = "Accessibility Checker"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Checks HTML for WCAG 2.2 compliance issues."
+capabilities = ["accessibility", "a11y", "wcag", "design"]
+
+[permissions]
+filesystem = "read"
+network = "none"
+shell = "deny"
+
+[trust]
+level = "high"
+require_signature = false

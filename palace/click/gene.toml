@@ -1,0 +1,16 @@
+id = "click"
+name = "Click Automation"
+kind = "Tool"
+version = "0.1.0"
+author = "pandora"
+description = "Automates mouse clicks for testing and computer-use workflows."
+capabilities = ["click", "automation", "computer-use"]
+
+[permissions]
+filesystem = "none"
+network = "none"
+shell = "allow"
+
+[trust]
+level = "medium"
+require_signature = false

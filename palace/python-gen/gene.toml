@@ -1,0 +1,16 @@
+id = "python-gen"
+name = "Python Code Generator"
+kind = "Agent"
+version = "0.1.0"
+author = "pandora"
+description = "Generates Python scripts, classes, and modules from natural language descriptions."
+capabilities = ["python", "code-generation", "scripting"]
+
+[permissions]
+filesystem = "write"
+network = "none"
+shell = "allow"
+
+[trust]
+level = "medium"
+require_signature = false
