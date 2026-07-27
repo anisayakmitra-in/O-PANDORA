@@ -9,6 +9,7 @@
 //! Every stage returns a StageOutput. Parliament merges deltas.
 
 pub mod agentic_loop;
+pub mod provider_adapter;
 pub mod constitutional_floor;
 
 use anyhow::Result;
@@ -260,18 +261,29 @@ pub struct PandoraRuntime {
 impl PandoraRuntime {
     pub fn new() -> Self {
         let mut providers = ProviderRegistry::new();
-        // ponytail: load user connections, fallback to Ollama
-        let cr = pandora_types::connection_manager::ConnectionRegistry::load();
-        if cr.connections.is_empty() {
-            providers.register(Arc::new(OllamaProvider::new_default()));
-        } else {
-            for conn in cr.healthy() {
-                providers.register(Arc::new(OllamaProvider::new(
-                    &conn.endpoint,
-                    &conn.default_model,
-                )));
+
+        // Phase 6: Use provider adapter — no hardcoded Ollama fallback.
+        // Each connection is mapped to the correct Provider implementation.
+        match crate::provider_adapter::load_providers_from_connections() {
+            loaded if !loaded.is_empty() => {
+                for (provider, _name) in loaded {
+                    providers.register(provider);
+                }
+            }
+            _ => {
+                // No connections configured — emit a clear diagnostic.
+                // In dev mode, fall back to local Ollama for convenience.
+                if std::env::var("PANDORA_DEV_MODE").is_ok() {
+                    eprintln!("[PROVIDER] No connections found. Using local Ollama (dev mode).");
+                    providers.register(Arc::new(OllamaProvider::new_default()));
+                } else {
+                    eprintln!(
+                        "[PROVIDER] No healthy provider configured.\n                         Add one with: pandora connection add <name> <kind> <endpoint>\n                         Or set PANDORA_DEV_MODE=1 for local Ollama fallback."
+                    );
+                }
             }
         }
+
         providers.set_default_model(Some(
             std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| String::new()),
         ));

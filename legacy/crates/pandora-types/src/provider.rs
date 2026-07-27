@@ -434,3 +434,243 @@ impl CancellationToken {
         self.cancelled.load(Ordering::Relaxed)
     }
 }
+
+/// OpenAI-compatible provider — speaks the /v1/chat/completions API.
+///
+/// Works with any service that exposes OpenAI's chat completions format:
+/// OpenAI, OpenRouter, Groq, Together, DeepSeek, Mistral, llama.cpp server,
+/// LM Studio, vLLM, Ollama (via /v1/), and custom endpoints.
+pub mod openai_compat {
+    use super::*;
+
+    pub struct OpenAiCompatibleProvider {
+        pub endpoint: String,
+        pub model: String,
+        pub api_key: Option<String>,
+        client: reqwest::blocking::Client,
+    }
+
+    impl OpenAiCompatibleProvider {
+        pub fn new(endpoint: &str, model: &str, api_key: Option<&str>) -> Self {
+            let mut headers = reqwest::header::HeaderMap::new();
+            if let Some(key) = api_key {
+                if !key.is_empty() {
+                    let auth = reqwest::header::HeaderValue::from_str(
+                        &format!("Bearer {key}"),
+                    )
+                    .unwrap_or_else(|_| reqwest::header::HeaderValue::from_static(""));
+                    headers.insert(reqwest::header::AUTHORIZATION, auth);
+                }
+            }
+
+            let client = reqwest::blocking::Client::builder()
+                .default_headers(headers)
+                .build()
+                .unwrap_or_else(|_| reqwest::blocking::Client::new());
+
+            Self {
+                endpoint: endpoint.trim_end_matches('/').to_string(),
+                model: model.to_string(),
+                api_key: api_key.map(|s| s.to_string()),
+                client,
+            }
+        }
+
+        fn chat_url(&self) -> String {
+            // Most providers support /v1/chat/completions.
+            // If the endpoint already has /v1, use it as-is.
+            if self.endpoint.ends_with("/v1") {
+                format!("{}/chat/completions", self.endpoint)
+            } else if self.endpoint.contains("/v1") {
+                format!("{}/chat/completions", self.endpoint)
+            } else {
+                format!("{}/v1/chat/completions", self.endpoint)
+            }
+        }
+    }
+
+    impl Provider for OpenAiCompatibleProvider {
+        fn name(&self) -> &str {
+            "openai-compatible"
+        }
+
+        fn manifest(&self) -> ProviderManifest {
+            ProviderManifest {
+                name: "openai-compatible".into(),
+                endpoint: self.endpoint.clone(),
+                models: vec![self.model.clone()],
+                capabilities: vec!["text".into(), "tools".into()],
+                locality: "cloud".into(),
+            }
+        }
+
+        fn generate(&self, request: GenerationRequest) -> Result<String, crate::PandoraError> {
+            let url = self.chat_url();
+            let model = if request.model.is_empty() {
+                &self.model
+            } else {
+                &request.model
+            };
+
+            let body = serde_json::json!({
+                "model": model,
+                "messages": [
+                    { "role": "user", "content": request.prompt }
+                ],
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+                "stream": false,
+            });
+
+            let resp = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .map_err(|e| crate::PandoraError::provider(format!("HTTP error: {e}")))?;
+
+            let json: serde_json::Value = resp
+                .json()
+                .map_err(|e| crate::PandoraError::provider(format!("JSON parse error: {e}")))?;
+
+            // Extract content from OpenAI format
+            let content = json["choices"][0]["message"]["content"]
+                .as_str()
+                .unwrap_or("");
+            Ok(content.to_string())
+        }
+
+        fn supports_tools(&self) -> bool {
+            true
+        }
+
+        fn generate_with_tools(
+            &self,
+            request: GenerationRequest,
+            tools: &[ToolDefinition],
+            messages: &[ChatMessage],
+        ) -> Result<ChatCompletion, crate::PandoraError> {
+            let url = self.chat_url();
+            let model = if request.model.is_empty() {
+                &self.model
+            } else {
+                &request.model
+            };
+
+            // Build API messages from chat history
+            let mut api_messages: Vec<serde_json::Value> = Vec::new();
+            for msg in messages {
+                let role = &msg.role;
+                let content = &msg.content;
+
+                let mut api_msg = serde_json::json!({
+                    "role": role,
+                    "content": content,
+                });
+
+                if !msg.tool_calls.is_empty() {
+                    api_msg = serde_json::json!({
+                        "role": "assistant",
+                        "content": content,
+                        "tool_calls": msg.tool_calls.iter().map(|tc| {
+                            serde_json::json!({
+                                "id": tc.id,
+                                "type": "function",
+                                "function": {
+                                    "name": tc.name,
+                                    "arguments": tc.arguments,
+                                },
+                            })
+                        }).collect::<Vec<_>>(),
+                    });
+                }
+
+                if let Some(ref tci) = msg.tool_call_id {
+                    api_msg = serde_json::json!({
+                        "role": "tool",
+                        "tool_call_id": tci,
+                        "content": content,
+                    });
+                }
+
+                api_messages.push(api_msg);
+            }
+
+            // Build tool definitions
+            let api_tools: Vec<serde_json::Value> = tools
+                .iter()
+                .map(|t| {
+                    serde_json::json!({
+                        "type": "function",
+                        "function": {
+                            "name": t.name,
+                            "description": t.description,
+                            "parameters": t.parameters,
+                        },
+                    })
+                })
+                .collect();
+
+            let mut body = serde_json::json!({
+                "model": model,
+                "messages": api_messages,
+                "tools": api_tools,
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+            });
+
+            // Remove tools if empty (some APIs reject empty tools array)
+            if tools.is_empty() {
+                body.as_object_mut().map(|m| m.remove("tools"));
+            }
+
+            let resp = self
+                .client
+                .post(&url)
+                .json(&body)
+                .send()
+                .map_err(|e| crate::PandoraError::provider(format!("HTTP error: {e}")))?;
+
+            let status = resp.status();
+            let json: serde_json::Value = resp
+                .json()
+                .map_err(|e| crate::PandoraError::provider(format!("JSON parse error ({status}): {e}")))?;
+
+            // Check for API errors
+            if let Some(err) = json["error"]["message"].as_str() {
+                return Err(crate::PandoraError::provider(format!("API error: {err}")));
+            }
+
+            let choice = &json["choices"][0];
+            let finish_reason = choice["finish_reason"]
+                .as_str()
+                .unwrap_or("stop")
+                .to_string();
+            let content = choice["message"]["content"]
+                .as_str()
+                .unwrap_or("")
+                .to_string();
+
+            // Extract tool calls if present
+            let mut tool_calls = Vec::new();
+            if let Some(tcs) = choice["message"]["tool_calls"].as_array() {
+                for tc in tcs {
+                    tool_calls.push(ToolCall {
+                        id: tc["id"].as_str().unwrap_or("").to_string(),
+                        name: tc["function"]["name"].as_str().unwrap_or("").to_string(),
+                        arguments: tc["function"]["arguments"].as_str().unwrap_or("{}").to_string(),
+                    });
+                }
+            }
+
+            let tokens_used = json["usage"]["total_tokens"].as_u64().unwrap_or(0) as usize;
+
+            Ok(ChatCompletion {
+                text: content,
+                tool_calls,
+                finish_reason,
+                tokens_used,
+            })
+        }
+    }
+}
