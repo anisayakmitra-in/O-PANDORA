@@ -24,6 +24,7 @@
 //! The pandora-identity crate provides concrete identity
 //! registries that compose these canonical types.
 
+pub mod approval_store;
 pub mod harness;
 pub use decision::{Decision, DecisionLog, RejectedOption};
 pub use error::PandoraError;
@@ -31,6 +32,7 @@ pub use harness::{
     Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder, HarnessPackage, HarnessSpec, SlashCommand, generate_harness_toml,
 };
 pub use session::{Session, SessionStatus, SessionStore};
+pub use approval_store::{ApprovalStatus, ApprovalStore, PendingApproval};
 
 pub mod artifacts;
 pub mod connection_manager;

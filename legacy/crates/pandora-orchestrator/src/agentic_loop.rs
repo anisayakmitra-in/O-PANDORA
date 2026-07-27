@@ -209,10 +209,30 @@ pub fn run_agentic_loop(
                             format!("Tool '{}' denied by Parliament: {}", tc.name, reason)
                         ));
                     }
-                    ParliamentVerdict::RequireApproval { who, expires } => {
-                        tracing::warn!("[GOVERNANCE] Tool {} requires approval from {:?} (expires: {:?})", tc.name, who, expires);
+                    ParliamentVerdict::RequireApproval { who, .. } => {
+                        let who_str = format!("{:?}", who);
+                        let _approval_id = format!("{}-{}", "session", tc.name);
+                        
+                        // Persist pending approval so CLI can resolve it
+                        let store = pandora_types::ApprovalStore::new(
+                            pandora_types::ApprovalStore::default_location(),
+                        );
+                        let pending = store.create(
+                            "session",
+                            &tc.name,
+                            &who_str,
+                            &format!("Parliament requires approval for tool '{}'", tc.name),
+                        );
+
+                        tracing::warn!(
+                            "[GOVERNANCE] Tool {} requires approval from {} — approval id: {}",
+                            tc.name, who_str, pending.id
+                        );
                         return Err(pandora_types::PandoraError::governance(
-                            format!("Tool '{}' requires approval from {:?}", tc.name, who)
+                            format!(
+                                "Tool '{}' requires approval from {}. Approval ID: {}. Run 'pandora approve {}' to proceed or 'pandora reject {}' to cancel.",
+                                tc.name, who_str, pending.id, pending.id, pending.id
+                            )
                         ));
                     }
                     ParliamentVerdict::Modify { .. } => {
