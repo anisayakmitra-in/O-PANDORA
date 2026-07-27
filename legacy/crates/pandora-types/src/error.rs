@@ -83,6 +83,15 @@ impl PandoraError {
     pub fn internal(msg: impl Into<String>) -> Self {
         Self::Internal(msg.into())
     }
+    pub fn governance(msg: impl Into<String>) -> Self {
+        Self::Governance(msg.into())
+    }
+    pub fn policy(msg: impl Into<String>) -> Self {
+        Self::Policy(msg.into())
+    }
+    pub fn execution(msg: impl Into<String>) -> Self {
+        Self::Execution(msg.into())
+    }
 }
 
 impl From<String> for PandoraError {

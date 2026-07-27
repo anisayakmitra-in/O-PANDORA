@@ -205,26 +205,15 @@ pub fn run_agentic_loop(
                 match verdict {
                     ParliamentVerdict::Deny { reason } => {
                         tracing::warn!("[GOVERNANCE] Tool {} denied: {}", tc.name, reason);
-                        governance_warnings += 1;
-                        // Return error to caller or handle appropriately
-                        messages.push(ChatMessage {
-                            role: "tool".into(),
-                            content: format!("Governance denied tool {}: {}", tc.name, reason),
-                            tool_calls: vec![],
-                            tool_call_id: Some(tc.id.clone()),
-                        });
-                        continue;
+                        return Err(pandora_types::PandoraError::governance(
+                            format!("Tool '{}' denied by Parliament: {}", tc.name, reason)
+                        ));
                     }
                     ParliamentVerdict::RequireApproval { who, expires } => {
                         tracing::warn!("[GOVERNANCE] Tool {} requires approval from {:?} (expires: {:?})", tc.name, who, expires);
-                        governance_warnings += 1;
-                        messages.push(ChatMessage {
-                            role: "tool".into(),
-                            content: format!("Governance requires approval for tool {} from {:?}", tc.name, who),
-                            tool_calls: vec![],
-                            tool_call_id: Some(tc.id.clone()),
-                        });
-                        continue;
+                        return Err(pandora_types::PandoraError::governance(
+                            format!("Tool '{}' requires approval from {:?}", tc.name, who)
+                        ));
                     }
                     ParliamentVerdict::Modify { .. } => {
                         // Amendment - log and continue

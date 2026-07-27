@@ -879,7 +879,7 @@ impl ShadowCouncil {
         };
 
         if required.is_empty() || required.iter().all(|c| c == "general") {
-            return Err(pandora_types::PandoraError::Governance(
+            return Err(pandora_types::PandoraError::governance(
                 format!("no capabilities resolved from intent: {}", request.intent)
             ));
         }
@@ -933,7 +933,7 @@ impl ShadowCouncil {
         }
 
         let (harness_id, score, matched) = best.ok_or_else(|| {
-            pandora_types::PandoraError::Governance(
+            pandora_types::PandoraError::governance(
                 format!("no harness matches required capabilities: {:?}", required)
             )
         })?;
