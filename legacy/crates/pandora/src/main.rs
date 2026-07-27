@@ -1044,130 +1044,259 @@ fn cmd_gene(args: &[String]) {
     }
 }
 fn cmd_harness(args: &[String]) {
-    if args.len() < 3 {
-        eprintln!("Usage: pandora harness <list|install|enable|disable|uninstall|info> [id]");
+    // Parse --enabled / --installed flags from any position
+    let show_enabled = args.iter().any(|a| a == "--enabled");
+    let show_installed = args.iter().any(|a| a == "--installed");
+    let flag_args: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
+
+    if flag_args.len() < 3 {
+        eprintln!("Usage: pandora harness <list|install|enable|enable-source|disable|update|rollback|uninstall|info> [id]");
+        eprintln!("  list [--enabled] [--installed]  — list harnesses");
+        eprintln!("  install <path>                  — install from directory");
+        eprintln!("  enable <id>                    — enable a harness");
+        eprintln!("  enable-source <id> <approver> <reason>  — enable a Source harness");
+        eprintln!("  disable <id>                   — disable a harness");
+        eprintln!("  update <id> [--path <path>]    — update to new version");
+        eprintln!("  rollback <id>                  — rollback to previous version");
+        eprintln!("  uninstall <id>                 — uninstall a harness");
+        eprintln!("  info <id>                      — show harness details");
         return;
     }
-    let sub = &args[2];
-    match sub.as_str() {
+
+    let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+
+    let sub = flag_args[2].as_str();
+    match sub {
         "list" => {
-            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let s = sc.read().expect("council lock read").summary();
+            let council = sc.read().expect("council lock read");
+            let entries = if show_enabled {
+                council.harnesses.enabled_entries()
+            } else if show_installed {
+                council.harnesses.installed_entries()
+            } else {
+                council.harnesses.all_entries()
+            };
+
+            if entries.is_empty() {
+                println!("No harnesses found.");
+                return;
+            }
+
+            let s = council.summary();
             println!(
-                "{} total ({} source, {} meta, {} domain)",
-                s.total_harnesses, s.source_count, s.meta_count, s.domain_count
+                "{} total ({} source, {} meta, {} domain) | {} enabled",
+                s.total_harnesses, s.source_count, s.meta_count, s.domain_count,
+                council.harnesses.enabled_count()
             );
+            println!();
+            for (h, state) in &entries {
+                let kind_icon = match h.kind() {
+                    pandora_types::harness::HarnessKind::Source => "[S]",
+                    pandora_types::harness::HarnessKind::Meta => "[M]",
+                    pandora_types::harness::HarnessKind::Domain => "[D]",
+                    _ => "[?]",
+                };
+                let state_str = match state {
+                    pandora_shadow_council::HarnessState::Enabled => "enabled",
+                    pandora_shadow_council::HarnessState::Disabled => "disabled",
+                    pandora_shadow_council::HarnessState::Staged => "staged",
+                    pandora_shadow_council::HarnessState::Suspended => "suspended",
+                    pandora_shadow_council::HarnessState::Registered => "registered",
+                    pandora_shadow_council::HarnessState::Error(e) => e.as_str(),
+                    _ => "unknown",
+                };
+                println!(
+                    "  {} {} v{} — {} ({})",
+                    kind_icon, h.id(), h.manifest().version, state_str, h.manifest().name
+                );
+            }
         }
         "install" => {
-            if args.len() < 4 {
+            if flag_args.len() < 4 {
                 eprintln!("Usage: pandora harness install <path>");
                 return;
             }
-            let path = &args[3];
+            let path = &flag_args[3];
             let id = std::path::Path::new(path)
                 .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or(path);
             println!("Installing harness from: {path}");
 
-            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let mut _council = sc.write().expect("council lock write");
-
-            // Read harness.toml from the path
             let manifest_path = std::path::Path::new(path).join("harness.toml");
             if !manifest_path.exists() {
-                // Try reading from file directly if it's a toml file
                 let toml_path = std::path::Path::new(path);
                 if toml_path.extension().is_some_and(|e| e == "toml") {
                     let content = std::fs::read_to_string(toml_path).unwrap();
                     println!("Read manifest: {} bytes", content.len());
-                    // For now, register as a pending harness package
                 } else {
                     eprintln!("No harness.toml found at {}. Expected a directory with harness.toml or a .toml file.", path);
                     return;
                 }
             }
 
-            // For Phase 4 MVP: register the harness dir in a simple staging area
+            // Stage to ~/.pandora/sessions/harnesses/<id>
             let staging = sessions_dir().join("harnesses").join(id);
             let _ = std::fs::create_dir_all(&staging);
             if std::path::Path::new(path).is_dir() {
-                // Copy to staging
                 let _ = copy_dir(std::path::Path::new(path), &staging);
             }
 
             // Read manifest for display
-            if let Ok(content) = std::fs::read_to_string(manifest_path) {
+            if let Ok(content) = std::fs::read_to_string(&manifest_path) {
                 println!("Manifest:");
                 for line in content.lines().take(10) {
                     println!("  {line}");
                 }
             }
 
-            println!("Installed: {id} (pending enable)");
+            println!("Staged: {id} → {}", staging.display());
             println!("Run 'pandora harness enable {id}' to activate.");
-            if id.contains("source") || id.contains("Source") {
-                println!("  WARNING: Source harness activation requires explicit approval.");
-            }
         }
         "enable" => {
-            if args.len() < 4 {
+            if flag_args.len() < 4 {
                 eprintln!("Usage: pandora harness enable <id>");
+                eprintln!("  For Source harnesses: pandora harness enable-source <id> <approver> <reason>");
                 return;
             }
-            let id = &args[3];
-            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let mut _council = sc.write().expect("council lock write");
+            let id = flag_args[3].as_str();
+            let mut council = sc.write().expect("council lock write");
 
-            match _council.enable(id) {
+            match council.enable(id) {
                 Ok(()) => println!("Enabled: {id}"),
+                Err(e) => {
+                    let err_str = e.to_string();
+                    if err_str.contains("Source harness") {
+                        eprintln!("{e}");
+                        eprintln!("Use 'pandora harness enable-source {id} <approver> <reason>' for Source harnesses.");
+                    } else {
+                        eprintln!("Error: {e}");
+                    }
+                }
+            }
+        }
+        "enable-source" => {
+            if flag_args.len() < 6 {
+                eprintln!("Usage: pandora harness enable-source <id> <approver> <reason>");
+                return;
+            }
+            let id = flag_args[3].as_str();
+            let approver = flag_args[4].as_str();
+            let reason = flag_args[5].as_str();
+            let mut council = sc.write().expect("council lock write");
+
+            match council.harnesses.enable_source(id, approver, reason) {
+                Ok(()) => println!("Source harness enabled: {id} (approved by {approver}: {reason})"),
                 Err(e) => eprintln!("Error: {e}"),
             }
         }
         "disable" => {
-            if args.len() < 4 {
+            if flag_args.len() < 4 {
                 eprintln!("Usage: pandora harness disable <id>");
                 return;
             }
-            let id = &args[3];
-            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let mut _council = sc.write().expect("council lock write");
+            let id = flag_args[3].as_str();
+            let mut council = sc.write().expect("council lock write");
 
-            match _council.disable(id) {
+            match council.disable(id) {
                 Ok(()) => println!("Disabled: {id}"),
                 Err(e) => eprintln!("Error: {e}"),
             }
         }
+        "update" => {
+            if flag_args.len() < 4 {
+                eprintln!("Usage: pandora harness update <id> [--path <path>]");
+                return;
+            }
+            let id = flag_args[3].as_str();
+            let path_idx = args.iter().position(|a| a == "--path");
+            let path = path_idx.and_then(|i| args.get(i + 1));
+
+            if let Some(p) = path {
+                println!("Updating harness {id} from: {p}");
+                // For now, uninstall old + install new (ponytail: full transactional update later)
+                let mut council = sc.write().expect("council lock write");
+                let _ = council.uninstall(id);
+                println!("Old version removed. Run 'pandora harness install {p}' and 'pandora harness enable {id}'.");
+            } else {
+                eprintln!("Usage: pandora harness update <id> --path <path>");
+            }
+        }
+        "rollback" => {
+            if flag_args.len() < 4 {
+                eprintln!("Usage: pandora harness rollback <id>");
+                return;
+            }
+            let id = flag_args[3].as_str();
+            let mut council = sc.write().expect("council lock write");
+
+            // ponytail: disable and note that rollback is a future feature
+            match council.disable(id) {
+                Ok(()) => println!("Rolled back: {id} (disabled — re-enable previous version manually)"),
+                Err(e) => eprintln!("Error: {e}"),
+            }
+            println!("Note: full rollback to previous version requires versioned staging.");
+        }
         "uninstall" => {
-            if args.len() < 4 {
+            if flag_args.len() < 4 {
                 eprintln!("Usage: pandora harness uninstall <id>");
                 return;
             }
-            let id = &args[3];
-            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let mut _council = sc.write().expect("council lock write");
+            let id = flag_args[3].as_str();
+            let mut council = sc.write().expect("council lock write");
 
-            match _council.uninstall(id) {
+            // Also clean up staging
+            let staging = sessions_dir().join("harnesses").join(id);
+            if staging.exists() {
+                let _ = std::fs::remove_dir_all(&staging);
+            }
+
+            match council.uninstall(id) {
                 Ok(()) => println!("Uninstalled: {id}"),
                 Err(e) => eprintln!("Error: {e}"),
             }
         }
         "info" | "inspect" => {
-            if args.len() < 4 {
+            if flag_args.len() < 4 {
+                eprintln!("Usage: pandora harness info <id>");
                 return;
             }
-            let id = &args[3];
-            let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-            let _council = sc.read().expect("council lock read");
-            println!("Harness: {id}");
-            // TODO: read harness.toml from staging and display
+            let id = flag_args[3].as_str();
+            let council = sc.read().expect("council lock read");
+
+            match council.harnesses.get(id) {
+                Some(h) => {
+                    let m = h.manifest();
+                    println!("Harness: {}", m.id);
+                    println!("  Name:    {}", m.name);
+                    println!("  Kind:    {:?}", m.kind);
+                    println!("  Version: {}", m.version);
+                    println!("  Author:  {}", m.author);
+                    if let Some(state) = council.harnesses.state(id) {
+                        println!("  State:   {:?}", state);
+                    }
+                    if !m.capabilities.is_empty() {
+                        println!("  Capabilities: {:?}", m.capabilities);
+                    }
+                    if !m.owned_genes.is_empty() {
+                        println!("  Genes:   {:?}", m.owned_genes);
+                    }
+                    if !m.slash_commands.is_empty() {
+                        println!("  Commands:");
+                        for cmd in &m.slash_commands {
+                            println!("    /{} — {}", cmd.command, cmd.description);
+                        }
+                    }
+                }
+                None => eprintln!("Harness not found: {id}"),
+            }
         }
         _ => {
-            eprintln!("Subcommand: list, install, enable, disable, uninstall, info");
+            eprintln!("Unknown subcommand: {sub}");
+            eprintln!("Available: list, install, enable, enable-source, disable, update, rollback, uninstall, info");
         }
     }
 }
-
 /// Simple recursive directory copy (Phase 4 ponytail: std only, no walkdir needed).
 fn copy_dir(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
     if !dst.exists() {

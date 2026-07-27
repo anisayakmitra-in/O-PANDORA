@@ -652,6 +652,24 @@ impl HarnessRegistry {
             })
             .collect()
     }
+
+    /// List only enabled harnesses.
+    pub fn enabled_entries(&self) -> Vec<(&dyn Harness, &HarnessState)> {
+        self.all_entries()
+            .into_iter()
+            .filter(|(_, s)| **s == HarnessState::Enabled)
+            .collect()
+    }
+
+    /// List installed but not enabled harnesses (Disabled, Staged, Suspended).
+    pub fn installed_entries(&self) -> Vec<(&dyn Harness, &HarnessState)> {
+        self.all_entries()
+            .into_iter()
+            .filter(|(_, s)| {
+                matches!(s, HarnessState::Disabled | HarnessState::Staged | HarnessState::Suspended)
+            })
+            .collect()
+    }
     pub fn get(&self, id: &str) -> Option<&dyn Harness> {
         self.harnesses.get(id).map(|h| h.as_ref())
     }
@@ -1159,6 +1177,7 @@ pub struct CouncilSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pandora_types::PandoraError;
     use pandora_types::gene::*;
     use pandora_types::harness::HarnessManifestBuilder;
 
@@ -1500,6 +1519,124 @@ mod tests {
         }).unwrap();
 
         assert_eq!(route.harness_id, "coding-domain");
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  Harness lifecycle tests (Phase 4)
+    // ═══════════════════════════════════════════════════════════
+
+    #[derive(Debug)]
+    struct SpyHarness {
+        manifest: HarnessManifest,
+        health_ok: bool,
+    }
+
+    impl SpyHarness {
+        fn new(id: &str, kind: HarnessKind) -> Self {
+            Self {
+                manifest: HarnessManifestBuilder::default()
+                    .id(id).name(id).kind(kind).version("0.1.0").author("test")
+                    .description("spy")
+                    .build().unwrap(),
+                health_ok: true,
+            }
+        }
+    }
+
+    impl Harness for SpyHarness {
+        fn manifest(&self) -> &HarnessManifest { &self.manifest }
+        fn initialize(&mut self) -> Result<(), PandoraError> { Ok(()) }
+        fn shutdown(&mut self) -> Result<(), PandoraError> { Ok(()) }
+        fn health(&self) -> Result<(), PandoraError> {
+            if self.health_ok { Ok(()) } else { Err(PandoraError::internal("unhealthy")) }
+        }
+    }
+
+    #[test]
+    fn lifecycle_fresh_install_is_disabled() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain))).unwrap();
+        assert_eq!(*sc.harnesses.state("t").unwrap(), HarnessState::Disabled);
+    }
+
+    #[test]
+    fn lifecycle_enable_then_disable() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain))).unwrap();
+        sc.enable("t").unwrap();
+        assert_eq!(*sc.harnesses.state("t").unwrap(), HarnessState::Enabled);
+        sc.disable("t").unwrap();
+        assert_eq!(*sc.harnesses.state("t").unwrap(), HarnessState::Disabled);
+    }
+
+    #[test]
+    fn lifecycle_source_harness_requires_approval() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("src", HarnessKind::Source))).unwrap();
+        let err = sc.enable("src").unwrap_err();
+        assert!(err.to_string().contains("Source harness"));
+    }
+
+    #[test]
+    fn lifecycle_enable_source_works() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("src", HarnessKind::Source))).unwrap();
+        sc.harnesses.enable_source("src", "admin", "test").unwrap();
+        assert_eq!(*sc.harnesses.state("src").unwrap(), HarnessState::Enabled);
+    }
+
+    #[test]
+    fn lifecycle_uninstall_removes() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("t", HarnessKind::Domain))).unwrap();
+        sc.uninstall("t").unwrap();
+        assert!(sc.harnesses.get("t").is_none());
+    }
+
+    #[test]
+    fn lifecycle_enabled_entries_filter() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("a", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("b", HarnessKind::Domain))).unwrap();
+        sc.enable("a").unwrap();
+        assert_eq!(sc.harnesses.enabled_entries().len(), 1);
+    }
+
+    #[test]
+    fn lifecycle_installed_entries_filter() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("a", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("b", HarnessKind::Domain))).unwrap();
+        sc.enable("a").unwrap();
+        assert_eq!(sc.harnesses.installed_entries().len(), 1);
+    }
+
+    #[test]
+    fn lifecycle_tx_install_health_ok() {
+        let mut sc = ShadowCouncil::new();
+        sc.harnesses.transactional_install(Box::new(SpyHarness::new("tx", HarnessKind::Domain))).unwrap();
+        assert_eq!(*sc.harnesses.state("tx").unwrap(), HarnessState::Disabled);
+    }
+
+    #[test]
+    fn lifecycle_tx_install_health_fail_rolls_back() {
+        let mut sc = ShadowCouncil::new();
+        let mut bad = SpyHarness::new("bad", HarnessKind::Domain);
+        bad.health_ok = false;
+        let err = sc.harnesses.transactional_install(Box::new(bad)).unwrap_err();
+        assert!(err.to_string().contains("health check"));
+        assert!(sc.harnesses.get("bad").is_none());
+    }
+
+    #[test]
+    fn lifecycle_count_by_kind() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(SpyHarness::new("d1", HarnessKind::Domain))).unwrap();
+        sc.install(Box::new(SpyHarness::new("m1", HarnessKind::Meta))).unwrap();
+        let s = sc.summary();
+        assert_eq!(s.domain_count, 1);
+        assert_eq!(s.meta_count, 1);
+        assert_eq!(s.source_count, 0);
     }
 
 }
