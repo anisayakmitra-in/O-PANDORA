@@ -235,3 +235,72 @@ mod tests {
         assert!(results.iter().any(|r| r.capability.name == "research"));
     }
 }
+
+
+// ── Phase 3 additions ──
+
+/// A request for the Shadow Council to route to a concrete harness + gene.
+#[derive(Debug, Clone)]
+pub struct CapabilityRequest {
+    pub intent: String,
+    pub required: Vec<String>,
+    pub preferred: Vec<String>,
+    pub budget: Option<ExecutionBudget>,
+    pub policy: Option<RoutingPolicy>,
+}
+
+/// Optional budget for execution.
+#[derive(Debug, Clone, Default)]
+pub struct ExecutionBudget {
+    pub max_cost: Option<f64>,
+    pub max_latency_ms: Option<u64>,
+    pub sandbox_level: u8,
+}
+
+/// Optional routing policy constraints.
+#[derive(Debug, Clone, Default)]
+pub struct RoutingPolicy {
+    pub require_offline: bool,
+    pub require_local: bool,
+    pub preferred_provider: Option<String>,
+    pub owner_harness: Option<String>,
+}
+
+/// A route selected by the Shadow Council.
+#[derive(Debug, Clone)]
+pub struct Route {
+    pub harness_id: String,
+    pub gene_id: Option<String>,
+    pub rationale: String,
+    pub score: f32,
+}
+
+impl IntentRouter {
+    /// Convert a free-text intent into well-known capability strings.
+    pub fn capabilities_from_intent(intent: &str) -> Vec<String> {
+        let lower = intent.to_lowercase();
+        let mut caps = Vec::new();
+
+        let keywords: Vec<(&str, &[&str])> = vec![
+            ("code-review", &["review", "audit", "refactor", "simplify", "debt", "gain", "quality"]),
+            ("coding", &["code", "function", "rust", "python", "program", "implement", "write"]),
+            ("security-audit", &["security", "vulnerability", "pentest", "audit", "scan", "secrets"]),
+            ("research", &["research", "paper", "literature", "summarize", "study"]),
+            ("design", &["design", "ui", "ux", "brand", "color", "typography", "accessibility"]),
+            ("computer-use", &["click", "screenshot", "desktop", "browser", "automation"]),
+            ("android", &["android", "adb", "phone", "mobile", "tap", "swipe"]),
+        ];
+
+        for (cap, words) in keywords {
+            if words.iter().any(|w| lower.contains(w)) {
+                caps.push(cap.to_string());
+            }
+        }
+
+        if caps.is_empty() {
+            caps.push("general".to_string());
+        }
+        caps
+    }
+}
+

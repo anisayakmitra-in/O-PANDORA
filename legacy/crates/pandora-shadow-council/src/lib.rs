@@ -4,6 +4,7 @@
 
 use pandora_types::gene::{Gene, GeneKind, GeneLineage, GeneManifest, SlashCommandOwner};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, SlashCommand};
+use pandora_types::intent_router::{CapabilityRequest, IntentRouter, Route};
 use std::collections::HashMap;
 
 fn parse_gene_kind(s: &str) -> GeneKind {
@@ -77,6 +78,17 @@ const TOOL_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub f
 const WORKFLOW_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "workflow".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("workflow: {}", input)) } }"#;
 const PROVIDER_TMPL: &str = r#"pub struct Gene { pub id: String; } impl Gene { pub fn new() -> Self { Self { id: "provider".into() } } pub fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> { Ok(format!("provider: {}", input)) } }"#;
 
+
+
+fn score_gene(installed: &InstalledGene, required: &[String]) -> f32 {
+    let mut score = 0.0_f32;
+    for cap in required {
+        if installed.manifest().capabilities.iter().any(|c| c.to_lowercase().contains(&cap.to_lowercase()) || cap.to_lowercase().contains(&c.to_lowercase())) {
+            score += 1.0;
+        }
+    }
+    score
+}
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HarnessEvent {
@@ -732,7 +744,7 @@ impl ShadowCouncil {
             .iter()
             .find_map(|id| self.harnesses.get(id))
     }
-    pub fn route(&self, cmd: &str) -> Option<&dyn Harness> {
+    pub fn route_command(&self, cmd: &str) -> Option<&dyn Harness> {
         self.slash_commands
             .owner(cmd)
             .and_then(|id| self.harnesses.get(id))
@@ -849,6 +861,136 @@ impl ShadowCouncil {
         })?;
         let _ = std::fs::write(gene_dir.join("src").join("mod.rs"), "pub mod lib;\n");
         Ok(gene_dir.to_string_lossy().to_string())
+    }
+
+
+    /// Route a capability request to the best harness and optional gene.
+    ///
+    /// Scoring considers:
+    /// - required capability coverage
+    /// - harness enabled state
+    /// - explicit owner_harness override in gene manifest
+    /// - policy constraints (offline, local, preferred provider)
+    pub fn route(&self, request: CapabilityRequest) -> Result<Route, pandora_types::PandoraError> {
+        let required: Vec<String> = if request.required.is_empty() {
+            IntentRouter::capabilities_from_intent(&request.intent)
+        } else {
+            request.required.clone()
+        };
+
+        if required.is_empty() || required.iter().all(|c| c == "general") {
+            return Err(pandora_types::PandoraError::Governance(
+                format!("no capabilities resolved from intent: {}", request.intent)
+            ));
+        }
+
+        let mut best: Option<(String, f32, Vec<String>)> = None;
+
+        // Score harnesses
+        for (harness, state) in self.harnesses.all_entries() {
+            if *state != HarnessState::Enabled {
+                continue;
+            }
+
+            let manifest = harness.manifest();
+            let mut score = 0.0_f32;
+            let mut matched = Vec::new();
+
+            for cap in &required {
+                if manifest.capabilities.iter().any(|c| c.to_lowercase().contains(&cap.to_lowercase()) || cap.to_lowercase().contains(&c.to_lowercase())) {
+                    score += 1.0;
+                    matched.push(cap.clone());
+                }
+            }
+
+            // Boost exact keyword matches in description/name
+            let desc = format!("{} {}", manifest.name, manifest.id).to_lowercase();
+            for cap in &required {
+                let cap_words = cap.split(['-', '_']);
+                for word in cap_words {
+                    if desc.contains(word) && !word.is_empty() {
+                        score += 0.2;
+                    }
+                }
+            }
+
+            if score <= 0.0 {
+                continue;
+            }
+
+            // Policy constraints
+            if let Some(ref policy) = request.policy {
+                if let Some(ref owner) = policy.owner_harness {
+                    if manifest.id != *owner {
+                        continue;
+                    }
+                }
+            }
+
+            if best.as_ref().map(|(_, b, _)| score > *b).unwrap_or(true) {
+                best = Some((manifest.id.clone(), score, matched.clone()));
+            }
+        }
+
+        let (harness_id, score, matched) = best.ok_or_else(|| {
+            pandora_types::PandoraError::Governance(
+                format!("no harness matches required capabilities: {:?}", required)
+            )
+        })?;
+
+        // Try to find the best gene inside or outside the selected harness
+        let gene_id = self.select_gene(&harness_id, &required);
+
+        let rationale = format!(
+            "selected harness '{}' by capability overlap: {:?} (score {:.2})",
+            harness_id, matched, score
+        );
+
+        Ok(Route {
+            harness_id,
+            gene_id,
+            rationale,
+            score,
+        })
+    }
+
+    /// Select the best gene for a harness given required capabilities.
+    fn select_gene(&self, harness_id: &str, required: &[String]) -> Option<String> {
+        let mut best: Option<(String, f32)> = None;
+
+        // Owned genes
+        if let Some(harness) = self.harnesses.get(harness_id) {
+            for owned in &harness.manifest().owned_genes {
+                if let Some(installed) = self.genes.get(owned) {
+                    if !installed.enabled {
+                        continue;
+                    }
+                    let score = score_gene(installed, required);
+                    if best.as_ref().map(|(_, b)| score > *b).unwrap_or(true) {
+                        best = Some((owned.clone(), score));
+                    }
+                }
+            }
+        }
+
+        // Standalone genes
+        for installed in self.genes.all() {
+            if !installed.enabled {
+                continue;
+            }
+            let manifest = installed.manifest();
+            if let Some(ref owner) = manifest.owner_harness {
+                if owner != harness_id {
+                    continue;
+                }
+            }
+            let score = score_gene(installed, required);
+            if best.as_ref().map(|(_, b)| score > *b).unwrap_or(true) {
+                best = Some((installed.id().to_string(), score));
+            }
+        }
+
+        best.filter(|(_, s)| *s > 0.0).map(|(id, _)| id)
     }
 
     pub fn summary(&self) -> CouncilSummary {
@@ -1033,7 +1175,7 @@ mod tests {
             &[("mem.g", "Graph")],
         )))
         .unwrap();
-        assert!(sc.route("mem.g").is_some());
+        assert!(sc.route_command("mem.g").is_some());
     }
     #[test]
     fn dependency_required() {
@@ -1121,4 +1263,113 @@ mod tests {
         assert!(std::path::Path::new(&p).join("gene.toml").exists());
         let _ = std::fs::remove_dir_all(tmp);
     }
+    #[test]
+    fn route_coding_intent() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(h("coding-domain", HarnessKind::Domain))).unwrap();
+        sc.enable("coding-domain").unwrap();
+
+        let route = sc.route(CapabilityRequest {
+            intent: "write a rust function".into(),
+            required: vec![],
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        }).unwrap();
+
+        assert_eq!(route.harness_id, "coding-domain");
+        assert!(route.rationale.contains("coding-domain"));
+        assert!(route.score > 0.0);
+    }
+
+    #[test]
+    fn route_security_intent() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(h("security-domain", HarnessKind::Domain))).unwrap();
+        sc.enable("security-domain").unwrap();
+
+        let route = sc.route(CapabilityRequest {
+            intent: "scan for vulnerabilities".into(),
+            required: vec![],
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        }).unwrap();
+
+        assert_eq!(route.harness_id, "security-domain");
+    }
+
+    #[test]
+    fn route_design_intent() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(h("design-domain", HarnessKind::Domain))).unwrap();
+        sc.enable("design-domain").unwrap();
+
+        let route = sc.route(CapabilityRequest {
+            intent: "design a website".into(),
+            required: vec![],
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        }).unwrap();
+
+        assert_eq!(route.harness_id, "design-domain");
+    }
+
+    #[test]
+    fn route_unknown_intent_fails() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(h("coding-domain", HarnessKind::Domain))).unwrap();
+        sc.enable("coding-domain").unwrap();
+
+        let err = sc.route(CapabilityRequest {
+            intent: "xyzabcdefg unknown thing".into(),
+            required: vec![],
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        }).unwrap_err();
+
+        assert!(
+            err.to_string().contains("no harness matches") ||
+            err.to_string().contains("no capabilities resolved")
+        );
+    }
+
+    #[test]
+    fn route_disabled_harness_not_selected() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(h("coding-domain", HarnessKind::Domain))).unwrap();
+        // left disabled
+
+        let err = sc.route(CapabilityRequest {
+            intent: "write a rust function".into(),
+            required: vec![],
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        }).unwrap_err();
+
+        assert!(err.to_string().contains("no harness matches"));
+    }
+
+    #[test]
+    fn route_selects_best_harness_by_score() {
+        let mut sc = ShadowCouncil::new();
+        sc.install(Box::new(hc("coding-domain", HarnessKind::Domain, &[("/code", "Code")]))).unwrap();
+        sc.install(Box::new(hc("design-domain", HarnessKind::Domain, &[("/design", "Design")]))).unwrap();
+        sc.enable("coding-domain").unwrap();
+        sc.enable("design-domain").unwrap();
+
+        let route = sc.route(CapabilityRequest {
+            intent: "write a python function".into(),
+            required: vec![],
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        }).unwrap();
+
+        assert_eq!(route.harness_id, "coding-domain");
+    }
+
 }

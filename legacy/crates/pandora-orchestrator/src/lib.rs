@@ -23,7 +23,6 @@ use pandora_types::capability_resolution::CapabilityResolutionEngine;
 use pandora_types::events::EventSink;
 use pandora_types::execution_plan::ExecutionPlan;
 use pandora_types::failure_intelligence::{FailureIntelligenceEngine, FailureRecord};
-use pandora_types::harness::HarnessKind;
 use pandora_types::knowledge_distillation::KnowledgeDistillationEngine;
 use pandora_types::policy_engine::PolicyEngine;
 use pandora_types::provenance::{ExecutionProvenanceGraph, ProvenanceNodeKind};
@@ -395,21 +394,31 @@ impl PandoraRuntime {
             step_count: topo.len(),
         };
 
-        // Stage 2b: Shadow Council — route through architecture
-        let domain_harnesses = self.council.dispatch(&HarnessKind::Domain);
-        if !domain_harnesses.is_empty() {
-            let harness_names: Vec<&str> = domain_harnesses
-                .iter()
-                .map(|h| h.manifest().id.as_str())
-                .collect();
-            info!("[STAGE 2b - COUNCIL] domain harnesses: {:?}", harness_names);
+        // Stage 2b: Shadow Council — route by intent and capability
+        let route_request = pandora_types::intent_router::CapabilityRequest {
+            intent: task.to_string(),
+            required: pandora_types::intent_router::IntentRouter::capabilities_from_intent(task),
+            preferred: vec![],
+            budget: None,
+            policy: None,
+        };
+
+        let route = self.council.route(route_request).map_err(|e| {
+            anyhow::anyhow!("Shadow Council could not route task: {}", e)
+        })?;
+
+        info!(
+            "[STAGE 2b - COUNCIL] routed to harness '{}' (gene: {:?}): {}",
+            route.harness_id, route.gene_id, route.rationale
+        );
+
+        session
+            .metadata
+            .insert("selected_harness".to_string(), route.harness_id.clone());
+        if let Some(ref gene_id) = route.gene_id {
             session
                 .metadata
-                .insert("selected_harness".to_string(), harness_names.join(","));
-        } else {
-            println!(
-                "[STAGE 2b - COUNCIL] no domain harnesses loaded (install via pandora install)" // Stage 2c: Policy evaluation — declarative governance rules        {            let policy_engine = &self.policy_engine;            let mut ctx = std::collections::HashMap::new();            ctx.insert("execution.task".into(), serde_json::json!(task));            let verdicts = policy_engine.evaluate(&ctx);            let blocks: Vec<_> = verdicts.iter().filter(|v| {                v.passed && matches!(&v.action, Some(pandora_types::policy_engine::PolicyAction::Deny { .. }))            }).collect();            if !blocks.is_empty() {                let reason = blocks[0].action.as_ref().map(|a| format!("{:?}", a)).unwrap_or_default();                return Err(anyhow::anyhow!("Policy blocked execution: {reason}"));            }            info!("[STAGE 2c - POLICY] {} rules evaluated, {} fired", verdicts.len(), verdicts.iter().filter(|v| v.passed).count());        }
-            );
+                .insert("selected_gene".to_string(), gene_id.clone());
         }
 
         // ponytail: sandbox via ExecutionBudget.sandbox_level
