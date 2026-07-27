@@ -7,7 +7,6 @@
 
 ## Architecture
 - [ARCHITECTURE](ARCHITECTURE.md) - system overview with diagrams
-- [ARCHITECTURE_FREEZE](../ARCHITECTURE_FREEZE.md) - frozen API surfaces
 - [ARCHITECTURE_DECISIONS](ARCHITECTURE_DECISIONS.md) - design rationale
 - [WHICH_LAYER](WHICH_LAYER.md) - where your code runs
 - [OWNERSHIP](OWNERSHIP.md) - crate boundaries and responsibilities
@@ -15,8 +14,8 @@
 - [RFC-0001](rfcs/0001-capability-system.md) - capability system design
 
 ## Runtime
-- [Execution Pipeline](../ARCHITECTURE_FREEZE.md) - 9-stage pipeline
-- [Shadow Council](../ARCHITECTURE_FREEZE.md) - harness routing
+- [Execution Pipeline](ARCHITECTURE.md#execution-pipeline) - 9-stage pipeline
+- [Shadow Council](ARCHITECTURE.md#shadow-council) - harness routing
 - [Workflow Specification](WORKFLOW.md) - lifecycle states and plan format
 - [Memory Specification](MEMORY.md) - hierarchical memory layers
 - [RuntimeNode Specification](RUNTIME_NODE.md) - node capabilities and transports
@@ -39,7 +38,7 @@
 
 ## Release
 - [Changelog](../CHANGELOG.md) - version history
-- [Release Checklist](../FINAL_RELEASE_CHECKLIST.md) - release/rollback docs
+- [Release](../README.md#releases) - version and release information
 - [Contributing](../CONTRIBUTING.md) - how to contribute
 - [Code of Conduct](../CODE_OF_CONDUCT.md) - community standards
 - [Migration Guide](MIGRATION.md) - upgrade paths
