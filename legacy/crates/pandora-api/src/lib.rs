@@ -24,12 +24,25 @@ use pandora_types::execution_plan::*;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-/// Check Bearer token if PANDORA_API_TOKEN is set.
-/// If the env var is not set, auth is skipped (current behavior).
+/// Check Bearer token. If PANDORA_API_TOKEN is set, auth is mandatory.
+/// If not set, the API runs in insecure mode (dev/CI only).
 fn require_auth(headers: &axum::http::HeaderMap) -> bool {
+    // Check for --insecure-plaintext flag via env
+    if std::env::var("PANDORA_INSECURE").is_ok() {
+        return true;
+    }
+
     let expected = match std::env::var("PANDORA_API_TOKEN") {
         Ok(t) if !t.is_empty() => t,
-        _ => return true, // No token configured = open access (same as before)
+        _ => {
+            // In dev mode, warn but allow
+            if std::env::var("PANDORA_DEV_MODE").is_ok() {
+                eprintln!("[SECURITY] PANDORA_API_TOKEN not set — API is unprotected. Set a token or run with --insecure-plaintext.");
+                return true;
+            }
+            // Production: require token
+            return false;
+        }
     };
     let auth = headers.get("authorization").and_then(|v| v.to_str().ok());
     auth.and_then(|a| a.strip_prefix("Bearer "))
@@ -87,6 +100,15 @@ struct SessionInfo {
     prompt: String,
     status: String,
     timeline_count: usize,
+}
+
+/// Helper: extract auth headers and check, returning 401 if unauthorized.
+macro_rules! auth_check {
+    ($headers:expr) => {
+        if !require_auth(&$headers) {
+            return StatusCode::UNAUTHORIZED.into_response();
+        }
+    };
 }
 
 // ── Handlers ──
@@ -149,7 +171,11 @@ async fn execute(
     }
 }
 
-async fn sessions(State(state): State<Arc<ApiState>>) -> impl IntoResponse {
+async fn sessions(
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    auth_check!(headers);
     let dir = &state.sessions_dir;
     let mut s = Vec::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
@@ -157,13 +183,15 @@ async fn sessions(State(state): State<Arc<ApiState>>) -> impl IntoResponse {
             s.push(entry.file_name().to_string_lossy().to_string());
         }
     }
-    Json(s)
+    Json(s).into_response()
 }
 
 async fn session_detail(
     State(state): State<Arc<ApiState>>,
     Path(id): Path<String>,
-) -> impl IntoResponse {
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    auth_check!(headers);
     let path = state.sessions_dir.join(format!("{id}.json"));
     match std::fs::read_to_string(&path) {
         Ok(json) => Json(serde_json::json!({"id":id,"data":json})).into_response(),
@@ -175,7 +203,12 @@ async fn session_detail(
     }
 }
 
-async fn explain(State(state): State<Arc<ApiState>>, Path(id): Path<String>) -> impl IntoResponse {
+async fn explain(
+    State(state): State<Arc<ApiState>>,
+    Path(id): Path<String>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    auth_check!(headers);
     let path = state.sessions_dir.join(format!("{id}.json"));
     match std::fs::read_to_string(&path) {
         Ok(json) => {
@@ -193,11 +226,12 @@ async fn explain(State(state): State<Arc<ApiState>>, Path(id): Path<String>) -> 
     }
 }
 
-async fn providers() -> impl IntoResponse {
+async fn providers(headers: axum::http::HeaderMap) -> axum::response::Response {
+    auth_check!(headers);
     let providers = pandora_types::provider_health::check_ollama();
     Json(
         serde_json::json!({"providers":[{"name":providers.name,"status":providers.status,"models":providers.model_count,"latency_ms":providers.latency_ms}]}),
-    )
+    ).into_response()
 }
 
 // ── Server ──

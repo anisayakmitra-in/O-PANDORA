@@ -19,3 +19,4 @@ tracing-subscriber.workspace = true
 clap.workspace = true
 reqwest.workspace = true
 shellexpand = "3"
+base64.workspace = true

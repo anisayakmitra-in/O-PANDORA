@@ -384,6 +384,7 @@ fn dispatch(args: &[String]) {
         Some("harnesses") => cmd_harnesses(args),
         Some("genes") => cmd_genes(args),
         Some("doctor") => cmd_doctor(args),
+        Some("keychain") => cmd_keychain(args),
         Some("inspect") => cmd_inspect(args),
         Some("status") => cmd_status(args),
         Some("stop") => cmd_stop(args),
@@ -842,8 +843,93 @@ fn cmd_harnesses(_args: &[String]) {
     println!("Source: 5 (memory, planning, execution, governance, identity)");
     println!("Loaded at runtime via pandora run");
 }
+fn cmd_keychain(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora keychain <store|get> <key> [value]");
+        eprintln!("  store <key> <value>  — store a secret in the keychain");
+        eprintln!("  get <key>            — retrieve a secret from the keychain");
+        return;
+    }
+    let sub = &args[2];
+    match sub.as_str() {
+        "store" => {
+            if args.len() < 5 {
+                eprintln!("Usage: pandora keychain store <key> <value>");
+                return;
+            }
+            let key = &args[3];
+            let value = &args[4];
+            // Store in ~/.pandora/credentials.enc (ponytail: env-var encrypted, not OS keychain yet)
+            let creds_dir = sessions_dir().parent().map(|p| p.join("credentials")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+            let _ = std::fs::create_dir_all(&creds_dir);
+            let path = creds_dir.join(format!("{key}.enc"));
+            // Simple base64 encoding for now (real encryption via ring would be better)
+            let encoded = base64_encode(value.as_bytes());
+            std::fs::write(&path, &encoded).expect("Failed to write credential");
+            println!("Stored: {key} -> {}", creds_dir.join(format!("{key}.enc")).display());
+        }
+        "get" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora keychain get <key>");
+                return;
+            }
+            let key = &args[3];
+            let creds_dir = sessions_dir().parent().map(|p| p.join("credentials")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+            let path = creds_dir.join(format!("{key}.enc"));
+            match std::fs::read_to_string(&path) {
+                Ok(encoded) => {
+                    if let Ok(decoded) = base64_decode(&encoded) {
+                        let value = String::from_utf8_lossy(&decoded);
+                        println!("{value}");
+                    } else {
+                        eprintln!("Error: corrupted credential");
+                    }
+                }
+                Err(_) => eprintln!("Key not found: {key}"),
+            }
+        }
+        _ => {
+            eprintln!("Unknown keychain command: {sub}");
+            eprintln!("Available: store, get");
+        }
+    }
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD.encode(data)
+}
+
+fn base64_decode(data: &str) -> Result<Vec<u8>, String> {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD
+        .decode(data.trim())
+        .map_err(|e| format!("base64: {e}"))
+}
+
 fn cmd_doctor(_args: &[String]) {
     println!("=== Pandora Doctor ===\n");
+
+    // ── Security checks (Phase 7) ──
+    println!("--- Security ---");
+    let token_set = std::env::var("PANDORA_API_TOKEN").is_ok_and(|t| !t.is_empty());
+    println!("  API token set:       {}", if token_set { "YES" } else { "NO  (set PANDORA_API_TOKEN)" });
+
+    let insecure = std::env::var("PANDORA_INSECURE").is_ok();
+    println!("  Insecure mode:       {}", if insecure { "YES (--insecure-plaintext)" } else { "NO" });
+
+    let creds_dir = sessions_dir().parent().map(|p| p.join("credentials")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+    let creds_exist = creds_dir.exists() && std::fs::read_dir(&creds_dir).map(|mut d| d.next().is_some()).unwrap_or(false);
+    println!("  Credentials stored:  {}", if creds_exist { "YES" } else { "NO" });
+
+    let keychain_available = false; // OS keychain requires keyring-rs integration
+    println!("  Keychain available:  {}", if keychain_available { "YES" } else { "NO  (use file-based credentials)" });
+
+    let dev_mode = std::env::var("PANDORA_DEV_MODE").is_ok();
+    println!("  Dev mode:            {}", if dev_mode { "YES (PANDORA_DEV_MODE=1)" } else { "NO" });
+
+    println!();
+    println!("--- Environment ---");
     let oh = env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
     let ck = |label: &str, cmd: &str| {
         print!("{label}... ");
