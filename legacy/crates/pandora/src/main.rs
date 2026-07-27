@@ -1624,8 +1624,14 @@ fn cmd_new(args: &[String]) {
                 process::exit(1);
             }
             let _ = std::fs::create_dir_all(dir.join("src"));
-            std::fs::write(dir.join("gene.toml"), format!("id = \"{name}\"\nname = \"{name}\"\nkind = Tool\nversion = 0.2.0\nauthor = \"\"\ndescription = \"\"\n")).expect("CLI I/O");
-            std::fs::write(dir.join("src").join("lib.rs"), format!("//! {name} gene\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\nimpl {sn}Gene {{ pub fn new() -> Self {{ Self {{ m: GeneManifestBuilder::default().id(\"{name}\").name(\"{name}\").kind(GeneKind::Tool).version(\"0.2.0\").author(\"\").description(\"{name} gene\").build() }} }} }}\nimpl Gene for {sn}Gene {{ fn manifest(&self) -> &GeneManifest {{ &self.m }} fn execute(&self, i: &str) -> Result<String, pandora_types::PandoraError> {{ Ok(format!(\"executed: {{i}}\")) }} }}\n")).expect("CLI I/O");
+            // gene.toml with version 0.1.0, permissions, and trust sections
+            std::fs::write(dir.join("gene.toml"), format!(
+                "id = \"{name}\"\nname = \"{name}\"\nkind = \"Tool\"\nversion = \"0.1.0\"\nauthor = \"\"\ndescription = \"{name} gene\"\n\n[permissions]\nfilesystem = \"read\"\nnetwork = \"none\"\nshell = \"deny\"\n\n[trust]\nlevel = \"low\"\nrequire_signature = false\n"
+            )).expect("CLI I/O");
+            // src/lib.rs with readable formatting
+            std::fs::write(dir.join("src").join("lib.rs"), format!(
+                "//! {name} gene — a Pandora gene.\n\nuse pandora_types::gene::{{Gene, GeneKind, GeneManifest, GeneManifestBuilder}};\nuse pandora_types::PandoraError;\n\n#[derive(Debug)]\npub struct {sn}Gene {{ m: GeneManifest }}\n\nimpl {sn}Gene {{\n    pub fn new() -> Self {{\n        let manifest = GeneManifestBuilder::default()\n            .id(\"{name}\")\n            .name(\"{name}\")\n            .kind(GeneKind::Tool)\n            .version(\"0.1.0\")\n            .author(\"\")\n            .description(\"{name} gene\")\n            .build();\n        Self {{ m: manifest }}\n    }}\n}}\n\nimpl Gene for {sn}Gene {{\n    fn manifest(&self) -> &GeneManifest {{ &self.m }}\n\n    fn execute(&self, input: &str) -> Result<String, PandoraError> {{\n        Ok(format!(\"{name} executed with: {{input}}\"))\n    }}\n}}\n"
+            )).expect("CLI I/O");
             println!("Created: {name}/");
         }
         "harness" => {

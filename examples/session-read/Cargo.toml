@@ -1,0 +1,11 @@
+[package]
+name = "session-read"
+version = "0.1.0"
+edition = "2021"
+
+[[example]]
+name = "read"
+path = "src/main.rs"
+
+[dependencies]
+pandora-types = { path = "../../legacy/crates/pandora-types" }

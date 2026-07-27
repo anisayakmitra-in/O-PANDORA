@@ -1,0 +1,11 @@
+[package]
+name = "provider-config"
+version = "0.1.0"
+edition = "2021"
+
+[[example]]
+name = "config"
+path = "src/main.rs"
+
+[dependencies]
+pandora-types = { path = "../../legacy/crates/pandora-types" }

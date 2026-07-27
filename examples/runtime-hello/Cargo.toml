@@ -1,0 +1,13 @@
+[package]
+name = "runtime-hello"
+version = "0.1.0"
+edition = "2021"
+
+[[example]]
+name = "hello"
+path = "src/main.rs"
+
+[dependencies]
+pandora-orchestrator = { path = "../../legacy/crates/pandora-orchestrator" }
+pandora-types = { path = "../../legacy/crates/pandora-types" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
