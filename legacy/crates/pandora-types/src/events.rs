@@ -68,14 +68,14 @@ pub enum PipelineEvent {
 }
 
 impl PipelineEvent {
-    /// Convenience constructor for [`StageStarted`].
+    /// Convenience constructor for [PipelineEvent::StageStarted].
     pub fn stage(stage: &str) -> Self {
         Self::StageStarted {
             stage: stage.into(),
         }
     }
 
-    /// Convenience constructor for [`StageFinished`].
+    /// Convenience constructor for [PipelineEvent::StageFinished].
     pub fn stage_done(stage: &str, ok: bool) -> Self {
         Self::StageFinished {
             stage: stage.into(),
@@ -84,7 +84,7 @@ impl PipelineEvent {
         }
     }
 
-    /// Convenience constructor for [`DecisionMade`].
+    /// Convenience constructor for [PipelineEvent::DecisionMade].
     pub fn decision(stage: &str, chosen: &str, reason: &str, rejected: Vec<String>) -> Self {
         Self::DecisionMade {
             stage: stage.into(),
@@ -94,7 +94,7 @@ impl PipelineEvent {
         }
     }
 
-    /// Convenience constructor for [`Log`].
+    /// Convenience constructor for [PipelineEvent::Log].
     pub fn log(msg: &str) -> Self {
         Self::Log {
             level: "info".into(),

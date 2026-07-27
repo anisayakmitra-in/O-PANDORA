@@ -4,7 +4,7 @@
 //! and reconstructs the execution state. Analytics queries the log without
 //! running the pipeline again.
 //!
-//! Storage: JSON-line file (~/.pandora/events/<session-id>.events.json).
+//! Storage: JSON-line file (`~/.pandora/events/<session-id>.events.json`).
 
 use crate::events::PipelineEvent;
 use serde_json;

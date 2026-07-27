@@ -1,59 +1,57 @@
 # Architecture
 
-Pandora is a governed execution runtime. You give it a task, it runs through a pipeline, and tells you what it did and why.
+O-PANDORA is a governed execution runtime. You give it a task; it runs through a fixed pipeline and tells you what it did and why.
 
 ## How it works
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    O-PANDORA                       │
+┌──────────────────────────────────────────────────────┐
+│                    O-PANDORA                            │
 │              Governed Execution Runtime                  │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│   User / CLI / API / MCP                                │
-│         │                                               │
-│         ▼                                               │
-│   ExecutionPlan ──► what to do, how, when to stop       │
-│         │                                               │
-│         ▼                                               │
-│   Parliament ──► constitutional services (governance)   │
-│         │                                               │
-│         ▼                                               │
-│   ExecutionController ──► retry, failover, approval     │
-│         │                                               │
-│         ▼                                               │
-│   Shadow Council ──► routes to harnesses and genes      │
-│         │                                               │
-│    ┌────┴────┬─────────┬──────────┐                    │
-│    ▼         ▼         ▼          ▼                    │
-│  Source   Meta    Domain     Providers                 │
-│  Harnesses Harness  Harnesses  (12 kinds)               │
-│    │         │         │          │                    │
-│    └────┬────┴─────────┴──────────┘                    │
-│         ▼                                               │
-│      Genes (22 built-in)                                │
-│         │                                               │
-│         ▼                                               │
-│   ExecutionOutcome ──► result + decision log            │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+├──────────────────────────────────────────────────────┘
+
+   User / CLI / API / MCP
+         │
+         ▼
+   ExecutionPlan ─ what to do, how, when to stop
+         │
+         ▼
+   Parliament ─ constitutional services (governance)
+         │
+         ▼
+   ExecutionController ─ retry, failover, approval
+         │
+         ▼
+   Shadow Council ─ routes to harnesses and genes
+         │
+    ┌────┐ ┌────┐ ┌───────┐ ┌────────┐
+    ▼    ▼    ▼       ▼
+  Source Meta Domain   Providers
+  Harnesses Harness  Harnesses
+    │      │      │         │
+    └─────┘─────────────────┘
+         ▼
+      Genes (22 built-in)
+         │
+         ▼
+   ExecutionOutcome ─ result + decision log
 ```
 
-Every execution flows through all layers. There's no shortcut from CLI to provider — the pipeline runs every time.
+Every execution goes through all layers. There is no shortcut from the CLI to a provider.
 
 ## The layers
 
 ### Parliament
 
-Constitutional services that own the runtime. Before execution, Parliament checks governance policies. After execution, it validates outcomes. Think of it as the runtime's immune system — it doesn't do work, it makes sure work is done right.
+Constitutional services that own the runtime. Before execution, Parliament checks governance policies. After execution, it validates outcomes. It is the runtime's immune system: it does not do the work, but it decides whether the work may proceed.
 
-Current services: Governance (validates inputs/outputs, enforces policy).
+Current services: Governance, which validates inputs and outputs and enforces policy.
 
 ### Shadow Council
 
-The routing layer. Shadow Council knows every harness, gene, and slash command. When execution reaches it, the council dispatches to the right domain harness based on the task.
+The routing layer. Shadow Council knows every harness, gene, and slash command. When execution reaches it, the council dispatches the task to the right domain harness based on what the user asked for.
 
-Currently empty on startup — harnesses register when loaded. Built-in genes are always available.
+Built-in harnesses register automatically when the runtime starts. Custom harnesses can be installed later via KUBER. Built-in genes are always available.
 
 ### ExecutionController
 
@@ -63,27 +61,27 @@ Decides retry, failover, approval, and escalation. Records every decision with r
 
 Three types of harnesses:
 
-**Source Harnesses** — system infrastructure. Memory, Planning, Execution, Governance, Identity. These don't handle user tasks directly; they provide services the runtime needs.
+**Source Harnesses** provide system infrastructure: Memory, Planning, Execution, Governance, Identity. They do not handle user tasks directly.
 
-**Meta Harnesses** — coordination between other harnesses. One meta harness (Coordination) handles delegation and routing between harnesses.
+**Meta Harnesses** coordinate between harnesses. The Coordination harness handles delegation and routing between harnesses.
 
-**Domain Harnesses** — actual work. Coding, Design, Security, Research, Computer Use. These contain domain-specific logic and wrap related genes.
+**Domain Harnesses** do the actual work: Coding, Design, Security, Research, Computer Use. They contain domain-specific logic and wrap related genes.
 
 ### Genes
 
-Atomic tools. Each gene does one thing: `shell` runs commands, `git` handles version control, `http` makes requests, `browser` opens pages. 22 built-in.
+Atomic tools. Each gene does one thing: `shell` runs commands, `git` handles version control, `http` makes requests, `browser` opens pages. There are 22 built-in genes.
 
 ### Providers
 
-LLM backends. 12 types supported: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom. Pandora auto-discovers models from healthy connections.
+LLM backends. Supported connection kinds: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom. Pandora auto-discovers models from healthy connections.
 
-### K-O K-O Palace
+### KUBER
 
-Package registry. Discover, install, and publish genes and harnesses. Free — monetization comes later.
+The package client. It discovers, installs, and publishes genes and harnesses from K-O Palace.
 
 ## CLI interface
 
-```
+```bash
 pandora run "build a REST API"
 ```
 
@@ -104,42 +102,49 @@ Task: build a REST API
 ## TUI dashboard
 
 ```
-╔══════════════════════════════════════════════════════════╗
-║                 O-PANDORA                          ║
-║           Governed Execution Runtime                      ║
-╠══════════════════════════════════════════════════════════╣
-║  Runtime │ Genes │ Harnesses │ Plans │ K-O Palace │ Exit     ║
-╠══════════════════════════════════════════════════════════╣
+╔══════════════════════════════════════════════════════╗
+║                 O-PANDORA                              ║
+║           Governed Execution Runtime                    ║
+╚══════════════════════════════════════════════════════╝
+║  Runtime │ Genes │ Harnesses │ Plans │ Palace │ Exit     ║
+╚══════════════════════════════════════════════════════╝
 ║  Runtime: Running    Providers: 1 active                 ║
 ║  Session: exec-123   Model: ollama/default               ║
 ║  Profile: coding     Workers: 0                          ║
-╠══════════════════════════════════════════════════════════╣
-║  Built-in Genes (22)           │  Marketplace            ║
+╚════════════════════════════─══════════════════════════════╝
+║  Built-in Genes (22)            │  Marketplace            ║
 ║  filesystem   shell    git     │  ★ pandora/coding       ║
 ║  http         docker   kubectl │   42k installs          ║
 ║  browser      youtube  scrape  │  ★ sayak/eda-skill      ║
 ║  rss          github   mcp     │   2.1k installs         ║
 ║  code-review  benchmrk sqlite  │                         ║
-╠══════════════════════════════════════════════════════════╣
+╚═════════════─══════─═══─═══─═══─═══─══════════════════════════════════════╝
 ║  [q] Quit  [tab] Switch  [enter] Select                 ║
-╚══════════════════════════════════════════════════════════╝
+╚════════─═════════════════════════════════════════════════════╝
 ```
 
-## Accessing
+## Accessing the dashboard
 
-Start the dashboard:
 ```bash
 pandora-tui
 ```
 
-Capture a screenshot of your terminal:
+Or run a quick command first and then open the dashboard:
+
 ```bash
-# Linux
-import -window root screenshot.png
-
-# macOS
-screencapture screenshot.png
-
-# Run a quick demo
 pandora run "hello" && pandora-tui
+```
+
+## Screenshot
+
+To capture the terminal on Linux:
+
+```bash
+import -window root screenshot.png
+```
+
+On macOS:
+
+```bash
+screencapture screenshot.png
 ```

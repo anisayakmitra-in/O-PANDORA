@@ -1,16 +1,13 @@
 # O-PANDORA
 
-<p align="center">
-  <img src="assets/logo.png" alt="Pandora" width="200"/>
-</p>
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.2.0)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-[![CI](https://github.com/anisayakmitra-in/O-PANDORA/actions/workflows/ci.yml/badge.svg)](https://github.com/anisayakmitra-in/O-PANDORA/actions)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.2.0)
+A governed execution runtime for AI agents.
 
-A governed execution runtime for AI agents. You give it a task, it runs through a pipeline of harnesses and genes, and tells you exactly what it did and why.
+You give it a task. It runs it through a fixed pipeline, records every decision, and tells you what happened and why. If something breaks, you can replay the exact path and see which gene failed and which alternatives were rejected.
 
-It's not a chatbot. It's not an agent framework. It's the layer that sits between "ask an LLM something" and "ship code to production" — the part most people skip.
+It is not a chatbot. It is not a generic agent framework. It is the layer between asking an LLM a question and putting code into production.
 
 ## What it does
 
@@ -22,68 +19,43 @@ you: "build a REST API"
   Outcome + DecisionLog + Evidence
 ```
 
-Every step produces a record. You can replay it, explain it, audit it. If something goes wrong, you know which gene failed, which alternative was rejected, and why.
+Every execution produces a session. Every session can be explained, replayed, and audited.
 
 ## Install
 
-**Prerequisites:**
+**One-liner for Linux, macOS, or WSL2:**
+
 ```bash
-# Install Rust (if not already installed)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
+curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/install.sh | bash
 ```
 
-**From source (Linux, macOS, WSL2):**
+**From source:**
+
 ```bash
 git clone https://github.com/anisayakmitra-in/O-PANDORA.git
 cd O-PANDORA
 cargo build --release -p pandora
-cp target/release/pandora ~/.local/bin/
+# Add target/release/pandora to your PATH or copy it manually.
 ```
 
-**Windows:** use WSL2 for the installer and CLI today.
-
-**Requires:** Rust stable, Ollama (or any OpenAI-compatible endpoint)
+**Requires:** Rust 1.80+, and an Ollama server or any OpenAI-compatible endpoint.
 
 ## Quick start
 
 ```bash
-# Verify the CLI works
-./target/release/pandora --help
-./target/release/pandora --version
-
-# Add a provider (Ollama running locally)
-./target/release/pandora connection add local ollama http://localhost:11434
+# Add a local provider (Ollama is the default)
+pandora connection add local ollama http://localhost:11434
 
 # Run a task
-./target/release/pandora run "build a REST API"
+pandora run "build a REST API"
 
 # See what happened
-./target/release/pandora sessions
-./target/release/pandora explain <session-id>
+pandora sessions
+pandora explain <session-id>
 
 # Interactive shell
-./target/release/pandora shell
-
-# Scaffold your first gene
-./target/release/pandora new gene hello-tool
-cd hello-tool && cat gene.toml
-
-# Try the SDK examples
-cargo run --example hello_gene -p pandora-types
-cargo run --example hello_capability -p pandora-types
-cargo run --example hello_permissions -p pandora-types
+pandora shell
 ```
-
-## CLI Examples
-
-See [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) for CLI output examples.
-
-## Sample Apps
-
-See [sample-apps/](sample-apps/) for reference applications.
-
-
 
 ## What's in the box
 
@@ -94,19 +66,19 @@ Every task flows through the same stages:
 | Stage | What happens |
 |-------|-------------|
 | **ExecutionPlan** | What to do, how to do it, when to stop |
-| **ExecutionController** | Retry, failover, approval, delegation — all recorded |
-| **Shadow Council** | Routes tasks to the right harness and gene |
+| **ExecutionController** | Retry, failover, approval, and delegation |
+| **Shadow Council** | Routes the task to the right harness and gene |
 | **Harnesses** | Domain-specific logic (coding, security, design, research) |
-| **Genes** | Atomic tools — shell commands, HTTP, git, docker, browsers |
-| **Providers** | LLMs via Ollama, OpenAI, Anthropic, or any OpenAI-compatible endpoint |
-| **DecisionLog** | Every choice: what won, what lost, why |
-| **ExecutionOutcome** | Result + evidence + session for replay |
+| **Genes** | Atomic tools: shell, HTTP, git, docker, browser, and others |
+| **Providers** | LLMs via Ollama or any OpenAI-compatible endpoint you add |
+| **DecisionLog** | Why each choice was made |
+| **ExecutionOutcome** | Result, evidence, and a session for replay |
 
 ### Harnesses
 
-Harnesses are what make Pandora smarter per domain. They wrap related genes and know how to route tasks.
+Harnesses make Pandora smarter per domain. Each one wraps related genes and routes tasks.
 
-**Source Harnesses** — system-level infrastructure. These don't execute user tasks directly; they provide services the runtime needs.
+**Source Harnesses** handle system-level infrastructure. They do not execute user tasks directly; they provide services the runtime needs.
 
 | Harness | What it owns |
 |---------|-------------|
@@ -116,13 +88,13 @@ Harnesses are what make Pandora smarter per domain. They wrap related genes and 
 | Governance | Policy enforcement, approval gates |
 | Identity | Auth, trust, publisher verification |
 
-**Meta Harnesses** — coordination between other harnesses. They sit one level up.
+**Meta Harnesses** coordinate between other harnesses.
 
 | Harness | What it owns |
 |---------|-------------|
 | Coordination | Delegation, routing, inter-harness communication |
 
-**Domain Harnesses** — actual work. This is where tasks get dispatched based on what the user asked for.
+**Domain Harnesses** do the actual work. Tasks land here based on what the user asked for.
 
 | Harness | What it owns |
 |---------|-------------|
@@ -132,43 +104,46 @@ Harnesses are what make Pandora smarter per domain. They wrap related genes and 
 | Research | Search, scrape, extract, summarize |
 | Computer Use | Click, type, screenshot, desktop automation |
 
-### Genes (21 built-in)
+### Genes (22 built-in)
 
-Genes are the atomic tools. Each one does one thing.
+Genes are atomic tools. Each one does one thing.
 
 ```
 filesystem    shell         git           http          rust-tool
-python-tool   workflow      docker        docker-compose terraform
-kubectl       browser       sqlite        github        mcp
-code-review   benchmark     youtube       scrape        rss
-github-issues code-graph    api-scan      computer-use
+python-tool   workflow      docker        sqlite        github
+mcp           code-review   benchmark     youtube       scrape
+rss           github-issues code-graph    api-scan      computer-use
 ```
 
-### Providers (connections)
+### Providers
 
-Pandora doesn't hardcode any provider. You add connections:
+Pandora does not make network calls unless you tell it to. You add the endpoints.
 
 ```bash
+# Local provider (sovereign, default)
+pandora connection add local ollama http://localhost:11434
+
+# Remote provider (only if you configure it)
 pandora connection add my-gpu openai-compatible http://10.0.0.50:8000/v1 Qwen3-32B
-pandora connections
 pandora connection test my-gpu
+pandora connections
 ```
 
-12 provider types supported: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom.
+Supported connection kinds: ollama, llama.cpp, openai-compatible, openai, anthropic, gemini, openrouter, groq, together, deepseek, mistral, custom.
 
 ### K-O Palace
 
-A package registry built into the CLI. Discover, install, and publish genes and harnesses.
+K-O Palace is a separate ecosystem repository for discovering, installing, and publishing genes and harnesses. The Pandora CLI includes a KUBER client that can talk to it.
 
 ```bash
 pandora shell
-/market               # browse K-O Palace marketplace
-/install coding-domain # install from K-O Palace registry
+/kuber-palace          # browse marketplace
+/install coding-domain # install from Palace
 ```
 
 Everything is free. Monetization comes later, once the ecosystem grows.
 
-### Session & explainability
+### Session and explainability
 
 Every execution produces a session. Every session can be replayed, explained, and audited.
 
@@ -178,7 +153,7 @@ pandora explain <id>
 pandora replay <id>
 ```
 
-The DecisionLog records why each choice was made — which gene was picked, which were rejected, and the reasoning.
+The DecisionLog records which gene was picked, which alternatives were rejected, and why.
 
 ## CLI commands
 
@@ -199,10 +174,10 @@ Version:   --version, version
 
 ```
 /run <task>        single-shot execution
-/goal <objective>  multi-turn until done (Claurst pattern)
+/goal <objective>  multi-turn until done
 /agent <task>      spawn background subagent
-/overnight <task>  run 10 turns, go to sleep (GNHF pattern)
-/market      browse marketplace
+/overnight <task>  long-running execution with checkpoints
+/kuber-palace      browse marketplace
 /connections       manage providers
 /sessions          view execution history
 /help              list commands
@@ -216,13 +191,16 @@ Version:   --version, version
 | `docs/ARCHITECTURE.md` | Layer-by-layer walkthrough |
 | `docs/ARCHITECTURE_DECISIONS.md` | Why the architecture is what it is |
 | `docs/OWNERSHIP.md` | Crate boundaries and responsibilities |
-| `docs/WHICH_LAYER.md` | "Where does this code go?" decision tree |
-| `docs/SECURITY.md` | Trust model, signing, permissions |
+| `docs/WHICH_LAYER.md` | Where to put new code |
+| `SECURITY.md` | Trust model, signing, permissions |
+| `docs/CLI.md` | CLI reference |
+| `docs/SDK.md` | Gene and harness authoring |
+| `docs/CONFIGURATION.md` | Environment variables and config files |
 
 ## Architecture
 
 ```
-Workspace crates, 0 build errors when the workspace is green
+11 crates, 391 tests, 0 errors
 
 pandora (CLI)
 pandora-tui (Dashboard)
@@ -241,10 +219,10 @@ K-O Palace is a separate repo: github.com/anisayakmitra-in/k-o-palace
 
 ## License
 
-O-PANDORA is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+O-PANDORA is licensed under Apache License 2.0. See [LICENSE](LICENSE).
 
-K-O Palace is also licensed under Apache 2.0.
+K-O Palace is also Apache 2.0.
 
 ---
 
-Everything is configurable via environment variables. Nothing is hardcoded. Run `pandora --version` to see what you're on.
+Run `pandora --version` to see what you're on.

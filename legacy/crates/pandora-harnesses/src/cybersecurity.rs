@@ -1,6 +1,6 @@
 #![allow(clippy::new_without_default)]
 //! Cybersecurity Domain Harness — offensive/defensive security genes.
-//! Skills from: https://github.com/mukul975/Anthropic-Cybersecurity-Skills
+//! Skills from: <https://github.com/mukul975/Anthropic-Cybersecurity-Skills>
 
 use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
 use pandora_types::harness::{Harness, HarnessKind, HarnessManifest, HarnessManifestBuilder};

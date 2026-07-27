@@ -1,7 +1,7 @@
 //! Gene Package — on-disk gene format.
 //!
 //! A Gene Package is a directory with:
-//!   <name>/
+//!   `<name>`/
 //!   ├── gene.toml    # manifest
 //!   ├── src/
 //!   │   └── lib.rs   # implementation
@@ -40,7 +40,6 @@ pub struct GenePackageManifest {
     #[serde(default)]
     pub tags: Vec<String>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SlashCommandDef {

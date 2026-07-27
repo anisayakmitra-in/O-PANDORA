@@ -1,6 +1,6 @@
 # Configuration
 
-Config file: `~/.pandora/config.toml`
+O-PANDORA reads its defaults from `~/.pandora/config.toml`. You can override most settings with environment variables.
 
 ## Example
 
@@ -27,7 +27,7 @@ endpoint = "http://localhost:11434"
 | `PANDORA_MAX_TOKENS` | `4096` | Max tokens per execution |
 | `PANDORA_MAX_RETRIES` | `3` | Max retries per step |
 | `PANDORA_MAX_ATTEMPTS` | `3` | Max attempts for retry loops |
-| `PANDORA_SANDBOX` | `none` | Sandbox level (deprecated, use `PANDORA_SANDBOX_LEVEL`) |
+| `PANDORA_SANDBOX` | `none` | Sandbox level (deprecated; use `PANDORA_SANDBOX_LEVEL`) |
 | `PANDORA_SANDBOX_LEVEL` | `none` | Sandbox enforcement level |
 | `PANDORA_REGISTRY_URL` | `http://localhost:3001` | K-O Palace registry server URL |
 | `PANDORA_PROFILES_DIR` | `~/.pandora/profiles` | Execution profiles directory |
@@ -54,6 +54,6 @@ artifacts/           — gene output artifacts
 
 ## Related
 
-- [CLI reference](SDK.md)
+- [CLI reference](CLI.md)
 - [Permissions](PERMISSIONS.md)
 - [SDK guide](SDK.md)

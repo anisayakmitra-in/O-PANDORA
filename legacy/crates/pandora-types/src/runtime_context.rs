@@ -10,6 +10,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+// Re-export ControlStrategy from execution_plan (canonical definition).
+//
+// The duplicate in this module has been removed to avoid type confusion.
+pub use crate::execution_plan::ControlStrategy;
+
 // ── Execution Properties ──
 
 /// Memory persistence strategy for this execution.
@@ -341,8 +346,3 @@ mod tests {
         assert_eq!(format!("{:?}", MemoryMode::ANUBIS), "ANUBIS");
     }
 }
-
-// Re-export ControlStrategy from execution_plan (canonical definition).
-//
-// The duplicate in this module has been removed to avoid type confusion.
-pub use crate::execution_plan::ControlStrategy;

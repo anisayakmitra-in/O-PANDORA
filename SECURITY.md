@@ -14,52 +14,68 @@ User → CLI → PandoraRuntime → Provider (LLM API)
 
 ## Attack Surfaces
 
-### 1. Package Installation (Critical)
-- **Archive extraction**: tar/zip traversal, symlink attacks, zip slip
-- **Mitigation**: Verify all paths are within package root before extraction. Reject `..` and absolute paths.
+### 1. Package installation
 
-### 2. Manifest Parsing (High)
-- **Malformed TOML**: Panic on invalid inputs
-- **Mitigation**: All parsers use `serde` with proper error handling. No `.unwrap()` on parse.
+Archive extraction can introduce tar/zip traversal, symlink attacks, and zip slip.
 
-### 3. Provider Communication (High)
-- **API key exposure**: Keys stored in plaintext `~/.pandora/connections.toml`
-- **Mitigation**: v0.1.0 accepts plaintext for local dev. v0.2.0 will add OS keychain integration.
+Mitigation: verify every extracted path is inside the package root before writing it. Reject `..` and absolute paths.
 
-### 4. Command Injection (Medium)
-- **Shell commands**: `pandora doctor` shells out to check tools
-- **Mitigation**: Uses `Command::new()` directly, no shell interpolation. Cross-platform.
+### 2. Manifest parsing
 
-### 5. Sandbox Escape (Medium)
-- **Gene execution**: Genes run in-process with full user permissions
-- **Mitigation**: Sandbox levels exist (0=none, 1=restricted, 2=isolated). Level 2 requires explicit approval via policy.
+Malformed TOML can trigger panics.
 
-### 6. Signature Bypass (Low)
-- **Unsigned packages**: Trust-on-first-use for v0.2
-- **Mitigation**: Ed25519 signing via ring crate. Verification runs before unpack. `pandora verify` checks hash + signature.
+Mitigation: all parsers use `serde` with proper error handling. No `.unwrap()` on parse.
 
-### 7. Permission Escalation (Low)
-- **Gene permissions**: Genes declare required permissions in manifest
-- **Mitigation**: Policy Engine evaluates permissions before execution. CompatibilityMatrix validates.
+### 3. Provider communication
 
-### 8. Fleet Worker Compromise (Low)
-- **Remote workers**: HTTP endpoints without auth
-- **Mitigation**: Fleet is local-only by default. Remote workers need explicit configuration.
+API keys are stored in plaintext at `~/.pandora/connections.toml`.
 
-## Secure Defaults
+Mitigation: v0.2.0 accepts plaintext for local development. OS keychain integration is planned for a future release.
 
-- Ed25519 signing keys use OS randomness (ring crate)
-- Policy Engine blocks on Deny by default
-- Sandbox level 2 requires explicit approval
-- Package verification checks hash + signature before unpack
-- All I/O operations use `.expect("reason")` so failures are visible, not silent
+### 4. Command injection
 
-## Threat Model Status
+`pandora doctor` shells out to check tools.
+
+Mitigation: use `Command::new()` directly with no shell interpolation.
+
+### 5. Sandbox escape
+
+Genes run in-process with the user's full permissions.
+
+Mitigation: sandbox levels exist (0=none, 1=restricted, 2=isolated). Level 2 requires explicit approval through policy.
+
+### 6. Signature bypass
+
+Unsigned packages are trusted on first use for v0.2.
+
+Mitigation: packages can be signed with Ed25519. `pandora verify` checks the hash and signature before unpacking. Verification runs before extraction.
+
+### 7. Permission escalation
+
+Genes declare required permissions in their manifest.
+
+Mitigation: the Policy Engine evaluates permissions before execution. The Compatibility Matrix validates them.
+
+### 8. Fleet worker compromise
+
+Remote workers expose HTTP endpoints without authentication by default.
+
+Mitigation: Fleet is local-only by default. Remote workers require explicit configuration.
+
+## Secure defaults
+
+- Ed25519 signing keys use OS randomness.
+- The Policy Engine blocks on Deny by default.
+- Sandbox level 2 requires explicit approval.
+- Package verification runs hash and signature checks before unpacking.
+- I/O failures use explicit error messages, not silent defaults.
+
+## Threat model status
 
 | Version | Feature | Status |
 |---------|---------|--------|
 | v0.2.0 | Trust-on-first-use for packages | Current |
-| v0.2.0 | Ed25519 signing via ring crate | Current |
-| v0.2.0 | Plaintext API keys (local dev) | Current |
+| v0.2.0 | Ed25519 signing | Current |
+| v0.2.0 | Plaintext API keys for local dev | Current |
 | Future | OS keychain integration | Planned |
 | Future | Sandbox isolation for gene execution | Planned |
