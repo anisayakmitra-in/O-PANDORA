@@ -256,3 +256,6 @@ pub async fn serve(addr: &str, sessions_dir: std::path::PathBuf) -> Result<(), a
     Ok(())
 }
 pub mod mcp;
+
+#[cfg(test)]
+mod tests;
