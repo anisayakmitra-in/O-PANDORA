@@ -1,90 +1,65 @@
-## CLI Screenshot
+# Screenshots
 
-```bash
-$ pandora --version
+Real output captured from O-PANDORA v0.2.0.
 
-         /\_/\
-    ____/ o o \
-   /~____  =  /
-  (______)__m_m)
-     |        |
-     |  ╔══╗ |
-     |  ║◇◇║ |
-     |  ║◇◇║ |
-     |  ╚══╝ |
-     |___|||||
+## `pandora --version`
 
+```
 pandora 0.2.0
-Platform: linux
-Arch: x86_64
 ```
 
-```bash
-$ pandora --help
+## `pandora doctor`
 
-Pandora — governed execution runtime
-
-USAGE:
-    pandora <command> [args]
-
-COMMANDS:
-    Execution:
-        run <task>            Execute a task through the pipeline
-        shell                 Start interactive operator shell
-        resume [id]           Resume interrupted execution
-        replay <id>           Replay an execution
-        explain <id>          Explain execution decisions
-
-    Packages:
-        install <pkg>         Install a package (local or K-O Palace)
-        search <query>        Search K-O Palace registry
-        publish               Publish current package
-
-    Providers:
-        providers             List available providers
-        connections           List configured connections
-
-    Security:
-        doctor                System diagnostics
-        keygen                Generate Ed25519 keypair
-        verify <pkg>          Verify package signature
-
-    Dev:
-        new gene <name>       Scaffold a new gene
-        new harness <name>    Scaffold a new harness
-        new package <name>    Scaffold a new package
 ```
-
-```bash
-$ pandora doctor
-
 === Pandora Doctor ===
 
+--- Security ---
+  API token set:       NO  (set PANDORA_API_TOKEN)
+  Insecure mode:       NO
+  Credentials stored:  NO
+  Keychain available:  NO  (use file-based credentials)
+  Dev mode:            NO
+
+--- Environment ---
 Ollama... OK
+Ollama reachable... OK
 Git... OK
 Docker... OK
+GitHub CLI... FAIL
 cargo... OK
 python3... OK
+node... OK
 rustc... OK
 
-Sessions: 25 stored
-Architecture: frozen (since v0.1.0)
+Sessions: 0 stored
+Architecture: frozen
+Runtime: 0.2.0
 ```
 
-```bash
-$ pandora shell
+## `pandora new gene my-gene`
 
-         /\_/\
-    ____/ o o \
-   /~____  =  /
-  (______)__m_m)
-     |  ╔══╗ |
-     |  ║◇◇║ |
-     |  ╚══╝ |
-     |___|||||
+Creates a scaffolded gene with `gene.toml` and `src/lib.rs`.
 
-O-PANDORA Interactive Shell
-Commands: /run, /sessions, /session, /replay, /providers, /genres, /help, /quit
-pandora> /quit
-Goodbye.
+```
+$ pandora new gene my-gene
+Created: my-gene/
+  gene.toml   — manifest
+  src/lib.rs  — Gene impl
+
+$ tree my-gene/
+my-gene/
+├── gene.toml
+└── src/
+    └── lib.rs
+```
+
+## `pandora new harness my-domain --kind domain`
+
+```
+$ pandora new harness my-domain --kind domain
+Created: my-domain/
+  harness.toml  — manifest
+  src/lib.rs    — Harness impl
+
+Install with: pandora harness install my-domain
 ```

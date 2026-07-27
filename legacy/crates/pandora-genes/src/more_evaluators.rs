@@ -39,7 +39,7 @@ impl Gene for ShellCheckEvaluator {
     fn id(&self) -> &str { &self.m.id }
     fn manifest(&self) -> &GeneManifest { &self.m }
     fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
-        Command::new("shellcheck").args(input.split_whitespace().collect::<Vec<_>>()).output()
+        Command::new("shellcheck").arg(input).output()
             .map_err(|e| pandora_types::PandoraError::Internal(format!("shellcheck: {}", e))).and_then(|o| {
                 if o.status.success() { Ok("ShellCheck: no issues".into()) }
                 else { Err(String::from_utf8_lossy(&o.stderr).to_string()) }
@@ -65,13 +65,13 @@ impl Gene for MarkdownLintEvaluator {
     fn id(&self) -> &str { &self.m.id }
     fn manifest(&self) -> &GeneManifest { &self.m }
     fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
-        let result = Command::new("markdownlint").args(input.split_whitespace().collect::<Vec<_>>()).output();
+        let result = Command::new("markdownlint").arg(input).output();
         match result {
             Ok(o) if o.status.success() => Ok("Markdown: no issues".into()),
             Ok(o) => Err(String::from_utf8_lossy(&o.stderr).to_string()),
             Err(_) => {
                 // Fallback to mdl
-                Command::new("mdl").args(input.split_whitespace().collect::<Vec<_>>()).output()
+                Command::new("mdl").arg(input).output()
                     .map_err(|e| pandora_types::PandoraError::Internal(format!("markdownlint/mdl: {}", e))).and_then(|o| {
                         if o.status.success() { Ok("Markdown: no issues".into()) }
                         else { Err(String::from_utf8_lossy(&o.stderr).to_string()) }
