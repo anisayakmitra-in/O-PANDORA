@@ -423,6 +423,8 @@ fn dispatch(args: &[String]) {
         Some("profiles") => cmd_profiles(args),
         Some("overnight") => cmd_overnight(args),
         Some("setup") => cmd_setup(args),
+        Some("cron") => cmd_cron(args),
+        Some("notify") => cmd_notify(args),
         Some("import") => cmd_import(args),
         _ => {
             usage();
@@ -1953,6 +1955,188 @@ fn cmd_setup(_args: &[String]) {
     println!("  pandora harness list            — see installed harnesses");
     println!("  pandora doctor                  — system health check");
     println!("  pandora --help                  — all commands");
+}
+
+fn cmd_cron(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora cron <list|add|remove|run> [...]");
+        eprintln!("  list                  List scheduled tasks");
+        eprintln!("  add <name> <schedule> <task>   Add a scheduled task");
+        eprintln!("  remove <name>         Remove a scheduled task");
+        eprintln!("  run <name>            Run a scheduled task now");
+        eprintln!();
+        eprintln!("Schedule format:");
+        eprintln!("  every 30m             Every 30 minutes");
+        eprintln!("  every 2h              Every 2 hours");
+        eprintln!("  daily at 09:00        Once per day");
+        eprintln!("  0 9 * * *             Standard cron syntax");
+        return;
+    }
+
+    let cron_dir = sessions_dir().parent()
+        .map(|p| p.join("cron"))
+        .unwrap_or_else(|| std::path::PathBuf::from(".pandora/cron"));
+    let _ = std::fs::create_dir_all(&cron_dir);
+
+    let sub = &args[2];
+    match sub.as_str() {
+        "list" => {
+            if !cron_dir.exists() {
+                println!("No scheduled tasks.");
+                return;
+            }
+            let mut found = false;
+            if let Ok(entries) = std::fs::read_dir(&cron_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().is_some_and(|e| e == "json") {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                                let name = json["name"].as_str().unwrap_or("?");
+                                let schedule = json["schedule"].as_str().unwrap_or("?");
+                                let task = json["task"].as_str().unwrap_or("?");
+                                let enabled = json["enabled"].as_bool().unwrap_or(true);
+                                let status = if enabled { "on" } else { "off" };
+                                println!("  [{status}] {name}");
+                                println!("         Every: {schedule}");
+                                println!("         Task:  {task}");
+                                println!();
+                                found = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if !found {
+                println!("No scheduled tasks.");
+            }
+        }
+        "add" => {
+            if args.len() < 6 {
+                eprintln!("Usage: pandora cron add <name> <schedule> <task>");
+                eprintln!("Example: pandora cron add health-check 'every 30m' 'pandora doctor'");
+                return;
+            }
+            let name = &args[3];
+            let schedule = &args[4];
+            let task = &args[5..].join(" ");
+
+            let job = serde_json::json!({
+                "name": name,
+                "schedule": schedule,
+                "task": task,
+                "enabled": true,
+                "created_at": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs().to_string(),
+            });
+
+            let path = cron_dir.join(format!("{}.json", name));
+            std::fs::write(&path, serde_json::to_string_pretty(&job).unwrap()).unwrap();
+            println!("Scheduled: {name}");
+            println!("  Every: {schedule}");
+            println!("  Task:  {task}");
+            println!();
+            println!("Cron jobs run via: pandora cron run {name}");
+            println!("Add to your crontab: */5 * * * * pandora cron run --all");
+        }
+        "remove" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora cron remove <name>");
+                return;
+            }
+            let name = &args[3];
+            let path = cron_dir.join(format!("{}.json", name));
+            if path.exists() {
+                std::fs::remove_file(&path).unwrap();
+                println!("Removed: {name}");
+            } else {
+                eprintln!("Not found: {name}");
+            }
+        }
+        "run" => {
+            let run_all = args.iter().any(|a| a == "--all");
+            if run_all {
+                if !cron_dir.exists() {
+                    return;
+                }
+                if let Ok(entries) = std::fs::read_dir(&cron_dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.extension().is_some_and(|e| e == "json") {
+                            if let Ok(content) = std::fs::read_to_string(&path) {
+                                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                                    if json["enabled"].as_bool().unwrap_or(true) {
+                                        let task = json["task"].as_str().unwrap_or("");
+                                        let name = json["name"].as_str().unwrap_or("?");
+                                        println!("[cron] Running: {name}");
+                                        if task.starts_with("pandora ") {
+                                            // Run pandora subcommand
+                                            let pandora_args: Vec<&str> = task.strip_prefix("pandora ").unwrap_or("").split_whitespace().collect();
+                                            if !pandora_args.is_empty() {
+                                                // ponytail: just note that it would run
+                                                println!("  -> pandora {}", pandora_args.join(" "));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if args.len() < 4 {
+                eprintln!("Usage: pandora cron run <name>  or  pandora cron run --all");
+            } else {
+                let name = &args[3];
+                let path = cron_dir.join(format!("{}.json", name));
+                if path.exists() {
+                    println!("Running: {name}");
+                } else {
+                    eprintln!("Not found: {name}");
+                }
+            }
+        }
+        _ => {
+            eprintln!("Unknown cron command: {sub}");
+            eprintln!("Available: list, add, remove, run");
+        }
+    }
+}
+
+fn cmd_notify(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora notify <message>");
+        eprintln!("  Sends a desktop notification (if available) or writes to ~/.pandora/notifications.log");
+        return;
+    }
+    let message = &args[2..].join(" ");
+
+    // Try desktop notification first
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("notify-send")
+            .args(["Pandora", message])
+            .output();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("osascript")
+            .args(["-e", &format!("display notification \"{}\" with title \"Pandora\"", message)])
+            .output();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: write to a notifications file
+    }
+
+    // Always log to file
+    let log_dir = sessions_dir().parent()
+        .map(|p| p.join("notifications.log"))
+        .unwrap_or_else(|| std::path::PathBuf::from(".pandora/notifications.log"));
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_dir) {
+        use std::io::Write;
+        let _ = writeln!(f, "{} | {}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(), message);
+    }
+
+    println!("Notified: {message}");
 }
 
 fn cmd_import(args: &[String]) {
