@@ -688,11 +688,12 @@ mod tests {
     fn manage_sources() {
         let sc = Arc::new(RwLock::new(ShadowCouncil::new()));
         let mut k = Kuber::new(sc.clone());
+        let initial = k.list_sources().len();
         k.add_source("a", "/tmp/x");
         k.add_source("b", "/tmp/y");
-        assert_eq!(k.list_sources().len(), 2);
+        assert_eq!(k.list_sources().len(), initial + 2);
         k.remove_source("a");
-        assert_eq!(k.list_sources().len(), 1);
+        assert_eq!(k.list_sources().len(), initial + 1);
     }
 
     #[test]
@@ -738,8 +739,11 @@ mod tests {
         let mut k = Kuber::new(sc.clone());
         k.add_source("r", "https://github.com/u/r.git");
         k.add_source("l", "/home/u/genes");
-        assert_eq!(k.list_sources()[0].kind, SourceKind::Remote);
-        assert_eq!(k.list_sources()[1].kind, SourceKind::Local);
+        // Find the remote source we just added
+        let remote = k.list_sources().iter().find(|s| s.name == "r").unwrap();
+        let local = k.list_sources().iter().find(|s| s.name == "l").unwrap();
+        assert_eq!(remote.kind, SourceKind::Remote);
+        assert_eq!(local.kind, SourceKind::Local);
     }
 
     #[test]

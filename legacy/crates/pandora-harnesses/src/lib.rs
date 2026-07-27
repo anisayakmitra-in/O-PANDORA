@@ -107,107 +107,154 @@ source_harness!(
     IdentityService
 );
 
-/// Register built-in default harnesses.
+/// Register harnesses at startup.
 ///
-/// These are the defaults that ship with Pandora. They can be removed
-/// and replaced by the user via `pandora harness remove <id>` and
-/// `pandora harness install <id>` from Palace.
+/// Loads harnesses from the local packages directory. On first run,
+/// seeds the default packages to disk. Subsequent runs load from
+/// whatever packages are installed (defaults + user-installed).
 ///
-/// Source harnesses augment Pandora's core architecture (memory, execution,
-/// governance, identity, planning). They can be replaced with alternative
-/// implementations but should not all be removed.
-///
-/// Domain harnesses provide specialized capabilities (coding, design, security,
-/// research, etc.). Users can install/remove these freely.
-///
-/// Meta harnesses provide coordination between other harnesses.
-pub fn register_defaults(sc: &mut ShadowCouncil) {
-    use pandora_services::*;
+/// Users can remove defaults via `pandora harness uninstall <id>`
+/// and install replacements from K-O Palace.
+pub fn register_dynamic(sc: &mut ShadowCouncil) {
+    let home = packages_dir();
 
-    // Source harnesses — foundational architecture
-    sc.install(Box::new(MemorySourceHarness::new(Arc::new(
-        DefaultMemoryService::new(),
-    ))))
-    .ok();
-    sc.install(Box::new(PlanningSourceHarness::new(Arc::new(
-        DefaultPlanningService::new(),
-    ))))
-    .ok();
-    sc.install(Box::new(ExecutionSourceHarness::new(Arc::new(
-        DefaultExecutionService::new(),
-    ))))
-    .ok();
-    sc.install(Box::new(GovernanceSourceHarness::new(Arc::new(
-        DefaultGovernanceService::new(),
-    ))))
-    .ok();
-    sc.install(Box::new(IdentitySourceHarness::new(Arc::new(
-        DefaultIdentityService::new(),
-    ))))
-    .ok();
+    // Seed defaults on first run
+    if !home.exists() || home.read_dir().map(|mut d| d.next().is_none()).unwrap_or(true) {
+        seed_default_packages();
+    }
 
-    // Domain harnesses — specialized capabilities (removable)
-    sc.install(Box::new(coding::CodingDomainHarness::new()))
-        .ok();
-    sc.install(Box::new(design::DesignDomainHarness::new()))
-        .ok();
-    sc.install(Box::new(security::SecurityDomainHarness::new()))
-        .ok();
-    sc.install(Box::new(cybersecurity::CybersecurityDomainHarness::new()))
-        .ok();
-    sc.install(Box::new(research::ResearchDomainHarness::new()))
-        .ok();
-    sc.install(Box::new(computer_use::ComputerUseHarness::new()))
-        .ok();
-    sc.install(Box::new(android_use::AndroidUseHarness::new()))
-        .ok();
-
-    // Meta harness — coordination
-    sc.install(Box::new(coordination::CoordinationMetaHarness::new()))
-        .ok();
+    // Load from local packages
+    load_packages_from_dir(sc, &home);
 }
 
-/// Register harnesses dynamically.
-///
-/// Scans Pandora home for installed harness packages from Palace.
-/// Falls back to `register_defaults()` if no packages are installed.
-///
-/// This makes harness registration fully dynamic — users install/remove
-/// harnesses via `pandora install` / `pandora uninstall` from Palace,
-/// and this function picks them up at runtime startup.
-pub fn register_dynamic(sc: &mut ShadowCouncil) {
-    // Check if user has any harness packages installed from Palace
-    let home = std::env::var("PANDORA_HOME")
-        .map(|h| std::path::PathBuf::from(h).join("harnesses"))
-        .unwrap_or_else(|_| {
-            std::path::PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into()))
-                .join(".pandora/harnesses")
-        });
+/// Write default harness manifests to the local packages directory.
+/// Called once on first run.
+fn seed_default_packages() {
+    let home = packages_dir();
+    let _ = std::fs::create_dir_all(&home);
 
-    if home.exists() {
-        // Scan for installed harness packages
-        if let Ok(entries) = std::fs::read_dir(&home) {
-            let count = entries
-                .filter_map(|e| e.ok())
-                .filter(|e| e.path().is_dir() && e.path().join("harness.toml").exists())
-                .count();
-            if count > 0 {
-                tracing::info!(
-                    "[HARNESSES] {} harness packages found in {}",
-                    count,
-                    home.display()
-                );
-                // Palace-installed harnesses would be loaded here.
-                // For now, we still register defaults alongside.
+    let manifests: &[(&str, &str, &str, &[&str])] = &[
+        // Source harnesses
+        ("memory-source", "Memory Source Harness", "source", &["memory", "storage"]),
+        ("planning-source", "Planning Source Harness", "source", &["planning", "workflow"]),
+        ("execution-source", "Execution Source Harness", "source", &["execution", "sandbox"]),
+        ("governance-source", "Governance Source Harness", "source", &["governance", "policy"]),
+        ("identity-source", "Identity Source Harness", "source", &["identity", "auth"]),
+        // Domain harnesses
+        ("coding-domain", "Coding Domain Harness", "domain", &["coding", "rust", "python"]),
+        ("design-domain", "Design Domain Harness", "domain", &["design", "ui", "ux"]),
+        ("security-domain", "Security Domain Harness", "domain", &["security", "audit"]),
+        ("cybersecurity-domain", "Cybersecurity Domain Harness", "domain", &["cybersecurity"]),
+        ("research-domain", "Research Domain Harness", "domain", &["research", "web-search"]),
+        ("computer-use", "Computer Use Harness", "domain", &["screenshot", "desktop"]),
+        ("android-use", "Android Use Harness", "domain", &["android", "mobile"]),
+        // Meta harness
+        ("coordination-meta", "Coordination Meta Harness", "meta", &["coordination", "mesh"]),
+    ];
+
+    for (id, name, kind, caps) in manifests {
+        let dir = home.join(id);
+        let _ = std::fs::create_dir_all(&dir);
+        let caps_str = caps.iter().map(|c| format!(r#""{c}""#)).collect::<Vec<_>>().join(", ");
+        let toml = format!(
+            r#"id = "{id}"
+name = "{name}"
+kind = "{kind}"
+version = "0.2.0"
+author = "pandora"
+description = "{name}"
+capabilities = [{caps_str}]
+dependencies = []
+owned_genes = []
+"#
+        );
+        let _ = std::fs::write(dir.join("harness.toml"), toml);
+    }
+}
+
+/// Load harness packages from a directory into the Shadow Council.
+fn load_packages_from_dir(sc: &mut ShadowCouncil, dir: &std::path::Path) {
+    if !dir.exists() {
+        return;
+    }
+
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() && path.join("harness.toml").exists() {
+            if let Ok(content) = std::fs::read_to_string(path.join("harness.toml")) {
+                let id = content.lines()
+                    .find(|l| l.starts_with("id ="))
+                    .and_then(|l| l.split('"').nth(1))
+                    .unwrap_or("");
+                let kind = content.lines()
+                    .find(|l| l.starts_with("kind ="))
+                    .and_then(|l| l.split('"').nth(1))
+                    .unwrap_or("domain");
+                    if !id.is_empty() {
+                        // Register the harness from disk if not already present
+                        if sc.harnesses.get(id).is_none() {
+                            match kind {
+                                "source" => register_source_by_id(sc, id),
+                                "meta" => register_meta_by_id(sc, id),
+                                _ => register_domain_by_id(sc, id),
+                            }
+                        }
+                    }
             }
         }
     }
-
-    // Always register built-in defaults
-    register_defaults(sc);
 }
 
-/// Backward compat — calls register_defaults
+fn register_source_by_id(sc: &mut ShadowCouncil, id: &str) {
+    use pandora_services::*;
+    match id {
+        "memory-source" => { let _ = sc.install(Box::new(MemorySourceHarness::new(Arc::new(DefaultMemoryService::new())))); }
+        "planning-source" => { let _ = sc.install(Box::new(PlanningSourceHarness::new(Arc::new(DefaultPlanningService::new())))); }
+        "execution-source" => { let _ = sc.install(Box::new(ExecutionSourceHarness::new(Arc::new(DefaultExecutionService::new())))); }
+        "governance-source" => { let _ = sc.install(Box::new(GovernanceSourceHarness::new(Arc::new(DefaultGovernanceService::new())))); }
+        "identity-source" => { let _ = sc.install(Box::new(IdentitySourceHarness::new(Arc::new(DefaultIdentityService::new())))); }
+        _ => {}
+    }
+}
+
+fn register_domain_by_id(sc: &mut ShadowCouncil, id: &str) {
+    match id {
+        "coding-domain" => { let _ = sc.install(Box::new(coding::CodingDomainHarness::new())); }
+        "design-domain" => { let _ = sc.install(Box::new(design::DesignDomainHarness::new())); }
+        "security-domain" => { let _ = sc.install(Box::new(security::SecurityDomainHarness::new())); }
+        "cybersecurity-domain" => { let _ = sc.install(Box::new(cybersecurity::CybersecurityDomainHarness::new())); }
+        "research-domain" => { let _ = sc.install(Box::new(research::ResearchDomainHarness::new())); }
+        "computer-use" => { let _ = sc.install(Box::new(computer_use::ComputerUseHarness::new())); }
+        "android-use" => { let _ = sc.install(Box::new(android_use::AndroidUseHarness::new())); }
+        _ => {}
+    }
+}
+
+fn register_meta_by_id(sc: &mut ShadowCouncil, id: &str) {
+    if id == "coordination-meta" {
+        let _ = sc.install(Box::new(coordination::CoordinationMetaHarness::new()));
+    }
+}
+
+fn packages_dir() -> std::path::PathBuf {
+    std::env::var("PANDORA_HOME")
+        .map(|h| std::path::PathBuf::from(h).join("packages").join("default").join("harnesses"))
+        .unwrap_or_else(|_| {
+            std::env::var("HOME")
+                .or_else(|_| std::env::var("USERPROFILE"))
+                .map(|h| std::path::PathBuf::from(h).join(".pandora").join("packages").join("default").join("harnesses"))
+                .unwrap_or_else(|_| std::path::PathBuf::from(".pandora/packages/default/harnesses"))
+        })
+}
+
+
+
+/// Entry point — loads harnesses from local packages, seeding defaults on first run.
 pub fn register_all(sc: &mut ShadowCouncil) {
     register_dynamic(sc);
 }
