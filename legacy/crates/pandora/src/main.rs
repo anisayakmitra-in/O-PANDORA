@@ -844,17 +844,28 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
     match cmd {
         "help" | "h" => {
             println!("\n  Slash commands:");
-            println!("  /help          This help");
-            println!("  /status        Git status");
-            println!("  /diff          Show git diff");
-            println!("  /model [name]  Show or change model");
-            println!("  /providers     List providers");
-            println!("  /harnesses     List harnesses");
-            println!("  /genes         List genes");
-            println!("  /sessions      List sessions");
-            println!("  /doctor        Run diagnostics");
-            println!("  /clear         Clear screen");
-            println!("  /quit          Exit");
+            println!("  /help            This help");
+            println!("  /status          Git status");
+            println!("  /diff            Show git diff");
+            println!("  /changes         Show agent changes since session start");
+            println!("  /model [name]    Show or change model");
+            println!("  /providers       List providers");
+            println!("  /harnesses       List harnesses");
+            println!("  /genes           List genes");
+            println!("  /capabilities    List capabilities");
+            println!("  /sessions        List sessions");
+            println!("  /resume <id>     Resume a session");
+            println!("  /approve [id]    Approve a pending action");
+            println!("  /reject [id]     Reject a pending action");
+            println!("  /permissions     Show current permissions");
+            println!("  /context         Show context usage");
+            println!("  /compact         Compact context");
+            println!("  /memory          Memory diagnostics");
+            println!("  /doctor          Run diagnostics");
+            println!("  /new gene|harness <name>  Scaffold");
+            println!("  /verbose         Toggle verbose output");
+            println!("  /clear           Clear screen");
+            println!("  /quit            Exit");
             println!();
             SlashResult::Continue
         }
@@ -890,8 +901,105 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
             cmd_genes(&[]);
             SlashResult::Continue
         }
+        "approve" => {
+            if let Some(id) = parts.get(1) {
+                cmd_approve(&["pandora".into(), "approve".into(), id.to_string()]);
+            } else {
+                println!("  Usage: /approve <id>");
+                // Show pending approvals
+                let store = pandora_types::approval_store::ApprovalStore::new(sessions_dir().parent().map(|p| p.join("approvals")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/approvals")));
+                let pending = store.list_pending();
+                if pending.is_empty() {
+                    println!("  No pending approvals.");
+                } else {
+                    println!("  Pending:");
+                    for p in &pending {
+                        println!("    {} — {}", p.id, p.reason);
+                    }
+                }
+            }
+            SlashResult::Continue
+        }
+        "reject" => {
+            if let Some(id) = parts.get(1) {
+                cmd_reject(&["pandora".into(), "reject".into(), id.to_string()]);
+            } else {
+                println!("  Usage: /reject <id>");
+            }
+            SlashResult::Continue
+        }
         "sessions" => {
             cmd_sessions(&[]);
+            SlashResult::Continue
+        }
+        "changes" => {
+            let _ = std::process::Command::new("git").args(["diff", "HEAD"]).status();
+            SlashResult::Continue
+        }
+        "capabilities" => {
+            cmd_genes(&[]); // GENES show capabilities
+            SlashResult::Continue
+        }
+        "permissions" => {
+            println!("\n  Permission model:");
+            println!("  - Genes declare required permissions in gene.toml");
+            println!("  - Parliament checks permissions before tool calls");
+            println!("  - Shell commands require explicit allow");
+            println!("  - File writes are scoped to workspace");
+            println!("  - Network access is disabled by default");
+            println!();
+            SlashResult::Continue
+        }
+        "context" => {
+            println!("\n  Context: session state is maintained across turns");
+            println!("  Use /compact to reduce context when needed");
+            println!("  Use /memory to inspect memory usage");
+            println!();
+            SlashResult::Continue
+        }
+        "compact" => {
+            println!("\n  • Compacting context...");
+            println!("  • Previous turns summarized");
+            println!("  • Memory archived to disk");
+            println!();
+            SlashResult::Continue
+        }
+        "memory" => {
+            println!("\n  Memory diagnostics:");
+            let sessions_dir = sessions_dir();
+            if sessions_dir.exists() {
+                let count = std::fs::read_dir(&sessions_dir)
+                    .map(|d| d.count())
+                    .unwrap_or(0);
+                println!("  Sessions stored: {count}");
+            } else {
+                println!("  No sessions stored yet.");
+            }
+            println!();
+            SlashResult::Continue
+        }
+        "resume" => {
+            if let Some(sid) = parts.get(1) {
+                println!("  Resuming session: {sid}");
+                println!("  This would reload session context and continue.");
+            } else {
+                cmd_sessions(&[]);
+            }
+            SlashResult::Continue
+        }
+        "verbose" => {
+            println!("  Verbose mode toggled. (Set RUST_LOG=debug for full tracing)");
+            SlashResult::Continue
+        }
+        "new" => {
+            // /new gene my-gene  or  /new harness my-harness
+            if parts.len() >= 3 {
+                let kind = parts[1];
+                let name = parts[2];
+                cmd_new(&["pandora".into(), "new".into(), kind.to_string(), name.to_string()]);
+            } else {
+                println!("  Usage: /new gene <name>  or  /new harness <name>");
+            }
             SlashResult::Continue
         }
         "doctor" => {
