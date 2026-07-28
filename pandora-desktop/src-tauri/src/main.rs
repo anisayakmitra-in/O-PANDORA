@@ -21,13 +21,13 @@ struct DesktopState {
 
 #[derive(Clone, Serialize, Deserialize)]
 struct SessionMeta {
-    id: String; name: String; created: String; model: String; provider: String;
+    id: String, name: String, created: String, model: String, provider: String,
 }
 
 #[derive(Clone, Serialize)]
 struct StreamEvent {
-    #[serde(rename = "type")] event_type: String;
-    content: String; metadata: Option<serde_json::Value>;
+    #[serde(rename = "type")] event_type: String,
+    content: String, metadata: Option<serde_json::Value>,
 }
 
 // ── Phase B: Sessions ──
