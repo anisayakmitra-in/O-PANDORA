@@ -10,3 +10,4 @@ legacy/archive/root-files/
 *.pyc
 __pycache__/
 .hermes/
+node_modules/
