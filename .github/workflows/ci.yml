@@ -54,4 +54,3 @@ jobs:
         with:
           files: |
             target/release/pandora
-            target/release/pandora-tui

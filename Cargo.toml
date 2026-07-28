@@ -10,7 +10,6 @@ members = [
     "legacy/crates/pandora-harnesses",
     "legacy/crates/pandora-kuber",
     "legacy/crates/pandora",
-    "legacy/crates/pandora-tui",
     "legacy/crates/pandora-fleet",
     "legacy/crates/pandora-api",
     "pandora-desktop/src-tauri",
