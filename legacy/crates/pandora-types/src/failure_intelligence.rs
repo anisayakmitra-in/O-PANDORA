@@ -196,7 +196,7 @@ impl FailureIntelligenceEngine {
                 "{}:{}:{}",
                 failure.service,
                 failure.domain,
-                &failure.error_message.chars().take(80).collect::<String>()
+                failure.error_message.chars().take(80).collect::<String>()
             );
             clusters.entry(key).or_default().push(failure);
         }

@@ -71,7 +71,7 @@ impl ArtifactStore {
             hash.clone(),
             StoredArtifact {
                 size: data.len() as u64,
-                rel_path: format!("{}/{}", &hash[..2], &hash),
+                rel_path: format!("{}/{}", &hash[..2], hash),
                 created_at: now,
             },
         );

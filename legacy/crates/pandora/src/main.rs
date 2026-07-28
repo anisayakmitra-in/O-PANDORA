@@ -2638,7 +2638,7 @@ fn cmd_sessions(_args: &[String]) {
         println!(
             "  {st} {}: {}",
             ss.id,
-            &ss.prompt.chars().take(60).collect::<String>()
+            ss.prompt.chars().take(60).collect::<String>()
         );
     }
 }
