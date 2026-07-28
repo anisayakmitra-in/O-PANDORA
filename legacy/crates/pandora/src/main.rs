@@ -150,15 +150,16 @@ fn main() {
     let _ = tracing_subscriber::fmt().try_init();
     let cli = Cli::parse();
 
-    let args: Vec<String> = match &cli.command {
-        Some(cmd) => build_args(cmd),
-        None => {
-            usage();
-            process::exit(1);
+    match &cli.command {
+        Some(cmd) => {
+            let args = build_args(cmd);
+            dispatch(&args);
         }
-    };
-
-    dispatch(&args);
+        None => {
+            // No subcommand → launch interactive agent
+            interactive_agent();
+        }
+    }
 }
 
 fn build_args(cmd: &Commands) -> Vec<String> {
@@ -709,6 +710,207 @@ fn extract_toml_field(toml: &str, key: &str) -> Option<String> {
     }
     None
 }
+
+// ── Interactive Agent ──
+
+fn interactive_agent() {
+    let project = detect_project_dir();
+    println!("\n  O-PANDORA");
+    if let Some(ref p) = project {
+        let pname = p.file_name().map(|n| n.to_string_lossy()).unwrap_or_else(|| std::borrow::Cow::Borrowed("?"));
+        println!("  {}  {}", pname, detect_git_branch(p));
+    }
+    println!("  model: {}  (run /model to see available)", std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into()));
+    println!("  mode: governed");
+    println!();
+
+    let mut runtime = pandora_orchestrator::PandoraRuntime::new();
+    let session_id = format!("interactive-{}", std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs());
+
+    loop {
+        let input = read_input("> ");
+        let trimmed = input.trim();
+
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        // Slash commands
+        if trimmed.starts_with('/') {
+            match handle_slash_command(trimmed, &mut runtime, &session_id) {
+                SlashResult::Quit => break,
+                SlashResult::Continue => continue,
+                SlashResult::Fallthrough(task) => {
+                    // Fall through to run as task
+                    run_task(&mut runtime, &task, &session_id);
+                }
+            }
+        } else {
+            run_task(&mut runtime, trimmed, &session_id);
+        }
+    }
+
+    println!("\nSession saved: {session_id}");
+    println!("Resume with: pandora resume {session_id}");
+}
+
+fn read_input(prompt: &str) -> String {
+    use std::io::{self, Write};
+    print!("{prompt}");
+    let _ = io::stdout().flush();
+    let mut line = String::new();
+    if io::stdin().read_line(&mut line).is_err() {
+        return String::new();
+    }
+    line
+}
+
+fn run_task(runtime: &mut pandora_orchestrator::PandoraRuntime, task: &str, _session_id: &str) {
+    println!("\n  • Executing...");
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build();
+    match rt {
+        Ok(rt) => {
+            match rt.block_on(runtime.run(task, "general")) {
+                Ok(report) => {
+                    println!("  ✓ Done ({}ms)", report.duration_ms);
+                    if !report.output.is_empty() {
+                        let lines: Vec<&str> = report.output.lines().collect();
+                        if lines.len() > 20 {
+                            for line in lines.iter().take(20) {
+                                println!("  {}", line);
+                            }
+                            println!("  ... ({} more lines)", lines.len() - 20);
+                        } else {
+                            for line in &lines {
+                                println!("  {}", line);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("  × Error: {e}");
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("  × Runtime error: {e}");
+        }
+    }
+    println!();
+}
+
+fn detect_project_dir() -> Option<std::path::PathBuf> {
+    let cwd = std::env::current_dir().ok()?;
+    let mut path: std::path::PathBuf = cwd.clone();
+    loop {
+        if path.join("Cargo.toml").exists() || path.join("package.json").exists() || path.join(".git").exists() {
+            return Some(path);
+        }
+        if !path.pop() { break; }
+    }
+    Some(cwd)
+}
+
+fn detect_git_branch(dir: &std::path::Path) -> String {
+    if let Ok(output) = std::process::Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .current_dir(dir)
+        .output()
+    {
+        let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !branch.is_empty() {
+            return format!("({branch})");
+        }
+    }
+    String::new()
+}
+
+enum SlashResult {
+    Quit,
+    Continue,
+    Fallthrough(String),
+}
+
+fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::PandoraRuntime, _session_id: &str) -> SlashResult {
+    let parts: Vec<&str> = input[1..].split_whitespace().collect();
+    let cmd = parts.first().copied().unwrap_or("");
+    let _rest = &input[1..];
+
+    match cmd {
+        "help" | "h" => {
+            println!("\n  Slash commands:");
+            println!("  /help          This help");
+            println!("  /status        Git status");
+            println!("  /diff          Show git diff");
+            println!("  /model [name]  Show or change model");
+            println!("  /providers     List providers");
+            println!("  /harnesses     List harnesses");
+            println!("  /genes         List genes");
+            println!("  /sessions      List sessions");
+            println!("  /doctor        Run diagnostics");
+            println!("  /clear         Clear screen");
+            println!("  /quit          Exit");
+            println!();
+            SlashResult::Continue
+        }
+        "status" => {
+            let _ = std::process::Command::new("git").args(["status", "--short"]).status();
+            SlashResult::Continue
+        }
+        "diff" => {
+            let _ = std::process::Command::new("git").args(["diff"]).status();
+            SlashResult::Continue
+        }
+        "model" => {
+            let model_name = parts.get(1).copied();
+            if let Some(m) = model_name {
+                println!("  Switching model to: {m}");
+                // TODO: wire to runtime model switching
+            } else {
+                let current = std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into());
+                println!("  Current model: {current}");
+                println!("  Change with: /model <name>");
+            }
+            SlashResult::Continue
+        }
+        "providers" => {
+            cmd_providers(&[]);
+            SlashResult::Continue
+        }
+        "harnesses" => {
+            cmd_harnesses(&[]);
+            SlashResult::Continue
+        }
+        "genes" => {
+            cmd_genes(&[]);
+            SlashResult::Continue
+        }
+        "sessions" => {
+            cmd_sessions(&[]);
+            SlashResult::Continue
+        }
+        "doctor" => {
+            cmd_doctor(&[]);
+            SlashResult::Continue
+        }
+        "clear" => {
+            print!("\x1B[2J\x1B[1;1H");
+            SlashResult::Continue
+        }
+        "quit" | "exit" | "q" => {
+            SlashResult::Quit
+        }
+        _ => {
+            SlashResult::Fallthrough(input.to_string())
+        }
+    }
+}
+
 
 fn cmd_run(args: &[String]) {
     if args.len() < 3 {
