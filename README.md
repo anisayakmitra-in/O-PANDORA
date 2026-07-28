@@ -1,5 +1,7 @@
 # Pandora
 
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.2.0)
+
 A governed execution runtime for AI agents. Think of it as the
 operating system your agents run on — it decides what they can do,
 records everything they did, and lets you swap parts in and out
