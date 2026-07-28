@@ -13,7 +13,6 @@ members = [
     "legacy/crates/pandora-tui",
     "legacy/crates/pandora-fleet",
     "legacy/crates/pandora-api",
-    "pandora-desktop/src-tauri",
 ]
 
 [workspace.package]

@@ -4,9 +4,6 @@ version = "0.5.0"
 description = "Pandora native desktop app — governed AI coding agent"
 edition = "2021"
 
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
-
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "image-png", "image-ico"] }
 tauri-plugin-shell = "2"
