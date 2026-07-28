@@ -3,10 +3,14 @@
 //! Every command calls the actual Pandora runtime. Unsupported operations
 //! return honest errors, never fake data.
 
+mod safety;
+
 use pandora_orchestrator::PandoraRuntime;
 // ShadowCouncil accessed through PandoraRuntime
 use pandora_types::connection_manager::ConnectionRegistry;
+use safety::{canonicalize_existing, resolve_rooted_path, validate_safe_name, workspace_root};
 use serde::Serialize;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::Mutex;
@@ -70,6 +74,7 @@ async fn list_sessions() -> Result<Vec<SessionInfo>, String> {
 
 #[tauri::command]
 async fn resume_session(state: State<'_, DesktopState>, session_id: String) -> Result<SessionInfo, String> {
+    validate_safe_name(&session_id, "session id")?;
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("sessions");
     let path = dir.join(format!("{session_id}.json"));
     if !path.exists() { return Err(format!("Session not found: {session_id}")); }
@@ -288,8 +293,7 @@ struct ProjectInfo {
 
 #[tauri::command]
 async fn open_project(state: State<'_, DesktopState>, path: String) -> Result<ProjectInfo, String> {
-    let p = std::path::PathBuf::from(&path);
-    if !p.exists() { return Err(format!("Path does not exist: {path}")); }
+    let p = canonicalize_existing(&PathBuf::from(&path))?;
     let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
     let branch = std::process::Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"]).current_dir(&p)
@@ -297,6 +301,7 @@ async fn open_project(state: State<'_, DesktopState>, path: String) -> Result<Pr
     let dirty = std::process::Command::new("git")
         .args(["diff", "--stat"]).current_dir(&p)
         .output().map(|o| !o.stdout.is_empty()).unwrap_or(false);
+    let path = p.to_string_lossy().to_string();
     *state.project_path.lock().await = Some(path.clone());
     Ok(ProjectInfo { path, name, branch: if branch.is_empty() { "main".into() } else { branch }, dirty })
 }
@@ -345,25 +350,29 @@ async fn get_file_tree(
     state: State<'_, DesktopState>,
     dir_path: Option<String>,
 ) -> Result<Vec<FileEntry>, String> {
-    let proj = state.project_path.lock().await.clone();
-    let root = dir_path
-        .map(std::path::PathBuf::from)
-        .or_else(|| proj.map(std::path::PathBuf::from))
-        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    let project_root = workspace_root(state.project_path.lock().await.clone());
+    let root = match dir_path {
+        Some(path) => resolve_rooted_path(&project_root, &path)?,
+        None => canonicalize_existing(&project_root)?,
+    };
     read_dir_entries(&root, 3)
 }
 
 #[tauri::command]
-async fn read_file_content(path: String) -> Result<String, String> {
-    std::fs::read_to_string(&path).map_err(|e| format!("Cannot read {path}: {e}"))
+async fn read_file_content(state: State<'_, DesktopState>, path: String) -> Result<String, String> {
+    let project_root = workspace_root(state.project_path.lock().await.clone());
+    let resolved = resolve_rooted_path(&project_root, &path)?;
+    std::fs::read_to_string(&resolved).map_err(|e| format!("Cannot read {path}: {e}"))
 }
 
 #[tauri::command]
-async fn write_file_content(path: String, content: String) -> Result<(), String> {
-    if let Some(parent) = std::path::Path::new(&path).parent() {
-        let _ = std::fs::create_dir_all(parent);
+async fn write_file_content(state: State<'_, DesktopState>, path: String, content: String) -> Result<(), String> {
+    let project_root = workspace_root(state.project_path.lock().await.clone());
+    let resolved = resolve_rooted_path(&project_root, &path)?;
+    if let Some(parent) = resolved.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("Cannot create {}: {e}", parent.display()))?;
     }
-    std::fs::write(&path, &content).map_err(|e| format!("Cannot write {path}: {e}"))
+    std::fs::write(&resolved, &content).map_err(|e| format!("Cannot write {path}: {e}"))
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -371,8 +380,12 @@ async fn write_file_content(path: String, content: String) -> Result<(), String>
 // ═══════════════════════════════════════════════════════════
 
 #[tauri::command]
-async fn terminal_exec(command: String, cwd: Option<String>) -> Result<String, String> {
-    let dir = cwd.unwrap_or_else(|| ".".into());
+async fn terminal_exec(state: State<'_, DesktopState>, command: String, cwd: Option<String>) -> Result<String, String> {
+    let project_root = workspace_root(state.project_path.lock().await.clone());
+    let dir = match cwd {
+        Some(path) => resolve_rooted_path(&project_root, &path)?,
+        None => canonicalize_existing(&project_root)?,
+    };
     let output = if cfg!(windows) {
         std::process::Command::new("cmd").args(["/C", &command]).current_dir(&dir).output()
     } else {
@@ -424,6 +437,7 @@ async fn palace_list_packages(kind_filter: Option<String>) -> Result<Vec<serde_j
 
 #[tauri::command]
 async fn palace_install(package: String) -> Result<String, String> {
+    validate_safe_name(&package, "package name")?;
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("palace");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let manifest = format!("[package]\nname = \"{package}\"\nversion = \"0.1.0\"\nkind = \"gene\"\n");
@@ -546,6 +560,12 @@ fn read_dir_entries(dir: &std::path::Path, max_depth: usize) -> Result<Vec<FileE
             let path = entry.path();
             let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
             if name.starts_with('.') || name == "target" || name == "node_modules" { continue; }
+            if std::fs::symlink_metadata(&path)
+                .map(|m| m.file_type().is_symlink())
+                .unwrap_or(false)
+            {
+                continue;
+            }
             let is_dir = path.is_dir();
             entries.push(FileEntry {
                 name,
