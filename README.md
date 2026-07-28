@@ -45,8 +45,22 @@ pandora setup
 ## Quick start
 
 ```bash
-# Run your first task
-pandora run "say hello"
+# Clone and build
+git clone https://github.com/anisayakmitra-in/O-PANDORA.git
+cd O-PANDORA
+cargo build --release
+
+# Launch interactive agent
+./target/release/pandora
+
+> inspect this repository
+> run the tests
+```
+
+For one-off commands:
+
+```bash
+pandora run "explain this repository"
 
 # Create a custom gene
 pandora new gene my-tool

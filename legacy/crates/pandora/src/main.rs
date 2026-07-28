@@ -156,6 +156,16 @@ fn main() {
             dispatch(&args);
         }
         None => {
+            // Check if stdin has data (piped input)
+            use std::io::IsTerminal;
+            if !std::io::stdin().is_terminal() {
+                let mut input = String::new();
+                if std::io::stdin().read_line(&mut input).is_ok() && !input.trim().is_empty() {
+                    let args = vec!["pandora".into(), "run".into(), input.trim().to_string()];
+                    dispatch(&args);
+                    return;
+                }
+            }
             // No subcommand → launch interactive agent
             interactive_agent();
         }
@@ -1021,12 +1031,15 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
 
 
 fn cmd_run(args: &[String]) {
-    if args.len() < 3 {
-        eprintln!("Usage: pandora run <task>");
+    let output_json = args.iter().any(|a| a == "--output" && args.windows(2).any(|w| w[0] == "--output" && w[1] == "json"));
+    let quiet = args.iter().any(|a| a == "--quiet" || a == "-q");
+    let task_args: Vec<&str> = args.iter().skip(2).filter(|a| !a.starts_with("--")).map(|s| s.as_str()).collect();
+    if task_args.is_empty() {
+        eprintln!("Usage: pandora run <task> [--output json] [--quiet]");
         process::exit(1);
     }
-    let task: String = args[2..].join(" ");
-    println!("Task: {task}");
+    let task: String = task_args.join(" ");
+    if !quiet && !output_json { println!("Task: {task}"); }
     match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
@@ -1046,7 +1059,18 @@ fn cmd_run(args: &[String]) {
             };
             match runtime.run(&task, "default").await {
                 Ok(r) if r.success => {
-                    println!("{}", r.output.chars().take(2000).collect::<String>())
+                    if output_json {
+                        let report = serde_json::json!({
+                            "success": true,
+                            "output": r.output,
+                            "duration_ms": r.duration_ms,
+                            "execution_id": r.execution_id,
+                            "provider": r.provider,
+                        });
+                        println!("{}", serde_json::to_string_pretty(&report).unwrap_or_default());
+                    } else if !quiet {
+                        println!("{}", r.output.chars().take(2000).collect::<String>())
+                    }
                 }
                 Ok(_) => {
                     eprintln!("Pipeline returned empty — set PANDORA_DEFAULT_MODEL or add a connection: pandora connection add local ollama http://localhost:11434 MODEL");
