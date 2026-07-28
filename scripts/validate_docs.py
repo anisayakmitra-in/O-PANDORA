@@ -4,16 +4,16 @@
 import os
 import re
 import sys
+from pathlib import Path
 
-ROOT = "/home/user/pandora-systems"
-
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 EXCLUDED_DIRS = {"target", ".git", "llama.cpp", "legacy"}
 
 errors = []
 
 md_files = set()
 for dirpath, _, filenames in os.walk(ROOT):
-    parts = set(dirpath.split(os.sep))
+    parts = set(Path(dirpath).parts)
     if parts & EXCLUDED_DIRS:
         continue
     for fn in filenames:
@@ -27,16 +27,15 @@ for path in sorted(md_files):
     with open(full, encoding="utf-8", errors="replace") as f:
         content = f.read()
     for line_no, line in enumerate(content.splitlines(), 1):
-        for text, target in link_re.findall(line):
+        for _, target in link_re.findall(line):
             if target.startswith(("http://", "https://", "mailto:")):
                 continue
             if target.startswith("#"):
                 continue
             base = os.path.dirname(path)
             resolved = os.path.normpath(os.path.join(base, target.split("#")[0]))
-            if resolved not in md_files:
-                if not os.path.exists(os.path.join(ROOT, resolved)):
-                    errors.append(f"{path}:{line_no}: dead link '{target}' (resolved: {resolved})")
+            if resolved not in md_files and not os.path.exists(os.path.join(ROOT, resolved)):
+                errors.append(f"{path}:{line_no}: dead link '{target}' (resolved: {resolved})")
 
 readme_path = os.path.join(ROOT, "README.md")
 with open(readme_path, encoding="utf-8", errors="replace") as f:
