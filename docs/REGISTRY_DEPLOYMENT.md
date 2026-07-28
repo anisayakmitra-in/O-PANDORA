@@ -23,9 +23,9 @@ Default port: `3000`.
 |----------|--------|---------|
 | `/health` | GET | Health check |
 | `/api/login` | POST | User login |
-| `/api/packages` | GET | List all packages |
-| `/api/packages/{id}` | GET | Get package details |
-| `/api/packages/{id}/versions` | GET | Get version history |
+| `/api/v1/packages` | GET | List all packages |
+| `/api/v1/packages/{id}` | GET | Get package details |
+| `/api/v1/packages/{id}/versions` | GET | Get version history |
 | `/api/publish` | POST | Publish a package |
 | `/api/search` | POST | Search packages |
 
@@ -33,10 +33,10 @@ Default port: `3000`.
 
 ```bash
 # Point the CLI at your K-O Palace
-export PANDORA_REGISTRY_URL=http://your-palace:3000
+export PANDORA_REGISTRY_URL=http://your-palace:3001
 
 # Or per-command
-pandora install my-package --registry=http://your-palace:3000
+pandora install my-package --registry=http://your-palace:3001
 ```
 
 ## Known limitations (v0.1.0)
@@ -44,14 +44,14 @@ pandora install my-package --registry=http://your-palace:3000
 - **In-memory storage** — data is lost on restart. Production use requires adding persistence.
 - **No authentication middleware** — login endpoint exists but other endpoints don't enforce auth.
 - **Signature presence check** — full Ed25519 verification deferred (needs publisher public key lookup).
-- **No pagination** — `/api/packages` returns all entries.
+- **No pagination** — `/api/v1/packages` returns all entries.
 - **No download endpoint** — package discovery works; archive download is not yet wired.
 
 ## Future roadmap
 
 - SQLite persistence
 - Auth middleware on all endpoints
-- Full Ed25519 signature verification
+- Publisher public-key metadata for signed packages
 - Pagination and ranking
 - Package archive download
 - Publisher profile pages

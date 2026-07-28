@@ -5,13 +5,15 @@
 
 mod safety;
 
+use pandora_kuber::registry::RegistryClient;
 use pandora_orchestrator::PandoraRuntime;
 // ShadowCouncil accessed through PandoraRuntime
+use pandora_shadow_council::ShadowCouncil;
 use pandora_types::connection_manager::ConnectionRegistry;
 use safety::{canonicalize_existing, resolve_rooted_path, validate_safe_name, workspace_root};
 use serde::Serialize;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::Mutex;
 
@@ -554,18 +556,24 @@ async fn palace_list_packages(
 
 #[tauri::command]
 async fn palace_install(package: String) -> Result<String, String> {
-    validate_safe_name(&package, "package name")?;
-    let dir = dirs_next::home_dir()
-        .unwrap_or_default()
-        .join(".pandora")
-        .join("palace");
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let manifest =
-        format!("[package]\nname = \"{package}\"\nversion = \"0.1.0\"\nkind = \"gene\"\n");
-    std::fs::write(dir.join(format!("{package}.toml")), &manifest).map_err(|e| e.to_string())?;
-    Ok(format!("Installed: {package}"))
+    if package.trim().is_empty() || package.contains('\0') {
+        return Err("Package id cannot be empty".into());
+    }
+    let registry_url =
+        std::env::var("PANDORA_REGISTRY_URL").unwrap_or_else(|_| "http://localhost:3001".into());
+    let token = std::env::var("PANDORA_TOKEN").ok();
+    tokio::task::spawn_blocking(move || {
+        let registry = RegistryClient::new(&registry_url, token)?;
+        let council = Arc::new(RwLock::new(ShadowCouncil::new()));
+        let mut kuber = pandora_kuber::Kuber::new(council);
+        kuber
+            .install_remote(&registry, &package)
+            .map_err(|e| e.to_string())?;
+        Ok(format!("Installed: {package}"))
+    })
+    .await
+    .map_err(|e| format!("Installer task failed: {e}"))?
 }
-
 // ═══════════════════════════════════════════════════════════
 //  FLEET + SCHEDULER — honest: reads filesystem records
 // ═══════════════════════════════════════════════════════════

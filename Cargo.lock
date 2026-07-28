@@ -2968,11 +2968,14 @@ dependencies = [
 name = "pandora-kuber"
 version = "0.2.0"
 dependencies = [
+ "flate2",
  "pandora-shadow-council",
  "pandora-types",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "sha2",
+ "tar",
  "toml 0.8.2",
 ]
 

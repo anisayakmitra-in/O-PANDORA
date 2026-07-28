@@ -16,6 +16,7 @@ pub mod checksum;
 pub mod import;
 pub mod lockfile_wiring;
 pub mod package_loaders;
+pub mod registry;
 pub mod resolver;
 pub mod skill;
 pub mod trust_policy;
@@ -334,6 +335,31 @@ impl Kuber {
         Ok(())
     }
 
+    pub fn install_remote(
+        &mut self,
+        registry: &registry::RegistryClient,
+        id: &str,
+    ) -> Result<(), pandora_types::PandoraError> {
+        let package = registry.get_package(id).map_err(to_err)?;
+        let staging = pandora_types::gene_package::packages_dir()
+            .join(".staging")
+            .join(format!(
+                "{}-{}",
+                id.replace(['/', '\\'], "_"),
+                package.version
+            ));
+        if staging.exists() {
+            std::fs::remove_dir_all(&staging).map_err(|e| to_err(e.to_string()))?;
+        }
+        let root = registry
+            .download_and_extract(&package, &staging)
+            .map_err(to_err)?;
+        let result = self.install(&root.to_string_lossy());
+        if result.is_err() {
+            let _ = std::fs::remove_dir_all(&staging);
+        }
+        result
+    }
     /// Upgrade a package to the latest available version.
     /// Backs up the current version before upgrade, rolls back on failure.
     pub fn upgrade(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {

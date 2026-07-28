@@ -580,19 +580,24 @@ fn cmd_install(args: &[String]) {
         "Not found locally. Trying K-O Palace at {} ...",
         registry_url
     );
-    let url = format!("{}/api/v1/packages/{}", registry_url, pkg_id);
-    match reqwest::blocking::get(&url) {
-        Ok(resp) if resp.status().is_success() => {
-            eprintln!("Found {} on K-O Palace.", pkg_id);
-            eprintln!("Remote download not yet implemented.");
-            eprintln!("Package URL: {}/api/packages/{}", registry_url, pkg_id);
-        }
-        Ok(_) => {
-            eprintln!("Package '{}' not found on K-O Palace.", pkg_id);
+    let token = std::env::var("PANDORA_TOKEN").ok();
+    let registry = match pandora_kuber::registry::RegistryClient::new(&registry_url, token) {
+        Ok(client) => client,
+        Err(e) => {
+            eprintln!("Invalid K-O Palace URL: {e}");
             process::exit(1);
         }
+    };
+    match registry.get_package(pkg_id) {
+        Ok(_) => match k.install_remote(&registry, pkg_id) {
+            Ok(()) => println!("Installed: {}", pkg_id),
+            Err(e) => {
+                eprintln!("Remote installation failed: {e}");
+                process::exit(1);
+            }
+        },
         Err(e) => {
-            eprintln!("Could not connect to K-O Palace: {}", e);
+            eprintln!("Could not install from K-O Palace: {e}");
             eprintln!("Local install also failed.");
             process::exit(1);
         }
@@ -3208,6 +3213,32 @@ fn cmd_search(args: &[String]) {
         println!("  Filter: min installs={n}");
     }
 
+    let registry_url =
+        std::env::var("PANDORA_REGISTRY_URL").unwrap_or_else(|_| "http://localhost:3001".into());
+    let mut remote_found = false;
+    if let Ok(registry) = pandora_kuber::registry::RegistryClient::new(
+        &registry_url,
+        std::env::var("PANDORA_TOKEN").ok(),
+    ) {
+        if let Ok(packages) = registry.search(q) {
+            for package in packages {
+                if kind_filter
+                    .as_ref()
+                    .is_some_and(|kind| package.kind != *kind)
+                {
+                    continue;
+                }
+                if verified_only && package.trust.level != "verified" {
+                    continue;
+                }
+                remote_found = true;
+                println!(
+                    "  {} {} v{} (registry, trust={})",
+                    package.kind, package.id, package.version, package.trust.level
+                );
+            }
+        }
+    }
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
     let k = pandora_kuber::Kuber::new(sc.clone());
     let r = k.search(q);
@@ -3236,7 +3267,7 @@ Results:
             p.kind, p.id, p.version, p.kind
         );
     }
-    if r.is_empty() && b.is_empty() {
+    if r.is_empty() && b.is_empty() && !remote_found {
         println!("  No matches. Try adjusting filters or search terms.");
     }
     println!(

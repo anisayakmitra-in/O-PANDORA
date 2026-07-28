@@ -3,7 +3,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PALACE_DIR="${PANDORA_PALACE_DIR:-$REPO_ROOT/../k-o-palace}"
-PORT="${PANDORA_PALACE_PORT:-3000}"
+PORT="${PANDORA_PALACE_PORT:-3001}"
 
 if [[ ! -f "$PALACE_DIR/Cargo.toml" ]]; then
   echo "K-O Palace lives in the separate repository: https://github.com/anisayakmitra-in/k-o-palace"
@@ -17,6 +17,6 @@ cargo run --release -p k-o-palace &
 PID=$!
 echo "Palace PID: $PID"
 echo "  http://localhost:$PORT/health"
-echo "  http://localhost:$PORT/api/packages"
+echo "  http://localhost:$PORT/api/v1/packages"
 trap 'kill "$PID" 2>/dev/null' EXIT
 wait "$PID"

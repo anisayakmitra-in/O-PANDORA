@@ -10,7 +10,7 @@ When you've built a gene, harness, or skill and want to share it with other Pand
 
 ## Prerequisites
 
-1. A K-O Palace server running (default: `http://localhost:3000`)
+1. A K-O Palace server running (default: `http://localhost:3001`)
 2. An account on the K-O Palace instance
 3. Ed25519 keypair for signing (`pandora keygen`)
 
@@ -69,6 +69,6 @@ See [Manifest Specification](MANIFESTS.md) for the full `pandora.toml` schema.
 
 ## Known limitations
 
-- Full Ed25519 signature verification is deferred (v0.1.0 checks signature presence)
+- Ed25519 signatures are verified when publisher public-key metadata is present; unsigned artifacts still require a content hash
 - K-O Palace storage is in-memory (no persistence yet)
 - No SemVer dependency resolution yet
