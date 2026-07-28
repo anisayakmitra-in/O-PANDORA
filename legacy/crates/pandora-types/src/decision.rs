@@ -21,10 +21,20 @@ pub struct Outcome {
 
 impl Outcome {
     pub fn success() -> Self {
-        Self { success: true, error_kind: None, duration_ms: 0, token_cost: 0 }
+        Self {
+            success: true,
+            error_kind: None,
+            duration_ms: 0,
+            token_cost: 0,
+        }
     }
     pub fn failure(kind: impl Into<String>) -> Self {
-        Self { success: false, error_kind: Some(kind.into()), duration_ms: 0, token_cost: 0 }
+        Self {
+            success: false,
+            error_kind: Some(kind.into()),
+            duration_ms: 0,
+            token_cost: 0,
+        }
     }
 }
 
@@ -200,6 +210,9 @@ impl DecisionLog {
 
     /// Get failed decisions (for self-evolution analysis).
     pub fn failures(&self) -> Vec<&Decision> {
-        self.decisions.iter().filter(|d| !d.outcome.success).collect()
+        self.decisions
+            .iter()
+            .filter(|d| !d.outcome.success)
+            .collect()
     }
 }

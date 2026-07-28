@@ -252,10 +252,18 @@ pub struct ConnectionRegistry {
 
 impl ConnectionRegistry {
     pub fn load() -> Self {
-        let dir = std::env::var("HOME")
+        let dir = std::env::var_os("PANDORA_HOME")
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
-            .join(".pandora");
+            .or_else(|| std::env::var_os("USERPROFILE").map(std::path::PathBuf::from))
+            .or_else(|| std::env::var_os("HOME").map(std::path::PathBuf::from))
+            .map(|root| {
+                if std::env::var_os("PANDORA_HOME").is_some() {
+                    root
+                } else {
+                    root.join(".pandora")
+                }
+            })
+            .unwrap_or_else(|| std::path::PathBuf::from(".pandora"));
         let path = dir.join("connections.toml");
         std::fs::read_to_string(&path)
             .ok()
@@ -264,10 +272,18 @@ impl ConnectionRegistry {
     }
 
     pub fn save(&self) -> Result<(), crate::PandoraError> {
-        let dir = std::env::var("HOME")
+        let dir = std::env::var_os("PANDORA_HOME")
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
-            .join(".pandora");
+            .or_else(|| std::env::var_os("USERPROFILE").map(std::path::PathBuf::from))
+            .or_else(|| std::env::var_os("HOME").map(std::path::PathBuf::from))
+            .map(|root| {
+                if std::env::var_os("PANDORA_HOME").is_some() {
+                    root
+                } else {
+                    root.join(".pandora")
+                }
+            })
+            .unwrap_or_else(|| std::path::PathBuf::from(".pandora"));
         std::fs::create_dir_all(&dir)
             .map_err(|e| crate::PandoraError::Internal(format!("mkdir: {e}")))?;
         let path = dir.join("connections.toml");
@@ -341,6 +357,9 @@ mod tests {
 
     #[test]
     fn registry_add_remove() {
+        let root = std::env::temp_dir().join("pandora-connection-registry");
+        let _ = std::fs::remove_dir_all(&root);
+        std::env::set_var("PANDORA_HOME", &root);
         let mut reg = ConnectionRegistry::default();
         reg.add(Connection::new(
             "test",
@@ -351,5 +370,7 @@ mod tests {
         assert!(reg.find("test").is_some());
         reg.remove("test").unwrap();
         assert!(reg.find("test").is_none());
+        let _ = std::fs::remove_dir_all(&root);
+        std::env::remove_var("PANDORA_HOME");
     }
 }

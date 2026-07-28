@@ -414,3 +414,34 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--gray-2); border-radius: 3px; }
+
+/* Cross-platform Pandora glass surfaces */
+:root {
+  --pandora-ink: #0b0814;
+  --pandora-surface: rgba(30, 20, 52, 0.78);
+  --pandora-purple: #8b5cf6;
+  --pandora-violet: #c084fc;
+  --pandora-gold: #e7bd67;
+  --pandora-gold-soft: rgba(231, 189, 103, 0.18);
+}
+
+body { background: radial-gradient(circle at 78% 10%, rgba(124, 58, 237, 0.18), transparent 36%), var(--pandora-ink); }
+.app-shell { background: transparent !important; }
+.sidebar, .titlebar, .content { background: var(--pandora-surface) !important; border-color: rgba(231, 189, 103, 0.16) !important; backdrop-filter: blur(24px) saturate(135%); }
+.sidebar-brand { display: flex; align-items: center; gap: 9px; color: var(--pandora-gold) !important; letter-spacing: 0.2px; }
+.brand-mark { width: 30px; height: 30px; object-fit: cover; border-radius: 9px; box-shadow: 0 0 18px rgba(139, 92, 246, 0.35); }
+.sidebar-btn.active { box-shadow: inset 0 0 0 1px rgba(231, 189, 103, 0.18); }
+.input-bar input:focus { border-color: var(--pandora-gold) !important; box-shadow: 0 0 0 3px var(--pandora-gold-soft); }
+
+@media (max-width: 760px) {
+  .app-shell { flex-direction: column !important; }
+  .sidebar { width: auto !important; height: auto !important; flex-direction: row !important; align-items: center; margin: 6px !important; padding: 8px !important; }
+  .sidebar-brand { margin: 0 !important; }
+  .sidebar-nav, .sidebar-actions, .sidebar-footer, .sidebar > div:last-child { display: none !important; }
+  .main { margin: 0 6px 6px !important; min-height: 0; }
+  .titlebar { border-radius: 14px 14px 0 0 !important; }
+  .messages { padding: 14px !important; }
+  .msg { max-width: 94% !important; }
+}
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }

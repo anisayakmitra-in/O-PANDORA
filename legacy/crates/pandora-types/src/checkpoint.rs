@@ -65,9 +65,18 @@ pub struct CheckpointManager {
 
 impl CheckpointManager {
     pub fn new() -> Self {
-        let dir = std::env::var("HOME")
-            .map(|h| PathBuf::from(h).join(".pandora/checkpoints"))
-            .unwrap_or_else(|_| PathBuf::from("/tmp/pandora-checkpoints"));
+        let dir = std::env::var_os("PANDORA_HOME")
+            .map(PathBuf::from)
+            .or_else(|| std::env::var_os("USERPROFILE").map(PathBuf::from))
+            .or_else(|| std::env::var_os("HOME").map(PathBuf::from))
+            .map(|root| {
+                if std::env::var_os("PANDORA_HOME").is_some() {
+                    root.join("checkpoints")
+                } else {
+                    root.join(".pandora/checkpoints")
+                }
+            })
+            .unwrap_or_else(|| PathBuf::from(".pandora/checkpoints"));
         std::fs::create_dir_all(&dir).ok();
         Self { dir }
     }
@@ -148,18 +157,28 @@ mod tests {
 
     #[test]
     fn checkpoint_save_and_load() {
+        let root = std::env::temp_dir().join("pandora-checkpoint-save");
+        let _ = std::fs::remove_dir_all(&root);
+        std::env::set_var("PANDORA_HOME", &root);
         let cm = CheckpointManager::new();
         cm.save("test-exec", PipelineStage::Plan, None);
         assert_eq!(cm.last_stage("test-exec"), Some(PipelineStage::Plan));
         cm.clear("test-exec");
+        let _ = std::fs::remove_dir_all(&root);
+        std::env::remove_var("PANDORA_HOME");
     }
 
     #[test]
     fn incomplete_detection() {
+        let root = std::env::temp_dir().join("pandora-checkpoint-incomplete");
+        let _ = std::fs::remove_dir_all(&root);
+        std::env::set_var("PANDORA_HOME", &root);
         let cm = CheckpointManager::new();
         cm.save("test-incomplete", PipelineStage::Execution, None);
         assert!(cm.is_in_progress("test-incomplete"));
         cm.clear("test-incomplete");
+        let _ = std::fs::remove_dir_all(&root);
+        std::env::remove_var("PANDORA_HOME");
     }
 
     #[test]

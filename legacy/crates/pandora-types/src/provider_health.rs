@@ -144,9 +144,9 @@ fn http_get_text(url: &str) -> Result<(StatusCode, String), crate::PandoraError>
         .send()
         .map_err(|e| crate::PandoraError::Internal(format!("HTTP GET failed for {url}: {e}")))?;
     let status = response.status();
-    let body = response
-        .text()
-        .map_err(|e| crate::PandoraError::Internal(format!("HTTP body read failed for {url}: {e}")))?;
+    let body = response.text().map_err(|e| {
+        crate::PandoraError::Internal(format!("HTTP body read failed for {url}: {e}"))
+    })?;
     Ok((status, body))
 }
 

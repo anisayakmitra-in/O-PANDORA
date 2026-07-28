@@ -406,8 +406,12 @@ async fn dashboard() -> impl IntoResponse {
     axum::response::Html(DASHBOARD_HTML)
 }
 
-
-async fn harnesses_list(_state: axum::extract::State<Arc<ApiState>>) -> impl IntoResponse {    axum::Json(Vec::<String>::new())}async fn genes_list(_state: axum::extract::State<Arc<ApiState>>) -> impl IntoResponse {    axum::Json(Vec::<String>::new())}
+async fn harnesses_list(_state: axum::extract::State<Arc<ApiState>>) -> impl IntoResponse {
+    axum::Json(Vec::<String>::new())
+}
+async fn genes_list(_state: axum::extract::State<Arc<ApiState>>) -> impl IntoResponse {
+    axum::Json(Vec::<String>::new())
+}
 // ── Server ──
 
 pub async fn serve(addr: &str, sessions_dir: std::path::PathBuf) -> Result<(), anyhow::Error> {

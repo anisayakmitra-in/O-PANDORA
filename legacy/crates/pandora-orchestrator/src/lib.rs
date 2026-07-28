@@ -10,8 +10,8 @@
 
 pub mod agentic_loop;
 pub mod constitutional_floor;
-pub mod provider_adapter;
 pub mod gepa;
+pub mod provider_adapter;
 
 use anyhow::Result;
 use pandora_services::ExecutionController;

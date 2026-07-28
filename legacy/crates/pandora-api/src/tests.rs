@@ -2,7 +2,7 @@
 #[allow(clippy::all)]
 mod tests {
     use crate::constant_time_compare;
-use crate::require_auth;
+    use crate::require_auth;
 
     #[test]
     fn constant_time_compare_matching() {

@@ -36,6 +36,41 @@ fn run(bin: &str, args: &[&str]) -> Result<String, pandora_types::PandoraError> 
     }
 }
 
+fn shell_output(input: &str) -> Result<std::process::Output, pandora_types::PandoraError> {
+    #[cfg(windows)]
+    {
+        Command::new("cmd")
+            .args(["/C", input])
+            .output()
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("cmd not found: {e}")))
+    }
+    #[cfg(not(windows))]
+    {
+        Command::new("sh")
+            .args(["-c", input])
+            .output()
+            .map_err(|e| pandora_types::PandoraError::Internal(format!("sh not found: {e}")))
+    }
+}
+
+fn python_output(input: &str) -> Result<std::process::Output, pandora_types::PandoraError> {
+    let candidates: &[(&str, &[&str])] = if cfg!(windows) {
+        &[("python", &[]), ("py", &["-3"]), ("python3", &[])]
+    } else {
+        &[("python3", &[]), ("python", &[])]
+    };
+
+    for (program, prefix) in candidates {
+        let mut command = Command::new(program);
+        command.args(*prefix).args(["-c", input]);
+        if let Ok(output) = command.output() {
+            return Ok(output);
+        }
+    }
+
+    Err("Python interpreter not found; install Python 3 and retry".into())
+}
+
 macro_rules! cmd_gene {
     ($Struct:ident, $id:expr, $kind:expr, $bin:expr) => {
         #[derive(Debug)]
@@ -92,11 +127,7 @@ impl Gene for PythonToolGene {
         &self.m
     }
     fn execute(&self, input: &str) -> Result<String, pandora_types::PandoraError> {
-        let o = Command::new("python3")
-            .arg("-c")
-            .arg(input)
-            .output()
-            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
+        let o = python_output(input)?;
         Ok(String::from_utf8_lossy(&o.stdout).to_string())
     }
 }
@@ -221,11 +252,7 @@ impl Gene for ShellGene {
                 "Shell execution requires PANDORA_SHELL_UNSAFE=1 to acknowledge risks".into(),
             );
         }
-        let o = Command::new("sh")
-            .arg("-c")
-            .arg(input)
-            .output()
-            .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
+        let o = shell_output(input)?;
         let sd = String::from_utf8_lossy(&o.stderr).to_string();
         if sd.is_empty() {
             Ok(String::from_utf8_lossy(&o.stdout).to_string())
@@ -264,11 +291,7 @@ impl Gene for WorkflowGene {
         }
         let mut r = Vec::new();
         for (i, line) in input.lines().enumerate() {
-            let o = Command::new("sh")
-                .arg("-c")
-                .arg(line)
-                .output()
-                .map_err(|e| pandora_types::PandoraError::Internal(e.to_string()))?;
+            let o = shell_output(line)?;
             r.push(format!(
                 "step {}: {}",
                 i + 1,

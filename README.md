@@ -129,3 +129,12 @@ npx tauri build
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE)
+
+## Platform support
+
+| Surface | Windows | macOS | Linux | WSL | Android / Termux | Play Store |
+|---|---:|---:|---:|---:|---:|---:|
+| `pandora` CLI | supported | supported | supported | supported | supported via local build | n/a |
+| Pandora Desktop | supported | CI/package target | CI/package target | n/a | planned mobile client | not released yet |
+
+See [Android support](docs/platforms/ANDROID.md) for Termux installation and the Play Store release gates. Do not treat a successful Rust workspace build as proof that a packaged desktop or Android release is available.

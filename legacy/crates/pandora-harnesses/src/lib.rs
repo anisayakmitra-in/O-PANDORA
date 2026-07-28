@@ -119,7 +119,12 @@ pub fn register_dynamic(sc: &mut ShadowCouncil) {
     let home = packages_dir();
 
     // Seed defaults on first run
-    if !home.exists() || home.read_dir().map(|mut d| d.next().is_none()).unwrap_or(true) {
+    if !home.exists()
+        || home
+            .read_dir()
+            .map(|mut d| d.next().is_none())
+            .unwrap_or(true)
+    {
         seed_default_packages();
     }
 
@@ -135,27 +140,96 @@ fn seed_default_packages() {
 
     let manifests: &[(&str, &str, &str, &[&str])] = &[
         // Source harnesses
-        ("memory-source", "Memory Source Harness", "source", &["memory", "storage"]),
-        ("planning-source", "Planning Source Harness", "source", &["planning", "workflow"]),
-        ("execution-source", "Execution Source Harness", "source", &["execution", "sandbox"]),
-        ("governance-source", "Governance Source Harness", "source", &["governance", "policy"]),
-        ("identity-source", "Identity Source Harness", "source", &["identity", "auth"]),
+        (
+            "memory-source",
+            "Memory Source Harness",
+            "source",
+            &["memory", "storage"],
+        ),
+        (
+            "planning-source",
+            "Planning Source Harness",
+            "source",
+            &["planning", "workflow"],
+        ),
+        (
+            "execution-source",
+            "Execution Source Harness",
+            "source",
+            &["execution", "sandbox"],
+        ),
+        (
+            "governance-source",
+            "Governance Source Harness",
+            "source",
+            &["governance", "policy"],
+        ),
+        (
+            "identity-source",
+            "Identity Source Harness",
+            "source",
+            &["identity", "auth"],
+        ),
         // Domain harnesses
-        ("coding-domain", "Coding Domain Harness", "domain", &["coding", "rust", "python"]),
-        ("design-domain", "Design Domain Harness", "domain", &["design", "ui", "ux"]),
-        ("security-domain", "Security Domain Harness", "domain", &["security", "audit"]),
-        ("cybersecurity-domain", "Cybersecurity Domain Harness", "domain", &["cybersecurity"]),
-        ("research-domain", "Research Domain Harness", "domain", &["research", "web-search"]),
-        ("computer-use", "Computer Use Harness", "domain", &["screenshot", "desktop"]),
-        ("android-use", "Android Use Harness", "domain", &["android", "mobile"]),
+        (
+            "coding-domain",
+            "Coding Domain Harness",
+            "domain",
+            &["coding", "rust", "python"],
+        ),
+        (
+            "design-domain",
+            "Design Domain Harness",
+            "domain",
+            &["design", "ui", "ux"],
+        ),
+        (
+            "security-domain",
+            "Security Domain Harness",
+            "domain",
+            &["security", "audit"],
+        ),
+        (
+            "cybersecurity-domain",
+            "Cybersecurity Domain Harness",
+            "domain",
+            &["cybersecurity"],
+        ),
+        (
+            "research-domain",
+            "Research Domain Harness",
+            "domain",
+            &["research", "web-search"],
+        ),
+        (
+            "computer-use",
+            "Computer Use Harness",
+            "domain",
+            &["screenshot", "desktop"],
+        ),
+        (
+            "android-use",
+            "Android Use Harness",
+            "domain",
+            &["android", "mobile"],
+        ),
         // Meta harness
-        ("coordination-meta", "Coordination Meta Harness", "meta", &["coordination", "mesh"]),
+        (
+            "coordination-meta",
+            "Coordination Meta Harness",
+            "meta",
+            &["coordination", "mesh"],
+        ),
     ];
 
     for (id, name, kind, caps) in manifests {
         let dir = home.join(id);
         let _ = std::fs::create_dir_all(&dir);
-        let caps_str = caps.iter().map(|c| format!(r#""{c}""#)).collect::<Vec<_>>().join(", ");
+        let caps_str = caps
+            .iter()
+            .map(|c| format!(r#""{c}""#))
+            .collect::<Vec<_>>()
+            .join(", ");
         let toml = format!(
             r#"id = "{id}"
 name = "{name}"
@@ -187,24 +261,26 @@ fn load_packages_from_dir(sc: &mut ShadowCouncil, dir: &std::path::Path) {
         let path = entry.path();
         if path.is_dir() && path.join("harness.toml").exists() {
             if let Ok(content) = std::fs::read_to_string(path.join("harness.toml")) {
-                let id = content.lines()
+                let id = content
+                    .lines()
                     .find(|l| l.starts_with("id ="))
                     .and_then(|l| l.split('"').nth(1))
                     .unwrap_or("");
-                let kind = content.lines()
+                let kind = content
+                    .lines()
                     .find(|l| l.starts_with("kind ="))
                     .and_then(|l| l.split('"').nth(1))
                     .unwrap_or("domain");
-                    if !id.is_empty() {
-                        // Register the harness from disk if not already present
-                        if sc.harnesses.get(id).is_none() {
-                            match kind {
-                                "source" => register_source_by_id(sc, id),
-                                "meta" => register_meta_by_id(sc, id),
-                                _ => register_domain_by_id(sc, id),
-                            }
+                if !id.is_empty() {
+                    // Register the harness from disk if not already present
+                    if sc.harnesses.get(id).is_none() {
+                        match kind {
+                            "source" => register_source_by_id(sc, id),
+                            "meta" => register_meta_by_id(sc, id),
+                            _ => register_domain_by_id(sc, id),
                         }
                     }
+                }
             }
         }
     }
@@ -213,24 +289,58 @@ fn load_packages_from_dir(sc: &mut ShadowCouncil, dir: &std::path::Path) {
 fn register_source_by_id(sc: &mut ShadowCouncil, id: &str) {
     use pandora_services::*;
     match id {
-        "memory-source" => { let _ = sc.install(Box::new(MemorySourceHarness::new(Arc::new(DefaultMemoryService::new())))); }
-        "planning-source" => { let _ = sc.install(Box::new(PlanningSourceHarness::new(Arc::new(DefaultPlanningService::new())))); }
-        "execution-source" => { let _ = sc.install(Box::new(ExecutionSourceHarness::new(Arc::new(DefaultExecutionService::new())))); }
-        "governance-source" => { let _ = sc.install(Box::new(GovernanceSourceHarness::new(Arc::new(DefaultGovernanceService::new())))); }
-        "identity-source" => { let _ = sc.install(Box::new(IdentitySourceHarness::new(Arc::new(DefaultIdentityService::new())))); }
+        "memory-source" => {
+            let _ = sc.install(Box::new(MemorySourceHarness::new(Arc::new(
+                DefaultMemoryService::new(),
+            ))));
+        }
+        "planning-source" => {
+            let _ = sc.install(Box::new(PlanningSourceHarness::new(Arc::new(
+                DefaultPlanningService::new(),
+            ))));
+        }
+        "execution-source" => {
+            let _ = sc.install(Box::new(ExecutionSourceHarness::new(Arc::new(
+                DefaultExecutionService::new(),
+            ))));
+        }
+        "governance-source" => {
+            let _ = sc.install(Box::new(GovernanceSourceHarness::new(Arc::new(
+                DefaultGovernanceService::new(),
+            ))));
+        }
+        "identity-source" => {
+            let _ = sc.install(Box::new(IdentitySourceHarness::new(Arc::new(
+                DefaultIdentityService::new(),
+            ))));
+        }
         _ => {}
     }
 }
 
 fn register_domain_by_id(sc: &mut ShadowCouncil, id: &str) {
     match id {
-        "coding-domain" => { let _ = sc.install(Box::new(coding::CodingDomainHarness::new())); }
-        "design-domain" => { let _ = sc.install(Box::new(design::DesignDomainHarness::new())); }
-        "security-domain" => { let _ = sc.install(Box::new(security::SecurityDomainHarness::new())); }
-        "cybersecurity-domain" => { let _ = sc.install(Box::new(cybersecurity::CybersecurityDomainHarness::new())); }
-        "research-domain" => { let _ = sc.install(Box::new(research::ResearchDomainHarness::new())); }
-        "computer-use" => { let _ = sc.install(Box::new(computer_use::ComputerUseHarness::new())); }
-        "android-use" => { let _ = sc.install(Box::new(android_use::AndroidUseHarness::new())); }
+        "coding-domain" => {
+            let _ = sc.install(Box::new(coding::CodingDomainHarness::new()));
+        }
+        "design-domain" => {
+            let _ = sc.install(Box::new(design::DesignDomainHarness::new()));
+        }
+        "security-domain" => {
+            let _ = sc.install(Box::new(security::SecurityDomainHarness::new()));
+        }
+        "cybersecurity-domain" => {
+            let _ = sc.install(Box::new(cybersecurity::CybersecurityDomainHarness::new()));
+        }
+        "research-domain" => {
+            let _ = sc.install(Box::new(research::ResearchDomainHarness::new()));
+        }
+        "computer-use" => {
+            let _ = sc.install(Box::new(computer_use::ComputerUseHarness::new()));
+        }
+        "android-use" => {
+            let _ = sc.install(Box::new(android_use::AndroidUseHarness::new()));
+        }
         _ => {}
     }
 }
@@ -243,16 +353,25 @@ fn register_meta_by_id(sc: &mut ShadowCouncil, id: &str) {
 
 fn packages_dir() -> std::path::PathBuf {
     std::env::var("PANDORA_HOME")
-        .map(|h| std::path::PathBuf::from(h).join("packages").join("default").join("harnesses"))
+        .map(|h| {
+            std::path::PathBuf::from(h)
+                .join("packages")
+                .join("default")
+                .join("harnesses")
+        })
         .unwrap_or_else(|_| {
             std::env::var("HOME")
                 .or_else(|_| std::env::var("USERPROFILE"))
-                .map(|h| std::path::PathBuf::from(h).join(".pandora").join("packages").join("default").join("harnesses"))
+                .map(|h| {
+                    std::path::PathBuf::from(h)
+                        .join(".pandora")
+                        .join("packages")
+                        .join("default")
+                        .join("harnesses")
+                })
                 .unwrap_or_else(|_| std::path::PathBuf::from(".pandora/packages/default/harnesses"))
         })
 }
-
-
 
 /// Entry point — loads harnesses from local packages, seeding defaults on first run.
 pub fn register_all(sc: &mut ShadowCouncil) {

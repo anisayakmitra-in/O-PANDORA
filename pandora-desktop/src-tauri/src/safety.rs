@@ -14,7 +14,10 @@ pub fn validate_safe_name(value: &str, label: &str) -> Result<(), String> {
     if value.starts_with('.') {
         return Err(format!("{label} cannot start with '.'"));
     }
-    if value.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) {
+    if value
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+    {
         Ok(())
     } else {
         Err(format!(
@@ -65,60 +68,4 @@ pub fn resolve_rooted_path(root: &Path, input: &str) -> Result<PathBuf, String> 
     } else {
         Err(format!("Path escapes project root: {input}"))
     }
-}
-
-pub fn read_dir_entries(
-    dir: &Path,
-    root: &Path,
-    max_depth: usize,
-) -> Result<Vec<crate::FileEntry>, String> {
-    if max_depth == 0 {
-        return Ok(vec![]);
-    }
-
-    let root = canonicalize_existing(root)?;
-    let dir = canonicalize_existing(dir)?;
-    if !dir.starts_with(&root) {
-        return Err(format!("Path escapes project root: {}", dir.display()));
-    }
-
-    let mut entries = vec![];
-    if let Ok(read_dir) = std::fs::read_dir(&dir) {
-        for entry in read_dir.flatten() {
-            let path = entry.path();
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_default();
-            if name.starts_with('.') || name == "target" || name == "node_modules" {
-                continue;
-            }
-            let resolved = match canonicalize_existing(&path) {
-                Ok(path) => path,
-                Err(_) => continue,
-            };
-            if !resolved.starts_with(&root) {
-                continue;
-            }
-            let is_dir = resolved.is_dir();
-            entries.push(crate::FileEntry {
-                name,
-                path: resolved.to_string_lossy().to_string(),
-                is_dir,
-                children: if is_dir && max_depth > 1 {
-                    Some(read_dir_entries(&resolved, &root, max_depth - 1).unwrap_or_default())
-                } else {
-                    None
-                },
-            });
-        }
-    }
-    entries.sort_by(|a, b| {
-        if a.is_dir != b.is_dir {
-            b.is_dir.cmp(&a.is_dir)
-        } else {
-            a.name.cmp(&b.name)
-        }
-    });
-    Ok(entries)
 }

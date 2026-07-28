@@ -727,18 +727,27 @@ fn interactive_agent() {
     let project = detect_project_dir();
     println!("\n  O-PANDORA");
     if let Some(ref p) = project {
-        let pname = p.file_name().map(|n| n.to_string_lossy()).unwrap_or_else(|| std::borrow::Cow::Borrowed("?"));
+        let pname = p
+            .file_name()
+            .map(|n| n.to_string_lossy())
+            .unwrap_or_else(|| std::borrow::Cow::Borrowed("?"));
         println!("  {}  {}", pname, detect_git_branch(p));
     }
-    println!("  model: {}  (run /model to see available)", std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into()));
+    println!(
+        "  model: {}  (run /model to see available)",
+        std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into())
+    );
     println!("  mode: governed");
     println!();
 
     let mut runtime = pandora_orchestrator::PandoraRuntime::new();
-    let session_id = format!("interactive-{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs());
+    let session_id = format!(
+        "interactive-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+    );
 
     loop {
         let input = read_input("> ");
@@ -784,29 +793,27 @@ fn run_task(runtime: &mut pandora_orchestrator::PandoraRuntime, task: &str, _ses
         .enable_all()
         .build();
     match rt {
-        Ok(rt) => {
-            match rt.block_on(runtime.run(task, "general")) {
-                Ok(report) => {
-                    println!("  ✓ Done ({}ms)", report.duration_ms);
-                    if !report.output.is_empty() {
-                        let lines: Vec<&str> = report.output.lines().collect();
-                        if lines.len() > 20 {
-                            for line in lines.iter().take(20) {
-                                println!("  {}", line);
-                            }
-                            println!("  ... ({} more lines)", lines.len() - 20);
-                        } else {
-                            for line in &lines {
-                                println!("  {}", line);
-                            }
+        Ok(rt) => match rt.block_on(runtime.run(task, "general")) {
+            Ok(report) => {
+                println!("  ✓ Done ({}ms)", report.duration_ms);
+                if !report.output.is_empty() {
+                    let lines: Vec<&str> = report.output.lines().collect();
+                    if lines.len() > 20 {
+                        for line in lines.iter().take(20) {
+                            println!("  {}", line);
+                        }
+                        println!("  ... ({} more lines)", lines.len() - 20);
+                    } else {
+                        for line in &lines {
+                            println!("  {}", line);
                         }
                     }
                 }
-                Err(e) => {
-                    eprintln!("  × Error: {e}");
-                }
             }
-        }
+            Err(e) => {
+                eprintln!("  × Error: {e}");
+            }
+        },
         Err(e) => {
             eprintln!("  × Runtime error: {e}");
         }
@@ -818,10 +825,15 @@ fn detect_project_dir() -> Option<std::path::PathBuf> {
     let cwd = std::env::current_dir().ok()?;
     let mut path: std::path::PathBuf = cwd.clone();
     loop {
-        if path.join("Cargo.toml").exists() || path.join("package.json").exists() || path.join(".git").exists() {
+        if path.join("Cargo.toml").exists()
+            || path.join("package.json").exists()
+            || path.join(".git").exists()
+        {
             return Some(path);
         }
-        if !path.pop() { break; }
+        if !path.pop() {
+            break;
+        }
     }
     Some(cwd)
 }
@@ -846,7 +858,11 @@ enum SlashResult {
     Fallthrough(String),
 }
 
-fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::PandoraRuntime, _session_id: &str) -> SlashResult {
+fn handle_slash_command(
+    input: &str,
+    _runtime: &mut pandora_orchestrator::PandoraRuntime,
+    _session_id: &str,
+) -> SlashResult {
     let parts: Vec<&str> = input[1..].split_whitespace().collect();
     let cmd = parts.first().copied().unwrap_or("");
     let _rest = &input[1..];
@@ -880,7 +896,9 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
             SlashResult::Continue
         }
         "status" => {
-            let _ = std::process::Command::new("git").args(["status", "--short"]).status();
+            let _ = std::process::Command::new("git")
+                .args(["status", "--short"])
+                .status();
             SlashResult::Continue
         }
         "diff" => {
@@ -893,7 +911,8 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
                 println!("  Switching model to: {m}");
                 // TODO: wire to runtime model switching
             } else {
-                let current = std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into());
+                let current =
+                    std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into());
                 println!("  Current model: {current}");
                 println!("  Change with: /model <name>");
             }
@@ -917,7 +936,12 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
             } else {
                 println!("  Usage: /approve <id>");
                 // Show pending approvals
-                let store = pandora_types::approval_store::ApprovalStore::new(sessions_dir().parent().map(|p| p.join("approvals")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/approvals")));
+                let store = pandora_types::approval_store::ApprovalStore::new(
+                    sessions_dir()
+                        .parent()
+                        .map(|p| p.join("approvals"))
+                        .unwrap_or_else(|| std::path::PathBuf::from(".pandora/approvals")),
+                );
                 let pending = store.list_pending();
                 if pending.is_empty() {
                     println!("  No pending approvals.");
@@ -943,7 +967,9 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
             SlashResult::Continue
         }
         "changes" => {
-            let _ = std::process::Command::new("git").args(["diff", "HEAD"]).status();
+            let _ = std::process::Command::new("git")
+                .args(["diff", "HEAD"])
+                .status();
             SlashResult::Continue
         }
         "capabilities" => {
@@ -1006,7 +1032,12 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
             if parts.len() >= 3 {
                 let kind = parts[1];
                 let name = parts[2];
-                cmd_new(&["pandora".into(), "new".into(), kind.to_string(), name.to_string()]);
+                cmd_new(&[
+                    "pandora".into(),
+                    "new".into(),
+                    kind.to_string(),
+                    name.to_string(),
+                ]);
             } else {
                 println!("  Usage: /new gene <name>  or  /new harness <name>");
             }
@@ -1020,26 +1051,33 @@ fn handle_slash_command(input: &str, _runtime: &mut pandora_orchestrator::Pandor
             print!("\x1B[2J\x1B[1;1H");
             SlashResult::Continue
         }
-        "quit" | "exit" | "q" => {
-            SlashResult::Quit
-        }
-        _ => {
-            SlashResult::Fallthrough(input.to_string())
-        }
+        "quit" | "exit" | "q" => SlashResult::Quit,
+        _ => SlashResult::Fallthrough(input.to_string()),
     }
 }
 
-
 fn cmd_run(args: &[String]) {
-    let output_json = args.iter().any(|a| a == "--output" && args.windows(2).any(|w| w[0] == "--output" && w[1] == "json"));
+    let output_json = args.iter().any(|a| {
+        a == "--output"
+            && args
+                .windows(2)
+                .any(|w| w[0] == "--output" && w[1] == "json")
+    });
     let quiet = args.iter().any(|a| a == "--quiet" || a == "-q");
-    let task_args: Vec<&str> = args.iter().skip(2).filter(|a| !a.starts_with("--")).map(|s| s.as_str()).collect();
+    let task_args: Vec<&str> = args
+        .iter()
+        .skip(2)
+        .filter(|a| !a.starts_with("--"))
+        .map(|s| s.as_str())
+        .collect();
     if task_args.is_empty() {
         eprintln!("Usage: pandora run <task> [--output json] [--quiet]");
         process::exit(1);
     }
     let task: String = task_args.join(" ");
-    if !quiet && !output_json { println!("Task: {task}"); }
+    if !quiet && !output_json {
+        println!("Task: {task}");
+    }
     match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
@@ -1198,13 +1236,19 @@ fn cmd_keychain(args: &[String]) {
             let key = &args[3];
             let value = &args[4];
             // Store in ~/.pandora/credentials.enc (ponytail: env-var encrypted, not OS keychain yet)
-            let creds_dir = sessions_dir().parent().map(|p| p.join("credentials")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+            let creds_dir = sessions_dir()
+                .parent()
+                .map(|p| p.join("credentials"))
+                .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
             let _ = std::fs::create_dir_all(&creds_dir);
             let path = creds_dir.join(format!("{key}.enc"));
             // Simple base64 encoding for now (real encryption via ring would be better)
             let encoded = base64_encode(value.as_bytes());
             std::fs::write(&path, &encoded).expect("Failed to write credential");
-            println!("Stored: {key} -> {}", creds_dir.join(format!("{key}.enc")).display());
+            println!(
+                "Stored: {key} -> {}",
+                creds_dir.join(format!("{key}.enc")).display()
+            );
         }
         "get" => {
             if args.len() < 4 {
@@ -1212,7 +1256,10 @@ fn cmd_keychain(args: &[String]) {
                 return;
             }
             let key = &args[3];
-            let creds_dir = sessions_dir().parent().map(|p| p.join("credentials")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+            let creds_dir = sessions_dir()
+                .parent()
+                .map(|p| p.join("credentials"))
+                .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
             let path = creds_dir.join(format!("{key}.enc"));
             match std::fs::read_to_string(&path) {
                 Ok(encoded) => {
@@ -1263,7 +1310,11 @@ fn cmd_mutation(args: &[String]) {
                 let status = if c.applied { "✓" } else { " " };
                 println!(
                     "  [{}] {} — {} ({:.0}% confidence, {} failures)",
-                    status, c.id, c.description, c.confidence * 100.0, c.failure_count
+                    status,
+                    c.id,
+                    c.description,
+                    c.confidence * 100.0,
+                    c.failure_count
                 );
             }
         }
@@ -1322,20 +1373,57 @@ fn cmd_doctor(_args: &[String]) {
     // ── Security checks (Phase 7) ──
     println!("--- Security ---");
     let token_set = std::env::var("PANDORA_API_TOKEN").is_ok_and(|t| !t.is_empty());
-    println!("  API token set:       {}", if token_set { "YES" } else { "NO  (set PANDORA_API_TOKEN)" });
+    println!(
+        "  API token set:       {}",
+        if token_set {
+            "YES"
+        } else {
+            "NO  (set PANDORA_API_TOKEN)"
+        }
+    );
 
     let insecure = std::env::var("PANDORA_INSECURE").is_ok();
-    println!("  Insecure mode:       {}", if insecure { "YES (--insecure-plaintext)" } else { "NO" });
+    println!(
+        "  Insecure mode:       {}",
+        if insecure {
+            "YES (--insecure-plaintext)"
+        } else {
+            "NO"
+        }
+    );
 
-    let creds_dir = sessions_dir().parent().map(|p| p.join("credentials")).unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
-    let creds_exist = creds_dir.exists() && std::fs::read_dir(&creds_dir).map(|mut d| d.next().is_some()).unwrap_or(false);
-    println!("  Credentials stored:  {}", if creds_exist { "YES" } else { "NO" });
+    let creds_dir = sessions_dir()
+        .parent()
+        .map(|p| p.join("credentials"))
+        .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+    let creds_exist = creds_dir.exists()
+        && std::fs::read_dir(&creds_dir)
+            .map(|mut d| d.next().is_some())
+            .unwrap_or(false);
+    println!(
+        "  Credentials stored:  {}",
+        if creds_exist { "YES" } else { "NO" }
+    );
 
     let keychain_available = false; // OS keychain requires keyring-rs integration
-    println!("  Keychain available:  {}", if keychain_available { "YES" } else { "NO  (use file-based credentials)" });
+    println!(
+        "  Keychain available:  {}",
+        if keychain_available {
+            "YES"
+        } else {
+            "NO  (use file-based credentials)"
+        }
+    );
 
     let dev_mode = std::env::var("PANDORA_DEV_MODE").is_ok();
-    println!("  Dev mode:            {}", if dev_mode { "YES (PANDORA_DEV_MODE=1)" } else { "NO" });
+    println!(
+        "  Dev mode:            {}",
+        if dev_mode {
+            "YES (PANDORA_DEV_MODE=1)"
+        } else {
+            "NO"
+        }
+    );
 
     println!();
     println!("--- Environment ---");
@@ -2221,10 +2309,14 @@ fn cmd_setup(_args: &[String]) {
     // ── Step 0: Check for existing connections ──
     let cr = pandora_types::connection_manager::ConnectionRegistry::load();
     if !cr.connections.is_empty() {
-        println!("Step 0: Existing connections found ({} total)", cr.connections.len());
+        println!(
+            "Step 0: Existing connections found ({} total)",
+            cr.connections.len()
+        );
         for conn in &cr.connections {
             let healthy = cr.healthy().iter().any(|c| c.name == conn.name);
-            println!("  {} {} — {} ({})",
+            println!(
+                "  {} {} — {} ({})",
                 if healthy { "OK" } else { "?" },
                 conn.name,
                 conn.endpoint,
@@ -2307,7 +2399,8 @@ fn cmd_cron(args: &[String]) {
         return;
     }
 
-    let cron_dir = sessions_dir().parent()
+    let cron_dir = sessions_dir()
+        .parent()
         .map(|p| p.join("cron"))
         .unwrap_or_else(|| std::path::PathBuf::from(".pandora/cron"));
     let _ = std::fs::create_dir_all(&cron_dir);
@@ -2397,14 +2490,20 @@ fn cmd_cron(args: &[String]) {
                         let path = entry.path();
                         if path.extension().is_some_and(|e| e == "json") {
                             if let Ok(content) = std::fs::read_to_string(&path) {
-                                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                                if let Ok(json) =
+                                    serde_json::from_str::<serde_json::Value>(&content)
+                                {
                                     if json["enabled"].as_bool().unwrap_or(true) {
                                         let task = json["task"].as_str().unwrap_or("");
                                         let name = json["name"].as_str().unwrap_or("?");
                                         println!("[cron] Running: {name}");
                                         if task.starts_with("pandora ") {
                                             // Run pandora subcommand
-                                            let pandora_args: Vec<&str> = task.strip_prefix("pandora ").unwrap_or("").split_whitespace().collect();
+                                            let pandora_args: Vec<&str> = task
+                                                .strip_prefix("pandora ")
+                                                .unwrap_or("")
+                                                .split_whitespace()
+                                                .collect();
                                             if !pandora_args.is_empty() {
                                                 // ponytail: just note that it would run
                                                 println!("  -> pandora {}", pandora_args.join(" "));
@@ -2453,7 +2552,13 @@ fn cmd_notify(args: &[String]) {
     #[cfg(target_os = "macos")]
     {
         let _ = std::process::Command::new("osascript")
-            .args(["-e", &format!("display notification \"{}\" with title \"Pandora\"", message)])
+            .args([
+                "-e",
+                &format!(
+                    "display notification \"{}\" with title \"Pandora\"",
+                    message
+                ),
+            ])
             .output();
     }
     #[cfg(target_os = "windows")]
@@ -2462,12 +2567,25 @@ fn cmd_notify(args: &[String]) {
     }
 
     // Always log to file
-    let log_dir = sessions_dir().parent()
+    let log_dir = sessions_dir()
+        .parent()
         .map(|p| p.join("notifications.log"))
         .unwrap_or_else(|| std::path::PathBuf::from(".pandora/notifications.log"));
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&log_dir) {
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_dir)
+    {
         use std::io::Write;
-        let _ = writeln!(f, "{} | {}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(), message);
+        let _ = writeln!(
+            f,
+            "{} | {}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            message
+        );
     }
 
     println!("Notified: {message}");
@@ -3332,7 +3450,9 @@ fn cmd_connection(args: &[String]) {
                 eprintln!("Kinds: ollama, openai, openai-compatible, anthropic, gemini, openrouter, groq, together, deepseek, mistral, llamacpp, custom");
                 eprintln!();
                 eprintln!("Examples:");
-                eprintln!("  pandora connection add local ollama http://localhost:11434 --model llama3");
+                eprintln!(
+                    "  pandora connection add local ollama http://localhost:11434 --model llama3"
+                );
                 eprintln!("  pandora connection add openai openai https://api.openai.com --api-key sk-... --model gpt-4o");
                 eprintln!("  pandora connection add my-api custom https://my-api.example.com/v1 --model my-model --api-key sk-...");
                 return;
@@ -3360,11 +3480,15 @@ fn cmd_connection(args: &[String]) {
                 }
             };
             // Extract --model and --api-key flags
-            let model = args.iter().position(|a| a == "--model")
+            let model = args
+                .iter()
+                .position(|a| a == "--model")
                 .and_then(|i| args.get(i + 1))
                 .map(|s| s.as_str())
                 .unwrap_or("");
-            let api_key = args.iter().position(|a| a == "--api-key")
+            let api_key = args
+                .iter()
+                .position(|a| a == "--api-key")
                 .and_then(|i| args.get(i + 1))
                 .map(|s| s.as_str());
 

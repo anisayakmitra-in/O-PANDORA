@@ -123,15 +123,17 @@ export default function App() {
     } catch {}
   }
 
-  async function createNewSession() {
+  async function createNewSession(): Promise<SessionMeta | null> {
     const name = `Session ${sessions.length + 1}`
     try {
       const s = await invoke<SessionMeta>('create_session', { name })
       setActiveSession(s)
       setMessages([])
       setSessions(prev => [s, ...prev])
+      return s
     } catch (e: any) {
       console.error('Create session failed:', e)
+      return null
     }
   }
 
@@ -155,8 +157,8 @@ export default function App() {
     if (!text || running) return
     setInput('')
 
-    if (!activeSession) await createNewSession()
-    if (!activeSession) return
+    const session = activeSession ?? await createNewSession()
+    if (!session) return
 
     setMessages(prev => [...prev, {
       id: crypto.randomUUID(),
@@ -187,20 +189,21 @@ export default function App() {
   }
 
   return (
-    <div style={{
+    <div className="app-shell" style={{
       display: 'flex', height: '100vh',
       background: 'linear-gradient(135deg, #0a0a14 0%, #0d0d20 40%, #0f0a1e 100%)',
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
       {/* Sidebar */}
-      <div style={{
+      <div className="sidebar" style={{
         width: 240, display: 'flex', flexDirection: 'column',
         padding: '12px 10px', margin: 6, borderRadius: 14,
         background: 'rgba(15,15,28,0.75)', backdropFilter: 'blur(20px)',
         border: '1px solid rgba(255,255,255,0.06)',
       }}>
-        <div style={{ fontSize: 17, fontWeight: 700, color: '#a78bfa', marginBottom: 16, padding: '0 8px' }}>
-          ⚡ Pandora
+        <div className="sidebar-brand" style={{ fontSize: 17, fontWeight: 700, color: '#a78bfa', marginBottom: 16, padding: '0 8px' }}>
+          <img src="/pandora-logo.png" alt="" className="brand-mark" />
+          <span>Pandora</span>
         </div>
 
         <button onClick={createNewSession} style={{
@@ -261,7 +264,7 @@ export default function App() {
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', margin: '6px 6px 6px 0' }}>
+      <div className="main" style={{ flex: 1, display: 'flex', flexDirection: 'column', margin: '6px 6px 6px 0' }}>
         <div style={{
           padding: '6px 14px', borderRadius: '14px 14px 0 0',
           background: 'rgba(20,20,38,0.6)', border: '1px solid rgba(255,255,255,0.06)',
@@ -275,10 +278,10 @@ export default function App() {
           {running && <span style={{ color: '#eab308' }}>● running</span>}
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'rgba(10,10,20,0.45)' }}>
+        <div className="content" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'rgba(10,10,20,0.45)' }}>
           {tab === 'chat' ? (
             <>
-              <div ref={chatRef} style={{
+              <div ref={chatRef} className="messages" style={{
                 flex: 1, overflowY: 'auto', padding: '16px 20px',
                 display: 'flex', flexDirection: 'column', gap: 10,
               }}>
@@ -347,7 +350,7 @@ export default function App() {
                 )}
               </div>
 
-              <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 8 }}>
+              <div className="input-bar" style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 8 }}>
                 <input
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -371,7 +374,7 @@ export default function App() {
               </div>
             </>
           ) : tab === 'sessions' ? (
-            <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+            <div className="panel" style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
                 Sessions
               </h3>
@@ -394,7 +397,7 @@ export default function App() {
               )}
             </div>
           ) : (
-            <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+            <div className="panel" style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
                 Models & Providers
               </h3>

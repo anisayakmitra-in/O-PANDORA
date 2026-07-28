@@ -48,7 +48,9 @@ pub struct GepaObserver {
 impl GepaObserver {
     pub fn new(root: PathBuf) -> Self {
         std::fs::create_dir_all(&root).ok();
-        Self { candidates_dir: root }
+        Self {
+            candidates_dir: root,
+        }
     }
 
     pub fn default_dir() -> PathBuf {
@@ -76,7 +78,8 @@ impl GepaObserver {
         }
 
         // Cluster failures by gene/harness
-        let mut gene_failures: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut gene_failures: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         for d in &failures {
             if let Some(ref gene) = d.selected_gene {
                 *gene_failures.entry(gene.clone()).or_insert(0) += 1;
@@ -87,7 +90,11 @@ impl GepaObserver {
         for (gene_id, count) in &gene_failures {
             if *count >= 2 {
                 let candidate = MutationCandidate {
-                    id: format!("mutation-{}-{}", gene_id, chrono::Utc::now().timestamp_millis()),
+                    id: format!(
+                        "mutation-{}-{}",
+                        gene_id,
+                        chrono::Utc::now().timestamp_millis()
+                    ),
                     target_kind: MutationTarget::Gene,
                     target_id: gene_id.clone(),
                     description: format!("Gene '{}' failed {} times", gene_id, count),

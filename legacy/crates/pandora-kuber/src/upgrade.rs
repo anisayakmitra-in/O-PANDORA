@@ -7,9 +7,12 @@ use std::path::{Path, PathBuf};
 
 /// Get the backup directory for a package.
 fn backup_dir(package_id: &str) -> PathBuf {
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-    PathBuf::from(home)
-        .join(".pandora")
+    let home = std::env::var_os("PANDORA_HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .or_else(|| std::env::var_os("HOME"))
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+    home.join(".pandora")
         .join("backups")
         .join(package_id.replace('/', "__"))
 }
@@ -217,8 +220,9 @@ mod tests {
         std::fs::create_dir_all(&install_dir).unwrap();
         std::fs::write(install_dir.join("file.txt"), "version1").unwrap();
 
-        // Backup
+        // Backup in an isolated test data directory.
         let pkg_id = "test-rollback-pkg";
+        std::env::set_var("PANDORA_HOME", &dir);
         let bak = backup_package(pkg_id, &install_dir).unwrap();
         assert!(bak.exists());
 
@@ -238,7 +242,7 @@ mod tests {
 
         // Cleanup
         std::fs::remove_dir_all(dir).unwrap();
-        std::fs::remove_dir_all(backup_dir(pkg_id)).ok();
+        std::env::remove_var("PANDORA_HOME");
     }
 
     #[test]
