@@ -209,6 +209,104 @@ async fn scheduler_resume(job_id: String) -> Result<String, String> {
 }
 
 
+// ── Phase F: Advanced Commands ──
+
+#[derive(Serialize)]
+struct PipelineNode {
+    id: String, label: String, kind: String, status: String,
+    children: Vec<String>, metadata: Option<serde_json::Value>,
+}
+
+#[tauri::command]
+async fn architecture_graph() -> Result<Vec<PipelineNode>, String> {
+    Ok(vec![
+        PipelineNode { id: "parliament".into(), label: "Parliament".into(), kind: "governance".into(), status: "active".into(),
+            children: vec!["shadow-council".into()], metadata: Some(serde_json::json!({"verdicts_today": 12, "policies": 5})) },
+        PipelineNode { id: "shadow-council".into(), label: "Shadow Council".into(), kind: "routing".into(), status: "active".into(),
+            children: vec!["harness-coding".into(), "harness-general".into()], metadata: Some(serde_json::json!({"capabilities": ["filesystem","shell","network","codegen"]})) },
+        PipelineNode { id: "harness-coding".into(), label: "coding Harness".into(), kind: "domain".into(), status: "enabled".into(),
+            children: vec!["gene-shell".into(), "gene-fs".into(), "gene-review".into()], metadata: Some(serde_json::json!({"type": "DomainHarness"})) },
+        PipelineNode { id: "harness-general".into(), label: "general Harness".into(), kind: "source".into(), status: "enabled".into(),
+            children: vec!["gene-search".into(), "gene-summarize".into()], metadata: Some(serde_json::json!({"type": "SourceHarness"})) },
+        PipelineNode { id: "gene-shell".into(), label: "shell Gene".into(), kind: "gene".into(), status: "active".into(),
+            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["shell"], "trust": "verified"})) },
+        PipelineNode { id: "gene-fs".into(), label: "filesystem Gene".into(), kind: "gene".into(), status: "active".into(),
+            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["filesystem read/write"], "trust": "verified"})) },
+        PipelineNode { id: "gene-review".into(), label: "code-review Gene".into(), kind: "gene".into(), status: "active".into(),
+            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["filesystem read"], "trust": "verified"})) },
+        PipelineNode { id: "gene-search".into(), label: "web-search Gene".into(), kind: "gene".into(), status: "active".into(),
+            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["network"], "trust": "verified"})) },
+        PipelineNode { id: "gene-summarize".into(), label: "summarize Gene".into(), kind: "gene".into(), status: "active".into(),
+            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": [], "trust": "verified"})) },
+        PipelineNode { id: "provider".into(), label: "Provider".into(), kind: "connection".into(), status: "connected".into(),
+            children: vec!["memory".into(), "telemetry".into()], metadata: Some(serde_json::json!({"model": "auto", "latency_ms": 45})) },
+        PipelineNode { id: "memory".into(), label: "Memory".into(), kind: "storage".into(), status: "active".into(),
+            children: vec![], metadata: Some(serde_json::json!({"entries": 42, "size_kb": 128})) },
+        PipelineNode { id: "telemetry".into(), label: "Telemetry".into(), kind: "observability".into(), status: "active".into(),
+            children: vec![], metadata: Some(serde_json::json!({"executions_today": 7})) },
+    ])
+}
+
+// ── Multi-Agent View ──
+
+#[derive(Serialize)]
+struct WorkerStatus {
+    id: String, task: String, harness: String, status: String,
+    progress: u8, elapsed_ms: u64, model: String,
+}
+
+#[tauri::command]
+async fn multi_agent_status() -> Result<Vec<WorkerStatus>, String> {
+    Ok(vec![
+        WorkerStatus { id: "main-1".into(), task: "Fix parser bug".into(), harness: "coding".into(), status: "completed".into(), progress: 100, elapsed_ms: 2340, model: "auto".into() },
+        WorkerStatus { id: "sub-1".into(), task: "Read parser source".into(), harness: "general".into(), status: "completed".into(), progress: 100, elapsed_ms: 120, model: "auto".into() },
+        WorkerStatus { id: "sub-2".into(), task: "Run failing test".into(), harness: "coding".into(), status: "completed".into(), progress: 100, elapsed_ms: 340, model: "auto".into() },
+        WorkerStatus { id: "sub-3".into(), task: "Generate fix".into(), harness: "coding".into(), status: "running".into(), progress: 72, elapsed_ms: 890, model: "auto".into() },
+        WorkerStatus { id: "sub-4".into(), task: "Write test".into(), harness: "coding".into(), status: "waiting".into(), progress: 0, elapsed_ms: 0, model: "auto".into() },
+    ])
+}
+
+// ── Notifications ──
+
+#[derive(Serialize)]
+struct NotificationPrefs {
+    task_complete: bool, approval_required: bool, task_failed: bool,
+    fleet_disconnect: bool, package_update: bool,
+}
+
+#[tauri::command]
+async fn notification_prefs() -> Result<NotificationPrefs, String> {
+    Ok(NotificationPrefs {
+        task_complete: true, approval_required: true, task_failed: true,
+        fleet_disconnect: false, package_update: true,
+    })
+}
+
+#[tauri::command]
+async fn send_test_notification(message: String) -> Result<String, String> {
+    Ok(format!("Notification sent: {message}"))
+}
+
+// ── Updates ──
+
+#[derive(Serialize)]
+struct UpdateStatus {
+    current_version: String, latest_version: String,
+    update_available: bool, release_notes: String, download_url: String,
+}
+
+#[tauri::command]
+async fn check_updates() -> Result<UpdateStatus, String> {
+    Ok(UpdateStatus {
+        current_version: env!("CARGO_PKG_VERSION").into(),
+        latest_version: "0.5.1".into(),
+        update_available: false,
+        release_notes: "Phase F: Architecture graph, multi-agent, notifications".into(),
+        download_url: "https://github.com/anisayakmitra-in/O-PANDORA/releases".into(),
+    })
+}
+
+
 // ── Main ──
 
 fn main() {
@@ -230,6 +328,7 @@ fn main() {
             create_session, list_sessions, resume_session,
             send_message, list_models, switch_model, health,
             palace_list, palace_install, palace_search, fleet_nodes, fleet_run, scheduler_list, scheduler_add, scheduler_pause, scheduler_resume,
+            architecture_graph, multi_agent_status, notification_prefs, send_test_notification, check_updates,
         ])
         .run(tauri::generate_context!())
         .expect("Pandora Desktop failed to start");
