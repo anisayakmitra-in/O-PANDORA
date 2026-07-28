@@ -1,139 +1,131 @@
-# Pandora
+# O-PANDORA
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.2.0)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.0)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-A governed execution runtime for AI agents. Think of it as the
-operating system your agents run on — it decides what they can do,
-records everything they did, and lets you swap parts in and out
-without rewriting the whole thing.
+An open-source autonomous AI development environment with governed, inspectable execution.
 
-## What it does
+**[Screenshot](#)**
 
-- **Runs tasks** through a pipeline of harnesses and genes. You say
-  "build a REST API" and Pandora figures out which tools to use.
-- **Keeps a paper trail.** Every decision and tool call is logged
-  in a tamper-evident chain. You can replay, inspect, and explain
-  any execution.
-- **Enforces rules.** Parliament checks every action before it
-  happens. You decide what's allowed and what needs your approval.
-- **Lets you swap parts.** Don't like how planning works? Install
-  a different harness from the registry. Your genes and providers
-  stay the same.
-- **Runs anywhere.** Local Ollama, OpenAI, Anthropic, or your own
-  custom endpoint — Pandora talks to them all the same way.
-
-## Install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | sh
-```
-
-Or build from source:
-
-```bash
-git clone https://github.com/anisayakmitra-in/O-PANDORA.git
-cd O-PANDORA
-cargo build --release
-```
-
-Then set it up:
-
-```bash
-pandora setup
-```
-
-## Quick start
+## Quick Start
 
 ```bash
 # Clone and build
 git clone https://github.com/anisayakmitra-in/O-PANDORA.git
 cd O-PANDORA
-cargo build --release
+cargo build --release -p pandora
 
-# Launch interactive agent
-./target/release/pandora
+# Start the desktop app
+cd pandora-desktop
+npm install
+npx tauri dev
 
-> inspect this repository
-> run the tests
+# Or use the headless CLI
+cargo run -- run "Fix the failing test in src/parser.rs"
 ```
 
-For one-off commands:
+## What Makes Pandora Different
+
+**You see what it does.** Every execution is recorded in a tamper-evident chain. Inspect any decision, replay any session, and audit any change.
+
+**You stay in control.** Parliament governance checks every action before it happens. Approve risky operations. Deny what you don't trust.
+
+**You can swap anything.** Don't like how planning works? Install a different Harness from the Palace marketplace. Your Genes and providers stay the same.
+
+**It runs anywhere.** Local Ollama, OpenAI, Anthropic, custom endpoints — Pandora talks to them all the same way.
+
+## Architecture
+
+Pandora Desktop is the primary interface. The same runtime powers the CLI, headless server mode, and future thin clients.
+
+```
+Pandora Desktop (Tauri + React)
+        ↓
+Application Services (pandora-api)
+        ↓
+Pandora Runtime
+   ├── Parliament (governance)
+   ├── Shadow Council (routing)
+   ├── Harnesses (execution domains)
+   ├── Genes (capabilities)
+   ├── Providers (model connections)
+   ├── Memory (context persistence)
+   ├── Palace (package registry)
+   └── Fleet (multi-node workers)
+```
+
+## Workspace
+
+11 crates in the Cargo workspace:
+
+| Crate | Purpose |
+|-------|---------|
+| `pandora-types` | Shared types, traits, error definitions |
+| `pandora-services` | Service implementations |
+| `pandora-orchestrator` | Execution orchestration, agentic loop |
+| `pandora-shadow-council` | Capability routing, harness/gene registry |
+| `pandora-genes` | Gene implementations |
+| `pandora-harnesses` | Harness implementations |
+| `pandora-kuber` | Package management, Palace |
+| `pandora-fleet` | Multi-node worker swarm |
+| `pandora-api` | HTTP API + desktop application services |
+| `pandora` | CLI binary (headless/development) |
+| `pandora-desktop` | Native desktop app (Tauri) |
+
+## Install
+
+### Desktop App
 
 ```bash
-pandora run "explain this repository"
+cd pandora-desktop
+npm install
+npx tauri dev      # development
+npx tauri build    # production build
+```
 
-# Create a custom gene
-pandora new gene my-tool
+### CLI (Headless)
 
-# See what's installed
-pandora harness list
-pandora genes list
+```bash
+cargo install --git https://github.com/anisayakmitra-in/O-PANDORA.git
 
-# Health check
+# Run a task
+pandora run "Audit dependencies for vulnerabilities"
+
+# Start the API server
+pandora serve
+
+# Check system health
 pandora doctor
 ```
 
-## How it fits together
+## Setup
 
-```
-You → pandora run "task"
-       │
-       ▼
-  Parliament checks — should this run?
-       │
-       ▼
-  Shadow Council — which harness handles this?
-       │
-       ▼
-  Harness — picks genes, sets workflow
-       │
-       ▼
-  Agentic loop — LLM calls genes as tools
-       │
-       ▼
-  Constitutional floor — logs everything
-       │
-       ▼
-  Result → Decision log → Replay available
-```
-
-## Concepts
-
-**Gene** — A single tool. Reads files, runs shell commands,
-searches the web. You can write your own in 5 minutes.
-
-**Harness** — A collection of genes, policies, and workflows
-for a domain. Coding harness, security harness, design harness.
-
-**Parliament** — The governance layer. Every action goes through
-it. It can allow, deny, require approval, or modify the plan.
-
-**Shadow Council** — Routes your task to the right harness.
-You say "scan for vulnerabilities" and it picks the security
-harness automatically.
-
-**K-O Palace** — The package registry. Install genes and
-harnesses created by others. Publish your own.
-
-## Provider support
-
-| Provider | How to connect |
-|----------|---------------|
-| Ollama | `pandora connection add local ollama http://localhost:11434 --model llama3` |
-| OpenAI | `pandora connection add openai openai https://api.openai.com --api-key sk-...` |
-| Any OpenCompatible | `pandora connection add my-api custom https://... --model ... --api-key ...` |
-
-Full list: Ollama, OpenAI, Anthropic, Gemini, OpenRouter, Groq,
-Together, DeepSeek, Mistral, Llama.cpp, and any custom endpoint.
-
-## Coming from another agent?
+First run walks you through:
+1. Open a project
+2. Configure a model provider
+3. Review permissions
+4. Start your first task
 
 ```bash
-pandora import hermes      # imports from Hermes
-pandora import claude-code  # imports from Claude Code
-pandora import opencode     # imports from OpenCode
+pandora setup
+```
+
+## Development
+
+```bash
+# All gates
+cargo fmt --all -- --check
+cargo check --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo build --release -p pandora
+
+# Desktop only
+cd pandora-desktop
+cargo check -p pandora-desktop
+npx tauri build
 ```
 
 ## License
 
-Apache 2.0. All free. No strings attached.
+Apache 2.0 — see [LICENSE](LICENSE)
