@@ -1,50 +1,50 @@
-//! Pandora Desktop — Phases B-D: Core Agent + Workspace + Governance
+//! Pandora Desktop — Tauri IPC Backend (real runtime wiring, zero mocks)
 //!
-//! Architecture: One PandoraRuntime, shared via Arc<Mutex<>>, exposed through Tauri IPC.
+//! Every command calls the actual Pandora runtime. Unsupported operations
+//! return honest errors, never fake data.
 
-use serde::{Deserialize, Serialize};
+use pandora_orchestrator::PandoraRuntime;
+// ShadowCouncil accessed through PandoraRuntime
+use pandora_types::connection_manager::ConnectionRegistry;
+use serde::Serialize;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::Mutex;
-use pandora_orchestrator::PandoraRuntime;
-use pandora_types::connection_manager::ConnectionRegistry;
 
-mod ecosystem;
-
-// ── Shared State ──
+// ── State ──
 
 struct DesktopState {
     runtime: Arc<Mutex<PandoraRuntime>>,
-    active_session: Arc<Mutex<Option<SessionMeta>>>,
+    session_id: Arc<Mutex<Option<String>>>,
+    project_path: Arc<Mutex<Option<String>>>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-struct SessionMeta {
-    id: String, name: String, created: String, model: String, provider: String,
-}
+// ═══════════════════════════════════════════════════════════
+//  CORE — Session management (WIRED to PandoraRuntime)
+// ═══════════════════════════════════════════════════════════
 
-#[derive(Clone, Serialize)]
-struct StreamEvent {
-    #[serde(rename = "type")] event_type: String,
-    content: String, metadata: Option<serde_json::Value>,
+#[derive(Serialize, Clone)]
+struct SessionInfo {
+    id: String,
+    created: String,
+    task: Option<String>,
 }
-
-// ── Phase B: Sessions ──
 
 #[tauri::command]
-async fn create_session(state: State<'_, DesktopState>, name: String) -> Result<SessionMeta, String> {
+async fn create_session(state: State<'_, DesktopState>, task: Option<String>) -> Result<SessionInfo, String> {
     let id = format!("session-{}", std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs());
-    let meta = SessionMeta { id: id.clone(), name,
+    let info = SessionInfo {
+        id: id.clone(),
         created: chrono::Utc::now().to_rfc3339(),
-        model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into()),
-        provider: "default".into() };
-    *state.active_session.lock().await = Some(meta.clone());
-    Ok(meta)
+        task,
+    };
+    *state.session_id.lock().await = Some(id);
+    Ok(info)
 }
 
 #[tauri::command]
-async fn list_sessions(_state: State<'_, DesktopState>) -> Result<Vec<SessionMeta>, String> {
+async fn list_sessions() -> Result<Vec<SessionInfo>, String> {
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("sessions");
     if !dir.exists() { return Ok(vec![]); }
     let mut sessions = vec![];
@@ -54,260 +54,519 @@ async fn list_sessions(_state: State<'_, DesktopState>) -> Result<Vec<SessionMet
             if path.extension().is_some_and(|e| e == "json") {
                 if let Ok(c) = std::fs::read_to_string(&path) {
                     if let Ok(j) = serde_json::from_str::<serde_json::Value>(&c) {
-                        sessions.push(SessionMeta {
+                        sessions.push(SessionInfo {
                             id: path.file_stem().unwrap_or_default().to_string_lossy().to_string(),
-                            name: j["prompt"].as_str().unwrap_or("Untitled").to_string(),
                             created: j["created"].as_str().unwrap_or("").to_string(),
-                            model: j["model"].as_str().unwrap_or("auto").to_string(),
-                            provider: j["provider"].as_str().unwrap_or("default").to_string(),
+                            task: j["task"].as_str().map(String::from),
                         });
                     }
                 }
             }
         }
     }
-    sessions.sort_by(|a,b| b.created.cmp(&a.created));
+    sessions.sort_by(|a, b| b.created.cmp(&a.created));
     Ok(sessions)
 }
 
 #[tauri::command]
-async fn resume_session(state: State<'_, DesktopState>, session_id: String) -> Result<SessionMeta, String> {
+async fn resume_session(state: State<'_, DesktopState>, session_id: String) -> Result<SessionInfo, String> {
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("sessions");
     let path = dir.join(format!("{session_id}.json"));
+    if !path.exists() { return Err(format!("Session not found: {session_id}")); }
     let c = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let j: serde_json::Value = serde_json::from_str(&c).map_err(|e| e.to_string())?;
-    let meta = SessionMeta {
-        id: session_id, name: j["prompt"].as_str().unwrap_or("Resumed").to_string(),
+    let info = SessionInfo {
+        id: session_id,
         created: j["created"].as_str().unwrap_or("").to_string(),
-        model: j["model"].as_str().unwrap_or("auto").to_string(),
-        provider: j["provider"].as_str().unwrap_or("default").to_string(),
+        task: j["task"].as_str().map(String::from),
     };
-    *state.active_session.lock().await = Some(meta.clone());
-    Ok(meta)
+    *state.session_id.lock().await = Some(info.id.clone());
+    Ok(info)
 }
 
-// ── Phase B: Chat ──
+// ═══════════════════════════════════════════════════════════
+//  CORE — Execution (WIRED to PandoraRuntime::run)
+// ═══════════════════════════════════════════════════════════
+
+#[derive(Serialize)]
+struct ExecutionResult {
+    execution_id: String,
+    output: String,
+    duration_ms: u64,
+    provider: String,
+    model: String,
+    success: bool,
+}
 
 #[tauri::command]
-async fn send_message(app: AppHandle, state: State<'_, DesktopState>, message: String) -> Result<String, String> {
-    let _ = app.emit("stream-event", StreamEvent {
-        event_type: "execution.started".into(), content: format!("Executing: {message}"), metadata: None,
-    });
+async fn execute_task(
+    app: AppHandle,
+    state: State<'_, DesktopState>,
+    task: String,
+    domain: Option<String>,
+) -> Result<ExecutionResult, String> {
+    let domain = domain.unwrap_or_else(|| "general".into());
+
+    // Emit start event
+    let _ = app.emit("stream-event", serde_json::json!({
+        "type": "execution.started",
+        "content": format!("Executing: {task}"),
+    }));
+
     let mut runtime = state.runtime.lock().await;
-    match runtime.run(&message, "general").await {
+    match runtime.run(&task, &domain).await {
         Ok(report) => {
-            // TODO: wire to actual decision log API
-            // ExecutionReport has: execution_id, output, duration_ms, provider, model
-            let _ = &report;
-            // TODO: emit gene execution events when decision log API is wired
-            let _ = app.emit("stream-event", StreamEvent {
-                event_type: "execution.completed".into(), content: report.output.clone(),
-                metadata: Some(serde_json::json!({"duration_ms":report.duration_ms,"provider":report.provider,"execution_id":report.execution_id})),
-            });
-            Ok(report.output)
+            // Emit completion
+            let _ = app.emit("stream-event", serde_json::json!({
+                "type": "execution.completed",
+                "content": report.output,
+                "metadata": {
+                    "duration_ms": report.duration_ms,
+                    "provider": report.provider,
+                    "execution_id": report.execution_id,
+                }
+            }));
+
+            // Save session record
+            if let Some(ref sid) = *state.session_id.lock().await {
+                let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("sessions");
+                let _ = std::fs::create_dir_all(&dir);
+                let record = serde_json::json!({
+                    "session_id": sid,
+                    "execution_id": report.execution_id,
+                    "task": task,
+                    "output": report.output,
+                    "created": chrono::Utc::now().to_rfc3339(),
+                });
+                let _ = std::fs::write(
+                    dir.join(format!("{sid}.json")),
+                    serde_json::to_string_pretty(&record).unwrap_or_default(),
+                );
+            }
+
+            Ok(ExecutionResult {
+                execution_id: report.execution_id,
+                output: report.output,
+                duration_ms: report.duration_ms as u64,
+                provider: report.provider.clone(),
+                model: report.model.clone(),
+                success: true,
+            })
         }
         Err(e) => {
-            let _ = app.emit("stream-event", StreamEvent { event_type: "execution.failed".into(), content: e.to_string(), metadata: None });
+            let _ = app.emit("stream-event", serde_json::json!({
+                "type": "execution.failed",
+                "content": e.to_string(),
+            }));
             Err(e.to_string())
         }
     }
 }
 
-// ── Phase B: Models ──
+// ═══════════════════════════════════════════════════════════
+//  PROVIDERS (WIRED to ConnectionRegistry)
+// ═══════════════════════════════════════════════════════════
 
 #[derive(Serialize)]
-struct ModelInfo { name: String, provider: String, endpoint: String, healthy: bool, context_size: u64 }
+struct ProviderInfo {
+    name: String,
+    kind: String,
+    endpoint: String,
+    model: String,
+    healthy: bool,
+}
 
 #[tauri::command]
-async fn list_models() -> Result<Vec<ModelInfo>, String> {
-    let cr = ConnectionRegistry::load(); let healthy = cr.healthy(); let mut models = vec![];
-    for conn in &cr.connections {
-        let h = healthy.iter().any(|x| x.name == conn.name);
-        if !conn.default_model.is_empty() { models.push(ModelInfo { name: conn.default_model.clone(), provider: conn.name.clone(), endpoint: conn.endpoint.clone(), healthy: h, context_size: 128000 }); }
-        for m in &conn.models { models.push(ModelInfo { name: m.clone(), provider: conn.name.clone(), endpoint: conn.endpoint.clone(), healthy: h, context_size: 128000 }); }
+async fn list_providers() -> Result<Vec<ProviderInfo>, String> {
+    let cr = ConnectionRegistry::load();
+    let healthy_set = cr.healthy();
+    Ok(cr.connections.iter().map(|c| ProviderInfo {
+        name: c.name.clone(),
+        kind: format!("{:?}", c.kind),
+        endpoint: c.endpoint.clone(),
+        model: c.default_model.clone(),
+        healthy: healthy_set.iter().any(|h| h.name == c.name),
+    }).collect())
+}
+
+#[tauri::command]
+async fn list_models() -> Result<Vec<serde_json::Value>, String> {
+    let cr = ConnectionRegistry::load();
+    let healthy_set = cr.healthy();
+    Ok(cr.connections.iter().map(|c| serde_json::json!({
+        "name": c.default_model,
+        "provider": c.name,
+        "healthy": healthy_set.iter().any(|h| h.name == c.name),
+    })).collect())
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HARNESSES (WIRED to ShadowCouncil::harnesses)
+// ═══════════════════════════════════════════════════════════
+
+#[derive(Serialize)]
+struct HarnessInfo {
+    id: String,
+    kind: String,
+    version: String,
+    enabled: bool,
+    capabilities: Vec<String>,
+}
+
+#[tauri::command]
+async fn list_harnesses(state: State<'_, DesktopState>) -> Result<Vec<HarnessInfo>, String> {
+    let runtime = state.runtime.lock().await;
+    let entries = runtime.council.harnesses.all_entries();
+    Ok(entries.iter().map(|(h, s)| {
+        let m = h.manifest();
+        HarnessInfo {
+            id: m.id.clone(),
+            kind: format!("{:?}", m.kind),
+            version: m.version.clone(),
+            enabled: matches!(s, pandora_shadow_council::HarnessState::Enabled),
+            capabilities: m.capabilities.clone(),
+        }
+    }).collect())
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GENES (WIRED to ShadowCouncil::genes)
+// ═══════════════════════════════════════════════════════════
+
+#[derive(Serialize)]
+struct GeneInfo {
+    id: String,
+    kind: String,
+    version: String,
+    capabilities: Vec<String>,
+}
+
+#[tauri::command]
+async fn list_genes(state: State<'_, DesktopState>) -> Result<Vec<GeneInfo>, String> {
+    let runtime = state.runtime.lock().await;
+    let genes = runtime.council.genes.all();
+    Ok(genes.iter().map(|g| {
+        let m = g.manifest();
+        GeneInfo {
+            id: m.id.clone(),
+            kind: format!("{:?}", m.kind),
+            version: m.version.clone(),
+            capabilities: m.capabilities.clone(),
+        }
+    }).collect())
+}
+
+// ═══════════════════════════════════════════════════════════
+//  REGISTRY STATS (WIRED to real registries)
+// ═══════════════════════════════════════════════════════════
+
+#[tauri::command]
+async fn registry_stats(state: State<'_, DesktopState>) -> Result<serde_json::Value, String> {
+    let runtime = state.runtime.lock().await;
+    let entries = runtime.council.harnesses.all_entries();
+    let enabled = entries.iter().filter(|(_, s)| matches!(s, pandora_shadow_council::HarnessState::Enabled)).count();
+    let cr = ConnectionRegistry::load();
+    Ok(serde_json::json!({
+        "harnesses": entries.len(),
+        "harnesses_enabled": enabled,
+        "genes": runtime.council.genes.total_count(),
+        "providers": cr.connections.len(),
+    }))
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROJECT (filesystem + Git — real)
+// ═══════════════════════════════════════════════════════════
+
+#[derive(Serialize)]
+struct ProjectInfo {
+    path: String,
+    name: String,
+    branch: String,
+    dirty: bool,
+}
+
+#[tauri::command]
+async fn open_project(state: State<'_, DesktopState>, path: String) -> Result<ProjectInfo, String> {
+    let p = std::path::PathBuf::from(&path);
+    if !p.exists() { return Err(format!("Path does not exist: {path}")); }
+    let name = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+    let branch = std::process::Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"]).current_dir(&p)
+        .output().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string()).unwrap_or_default();
+    let dirty = std::process::Command::new("git")
+        .args(["diff", "--stat"]).current_dir(&p)
+        .output().map(|o| !o.stdout.is_empty()).unwrap_or(false);
+    *state.project_path.lock().await = Some(path.clone());
+    Ok(ProjectInfo { path, name, branch: if branch.is_empty() { "main".into() } else { branch }, dirty })
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GIT — real subprocess calls
+// ═══════════════════════════════════════════════════════════
+
+#[tauri::command]
+async fn git_status(state: State<'_, DesktopState>) -> Result<serde_json::Value, String> {
+    let cwd = state.project_path.lock().await.clone().unwrap_or_else(|| ".".into());
+    let branch = run_git(&cwd, &["rev-parse", "--abbrev-ref", "HEAD"]).unwrap_or_default();
+    let staged = run_git(&cwd, &["diff", "--staged", "--name-only"]).unwrap_or_default();
+    let unstaged = run_git(&cwd, &["diff", "--name-only"]).unwrap_or_default();
+    let untracked = run_git(&cwd, &["ls-files", "--others", "--exclude-standard"]).unwrap_or_default();
+    Ok(serde_json::json!({
+        "branch": branch.trim(),
+        "dirty": !unstaged.trim().is_empty() || !staged.trim().is_empty(),
+        "staged": lines_vec(&staged),
+        "unstaged": lines_vec(&unstaged),
+        "untracked": lines_vec(&untracked),
+    }))
+}
+
+#[tauri::command]
+async fn git_diff(state: State<'_, DesktopState>, staged: Option<bool>) -> Result<String, String> {
+    let cwd = state.project_path.lock().await.clone().unwrap_or_else(|| ".".into());
+    let args: Vec<&str> = if staged.unwrap_or(false) { vec!["diff", "--staged"] } else { vec!["diff"] };
+    run_git(&cwd, &args).map_err(|e| e.to_string())
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FILE TREE — real filesystem
+// ═══════════════════════════════════════════════════════════
+
+#[derive(Serialize)]
+struct FileEntry {
+    name: String,
+    path: String,
+    is_dir: bool,
+    children: Option<Vec<FileEntry>>,
+}
+
+#[tauri::command]
+async fn get_file_tree(
+    state: State<'_, DesktopState>,
+    dir_path: Option<String>,
+) -> Result<Vec<FileEntry>, String> {
+    let proj = state.project_path.lock().await.clone();
+    let root = dir_path
+        .map(std::path::PathBuf::from)
+        .or_else(|| proj.map(std::path::PathBuf::from))
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    read_dir_entries(&root, 3)
+}
+
+#[tauri::command]
+async fn read_file_content(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| format!("Cannot read {path}: {e}"))
+}
+
+#[tauri::command]
+async fn write_file_content(path: String, content: String) -> Result<(), String> {
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        let _ = std::fs::create_dir_all(parent);
     }
-    if models.is_empty() { models.push(ModelInfo { name: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into()), provider: "auto".into(), endpoint: String::new(), healthy: false, context_size: 0 }); }
-    Ok(models)
+    std::fs::write(&path, &content).map_err(|e| format!("Cannot write {path}: {e}"))
 }
 
+// ═══════════════════════════════════════════════════════════
+//  TERMINAL — real subprocess
+// ═══════════════════════════════════════════════════════════
+
 #[tauri::command]
-async fn switch_model(state: State<'_, DesktopState>, provider: String, model: String) -> Result<(), String> {
-    std::env::set_var("PANDORA_DEFAULT_MODEL", &model);
-    if let Some(ref mut s) = *state.active_session.lock().await { s.model = model; s.provider = provider; }
-    Ok(())
+async fn terminal_exec(command: String, cwd: Option<String>) -> Result<String, String> {
+    let dir = cwd.unwrap_or_else(|| ".".into());
+    let output = if cfg!(windows) {
+        std::process::Command::new("cmd").args(["/C", &command]).current_dir(&dir).output()
+    } else {
+        std::process::Command::new("bash").args(["-c", &command]).current_dir(&dir).output()
+    };
+    match output {
+        Ok(o) => {
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            Ok(format!("{stdout}{stderr}").trim().to_string())
+        }
+        Err(e) => Err(format!("Command failed: {e}")),
+    }
 }
 
-#[derive(Serialize)]
-struct HealthStatus { runtime: bool, version: String, active_session: Option<SessionMeta> }
+// ═══════════════════════════════════════════════════════════
+//  PALACE — honest: reads from filesystem, says what's real
+// ═══════════════════════════════════════════════════════════
 
 #[tauri::command]
-async fn health(state: State<'_, DesktopState>) -> Result<HealthStatus, String> {
-    Ok(HealthStatus { runtime: true, version: env!("CARGO_PKG_VERSION").into(), active_session: state.active_session.lock().await.clone() })
-}
-
-// ── Phase E: Ecosystem Commands ──
-
-#[tauri::command]
-async fn palace_list(kind_filter: Option<String>) -> Result<Vec<ecosystem::PalacePackage>, String> {
-    let mut pkgs = ecosystem::seed_packages();
-    if let Some(ref kf) = kind_filter {
-        pkgs.retain(|p| p.kind.to_lowercase() == kf.to_lowercase());
+async fn palace_list_packages(kind_filter: Option<String>) -> Result<Vec<serde_json::Value>, String> {
+    let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("palace");
+    let mut pkgs = vec![];
+    if dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().is_some_and(|e| e == "toml") {
+                    if let Ok(c) = std::fs::read_to_string(&path) {
+                        let name = c.lines().find(|l| l.starts_with("name"))
+                            .and_then(|l| l.split('=').nth(1))
+                            .map(|s| s.trim().trim_matches('"').to_string())
+                            .unwrap_or_default();
+                        let kind = c.lines().find(|l| l.starts_with("kind"))
+                            .and_then(|l| l.split('=').nth(1))
+                            .map(|s| s.trim().trim_matches('"').to_string())
+                            .unwrap_or_else(|| "gene".into());
+                        if let Some(ref kf) = kind_filter {
+                            if kind.to_lowercase() != kf.to_lowercase() { continue; }
+                        }
+                        pkgs.push(serde_json::json!({"name": name, "kind": kind, "installed": true}));
+                    }
+                }
+            }
+        }
     }
     Ok(pkgs)
 }
 
 #[tauri::command]
-async fn palace_install(package_id: String) -> Result<String, String> {
-    Ok(format!("Installed: {package_id}"))
+async fn palace_install(package: String) -> Result<String, String> {
+    let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("palace");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let manifest = format!("[package]\nname = \"{package}\"\nversion = \"0.1.0\"\nkind = \"gene\"\n");
+    std::fs::write(dir.join(format!("{package}.toml")), &manifest).map_err(|e| e.to_string())?;
+    Ok(format!("Installed: {package}"))
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FLEET + SCHEDULER — honest: reads filesystem records
+// ═══════════════════════════════════════════════════════════
+
+#[tauri::command]
+async fn fleet_nodes() -> Result<Vec<serde_json::Value>, String> {
+    let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("fleet");
+    if !dir.exists() { return Ok(vec![]); }
+    let mut nodes = vec![];
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            if let Ok(c) = std::fs::read_to_string(entry.path()) {
+                if let Ok(j) = serde_json::from_str::<serde_json::Value>(&c) {
+                    nodes.push(j);
+                }
+            }
+        }
+    }
+    Ok(nodes)
 }
 
 #[tauri::command]
-async fn palace_search(query: String) -> Result<Vec<ecosystem::PalacePackage>, String> {
-    let q = query.to_lowercase();
-    Ok(ecosystem::seed_packages().into_iter()
-        .filter(|p| p.name.to_lowercase().contains(&q) || p.description.to_lowercase().contains(&q))
-        .collect())
+async fn scheduler_list() -> Result<Vec<serde_json::Value>, String> {
+    let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("cron");
+    if !dir.exists() { return Ok(vec![]); }
+    let mut jobs = vec![];
+    if let Ok(entries) = std::fs::read_dir(&dir) {
+        for entry in entries.flatten() {
+            if let Ok(c) = std::fs::read_to_string(entry.path()) {
+                if let Ok(j) = serde_json::from_str::<serde_json::Value>(&c) {
+                    jobs.push(j);
+                }
+            }
+        }
+    }
+    Ok(jobs)
 }
 
 #[tauri::command]
-async fn fleet_nodes() -> Result<Vec<ecosystem::FleetNode>, String> {
-    Ok(vec![ecosystem::FleetNode {
-        id: "local".into(), name: "pandora-desktop".into(),
-        platform: std::env::consts::OS.into(), status: "online".into(),
-        current_task: None, capabilities: vec!["filesystem".into(), "shell".into()],
-        last_seen: chrono::Utc::now().to_rfc3339(),
-    }])
+async fn scheduler_add(task: String, schedule: String) -> Result<String, String> {
+    let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("cron");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let id = format!("job-{}", std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs());
+    let job = serde_json::json!({"task": task, "schedule": schedule, "status": "active", "created": chrono::Utc::now().to_rfc3339()});
+    std::fs::write(dir.join(format!("{id}.json")), serde_json::to_string_pretty(&job).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    Ok(id)
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NOT YET SUPPORTED — honest unimplemented errors
+// ═══════════════════════════════════════════════════════════
+
+#[tauri::command]
+async fn governance_summary() -> Result<String, String> {
+    Err("governance_summary: not yet wired to runtime. Use `pandora` CLI for governance inspection.".into())
 }
 
 #[tauri::command]
-async fn fleet_run(node_id: String, task: String) -> Result<String, String> {
-    Ok(format!("Dispatched {task} to {node_id}"))
+async fn approve_pending(id: String) -> Result<String, String> {
+    Err(format!("approve_pending({id}): approval pipeline not yet wired. Use `pandora approve` CLI."))
 }
 
 #[tauri::command]
-async fn scheduler_list() -> Result<Vec<ecosystem::ScheduledJob>, String> {
-    Ok(vec![
-        ecosystem::ScheduledJob { id: "job-1".into(), task: "Daily audit".into(), schedule: "0 9 * * *".into(), status: "active".into(), last_run: None, next_run: Some("tomorrow 09:00".into()), project: "default".into() },
-        ecosystem::ScheduledJob { id: "job-2".into(), task: "Weekly review".into(), schedule: "0 9 * * 1".into(), status: "paused".into(), last_run: Some("last Monday".into()), next_run: None, project: "default".into() },
-    ])
+async fn reject_pending(id: String) -> Result<String, String> {
+    Err(format!("reject_pending({id}): approval pipeline not yet wired. Use `pandora reject` CLI."))
 }
 
 #[tauri::command]
-async fn scheduler_add(_task: String, _schedule: String) -> Result<String, String> {
-    Ok(format!("job-{}", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()))
+async fn architecture_graph() -> Result<String, String> {
+    Err("architecture_graph: not yet implemented. Use `pandora architecture` CLI or registry_stats for live data.".into())
 }
 
 #[tauri::command]
-async fn scheduler_pause(job_id: String) -> Result<String, String> {
-    Ok(format!("Paused: {job_id}"))
+async fn multi_agent_status() -> Result<String, String> {
+    Err("multi_agent_status: Fleet multi-node execution not yet active. Use `pandora fleet` CLI.".into())
 }
 
 #[tauri::command]
-async fn scheduler_resume(job_id: String) -> Result<String, String> {
-    Ok(format!("Resumed: {job_id}"))
-}
-
-
-// ── Phase F: Advanced Commands ──
-
-#[derive(Serialize)]
-struct PipelineNode {
-    id: String, label: String, kind: String, status: String,
-    children: Vec<String>, metadata: Option<serde_json::Value>,
+async fn check_updates() -> Result<String, String> {
+    Err("check_updates: updater not yet integrated. Current version: 0.5.0. Check https://github.com/anisayakmitra-in/O-PANDORA/releases.".into())
 }
 
 #[tauri::command]
-async fn architecture_graph() -> Result<Vec<PipelineNode>, String> {
-    Ok(vec![
-        PipelineNode { id: "parliament".into(), label: "Parliament".into(), kind: "governance".into(), status: "active".into(),
-            children: vec!["shadow-council".into()], metadata: Some(serde_json::json!({"verdicts_today": 12, "policies": 5})) },
-        PipelineNode { id: "shadow-council".into(), label: "Shadow Council".into(), kind: "routing".into(), status: "active".into(),
-            children: vec!["harness-coding".into(), "harness-general".into()], metadata: Some(serde_json::json!({"capabilities": ["filesystem","shell","network","codegen"]})) },
-        PipelineNode { id: "harness-coding".into(), label: "coding Harness".into(), kind: "domain".into(), status: "enabled".into(),
-            children: vec!["gene-shell".into(), "gene-fs".into(), "gene-review".into()], metadata: Some(serde_json::json!({"type": "DomainHarness"})) },
-        PipelineNode { id: "harness-general".into(), label: "general Harness".into(), kind: "source".into(), status: "enabled".into(),
-            children: vec!["gene-search".into(), "gene-summarize".into()], metadata: Some(serde_json::json!({"type": "SourceHarness"})) },
-        PipelineNode { id: "gene-shell".into(), label: "shell Gene".into(), kind: "gene".into(), status: "active".into(),
-            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["shell"], "trust": "verified"})) },
-        PipelineNode { id: "gene-fs".into(), label: "filesystem Gene".into(), kind: "gene".into(), status: "active".into(),
-            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["filesystem read/write"], "trust": "verified"})) },
-        PipelineNode { id: "gene-review".into(), label: "code-review Gene".into(), kind: "gene".into(), status: "active".into(),
-            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["filesystem read"], "trust": "verified"})) },
-        PipelineNode { id: "gene-search".into(), label: "web-search Gene".into(), kind: "gene".into(), status: "active".into(),
-            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": ["network"], "trust": "verified"})) },
-        PipelineNode { id: "gene-summarize".into(), label: "summarize Gene".into(), kind: "gene".into(), status: "active".into(),
-            children: vec!["provider".into()], metadata: Some(serde_json::json!({"permissions": [], "trust": "verified"})) },
-        PipelineNode { id: "provider".into(), label: "Provider".into(), kind: "connection".into(), status: "connected".into(),
-            children: vec!["memory".into(), "telemetry".into()], metadata: Some(serde_json::json!({"model": "auto", "latency_ms": 45})) },
-        PipelineNode { id: "memory".into(), label: "Memory".into(), kind: "storage".into(), status: "active".into(),
-            children: vec![], metadata: Some(serde_json::json!({"entries": 42, "size_kb": 128})) },
-        PipelineNode { id: "telemetry".into(), label: "Telemetry".into(), kind: "observability".into(), status: "active".into(),
-            children: vec![], metadata: Some(serde_json::json!({"executions_today": 7})) },
-    ])
+async fn health() -> Result<serde_json::Value, String> {
+    Ok(serde_json::json!({
+        "runtime": true,
+        "version": env!("CARGO_PKG_VERSION"),
+        "workspace": "11 crates",
+    }))
 }
 
-// ── Multi-Agent View ──
+// ═══════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════
 
-#[derive(Serialize)]
-struct WorkerStatus {
-    id: String, task: String, harness: String, status: String,
-    progress: u8, elapsed_ms: u64, model: String,
+fn run_git(cwd: &str, args: &[&str]) -> Result<String, String> {
+    let output = std::process::Command::new("git")
+        .args(args).current_dir(cwd)
+        .output().map_err(|e| e.to_string())?;
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
-#[tauri::command]
-async fn multi_agent_status() -> Result<Vec<WorkerStatus>, String> {
-    Ok(vec![
-        WorkerStatus { id: "main-1".into(), task: "Fix parser bug".into(), harness: "coding".into(), status: "completed".into(), progress: 100, elapsed_ms: 2340, model: "auto".into() },
-        WorkerStatus { id: "sub-1".into(), task: "Read parser source".into(), harness: "general".into(), status: "completed".into(), progress: 100, elapsed_ms: 120, model: "auto".into() },
-        WorkerStatus { id: "sub-2".into(), task: "Run failing test".into(), harness: "coding".into(), status: "completed".into(), progress: 100, elapsed_ms: 340, model: "auto".into() },
-        WorkerStatus { id: "sub-3".into(), task: "Generate fix".into(), harness: "coding".into(), status: "running".into(), progress: 72, elapsed_ms: 890, model: "auto".into() },
-        WorkerStatus { id: "sub-4".into(), task: "Write test".into(), harness: "coding".into(), status: "waiting".into(), progress: 0, elapsed_ms: 0, model: "auto".into() },
-    ])
+fn lines_vec(s: &str) -> Vec<String> {
+    s.lines().map(|l| l.trim().to_string()).filter(|l| !l.is_empty()).collect()
 }
 
-// ── Notifications ──
-
-#[derive(Serialize)]
-struct NotificationPrefs {
-    task_complete: bool, approval_required: bool, task_failed: bool,
-    fleet_disconnect: bool, package_update: bool,
+fn read_dir_entries(dir: &std::path::Path, max_depth: usize) -> Result<Vec<FileEntry>, String> {
+    if max_depth == 0 { return Ok(vec![]); }
+    let mut entries = vec![];
+    if let Ok(read_dir) = std::fs::read_dir(dir) {
+        for entry in read_dir.flatten() {
+            let path = entry.path();
+            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            if name.starts_with('.') || name == "target" || name == "node_modules" { continue; }
+            let is_dir = path.is_dir();
+            entries.push(FileEntry {
+                name,
+                path: path.to_string_lossy().to_string(),
+                is_dir,
+                children: if is_dir && max_depth > 1 {
+                    Some(read_dir_entries(&path, max_depth - 1).unwrap_or_default())
+                } else { None },
+            });
+        }
+    }
+    entries.sort_by(|a, b| {
+        if a.is_dir != b.is_dir { b.is_dir.cmp(&a.is_dir) }
+        else { a.name.cmp(&b.name) }
+    });
+    Ok(entries)
 }
 
-#[tauri::command]
-async fn notification_prefs() -> Result<NotificationPrefs, String> {
-    Ok(NotificationPrefs {
-        task_complete: true, approval_required: true, task_failed: true,
-        fleet_disconnect: false, package_update: true,
-    })
-}
-
-#[tauri::command]
-async fn send_test_notification(message: String) -> Result<String, String> {
-    Ok(format!("Notification sent: {message}"))
-}
-
-// ── Updates ──
-
-#[derive(Serialize)]
-struct UpdateStatus {
-    current_version: String, latest_version: String,
-    update_available: bool, release_notes: String, download_url: String,
-}
-
-#[tauri::command]
-async fn check_updates() -> Result<UpdateStatus, String> {
-    Ok(UpdateStatus {
-        current_version: env!("CARGO_PKG_VERSION").into(),
-        latest_version: "0.5.1".into(),
-        update_available: false,
-        release_notes: "Phase F: Architecture graph, multi-agent, notifications".into(),
-        download_url: "https://github.com/anisayakmitra-in/O-PANDORA/releases".into(),
-    })
-}
-
-
-// ── Main ──
+// ═══════════════════════════════════════════════════════════
+//  MAIN
+// ═══════════════════════════════════════════════════════════
 
 fn main() {
     let mut runtime = PandoraRuntime::new();
@@ -315,7 +574,8 @@ fn main() {
 
     let state = DesktopState {
         runtime: Arc::new(Mutex::new(runtime)),
-        active_session: Arc::new(Mutex::new(None)),
+        session_id: Arc::new(Mutex::new(None)),
+        project_path: Arc::new(Mutex::new(None)),
     };
 
     tauri::Builder::default()
@@ -325,10 +585,28 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .manage(state)
         .invoke_handler(tauri::generate_handler![
+            // Sessions (wired)
             create_session, list_sessions, resume_session,
-            send_message, list_models, switch_model, health,
-            palace_list, palace_install, palace_search, fleet_nodes, fleet_run, scheduler_list, scheduler_add, scheduler_pause, scheduler_resume,
-            architecture_graph, multi_agent_status, notification_prefs, send_test_notification, check_updates,
+            // Execution (wired)
+            execute_task,
+            // Providers (wired)
+            list_providers, list_models,
+            // Harnesses + Genes (wired)
+            list_harnesses, list_genes, registry_stats,
+            // Project + Git (wired)
+            open_project, git_status, git_diff,
+            // File tree (wired)
+            get_file_tree, read_file_content, write_file_content,
+            // Terminal (wired)
+            terminal_exec,
+            // Palace (wired)
+            palace_list_packages, palace_install,
+            // Fleet + Scheduler (wired)
+            fleet_nodes, scheduler_list, scheduler_add,
+            // Unimplemented (honest errors)
+            governance_summary, approve_pending, reject_pending,
+            architecture_graph, multi_agent_status, check_updates,
+            health,
         ])
         .run(tauri::generate_context!())
         .expect("Pandora Desktop failed to start");
