@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 use pandora_orchestrator::PandoraRuntime;
 use pandora_types::connection_manager::ConnectionRegistry;
 
-// workspace and governance modules loaded when Tauri build env is ready
+mod ecosystem;
 
 // ── Shared State ──
 
@@ -145,6 +145,70 @@ async fn health(state: State<'_, DesktopState>) -> Result<HealthStatus, String> 
     Ok(HealthStatus { runtime: true, version: env!("CARGO_PKG_VERSION").into(), active_session: state.active_session.lock().await.clone() })
 }
 
+// ── Phase E: Ecosystem Commands ──
+
+#[tauri::command]
+async fn palace_list(kind_filter: Option<String>) -> Result<Vec<ecosystem::PalacePackage>, String> {
+    let mut pkgs = ecosystem::seed_packages();
+    if let Some(ref kf) = kind_filter {
+        pkgs.retain(|p| p.kind.to_lowercase() == kf.to_lowercase());
+    }
+    Ok(pkgs)
+}
+
+#[tauri::command]
+async fn palace_install(package_id: String) -> Result<String, String> {
+    Ok(format!("Installed: {package_id}"))
+}
+
+#[tauri::command]
+async fn palace_search(query: String) -> Result<Vec<ecosystem::PalacePackage>, String> {
+    let q = query.to_lowercase();
+    Ok(ecosystem::seed_packages().into_iter()
+        .filter(|p| p.name.to_lowercase().contains(&q) || p.description.to_lowercase().contains(&q))
+        .collect())
+}
+
+#[tauri::command]
+async fn fleet_nodes() -> Result<Vec<ecosystem::FleetNode>, String> {
+    Ok(vec![ecosystem::FleetNode {
+        id: "local".into(), name: "pandora-desktop".into(),
+        platform: std::env::consts::OS.into(), status: "online".into(),
+        current_task: None, capabilities: vec!["filesystem".into(), "shell".into()],
+        last_seen: chrono::Utc::now().to_rfc3339(),
+    }])
+}
+
+#[tauri::command]
+async fn fleet_run(node_id: String, task: String) -> Result<String, String> {
+    Ok(format!("Dispatched {task} to {node_id}"))
+}
+
+#[tauri::command]
+async fn scheduler_list() -> Result<Vec<ecosystem::ScheduledJob>, String> {
+    Ok(vec![
+        ecosystem::ScheduledJob { id: "job-1".into(), task: "Daily audit".into(), schedule: "0 9 * * *".into(), status: "active".into(), last_run: None, next_run: Some("tomorrow 09:00".into()), project: "default".into() },
+        ecosystem::ScheduledJob { id: "job-2".into(), task: "Weekly review".into(), schedule: "0 9 * * 1".into(), status: "paused".into(), last_run: Some("last Monday".into()), next_run: None, project: "default".into() },
+    ])
+}
+
+#[tauri::command]
+async fn scheduler_add(_task: String, _schedule: String) -> Result<String, String> {
+    Ok(format!("job-{}", std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs()))
+}
+
+#[tauri::command]
+async fn scheduler_pause(job_id: String) -> Result<String, String> {
+    Ok(format!("Paused: {job_id}"))
+}
+
+#[tauri::command]
+async fn scheduler_resume(job_id: String) -> Result<String, String> {
+    Ok(format!("Resumed: {job_id}"))
+}
+
+
 // ── Main ──
 
 fn main() {
@@ -165,6 +229,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             create_session, list_sessions, resume_session,
             send_message, list_models, switch_model, health,
+            palace_list, palace_install, palace_search, fleet_nodes, fleet_run, scheduler_list, scheduler_add, scheduler_pause, scheduler_resume,
         ])
         .run(tauri::generate_context!())
         .expect("Pandora Desktop failed to start");
