@@ -3,8 +3,9 @@
 //! Config: `OLLAMA_HOST`, `LLAMA_CPP_HOST`, `OLLAMA_MODEL`.
 //! All endpoints come from environment variables with documented defaults.
 
-use std::process::Command;
-use std::time::Instant;
+use reqwest::blocking::Client;
+use reqwest::StatusCode;
+use std::time::{Duration, Instant};
 
 /// Provider health status.
 #[derive(Debug)]
@@ -25,29 +26,25 @@ pub struct ProviderHealth {
 pub fn check_ollama() -> ProviderHealth {
     let start = Instant::now();
     let host = ollama_host();
-    let code = match curl_http_code(&format!("{host}/api/tags")) {
-        Ok(c) => c,
-        Err(e) => {
-            return ProviderHealth {
-                name: "Ollama".into(),
-                status: "OFFLINE".into(),
-                model_count: 0,
-                latency_ms: 0,
-                error: Some(e.to_string()),
-            };
-        }
-    };
-    let models = count_ollama_models(&host);
-    ProviderHealth {
-        name: "Ollama".into(),
-        status: if code == "200" {
-            "OK".into()
-        } else {
-            format!("HTTP {code}")
+    match http_get_text(&format!("{host}/api/tags")) {
+        Ok((code, body)) => ProviderHealth {
+            name: "Ollama".into(),
+            status: if code == StatusCode::OK {
+                "OK".into()
+            } else {
+                format!("HTTP {}", code.as_u16())
+            },
+            model_count: body.matches(r#""name":"#).count() as u32,
+            latency_ms: start.elapsed().as_millis() as u64,
+            error: None,
         },
-        model_count: models,
-        latency_ms: start.elapsed().as_millis() as u64,
-        error: None,
+        Err(e) => ProviderHealth {
+            name: "Ollama".into(),
+            status: "OFFLINE".into(),
+            model_count: 0,
+            latency_ms: 0,
+            error: Some(e.to_string()),
+        },
     }
 }
 
@@ -55,28 +52,16 @@ fn ollama_host() -> String {
     std::env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into())
 }
 
-fn count_ollama_models(host: &str) -> u32 {
-    let out = match Command::new("curl")
-        .args(["-s", &format!("{host}/api/tags")])
-        .output()
-    {
-        Ok(o) => o,
-        Err(_) => return 0,
-    };
-    let body = String::from_utf8_lossy(&out.stdout);
-    body.matches(r#""name":"#).count() as u32
-}
-
 /// Generic health check for any OpenAI-compatible endpoint.
 pub fn check_openai_compat(name: &str, url: &str) -> ProviderHealth {
     let start = Instant::now();
-    match curl_http_code(url) {
-        Ok(code) => ProviderHealth {
+    match http_get_text(url) {
+        Ok((code, _)) => ProviderHealth {
             name: name.into(),
-            status: if code == "200" {
+            status: if code == StatusCode::OK {
                 "OK".into()
             } else {
-                format!("HTTP {code}")
+                format!("HTTP {}", code.as_u16())
             },
             model_count: 0,
             latency_ms: start.elapsed().as_millis() as u64,
@@ -105,7 +90,7 @@ pub fn benchmark_provider(
         "stream": false,
     });
     let start = Instant::now();
-    let body = curl_post(&format!("{host}/api/generate"), &payload.to_string())?;
+    let body = http_post_json(&format!("{host}/api/generate"), &payload.to_string())?;
     let elapsed = start.elapsed().as_millis() as u64;
     let tokens: f64 = body
         .split(r#""eval_count":"#)
@@ -146,30 +131,39 @@ pub fn benchmark_all() -> Vec<(String, String, u64, f64)> {
 
 // ── Internal helpers ──
 
-fn curl_http_code(url: &str) -> Result<String, crate::PandoraError> {
-    let out = Command::new("curl")
-        .args(["-s", "-o", "/dev/null", "-w", "%{http_code}", url])
-        .output()
-        .map_err(|e| crate::PandoraError::Internal(format!("curl not found: {e}")))?;
-    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+fn http_client() -> Result<Client, crate::PandoraError> {
+    Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|e| crate::PandoraError::Internal(format!("HTTP client init failed: {e}")))
 }
 
-fn curl_post(url: &str, data: &str) -> Result<String, crate::PandoraError> {
-    let out = Command::new("curl")
-        .args([
-            "-s",
-            "-X",
-            "POST",
-            "-H",
-            "Content-Type: application/json",
-            "-d",
-            data,
-            url,
-        ])
-        .output()
-        .map_err(|e| crate::PandoraError::Internal(format!("curl not found: {e}")))?;
-    if !out.status.success() {
-        return Err(format!("HTTP {}/{}", url, out.status).into());
+fn http_get_text(url: &str) -> Result<(StatusCode, String), crate::PandoraError> {
+    let response = http_client()?
+        .get(url)
+        .send()
+        .map_err(|e| crate::PandoraError::Internal(format!("HTTP GET failed for {url}: {e}")))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .map_err(|e| crate::PandoraError::Internal(format!("HTTP body read failed for {url}: {e}")))?;
+    Ok((status, body))
+}
+
+fn http_post_json(url: &str, data: &str) -> Result<String, crate::PandoraError> {
+    let response = http_client()?
+        .post(url)
+        .header("Content-Type", "application/json")
+        .body(data.to_string())
+        .send()
+        .map_err(|e| crate::PandoraError::Internal(format!("HTTP POST failed for {url}: {e}")))?;
+    if !response.status().is_success() {
+        return Err(crate::PandoraError::Internal(format!(
+            "HTTP {} returned for {url}",
+            response.status()
+        )));
     }
-    Ok(String::from_utf8_lossy(&out.stdout).to_string())
+    response
+        .text()
+        .map_err(|e| crate::PandoraError::Internal(format!("HTTP body read failed for {url}: {e}")))
 }
