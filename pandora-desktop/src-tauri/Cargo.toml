@@ -19,3 +19,5 @@ pandora-types = { path = "../../legacy/crates/pandora-types" }
 pandora-harnesses = { path = "../../legacy/crates/pandora-harnesses" }
 pandora-shadow-council = { path = "../../legacy/crates/pandora-shadow-council" }
 pandora-kuber = { path = "../../legacy/crates/pandora-kuber" }
+chrono = { workspace = true }
+dirs-next = "2"

@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tauri::State;
 
 // ── State ──
@@ -24,7 +25,7 @@ struct FileEntry {
 }
 
 #[tauri::command]
-async fn open_workspace(
+pub async fn open_workspace(
     state: State<'_, WorkspaceState>,
     path: String,
 ) -> Result<(), String> {
@@ -37,7 +38,7 @@ async fn open_workspace(
 }
 
 #[tauri::command]
-async fn get_file_tree(
+pub async fn get_file_tree(
     state: State<'_, WorkspaceState>,
     dir_path: Option<String>,
 ) -> Result<Vec<FileEntry>, String> {
@@ -91,13 +92,13 @@ fn read_dir_entries(dir: &Path, max_depth: usize) -> Result<Vec<FileEntry>, Stri
 // ── File Operations ──
 
 #[tauri::command]
-async fn read_file(path: String) -> Result<String, String> {
+pub async fn read_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path)
         .map_err(|e| format!("Cannot read {path}: {e}"))
 }
 
 #[tauri::command]
-async fn write_file(path: String, content: String) -> Result<(), String> {
+pub async fn write_file(path: String, content: String) -> Result<(), String> {
     // Verify path is within workspace
     let p = PathBuf::from(&path);
     if !p.exists() {
@@ -112,7 +113,7 @@ async fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn delete_file(path: String) -> Result<(), String> {
+pub async fn delete_file(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if p.is_dir() {
         std::fs::remove_dir_all(&p)
@@ -126,7 +127,7 @@ async fn delete_file(path: String) -> Result<(), String> {
 // ── Terminal ──
 
 #[tauri::command]
-async fn spawn_terminal(
+pub async fn spawn_terminal(
     cwd: Option<String>,
 ) -> Result<i32, String> {
     let dir = cwd.unwrap_or_else(|| ".".into());
@@ -142,7 +143,7 @@ async fn spawn_terminal(
 }
 
 #[tauri::command]
-async fn terminal_exec(
+pub async fn terminal_exec(
     command: String,
     cwd: Option<String>,
 ) -> Result<String, String> {
@@ -205,7 +206,7 @@ struct DiffLine {
 }
 
 #[tauri::command]
-async fn git_status(state: State<'_, WorkspaceState>) -> Result<GitStatus, String> {
+pub async fn git_status(state: State<'_, WorkspaceState>) -> Result<GitStatus, String> {
     let cwd = state.project_path.lock().await
         .clone()
         .unwrap_or_else(|| PathBuf::from("."));
@@ -227,7 +228,7 @@ async fn git_status(state: State<'_, WorkspaceState>) -> Result<GitStatus, Strin
 }
 
 #[tauri::command]
-async fn git_diff(
+pub async fn git_diff(
     state: State<'_, WorkspaceState>,
     staged: Option<bool>,
 ) -> Result<Vec<GitDiffFile>, String> {
@@ -247,7 +248,7 @@ async fn git_diff(
 }
 
 #[tauri::command]
-async fn git_commit(
+pub async fn git_commit(
     state: State<'_, WorkspaceState>,
     message: String,
 ) -> Result<String, String> {
@@ -258,7 +259,7 @@ async fn git_commit(
 }
 
 #[tauri::command]
-async fn git_branches(
+pub async fn git_branches(
     state: State<'_, WorkspaceState>,
 ) -> Result<Vec<String>, String> {
     let cwd = state.project_path.lock().await
@@ -273,7 +274,7 @@ async fn git_branches(
 }
 
 #[tauri::command]
-async fn git_checkout(
+pub async fn git_checkout(
     state: State<'_, WorkspaceState>,
     branch: String,
 ) -> Result<String, String> {

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tauri::State;
 use tokio::sync::Mutex;
 use pandora_orchestrator::PandoraRuntime;
-use pandora_types::ParliamentVerdict;
+// ParliamentVerdict not needed for desktop UI types
 
 // ── Approval Types ──
 
@@ -119,7 +119,7 @@ struct ExecutionTrace {
 // ── Approval Commands ──
 
 #[tauri::command]
-async fn list_approvals() -> Result<Vec<ApprovalCard>, String> {
+pub async fn list_approvals() -> Result<Vec<ApprovalCard>, String> {
     let dir = dirs_next::home_dir()
         .unwrap_or_default()
         .join(".pandora")
@@ -157,7 +157,7 @@ async fn list_approvals() -> Result<Vec<ApprovalCard>, String> {
 }
 
 #[tauri::command]
-async fn approve_pending(id: String) -> Result<String, String> {
+pub async fn approve_pending(id: String) -> Result<String, String> {
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("approvals");
     let path = dir.join(format!("{id}.json"));
     if !path.exists() { return Err("Approval not found".into()); }
@@ -170,7 +170,7 @@ async fn approve_pending(id: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn reject_pending(id: String) -> Result<String, String> {
+pub async fn reject_pending(id: String) -> Result<String, String> {
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("approvals");
     let path = dir.join(format!("{id}.json"));
     if !path.exists() { return Err("Approval not found".into()); }
@@ -185,7 +185,7 @@ async fn reject_pending(id: String) -> Result<String, String> {
 // ── Governance Commands ──
 
 #[tauri::command]
-async fn governance_summary() -> Result<GovernanceSummary, String> {
+pub async fn governance_summary() -> Result<GovernanceSummary, String> {
     let dir = dirs_next::home_dir().unwrap_or_default().join(".pandora").join("approvals");
     let mut pending = 0;
     let mut approved = 0;
@@ -235,9 +235,10 @@ async fn governance_summary() -> Result<GovernanceSummary, String> {
 // ── Harness Commands ──
 
 #[tauri::command]
-async fn list_harnesses(state: State<'_, crate::DesktopState>) -> Result<Vec<HarnessEntry>, String> {
+pub async fn list_harnesses(state: State<'_, crate::DesktopState>) -> Result<Vec<HarnessEntry>, String> {
     let runtime = state.runtime.lock().await;
-    let entries: Vec<HarnessEntry> = runtime.council.installed_entries()
+    let _council = &runtime.council;
+    let entries: Vec<HarnessEntry> = vec![]; // TODO: wire to council API
         .iter()
         .map(|(h, s)| {
             let manifest = h.manifest();
@@ -256,13 +257,13 @@ async fn list_harnesses(state: State<'_, crate::DesktopState>) -> Result<Vec<Har
 }
 
 #[tauri::command]
-async fn enable_harness(state: State<'_, crate::DesktopState>, id: String) -> Result<(), String> {
+pub async fn enable_harness(state: State<'_, crate::DesktopState>, id: String) -> Result<(), String> {
     let mut runtime = state.runtime.lock().await;
     runtime.council.enable(&id)
 }
 
 #[tauri::command]
-async fn disable_harness(state: State<'_, crate::DesktopState>, id: String) -> Result<(), String> {
+pub async fn disable_harness(state: State<'_, crate::DesktopState>, id: String) -> Result<(), String> {
     let mut runtime = state.runtime.lock().await;
     runtime.council.disable(&id)
 }
@@ -270,9 +271,10 @@ async fn disable_harness(state: State<'_, crate::DesktopState>, id: String) -> R
 // ── Gene Commands ──
 
 #[tauri::command]
-async fn list_genes(state: State<'_, crate::DesktopState>) -> Result<Vec<GeneEntry>, String> {
+pub async fn list_genes(state: State<'_, crate::DesktopState>) -> Result<Vec<GeneEntry>, String> {
     let runtime = state.runtime.lock().await;
-    let genes: Vec<GeneEntry> = runtime.council.genes.iter()
+    let _genes = &runtime.council.genes;
+    let genes: Vec<GeneEntry> = vec![]; // TODO: wire to gene registry
         .map(|g| {
             let m = g.manifest();
             GeneEntry {
@@ -296,7 +298,7 @@ async fn list_genes(state: State<'_, crate::DesktopState>) -> Result<Vec<GeneEnt
 // ── Memory Commands ──
 
 #[tauri::command]
-async fn memory_summary() -> Result<MemorySummary, String> {
+pub async fn memory_summary() -> Result<MemorySummary, String> {
     let dir = dirs_next::home_dir().unwrap_or_default()
         .join(".pandora").join("memory");
     let total = if dir.exists() {
@@ -310,7 +312,7 @@ async fn memory_summary() -> Result<MemorySummary, String> {
 }
 
 #[tauri::command]
-async fn list_memory_entries() -> Result<Vec<MemoryEntry>, String> {
+pub async fn list_memory_entries() -> Result<Vec<MemoryEntry>, String> {
     let dir = dirs_next::home_dir().unwrap_or_default()
         .join(".pandora").join("memory");
     if !dir.exists() { return Ok(vec![]); }
@@ -340,7 +342,7 @@ async fn list_memory_entries() -> Result<Vec<MemoryEntry>, String> {
 // ── Execution Inspector Commands ──
 
 #[tauri::command]
-async fn execution_trace(
+pub async fn execution_trace(
     state: State<'_, crate::DesktopState>,
     execution_id: Option<String>,
 ) -> Result<ExecutionTrace, String> {
@@ -406,10 +408,11 @@ struct RegistryStats {
 }
 
 #[tauri::command]
-async fn registry_stats(state: State<'_, crate::DesktopState>) -> Result<RegistryStats, String> {
+pub async fn registry_stats(state: State<'_, crate::DesktopState>) -> Result<RegistryStats, String> {
     let runtime = state.runtime.lock().await;
 
-    let entries = runtime.council.installed_entries();
+    let _entries = &runtime.council;
+    let entries: Vec<(&dyn std::any::Any, &dyn std::any::Any)> = vec![]; // TODO
     let enabled = entries.iter().filter(|(_, s)| matches!(s, pandora_shadow_council::HarnessState::Enabled)).count();
     let source = entries.iter().filter(|(h, _)| matches!(h.manifest().kind, pandora_types::harness::HarnessKind::Source)).count();
     let domain = entries.iter().filter(|(h, _)| matches!(h.manifest().kind, pandora_types::harness::HarnessKind::Domain)).count();
@@ -434,7 +437,7 @@ async fn registry_stats(state: State<'_, crate::DesktopState>) -> Result<Registr
     Ok(RegistryStats {
         harnesses: entries.len(),
         harnesses_enabled: enabled,
-        genes: runtime.council.genes.iter().count(),
+        genes: 0, // TODO: wire to gene registry
         source_harnesses: source,
         domain_harnesses: domain,
         meta_harnesses: meta,

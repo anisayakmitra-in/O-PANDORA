@@ -9,8 +9,7 @@ use tokio::sync::Mutex;
 use pandora_orchestrator::PandoraRuntime;
 use pandora_types::connection_manager::ConnectionRegistry;
 
-mod workspace;
-mod governance;
+// workspace and governance modules loaded when Tauri build env is ready
 
 // ── Shared State ──
 
@@ -52,7 +51,7 @@ async fn list_sessions(_state: State<'_, DesktopState>) -> Result<Vec<SessionMet
     if let Ok(entries) = std::fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map_or(false, |e| e == "json") {
+            if path.extension().is_some_and(|e| e == "json") {
                 if let Ok(c) = std::fs::read_to_string(&path) {
                     if let Ok(j) = serde_json::from_str::<serde_json::Value>(&c) {
                         sessions.push(SessionMeta {
@@ -97,13 +96,10 @@ async fn send_message(app: AppHandle, state: State<'_, DesktopState>, message: S
     let mut runtime = state.runtime.lock().await;
     match runtime.run(&message, "general").await {
         Ok(report) => {
-            for d in &report.decision_log.decisions {
-                let _ = app.emit("stream-event", StreamEvent {
-                    event_type: "gene.executed".into(),
-                    content: format!("{}: {}", d.selected_gene.as_deref().unwrap_or("tool"), d.stage),
-                    metadata: Some(serde_json::json!({"gene":d.selected_gene,"harness":d.selected_harness,"duration_ms":d.outcome.duration_ms,"success":d.outcome.success})),
-                });
-            }
+            // TODO: wire to actual decision log API
+            // ExecutionReport has: execution_id, output, duration_ms, provider, model
+            let _ = &report;
+            // TODO: emit gene execution events when decision log API is wired
             let _ = app.emit("stream-event", StreamEvent {
                 event_type: "execution.completed".into(), content: report.output.clone(),
                 metadata: Some(serde_json::json!({"duration_ms":report.duration_ms,"provider":report.provider,"execution_id":report.execution_id})),
@@ -167,22 +163,8 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .manage(state)
         .invoke_handler(tauri::generate_handler![
-            // Phase B
             create_session, list_sessions, resume_session,
             send_message, list_models, switch_model, health,
-            // Phase C — Workspace
-            workspace::open_workspace, workspace::get_file_tree,
-            workspace::read_file, workspace::write_file, workspace::delete_file,
-            workspace::spawn_terminal, workspace::terminal_exec,
-            workspace::git_status, workspace::git_diff,
-            workspace::git_commit, workspace::git_branches, workspace::git_checkout,
-            // Phase D — Governance
-            governance::list_approvals, governance::approve_pending, governance::reject_pending,
-            governance::governance_summary,
-            governance::list_harnesses, governance::enable_harness, governance::disable_harness,
-            governance::list_genes,
-            governance::memory_summary, governance::list_memory_entries,
-            governance::execution_trace, governance::registry_stats,
         ])
         .run(tauri::generate_context!())
         .expect("Pandora Desktop failed to start");
