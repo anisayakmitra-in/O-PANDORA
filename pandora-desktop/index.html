@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pandora</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root {
+        --glass-bg: rgba(15, 15, 25, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --glass-hover: rgba(255, 255, 255, 0.05);
+        --text-primary: rgba(255, 255, 255, 0.92);
+        --text-secondary: rgba(255, 255, 255, 0.55);
+        --accent: #7c3aed;
+        --accent-glow: rgba(124, 58, 237, 0.3);
+        --success: #22c55e;
+        --error: #ef4444;
+        --warning: #eab308;
+      }
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: transparent;
+        color: var(--text-primary);
+        overflow: hidden;
+        height: 100vh;
+      }
+      #root { height: 100%; }
+
+      /* Glass morphism base */
+      .glass {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+      }
+      .glass-panel {
+        background: rgba(20, 20, 35, 0.6);
+        backdrop-filter: blur(16px) saturate(150%);
+        -webkit-backdrop-filter: blur(16px) saturate(150%);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .glass-hover:hover {
+        background: var(--glass-hover);
+        border-color: rgba(255, 255, 255, 0.12);
+        transition: all 0.2s ease;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

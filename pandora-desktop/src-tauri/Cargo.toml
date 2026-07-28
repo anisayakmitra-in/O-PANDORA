@@ -1,0 +1,24 @@
+[package]
+name = "pandora-desktop"
+version = "0.5.0"
+description = "Pandora native desktop app — governed AI coding agent"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png", "image-ico"] }
+tauri-plugin-shell = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+pandora-orchestrator = { path = "../../legacy/crates/pandora-orchestrator" }
+pandora-types = { path = "../../legacy/crates/pandora-types" }
+pandora-harnesses = { path = "../../legacy/crates/pandora-harnesses" }
+pandora-shadow-council = { path = "../../legacy/crates/pandora-shadow-council" }
+pandora-kuber = { path = "../../legacy/crates/pandora-kuber" }
