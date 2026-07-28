@@ -485,33 +485,93 @@ async fn scheduler_add(task: String, schedule: String) -> Result<String, String>
 // ═══════════════════════════════════════════════════════════
 
 #[tauri::command]
-async fn governance_summary() -> Result<String, String> {
-    Err("governance_summary: not yet wired to runtime. Use `pandora` CLI for governance inspection.".into())
+async fn governance_summary() -> Result<serde_json::Value, String> {
+    let store = pandora_types::approval_store::ApprovalStore::new(
+        pandora_types::approval_store::ApprovalStore::default_location()
+    );
+    let pending = store.list_pending();
+    let approved = pending.iter().filter(|a| matches!(a.status, pandora_types::approval_store::ApprovalStatus::Approved)).count();
+    let rejected = pending.iter().filter(|a| matches!(a.status, pandora_types::approval_store::ApprovalStatus::Rejected)).count();
+    let waiting = pending.iter().filter(|a| matches!(a.status, pandora_types::approval_store::ApprovalStatus::Pending)).count();
+    Ok(serde_json::json!({
+        "pending": waiting,
+        "approved": approved,
+        "rejected": rejected,
+        "total": pending.len(),
+        "recent": pending.iter().map(|a| serde_json::json!({
+            "id": a.id,
+            "tool": a.tool_name,
+            "reason": a.reason,
+            "status": format!("{:?}", a.status),
+            "created_ms": a.created_at_ms,
+        })).collect::<Vec<_>>(),
+    }))
 }
 
 #[tauri::command]
 async fn approve_pending(id: String) -> Result<String, String> {
-    Err(format!("approve_pending({id}): approval pipeline not yet wired. Use `pandora approve` CLI."))
+    let store = pandora_types::approval_store::ApprovalStore::new(
+        pandora_types::approval_store::ApprovalStore::default_location()
+    );
+    match store.approve(&id) {
+        Ok(a) => Ok(format!("Approved: {} ({})", id, a.tool_name)),
+        Err(e) => Err(format!("Approve failed: {e}")),
+    }
 }
 
 #[tauri::command]
 async fn reject_pending(id: String) -> Result<String, String> {
-    Err(format!("reject_pending({id}): approval pipeline not yet wired. Use `pandora reject` CLI."))
+    let store = pandora_types::approval_store::ApprovalStore::new(
+        pandora_types::approval_store::ApprovalStore::default_location()
+    );
+    match store.reject(&id) {
+        Ok(a) => Ok(format!("Rejected: {} ({})", id, a.tool_name)),
+        Err(e) => Err(format!("Reject failed: {e}")),
+    }
 }
 
 #[tauri::command]
-async fn architecture_graph() -> Result<String, String> {
-    Err("architecture_graph: not yet implemented. Use `pandora architecture` CLI or registry_stats for live data.".into())
+async fn architecture_graph(state: State<'_, DesktopState>) -> Result<serde_json::Value, String> {
+    let runtime = state.runtime.lock().await;
+    let entries = runtime.council.harnesses.all_entries();
+    let cr = pandora_types::connection_manager::ConnectionRegistry::load();
+    Ok(serde_json::json!({
+        "runtime": {"status": "active", "version": env!("CARGO_PKG_VERSION")},
+        "parliament": {"status": "active"},
+        "shadow_council": {"status": "active", "harnesses": entries.len()},
+        "harnesses": entries.iter().map(|(h, s)| serde_json::json!({
+            "id": h.manifest().id,
+            "kind": format!("{:?}", h.manifest().kind),
+            "enabled": matches!(s, pandora_shadow_council::HarnessState::Enabled),
+            "capabilities": h.manifest().capabilities,
+        })).collect::<Vec<_>>(),
+        "providers": cr.connections.iter().map(|c| serde_json::json!({
+            "name": c.name,
+            "kind": format!("{:?}", c.kind),
+            "endpoint": c.endpoint,
+        })).collect::<Vec<_>>(),
+    }))
 }
 
 #[tauri::command]
-async fn multi_agent_status() -> Result<String, String> {
-    Err("multi_agent_status: Fleet multi-node execution not yet active. Use `pandora fleet` CLI.".into())
+async fn multi_agent_status() -> Result<serde_json::Value, String> {
+    // Fleet multi-node execution not yet activated.
+    // Returns empty worker list with status.
+    Ok(serde_json::json!({
+        "workers": [],
+        "status": "standalone",
+        "message": "Fleet multi-node execution not active. Workers: 0. Use `pandora fleet` CLI to connect nodes.",
+    }))
 }
 
 #[tauri::command]
-async fn check_updates() -> Result<String, String> {
-    Err("check_updates: updater not yet integrated. Current version: 0.5.0. Check https://github.com/anisayakmitra-in/O-PANDORA/releases.".into())
+async fn check_updates() -> Result<serde_json::Value, String> {
+    Ok(serde_json::json!({
+        "current_version": env!("CARGO_PKG_VERSION"),
+        "update_available": false,
+        "release_url": "https://github.com/anisayakmitra-in/O-PANDORA/releases",
+        "note": "Automatic updates not yet integrated. Check releases page manually.",
+    }))
 }
 
 #[tauri::command]
