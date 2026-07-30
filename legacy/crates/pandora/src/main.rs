@@ -1472,6 +1472,19 @@ fn cmd_run(args: &[String]) {
                     _ => SandboxLevel::Isolated,
                 };
             }
+
+            let execution_domain = profile
+                .domain
+                .as_ref()
+                .and_then(|domain| domain.role.as_deref())
+                .filter(|role| !role.trim().is_empty())
+                .map(str::to_owned)
+                .or_else(|| {
+                    pandora_types::intent_router::IntentRouter::capabilities_from_intent(&task)
+                        .into_iter()
+                        .next()
+                })
+                .unwrap_or_else(|| "default".into());
             runtime.plan = ExecutionPlan {
                 instruction: task.clone(),
                 control_strategy: match profile.strategy.as_deref() {
@@ -1493,7 +1506,7 @@ fn cmd_run(args: &[String]) {
                 stop_conditions: vec![StopCondition::GoalMet],
                 ..Default::default()
             };
-            match runtime.run_with_stream(&task, "default", stream_callback.as_ref()).await {
+            match runtime.run_with_stream(&task, &execution_domain, stream_callback.as_ref()).await {
                 Ok(result) if result.success => {
                     if output_json {
                         let report = serde_json::json!({
