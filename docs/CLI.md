@@ -81,7 +81,7 @@ On Windows PowerShell, run `pandora completions powershell` and add the output t
 
 ## `pandora doctor`
 
-Run local health checks before the first task. Human output is concise; `pandora --json doctor` returns `api_version`, `checks`, `security`, `dependencies`, and `sessions`. Each check includes `ok`, `check`, `message`, and `remediation`. Add `--strict` when automation should return exit code `1` if any check fails. Without `--strict`, doctor remains informational and returns success after producing diagnostics.
+Run local health checks before the first task. Human output is concise; `pandora --json doctor` returns `api_version`, `checks`, `security`, `dependencies`, and `sessions`. Each check includes `ok`, `check`, `message`, and `remediation`. Add `--strict` when automation should return exit code `1` if a required check fails. Optional tools remain diagnostic-only. Without `--strict`, doctor remains informational and returns success after producing diagnostics.
 
 ```text
 pandora doctor

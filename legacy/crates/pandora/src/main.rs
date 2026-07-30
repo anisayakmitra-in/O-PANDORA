@@ -1916,6 +1916,7 @@ fn cmd_doctor_json(strict: bool) {
         let is_available = available.as_bool().unwrap_or(false);
         checks.push(serde_json::json!({
             "ok": is_available,
+            "required": false,
             "check": format!("dependency:{command}"),
             "message": if is_available { format!("{command} is available.") } else { format!("{command} is not available.") },
             "remediation": if is_available { "No action required.".to_string() } else { format!("Install {command} only if your selected workflow requires it.") },
@@ -1935,9 +1936,9 @@ fn cmd_doctor_json(strict: bool) {
         "dependencies": dependencies,
         "sessions": std::fs::read_dir(sessions_dir()).map(|entries| entries.count()).unwrap_or(0),
     });
-    let healthy = checks
-        .iter()
-        .all(|check| check["ok"].as_bool().unwrap_or(false));
+    let healthy = checks.iter().all(|check| {
+        check["required"].as_bool().unwrap_or(true) && check["ok"].as_bool().unwrap_or(false)
+    });
     println!(
         "{}",
         serde_json::to_string_pretty(&value).expect("doctor JSON serialization")

@@ -434,6 +434,11 @@ fn doctor_json_is_machine_readable() {
         assert!(check["remediation"].is_string());
     }
     assert!(value["dependencies"].is_object());
+    assert!(value["checks"].as_array().is_some_and(|checks| {
+        checks
+            .iter()
+            .any(|check| check["required"] == serde_json::json!(false))
+    }));
 }
 #[test]
 fn doctor_strict_returns_failure_for_unhealthy_home() {
