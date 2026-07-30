@@ -36,3 +36,4 @@ id_ed25519
 /pandora-desktop/src-tauri/gen/android/keystore.properties
 
 /.mobile-hold-20260730/
+/dist/
