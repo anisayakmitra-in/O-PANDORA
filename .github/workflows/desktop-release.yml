@@ -128,12 +128,20 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Install Linux ARM64 linker
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+      - name: Verify Linux ARM64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          command -v aarch64-linux-gnu-gcc
+          command -v aarch64-linux-gnu-ar
+          aarch64-linux-gnu-gcc --version
       - name: Build CLI release on Unix
         if: runner.os != 'Windows'
         env:
           PANDORA_TARGET: ${{ matrix.target }}
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          AR_aarch64_unknown_linux_gnu: aarch64-linux-gnu-ar
         run: bash scripts/release.sh dist/releases
       - name: Build CLI release on Windows
         if: runner.os == 'Windows'

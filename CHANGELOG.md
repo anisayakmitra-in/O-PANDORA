@@ -4,6 +4,14 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.20] ? 2026-07-30
+
+### Fixed
+
+- Removed the native OpenSSL/TLS dependency from shared HTTP clients for portable release builds.
+- Made the Linux ARM64 compiler and archiver explicit in the release workflow.
+- Aligned the optional fleet HTTP client with the workspace TLS configuration.
+
 ## [0.5.1-rc.19] ? 2026-07-30
 
 ### Changed

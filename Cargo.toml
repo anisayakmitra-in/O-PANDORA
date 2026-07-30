@@ -34,7 +34,7 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
-reqwest = { version = "0.12", features = ["json", "blocking"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "blocking", "rustls-tls"] }
 clap = { version = "4", features = ["derive"] }
 axum = { version = "0.7", features = ["ws"] }
 tracing = "0.1"
