@@ -1065,6 +1065,16 @@ impl ShadowCouncil {
                 }
             }
 
+            for preferred in &request.preferred {
+                if manifest.capabilities.iter().any(|cap| {
+                    cap.eq_ignore_ascii_case(preferred)
+                        || cap.to_lowercase().contains(&preferred.to_lowercase())
+                        || preferred.to_lowercase().contains(&cap.to_lowercase())
+                }) {
+                    score += 0.5;
+                    matched.push(format!("preferred:{preferred}"));
+                }
+            }
             // Boost exact keyword matches in description/name
             let desc = format!("{} {}", manifest.name, manifest.id).to_lowercase();
             for cap in &required {
@@ -1447,6 +1457,48 @@ mod tests {
         assert_eq!(route.harness_id, "coding-domain");
         assert!(route.rationale.contains("coding-domain"));
         assert!(route.score > 0.0);
+    }
+
+    #[test]
+    fn route_honors_preferred_capability() {
+        let mut sc = ShadowCouncil::new();
+        let coding = HarnessManifestBuilder::default()
+            .id("coding-domain")
+            .name("coding-domain")
+            .version("0.2.0")
+            .author("test")
+            .kind(HarnessKind::Domain)
+            .capability("coding")
+            .build()
+            .unwrap();
+        let design = HarnessManifestBuilder::default()
+            .id("design-domain")
+            .name("design-domain")
+            .version("0.2.0")
+            .author("test")
+            .kind(HarnessKind::Domain)
+            .capability("coding")
+            .capability("design")
+            .build()
+            .unwrap();
+        sc.install(Box::new(TestHarness { manifest: coding }))
+            .unwrap();
+        sc.install(Box::new(TestHarness { manifest: design }))
+            .unwrap();
+        sc.enable("coding-domain").unwrap();
+        sc.enable("design-domain").unwrap();
+
+        let route = sc
+            .route(CapabilityRequest {
+                intent: "write code for a design system".into(),
+                required: vec!["coding".into()],
+                preferred: vec!["design".into()],
+                budget: None,
+                policy: None,
+            })
+            .unwrap();
+
+        assert_eq!(route.harness_id, "design-domain");
     }
 
     #[test]
