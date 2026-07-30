@@ -27,6 +27,8 @@ The installed binary exposes these command groups:
 | Utilities | `doctor`, `architecture`, `sessions`, `session`, `completions`, `import`, `version` |
 
 Run `pandora <command> --help` for the accepted arguments and actions for any command.
+
+Run `pandora` with no subcommand to start the interactive shell. `pandora chat` is an explicit alias for the same interface.
 ## First-run setup
 
 Run the guided wizard. It asks for the provider, endpoint, model, and connection name. For cloud providers, it reads the API key with hidden terminal input and stores only a credential reference:
