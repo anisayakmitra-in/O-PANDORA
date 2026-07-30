@@ -11,6 +11,22 @@ Pandora's CLI is the primary interface. Every command follows:
 | `--version`, `-V` | Show version + platform + commit |
 | `--json` | Emit machine-readable output for supported commands |
 
+## Command map
+
+The installed binary exposes these command groups:
+
+| Group | Commands |
+|------|----------|
+| Execution | `run`, `route`, `execute`, `resume`, `replay`, `trace`, `inspect`, `explain`, `timeline`, `status`, `stop`, `export`, `overnight` |
+| Providers | `setup`, `providers`, `connections`, `connection`, `benchmark`, `profiles` |
+| Components | `harnesses`, `genes`, `gene`, `harness`, `service`, `new` |
+| Governance | `governance`, `deny`, `approve`, `reject`, `rsi` |
+| Packages | `install`, `uninstall`, `update`, `list`, `info`, `search`, `publish`, `package`, `artifacts`, `keygen`, `sign`, `verify` |
+| Runtime | `serve`, `remote`, `fleet`, `config`, `keychain`, `graph`, `lineage` |
+| Marketplace | `login`, `featured`, `trending`, `newest` |
+| Utilities | `doctor`, `architecture`, `sessions`, `session`, `completions`, `import`, `version` |
+
+Run `pandora <command> --help` for the accepted arguments and actions for any command.
 ## First-run setup
 
 Run the guided wizard. It asks for the provider, endpoint, model, and connection name:
@@ -127,7 +143,7 @@ pandora route "design an accessible settings screen"
 pandora --json route "review this Rust parser for security issues"
 ```
 
-### `pandora run <task> [--profile NAME] [--output text|json] [--quiet]`
+### `pandora run <task> [--profile NAME] [--model NAME] [--output text|json] [--quiet]`
 
 Execute a task through the pipeline. A profile supplies provider, strategy, evaluator, approval, retry, and sandbox defaults. Pandora resolves the domain from the task and the registered manifests; the command does not require a domain-specific flag.
 
