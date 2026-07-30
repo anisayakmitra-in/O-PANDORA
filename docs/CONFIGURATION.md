@@ -1,6 +1,6 @@
 # Configuration
 
-O-PANDORA reads its defaults from `~/.pandora/config.toml`. You can override most settings with environment variables.
+O-PANDORA reads its defaults from `~/.pandora/config.toml`. You can override most settings with environment variables. The shortest setup path is documented in [CLI](CLI.md).
 
 ## Example
 

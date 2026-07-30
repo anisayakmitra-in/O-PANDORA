@@ -32,6 +32,7 @@ cargo test --workspace -- --test-threads=1
 npm ci && npm run build   (from pandora-desktop)
 python scripts/validate_repo.py
 python scripts/validate_docs.py
+python scripts/test_installers.py
 ```
 
 Release artifacts must include the version, target platform, checksum, and build commit. Desktop release verification also requires every signature to have a matching artifact and every checksum manifest entry to resolve and match its file. A release must not claim support for a platform whose artifact or clean-install test is missing.

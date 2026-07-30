@@ -7,7 +7,16 @@ An open-source AI development environment with inspectable execution and explici
 
 ## Quick Start
 
-After a tagged release publishes platform binaries:
+Pandora does not publish a binary release yet. Build the CLI explicitly from a clean checkout:
+
+```bash
+cargo build --release -p pandora
+./target/release/pandora doctor
+./target/release/pandora setup
+./target/release/pandora run "inspect this project"
+```
+
+When a tagged release publishes the required asset for your platform, the installer downloads and verifies it:
 
 ```bash
 # Linux/macOS
@@ -15,14 +24,9 @@ curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scr
 
 # Windows PowerShell
 irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
-
-pandora doctor
-pandora setup
-pandora run "Fix the failing test in src/parser.rs"
-pandora completions bash > ~/.local/share/bash-completion/completions/pandora
 ```
 
-Until the first binary release is published, use the explicit source-build path in [Install](#install). Pandora never compiles source silently from the binary installer.
+The installer never compiles source unless `PANDORA_SOURCE_BUILD=1` is set explicitly.
 
 ## What Pandora provides
 
@@ -36,7 +40,7 @@ Until the first binary release is published, use the explicit source-build path 
 
 ## Architecture
 
-Pandora Desktop is the primary interface. The same runtime powers the CLI, headless server mode, and future thin clients.
+The CLI is the current primary interface. The same runtime also powers headless server mode and the Tauri desktop client.
 
 ```
 Pandora Desktop (Tauri + React)
