@@ -7,14 +7,14 @@ import sys
 from pathlib import Path
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-EXCLUDED_DIRS = {"target", ".git", "llama.cpp", "legacy"}
+EXCLUDED_DIRS = {"target", ".git", "llama.cpp", "legacy", "node_modules"}
 
 errors = []
 
 md_files = set()
 for dirpath, _, filenames in os.walk(ROOT):
     parts = set(Path(dirpath).parts)
-    if parts & EXCLUDED_DIRS:
+    if parts & EXCLUDED_DIRS or any(part.startswith(".mobile-hold-") for part in parts):
         continue
     for fn in filenames:
         if fn.endswith(".md"):

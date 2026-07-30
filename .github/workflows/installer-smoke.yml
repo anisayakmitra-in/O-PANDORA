@@ -1,0 +1,51 @@
+name: Installer smoke tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 0.5.1"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: macos-latest
+            shell: bash
+          - os: windows-latest
+            shell: pwsh
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install released CLI on Unix
+        if: runner.os != 'Windows'
+        env:
+          PANDORA_VERSION: ${{ inputs.version }}
+          PANDORA_INSTALL_DIR: ${{ runner.temp }}/pandora-bin
+        run: |
+          curl --fail --location https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.sh | bash
+          "$PANDORA_INSTALL_DIR/pandora" --version
+          bash scripts/uninstall-cli.sh
+          test ! -e "$PANDORA_INSTALL_DIR/pandora"
+      - name: Install released CLI on Windows
+        if: runner.os == 'Windows'
+        env:
+          PANDORA_VERSION: ${{ inputs.version }}
+          PANDORA_INSTALL_DIR: ${{ runner.temp }}\pandora-bin
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:PANDORA_INSTALL_DIR | Out-Null
+          irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
+          & (Join-Path $env:PANDORA_INSTALL_DIR "pandora.exe") --version
+          & (Join-Path $PWD "scripts/uninstall-cli.ps1")
+          if (Test-Path (Join-Path $env:PANDORA_INSTALL_DIR "pandora.exe")) { throw "Pandora binary still exists after uninstall" }

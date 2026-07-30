@@ -17,7 +17,7 @@
 
 ## Workspace Layout
 
-11 crates: pandora-types, pandora-services, pandora-orchestrator, pandora-shadow-council, pandora-genes, pandora-harnesses, pandora-kuber, pandora, pandora-api, pandora-tui, pandora-fleet
+11 crates: pandora-types, pandora-services, pandora-orchestrator, pandora-shadow-council, pandora-genes, pandora-harnesses, pandora-ko-palace, pandora, pandora-api, pandora-tui, pandora-fleet
 
 ## Existing Binaries
 
@@ -136,7 +136,7 @@ pandora (no args)
 - Agentic loop (verdicts: Allow/Deny/RequireApproval/Modify/Escalate)
 - Connection registry (dynamic providers)
 - Gene/harness registries (dynamic discovery)
-- KUBER/Palace (package management)
+- K-O-Palace (package management)
 - Approval store (persistent approvals)
 - Decision log / GEPA
 - All cmd_* functions (backward compatibility)

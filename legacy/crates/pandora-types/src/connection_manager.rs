@@ -5,7 +5,7 @@
 //! All OpenAI-compatible APIs use the same `openai-compatible` type.
 //!
 //! Connections are stored in `~/.pandora/connections.toml`. API keys in
-//! `~/.pandora/credentials.enc` (or OS keychain — future).
+//! Windows and macOS use the native OS credential store; Linux/headless fallback credentials are AES-256-GCM encrypted by the CLI.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -105,7 +105,9 @@ pub struct Connection {
     pub kind: ConnectionKind,
     pub endpoint: String,
     pub default_model: String,
+    #[serde(skip_serializing)]
     pub api_key: Option<String>,
+    pub credential_ref: Option<String>,
     pub priority: u32,
     pub tags: Vec<String>,
     pub fallback_connections: Vec<String>,
@@ -129,6 +131,7 @@ impl Default for Connection {
             endpoint: ConnectionKind::Ollama.default_endpoint().into(),
             default_model: String::new(),
             api_key: None,
+            credential_ref: None,
             priority: 100,
             tags: vec!["local".into()],
             fallback_connections: vec![],
@@ -179,6 +182,11 @@ impl Connection {
         self.api_key = Some(key.to_string());
         self
     }
+    pub fn with_credential_ref(mut self, reference: &str) -> Self {
+        self.credential_ref = Some(reference.to_string());
+        self
+    }
+
     pub fn with_category(mut self, cat: ConnectionCategory) -> Self {
         self.category = cat;
         self
@@ -353,6 +361,17 @@ mod tests {
         assert!(ConnectionKind::Groq.is_openai_compatible());
         assert!(ConnectionKind::OpenRouter.is_openai_compatible());
         assert!(!ConnectionKind::Ollama.is_openai_compatible());
+    }
+
+    #[test]
+    fn serialized_connections_do_not_contain_api_keys() {
+        let connection =
+            Connection::new("cloud", ConnectionKind::OpenAI, "https://api.example.com")
+                .with_api_key("secret-value")
+                .with_credential_ref("provider-cloud");
+        let encoded = serde_json::to_string(&connection).unwrap();
+        assert!(!encoded.contains("secret-value"));
+        assert!(encoded.contains("provider-cloud"));
     }
 
     #[test]

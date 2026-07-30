@@ -144,7 +144,7 @@ impl GeneKind {
 
 // ── Gene Metadata ──
 
-/// Rich metadata for a Gene — used by KUBER for display, search, and publishing.
+/// Rich metadata for a Gene — used by K-O-Palace for display, search, and publishing.
 /// Not part of the runtime execution path.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GeneMetadata {
@@ -158,7 +158,7 @@ pub struct GeneMetadata {
     pub examples: Vec<String>,
     pub custom: HashMap<String, String>,
     pub permissions: Vec<String>,
-    // ── K-O Palace publishing metadata ──
+    // ── K-O-Palace publishing metadata ──
     /// Trust level: Experimental, Community, Verified, Official, Enterprise, Certified
     pub trust_level: String,
     /// Capabilities provided by this gene (e.g. ["filesystem.read", "filesystem.write"])
@@ -173,9 +173,9 @@ pub struct GeneMetadata {
     pub signature: Option<String>,
     /// Publisher identity
     pub publisher: Option<String>,
-    /// Download count from K-O Palace
+    /// Download count from K-O-Palace
     pub downloads: u64,
-    /// Success rate (0.0-1.0) from K-O Palace telemetry
+    /// Success rate (0.0-1.0) from K-O-Palace telemetry
     pub success_rate: f64,
 }
 

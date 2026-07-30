@@ -76,7 +76,7 @@ fn ui(f: &mut Frame) {
         " Harnesses ",
         " Providers ",
         " Plans ",
-        " Palace ",
+        " K-O-Palace ",
     ];
     let tab_widget = Tabs::new(tabs.iter().map(|t| Line::from(*t)).collect::<Vec<_>>())
         .block(Block::default().borders(Borders::BOTTOM))
@@ -101,7 +101,7 @@ fn ui(f: &mut Frame) {
         .split(main_chunks[1]);
 
     // Load runtime data
-    let builtins = pandora_kuber::builtin::all();
+    let builtins = pandora_ko_palace::builtin::all();
     let council = pandora_shadow_council::ShadowCouncil::new();
     let summary = council.summary();
 
@@ -138,7 +138,7 @@ fn ui(f: &mut Frame) {
 
     // Column 3 — Marketplace + Fleet
     let palace_text = format!(
-        "KUBER Palace\nServer: {}\nFeatured packages: 5\nTrending (week): 5\n\nFleet\nWorkers: 0\nRemote: none",
+        "K-O-Palace\nServer: {}\nFeatured packages: 5\nTrending (week): 5\n\nFleet\nWorkers: 0\nRemote: none",
         if std::env::var("PALACE_URL").is_ok() { "online" } else { "offline" }
     );
     let palace_block = Paragraph::new(palace_text)
@@ -169,7 +169,7 @@ fn ui(f: &mut Frame) {
 mod tui_tests {
     #[test]
     fn builtin_genes_exist() {
-        let genes = pandora_kuber::builtin::all();
+        let genes = pandora_ko_palace::builtin::all();
         assert!(!genes.is_empty());
         assert!(genes.iter().any(|g| g.id == "filesystem"));
     }

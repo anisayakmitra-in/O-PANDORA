@@ -847,7 +847,7 @@ impl ShadowCouncil {
         self.slash_commands.register_all(&id, &manifest);
         self.events
             .subscribe(Subscription::new(&id, HarnessEvent::HarnessInstalled));
-        println!("[SHADOW-COUNCIL] installed {kind:?} harness: {id}");
+        tracing::info!(harness_id = %id, kind = ?kind, "installed harness");
         Ok(())
     }
 
@@ -855,14 +855,14 @@ impl ShadowCouncil {
         self.harnesses.enable(id)?;
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessEnabled));
-        println!("[SHADOW-COUNCIL] enabled: {id}");
+        tracing::info!(harness_id = %id, "enabled harness");
         Ok(())
     }
     pub fn disable(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.disable(id)?;
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessDisabled));
-        println!("[SHADOW-COUNCIL] disabled: {id}");
+        tracing::info!(harness_id = %id, "disabled harness");
         Ok(())
     }
     pub fn suspend(&mut self, id: &str) -> Result<(), pandora_types::PandoraError> {
@@ -884,7 +884,7 @@ impl ShadowCouncil {
         self.dependencies.remove(id);
         self.events
             .subscribe(Subscription::new(id, HarnessEvent::HarnessUninstalled));
-        println!("[SHADOW-COUNCIL] uninstalled: {id}");
+        tracing::info!(harness_id = %id, "uninstalled harness");
         Ok(())
     }
     pub fn update(
@@ -893,7 +893,7 @@ impl ShadowCouncil {
         new: Box<dyn Harness>,
     ) -> Result<(), pandora_types::PandoraError> {
         self.harnesses.update(id, new)?;
-        println!("[SHADOW-COUNCIL] updated: {id}");
+        tracing::info!(harness_id = %id, "updated harness");
         Ok(())
     }
     pub fn find(&self, cap: &str) -> Option<&dyn Harness> {
@@ -934,9 +934,10 @@ impl ShadowCouncil {
             };
         }
         self.gene_router.register(&id, &manifest.capabilities);
-        println!(
-            "[SHADOW-COUNCIL] installed gene: {id} ({})",
-            manifest.kind.as_str()
+        tracing::info!(
+            gene_id = %id,
+            kind = manifest.kind.as_str(),
+            "installed gene"
         );
         Ok(())
     }

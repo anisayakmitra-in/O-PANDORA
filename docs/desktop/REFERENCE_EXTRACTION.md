@@ -1,20 +1,22 @@
 # Reference Extraction Report — Pandora Desktop
 
+This is a design reference, not an inventory of implemented features. `ADOPT` means a pattern is approved for future implementation; it does not mean the corresponding Pandora surface is complete. The current implementation is recorded in `docs/desktop/BASELINE.md`.
+
 ## OpenSail (TesslateAI)
 
 | Pattern | Source | Purpose | Adopt/Adapt/Reject | Pandora Equivalent |
 |---------|--------|---------|-------------------|-------------------|
 | Tauri 2.0 desktop shell | desktop/src-tauri/ | Native cross-platform app wrapper | **ADOPT** | pandora-desktop/src-tauri/ |
 | Sidecar orchestrator binary | binaries/tesslate-studio-orchestrator | Separate process for agent runtime | **REJECT** — Pandora already has PandoraRuntime as library | Link pandora-orchestrator directly |
-| Workspace model (editor + terminal + Git + previews) | app/src/ | Integrated coding workspace | **ADAPT** — Pandora adds governance layer | File tree + Monaco editor + PTY terminal + Git panel |
+| Workspace model (editor + terminal + Git + previews) | app/src/ | Integrated coding workspace | **ADAPT** — Pandora adds governance layer | File tree + editor + governed tool output + Git panel |
 | Architecture node graph | app/src/ | Visual runtime topology | **ADAPT** — make Pandora-native | Parliament→Shadow Council→Harness→Gene graph |
 | Approval UI | app/src/ | Human-in-the-loop for agent actions | **ADOPT** — essential for Pandora governance | Approval card with risk, permissions, [y/n] |
 | Agent fleet management | app/src/ | Multi-agent orchestration | **ADAPT** — Pandora has Fleet | Fleet panel showing RuntimeNodes |
-| Marketplace (Palace equivalent) | app/src/ | Package discovery and install | **ADAPT** — Pandora has Palace/KUBER | Palace marketplace with genes, harnesses, skills |
+| Marketplace (K-O-Palace equivalent) | app/src/ | Package discovery and install | **ADAPT** — Pandora has K-O-Palace | K-O-Palace marketplace with genes, harnesses, skills |
 | Project lifecycle | app/src/ | Recent projects, resume sessions | **ADOPT** | Project selector with Git status, last session |
 | Runtime selection | app/src/ | Model/provider switching | **ADOPT** | Model selector using Pandora provider registry |
 | Background jobs | app/src/ | Long-running task management | **ADAPT** — Pandora has scheduler | Scheduler panel with cron jobs |
-| Local-first desktop/server | desktop/src-tauri/ | Works offline, syncs when connected | **ADOPT** | Local PandoraRuntime, Palace optional |
+| Local-first desktop/server | desktop/src-tauri/ | Works offline, syncs when connected | **ADOPT** | Local PandoraRuntime, K-O-Palace optional |
 | Streaming responses | app/src/ | Real-time agent output | **ADOPT** | Event-based streaming through Tauri events |
 | Secret storage | Stronghold plugin | Encrypted secrets | **ADAPT** — prefer OS keychain | Tauri stronghold or OS credential manager |
 
@@ -42,7 +44,7 @@
 | Tool call rendering | apps/desktop/src/ | Expandable tool output | **ADOPT** | Collapsible gene/tool execution blocks |
 | Diff viewer | apps/desktop/src/ | Side-by-side diffs | **ADOPT** | Diff panel with accept/reject |
 | File preview | apps/desktop/src/ | Inline file viewing | **ADOPT** | Monaco editor integration |
-| Terminal output | apps/desktop/src/ | Integrated terminal | **ADOPT** | PTY terminal tabs |
+| Terminal output | apps/desktop/src/ | Integrated terminal | **ADAPT** ? actions must pass through Pandora governance | Runtime-mediated tool output |
 | Model/provider controls | apps/desktop/src/ | Model switching | **ADOPT** | Model dropdown with health status |
 | Multiple concurrent sessions | apps/desktop/src/ | Parallel agent sessions | **ADAPT** (future) | Fleet workers |
 | Scheduling | apps/desktop/src/ | Cron-like task scheduling | **ADOPT** | Pandora cron integration |
@@ -61,6 +63,6 @@
 
 1. **Tauri over Electron**: Pandora is Rust. Tauri keeps Rust-native performance and avoids Chromium bloat.
 2. **Direct library linking over sidecar**: PandoraRuntime is linked as a library, not spawned as a process.
-3. **One runtime, multiple surfaces**: Desktop, CLI, TUI, Web all share the same PandoraRuntime.
+3. **One runtime, multiple surfaces**: The active CLI, API, and desktop client share PandoraRuntime. The TUI is included in the root workspace, and no web client is part of this repository.
 4. **Governance-first UI**: Approval cards and Parliament visibility distinguish Pandora from other agents.
-5. **Dynamic registries**: All Harness, Gene, Provider lists rendered from runtime data, never hardcoded.
+5. **Dynamic registries**: Implemented registry-backed lists should remain runtime-driven; planned panels must not be described as complete until they are wired and tested.

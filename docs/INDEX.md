@@ -21,10 +21,12 @@
 - [RuntimeNode Specification](RUNTIME_NODE.md) - node capabilities and transports
 
 ## Components
-- [Harnesses](../README.md#harnesses) - source, meta, domain (12 built-in)
-- [Genes](../README.md#genes-21-built-in) - built-in atomic tools
+- [Harnesses](ARCHITECTURE.md#harnesses) - source, meta, and domain roles
+- [Genes](ARCHITECTURE.md#genes) - built-in atomic tools
 - [SDK](SDK.md) - scaffolding guide for all component types
 - [Capabilities](CAPABILITIES.md) - capability system reference
+- [Graph and knowledge](GRAPH_AND_KNOWLEDGE.md) - task graphs, provenance, and retained knowledge
+- [Evolution architecture](EVOLUTION.md) - governed GEPA proposals and DSR replacement
 - [Manifest Specification](MANIFESTS.md) - gene.toml, harness.toml, pandora.toml schemas
 
 ## Governance
@@ -32,15 +34,13 @@
 - [Security](../SECURITY.md) - threat model, attack surfaces
 
 ## Packages and Ecosystem
-- [Publishing Guide](PUBLISHING.md) - how to publish to K-O Palace
-- [K-O Palace Deployment](REGISTRY_DEPLOYMENT.md) - running a K-O Palace server
+- [Publishing Guide](PUBLISHING.md) - how to publish to K-O-Palace
+- [K-O-Palace Deployment](REGISTRY_DEPLOYMENT.md) - running a K-O-Palace server
 - [TUI Reference](TUI.md) - terminal UI dashboard
 
 ## Release
 - [Changelog](../CHANGELOG.md) - version history
-- [Release](../README.md#releases) - version and release information
-- [Contributing](../CONTRIBUTING.md) - how to contribute
-- [Code of Conduct](../CODE_OF_CONDUCT.md) - community standards
+- [Release contract](RELEASE_CONTRACT.md) - version and release requirements
 - [Migration Guide](MIGRATION.md) - upgrade paths
 
 ## SDK and Development

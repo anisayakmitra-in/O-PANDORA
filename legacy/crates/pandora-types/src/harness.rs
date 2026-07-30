@@ -67,7 +67,7 @@ pub struct HarnessPackage {
     pub dependencies: Vec<String>,
     /// Packages this one conflicts with.
     pub conflicts: Vec<String>,
-    /// Source location (path, git URL, K-O Palace id).
+    /// Source location (path, git URL, K-O-Palace id).
     pub source: String,
     /// Ed25519 signature (if signed).
     pub signature: Option<String>,

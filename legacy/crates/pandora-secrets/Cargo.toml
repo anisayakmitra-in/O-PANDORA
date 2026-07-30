@@ -1,0 +1,13 @@
+[package]
+name = "pandora-secrets"
+version.workspace = true
+edition.workspace = true
+description = "Pandora provider secret sources and local secret storage"
+publish = false
+
+[dependencies]
+base64.workspace = true
+keyring.workspace = true
+ring.workspace = true
+sha2.workspace = true
+thiserror.workspace = true

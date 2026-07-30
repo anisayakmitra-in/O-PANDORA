@@ -75,32 +75,31 @@ echo "explain the README" | pandora
 
 ## Approvals
 
-When Parliament requires approval for a tool call:
+When Parliament requires approval for a tool call, Pandora persists the exact tool name and arguments:
 
 ```
-> rm -rf node_modules
+Approval required for tool `filesystem.write`.
+Approval ID: session-filesystem.write-<request-hash>
 
-  HIGH-RISK OPERATION
-    rm -rf node_modules
-
-  This may destroy data.
-  Approval required.
-
-  [y] allow once   [a] allow session   [n] deny
+Run `pandora approve <id>` to allow this exact invocation.
 ```
 
 Approve from the shell:
 
 ```
-> /approve         # list pending
-> /approve exec-1234  # approve specific
+> /approve          # list pending
+> /approve <id>     # approve one exact invocation
+> /reject <id>      # reject it
 ```
 
 Or from the CLI:
 
 ```bash
-pandora approve exec-1234
+pandora approve <id>
+pandora reject <id>
 ```
+
+An approval does not authorize another set of arguments, another tool, or a future request. Request-bound approvals expire after fifteen minutes.
 
 ## Sessions
 

@@ -1,7 +1,7 @@
 //! Execution Risk Engine — classifies any command by risk level.
 //!
 //! Generalized from claurst's BashRiskLevel to cover shell, filesystem,
-//! git, docker, adb, browser, HTTP, and MCP operations. One framework,
+//! git, docker, browser, HTTP, and MCP operations. One framework,
 //! not per-tool classifiers.
 
 use serde::{Deserialize, Serialize};
@@ -55,7 +55,6 @@ pub enum OperationType {
     Filesystem { path: String, write: bool },
     Git(String),
     Docker { image: String, privileged: bool },
-    Adb(String),
     Browser(String),
     Http { method: String, url: String },
     Mcp { tool: String },
@@ -77,7 +76,6 @@ pub fn classify(op: &OperationType) -> RiskLevel {
                 RiskLevel::Low
             }
         }
-        OperationType::Adb(cmd) => classify_adb(cmd),
         OperationType::Browser(action) => classify_browser(action),
         OperationType::Http { method, url: _ } => match method.to_uppercase().as_str() {
             "GET" | "HEAD" => RiskLevel::Safe,
@@ -219,24 +217,6 @@ fn classify_git(sub: &str) -> RiskLevel {
         "push" | "force-push" | "reset --hard" | "clean" => RiskLevel::Medium,
         _ => RiskLevel::Low,
     }
-}
-
-fn classify_adb(cmd: &str) -> RiskLevel {
-    let cmd = cmd.trim();
-    if cmd.starts_with("install") || cmd.starts_with("uninstall") {
-        return RiskLevel::Medium;
-    }
-    if cmd.starts_with("shell") {
-        // Delegate to shell classification
-        return classify_shell(cmd.strip_prefix("shell ").unwrap_or(cmd));
-    }
-    if cmd.starts_with("pull") || cmd.starts_with("push") {
-        return RiskLevel::Low;
-    }
-    if cmd.starts_with("reboot") || cmd.starts_with("root") {
-        return RiskLevel::High;
-    }
-    RiskLevel::Low
 }
 
 fn classify_browser(action: &str) -> RiskLevel {

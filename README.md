@@ -1,38 +1,38 @@
 # O-PANDORA
 
-[![Version](https://img.shields.io/badge/version-0.5.0-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.0)
+[![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.1)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-An open-source autonomous AI development environment with governed, inspectable execution.
-
-**[Screenshot](#)**
+An open-source AI development environment with inspectable execution and explicit approval boundaries.
 
 ## Quick Start
 
+After a tagged release publishes platform binaries:
+
 ```bash
-# Clone and build
-git clone https://github.com/anisayakmitra-in/O-PANDORA.git
-cd O-PANDORA
-cargo build --release -p pandora
+# Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | bash
 
-# Start the desktop app
-cd pandora-desktop
-npm install
-npx tauri dev
+# Windows PowerShell
+irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
 
-# Or use the headless CLI
-cargo run -- run "Fix the failing test in src/parser.rs"
+pandora doctor
+pandora setup
+pandora run "Fix the failing test in src/parser.rs"
+pandora completions bash > ~/.local/share/bash-completion/completions/pandora
 ```
 
-## What Makes Pandora Different
+Until the first binary release is published, use the explicit source-build path in [Install](#install). Pandora never compiles source silently from the binary installer.
 
-**You see what it does.** Every execution is recorded in a tamper-evident chain. Inspect any decision, replay any session, and audit any change.
+## What Pandora provides
 
-**You stay in control.** Parliament governance checks every action before it happens. Approve risky operations. Deny what you don't trust.
+**Inspectable execution.** Execution records include decisions, events, and outcomes for later review.
 
-**You can swap anything.** Don't like how planning works? Install a different Harness from the Palace marketplace. Your Genes and providers stay the same.
+**Approval boundaries.** Governance checks actions before execution where the selected policy requires approval.
 
-**It runs anywhere.** Local Ollama, OpenAI, Anthropic, custom endpoints — Pandora talks to them all the same way.
+**Pluggable components.** Harnesses, genes, and provider connections are separate components with explicit manifests.
+
+**Multiple providers.** The current provider layer supports Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, and custom endpoints.
 
 ## Architecture
 
@@ -50,23 +50,24 @@ Pandora Runtime
    ├── Genes (capabilities)
    ├── Providers (model connections)
    ├── Memory (context persistence)
-   ├── Palace (package registry)
+   ├── K-O-Palace (package registry)
    └── Fleet (multi-node workers)
 ```
 
 ## Workspace
 
-11 crates in the Cargo workspace:
+13 workspace members in the Cargo workspace:
 
 | Crate | Purpose |
 |-------|---------|
 | `pandora-types` | Shared types, traits, error definitions |
+| `pandora-secrets` | Provider secret sources and secure local storage |
 | `pandora-services` | Service implementations |
 | `pandora-orchestrator` | Execution orchestration, agentic loop |
 | `pandora-shadow-council` | Capability routing, harness/gene registry |
 | `pandora-genes` | Gene implementations |
 | `pandora-harnesses` | Harness implementations |
-| `pandora-kuber` | Package management, Palace |
+| `pandora-ko-palace` | Package management, K-O-Palace |
 | `pandora-fleet` | Multi-node worker swarm |
 | `pandora-api` | HTTP API + desktop application services |
 | `pandora` | CLI binary (headless/development) |
@@ -86,7 +87,17 @@ npx tauri build    # production build
 ### CLI (Headless)
 
 ```bash
-cargo install --git https://github.com/anisayakmitra-in/O-PANDORA.git
+# Linux/macOS: downloads and verifies a published release binary
+curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | bash
+
+# Until a release is published, build from source explicitly (requires Rust)
+curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | PANDORA_SOURCE_BUILD=1 bash
+
+# Windows PowerShell: published release binary
+irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
+
+# Windows source fallback (requires Rust)
+$env:PANDORA_SOURCE_BUILD="1"; irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
 
 # Run a task
 pandora run "Audit dependencies for vulnerabilities"
@@ -98,9 +109,13 @@ pandora serve
 pandora doctor
 ```
 
+> Release binaries are available only after a tagged workflow publishes a GitHub Release. If no release asset exists, use the explicit source fallback above; the installer will not silently compile code.
+
 ## Setup
 
-First run walks you through:
+The setup wizard stores provider connections in Pandora's user configuration and keeps credentials in the native OS keychain when available. Linux and headless environments can use the encrypted fallback described in [Configuration](docs/CONFIGURATION.md).
+
+The setup wizard walks you through:
 1. Open a project
 2. Configure a model provider
 3. Review permissions
@@ -133,8 +148,8 @@ Apache 2.0 — see [LICENSE](LICENSE)
 ## Platform support
 
 | Surface | Windows | macOS | Linux | WSL | Android / Termux | Play Store |
-|---|---:|---:|---:|---:|---:|---:|
-| `pandora` CLI | supported | supported | supported | supported | supported via local build | n/a |
-| Pandora Desktop | supported | CI/package target | CI/package target | n/a | planned mobile client | not released yet |
+|---|---|---|---|---|---|---|
+| `pandora` CLI | source build; release artifact pending | source build; release artifact pending | source build; release artifact pending | Linux environment; separately unverified | paused | n/a |
+| Pandora Desktop | source build; packaged release pending | CI/package target; not locally verified | CI/package target; not locally verified | not supported as a desktop target | paused | not released |
 
-See [Android support](docs/platforms/ANDROID.md) for Termux installation and the Play Store release gates. Do not treat a successful Rust workspace build as proof that a packaged desktop or Android release is available.
+Mobile and Termux support are paused and are not advertised as available products. A successful Rust workspace build does not prove that a packaged desktop or Android release exists. See [the release contract](docs/RELEASE_CONTRACT.md) for the gates required before changing this table.

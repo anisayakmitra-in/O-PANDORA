@@ -14,7 +14,7 @@ use pandora_types::permissions_manifest::{
     FilesystemScope, PermissionManifest, PermissionVerdict, ShellPermissions,
 };
 use pandora_types::risk_engine::{classify, OperationType, RiskLevel};
-use pandora_types::runtime_node::{NodeCapabilities, NodeKind, NodeRegistry, RuntimeNode};
+use pandora_types::runtime_node::{NodeCapabilities, NodeRegistry, RuntimeNode};
 use pandora_types::universal_registry::{
     InMemoryRegistry, Registry, RegistryEntry, RegistryHealth,
 };
@@ -74,18 +74,8 @@ fn scenario_node_capability_registry() {
     };
     node_reg.register(desktop);
 
-    let mut phone = RuntimeNode::local();
-    phone.id = "phone-1".into();
-    phone.kind = NodeKind::Phone;
-    phone.capabilities = NodeCapabilities {
-        camera: true,
-        bluetooth: true,
-        ..Default::default()
-    };
-    node_reg.register(phone);
-
     assert_eq!(node_reg.with_capability("gpu").len(), 1);
-    assert_eq!(node_reg.with_capability("camera").len(), 1);
+    assert_eq!(node_reg.with_capability("camera").len(), 0);
     let gpu_nodes = node_reg.with_capability("gpu");
     assert!(gpu_nodes.iter().any(|n| n.id == "desktop-1"));
 }

@@ -20,8 +20,6 @@ pub struct ArtifactStore {
 struct StoredArtifact {
     size: u64,
     rel_path: String,
-    #[expect(dead_code)]
-    created_at: u64, // unix timestamp
 }
 
 impl ArtifactStore {
@@ -34,7 +32,6 @@ impl ArtifactStore {
         format!("{:016x}", h.finish())
     }
     pub fn new(root: impl Into<PathBuf>) -> Self {
-        let _ = &root; // suppress unused import path warning
         let root = root.into();
         std::fs::create_dir_all(&root).ok();
         Self {
@@ -62,17 +59,11 @@ impl ArtifactStore {
         let path = subdir.join(&hash);
         std::fs::write(&path, data).map_err(|e| format!("write: {e}"))?;
 
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-
         self.index.insert(
             hash.clone(),
             StoredArtifact {
                 size: data.len() as u64,
                 rel_path: format!("{}/{}", &hash[..2], hash),
-                created_at: now,
             },
         );
 

@@ -4,6 +4,32 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.1] — 2026-07-30
+
+### Added
+
+- Shared authenticated runtime API for CLI, desktop, and remote nodes.
+- Secure provider credential storage with legacy migration.
+- Architecture-aware CLI release scripts with checksums and build metadata.
+- Per-task model selection with `pandora run --model`.
+
+### Changed
+
+- Consolidated generic, provider, and remote credential paths in `pandora-secrets`.
+- Paused mobile and Termux packaging until desktop release gates pass.
+- Renamed the package registry integration to K-O-Palace.
+
+### Removed
+
+- Unreachable archive command and unused internal artifact/MCP types.
+
+## [0.5.0] � 2026-07-28
+
+### Changed
+
+- Established `0.5.0` as the synchronized workspace, CLI, and desktop baseline.
+- Added release-contract validation for desktop and Tauri application versions.
+- Excluded vendored frontend dependencies from repository documentation checks.
 
 ## [0.2.0] — 2026-07-14
 
@@ -24,23 +50,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Docker sandboxing gene (SandboxGene with run_in_sandbox, run_with_mount)
 - GeneKind enum expanded +6 variants (Governance, Security, Infrastructure, Communication, Evolution, Cognitive)
 - GeneCategory enum (8 categories: Execution, Memory, Infrastructure, Reasoning, Security, Networking, Multimodal, Research)
-- PackageKind enum (19 variants for K-O Palace)
+- PackageKind enum (19 variants for K-O-Palace)
 - Dynamic harness registration (register_defaults + register_dynamic)
-- K-O Palace registry integration (pandora install with remote fallback)
+- K-O-Palace registry integration (pandora install with remote fallback)
 - ASCII cat+box logo to CLI --version and shell
 - Official Pandora logo (1024x1024 PNG)
 - SDK improvements: prelude module, #[non_exhaustive] on 7 enums, module docs on 14 modules
 - 6 sample apps (file-analyzer, shell-scripter, test-runner, git-helper, docs-writer, data-processor)
 - `pandora doctor` for installation health checks
 - `pandora new` scaffolding for genes, harnesses, skills, evaluators, policies
-- `pandora publish` with K-O Palace upload
+- `pandora publish` with K-O-Palace upload
 - `pandora overnight` for long-running tasks
 
 ### Changed
 
 - Repository renamed: PANDORA-SYSTEMS → O-PANDORA
 - License changed: MIT → Apache 2.0
-- pandora-palace crate removed (K-O Palace is separate repository)
+- pandora-palace crate removed (K-O-Palace is separate repository)
 - PANDORA_PALACE_URL → PANDORA_REGISTRY_URL
 - Shell banner: "PANDORA" → "O-PANDORA"
 - Provider client reuse (reqwest Client stored, not created per-request)

@@ -18,21 +18,25 @@
 
 ---
 
-## 2. GEPA removed from runtime core
+## 2. GEPA and DSR stay outside the runtime kernel
 
-**Decision:** Remove GEPA (Goal-directed Evolutionary Performance Architecture), DSR (Dynamic Service Replacement), and EvolutionService from the pandora kernel. Relegate to optional packages.
+**Decision:** Keep GEPA (Goal-directed Evolutionary Performance Architecture) and DSR (Dynamic Service Replacement) as governed, optional capabilities. They do not mutate or replace services during an active execution.
 
-**Context:** GEPA mutated the runtime during execution. This made the execution substrate non-deterministic and impossible to audit. The runtime should be a foundational layer, not an adaptive one.
+**Context:** The execution substrate must remain deterministic and replayable. GEPA may inspect completed sessions and produce a versioned proposal. DSR may apply an approved replacement between executions through the package and registry boundaries. Neither operation changes the active execution graph.
 
 **Alternatives considered:**
-- Keep GEPA in core (rejected): Destroys determinism and provenance.
-- Keep GEPA as a gene/harness (accepted): Runtime stays frozen. Evolution is a capability you install, not a property of the substrate.
+- Keep GEPA in core (rejected): It couples adaptation to execution and weakens provenance.
+- Allow GEPA as an optional observer/proposer (accepted): Proposals are reviewable artifacts, not automatic mutations.
+- Allow unrestricted DSR (rejected): A replacement could bypass permissions, compatibility checks, or rollback.
+- Allow governed DSR at package boundaries (accepted): Replacement requires approval, verification, and a reversible registry change.
 
 **Consequences:**
-- ✅ Runtime is always deterministic.
-- ✅ Every execution is reproducible from plan + input.
-- ✅ Governance checks are always applied.
-- ❌ No online adaptation (accepted — adapt by installing new packages/plans).
+- Runtime remains deterministic.
+- Every execution is reproducible from plan + input.
+- Governance checks remain in force.
+- Online mutation is not allowed; adaptation occurs between executions through approved packages or plans.
+
+The current read-only proposal implementation is `pandora-orchestrator::gepa::GepaObserver`. The lifecycle and target interfaces are documented in [Evolution architecture](EVOLUTION.md); a production DSR service is not yet implemented.
 
 ---
 

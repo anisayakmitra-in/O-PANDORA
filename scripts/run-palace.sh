@@ -6,13 +6,13 @@ PALACE_DIR="${PANDORA_PALACE_DIR:-$REPO_ROOT/../k-o-palace}"
 PORT="${PANDORA_PALACE_PORT:-3001}"
 
 if [[ ! -f "$PALACE_DIR/Cargo.toml" ]]; then
-  echo "K-O Palace lives in the separate repository: https://github.com/anisayakmitra-in/k-o-palace"
+  echo "K-O-Palace lives in the separate repository: https://github.com/anisayakmitra-in/k-o-palace"
   echo "Clone it next to O-PANDORA or set PANDORA_PALACE_DIR to its path."
   exit 1
 fi
 
 cd "$PALACE_DIR"
-echo "Pandora Palace starting on :$PORT"
+echo "K-O-Palace starting on :$PORT"
 cargo run --release -p k-o-palace &
 PID=$!
 echo "Palace PID: $PID"

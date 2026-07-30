@@ -5,13 +5,16 @@
 
 mod safety;
 
-use pandora_kuber::registry::RegistryClient;
+use pandora_api::client::ApiClient;
+use pandora_api::protocol::ExecuteRequest;
+use pandora_ko_palace::registry::RegistryClient;
 use pandora_orchestrator::PandoraRuntime;
 // ShadowCouncil accessed through PandoraRuntime
 use pandora_shadow_council::ShadowCouncil;
 use pandora_types::connection_manager::ConnectionRegistry;
+use rand::{distributions::Alphanumeric, Rng};
 use safety::{canonicalize_existing, resolve_rooted_path, validate_safe_name, workspace_root};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use tauri::{AppHandle, Emitter, State};
@@ -21,10 +24,20 @@ use tokio::sync::Mutex;
 
 struct DesktopState {
     runtime: Arc<Mutex<PandoraRuntime>>,
+    api_client: ApiClient,
     session_id: Arc<Mutex<Option<String>>>,
     project_path: Arc<Mutex<Option<String>>>,
 }
 
+#[tauri::command]
+async fn send_message(
+    app: AppHandle,
+    state: State<'_, DesktopState>,
+    message: String,
+    profile: Option<String>,
+) -> Result<ExecutionResult, String> {
+    execute_task(app, state, message, None, profile).await
+}
 // ═══════════════════════════════════════════════════════════
 //  CORE — Session management (WIRED to PandoraRuntime)
 // ═══════════════════════════════════════════════════════════
@@ -46,14 +59,28 @@ async fn create_session(
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
-            .as_secs()
+            .as_millis()
     );
+    let created = chrono::Utc::now().to_rfc3339();
     let info = SessionInfo {
         id: id.clone(),
-        created: chrono::Utc::now().to_rfc3339(),
-        task,
+        created: created.clone(),
+        task: task.clone(),
     };
-    *state.session_id.lock().await = Some(id);
+    let directory = dirs_next::home_dir()
+        .unwrap_or_default()
+        .join(".pandora")
+        .join("sessions");
+    std::fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
+    let record = serde_json::json!({
+        "session_id": id,
+        "task": task,
+        "created": created,
+    });
+    let contents = serde_json::to_string_pretty(&record).map_err(|error| error.to_string())?;
+    std::fs::write(directory.join(format!("{}.json", info.id)), contents)
+        .map_err(|error| error.to_string())?;
+    *state.session_id.lock().await = Some(info.id.clone());
     Ok(info)
 }
 
@@ -92,6 +119,92 @@ async fn list_sessions() -> Result<Vec<SessionInfo>, String> {
 }
 
 #[tauri::command]
+async fn export_sessions(format: String, redact: bool) -> Result<String, String> {
+    let format = format.to_ascii_lowercase();
+    if format != "json" && format != "markdown" {
+        return Err("Unsupported export format; use json or markdown".to_string());
+    }
+    let directory = dirs_next::home_dir()
+        .unwrap_or_default()
+        .join(".pandora")
+        .join("sessions");
+    let mut sessions = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(directory) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path
+                .extension()
+                .is_some_and(|extension| extension == "json")
+                && path.file_stem() != Some(std::ffi::OsStr::new("index"))
+            {
+                if let Ok(contents) = std::fs::read_to_string(path) {
+                    if let Ok(mut value) = serde_json::from_str::<serde_json::Value>(&contents) {
+                        if redact {
+                            redact_export_value(&mut value);
+                        }
+                        sessions.push(value);
+                    }
+                }
+            }
+        }
+    }
+    sessions.sort_by(|a, b| {
+        b.get("created")
+            .and_then(serde_json::Value::as_str)
+            .cmp(&a.get("created").and_then(serde_json::Value::as_str))
+    });
+    if format == "json" {
+        serde_json::to_string_pretty(&sessions).map_err(|error| error.to_string())
+    } else {
+        Ok(sessions
+            .iter()
+            .map(|session| {
+                format!(
+                    "# Pandora session {}\n\n- **Created:** {}\n- **Task:** {}\n",
+                    session
+                        .get("session_id")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("unknown"),
+                    session
+                        .get("created")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("unknown"),
+                    session
+                        .get("task")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("untitled")
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n---\n\n"))
+    }
+}
+
+fn redact_export_value(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(object) => {
+            for (key, child) in object.iter_mut() {
+                let key_lower = key.to_ascii_lowercase();
+                if ["api_key", "apikey", "password", "secret", "token"]
+                    .iter()
+                    .any(|part| key_lower.contains(part))
+                {
+                    *child = serde_json::Value::String("[REDACTED]".to_string());
+                } else {
+                    redact_export_value(child);
+                }
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                redact_export_value(item);
+            }
+        }
+        _ => {}
+    }
+}
+
+#[tauri::command]
 async fn resume_session(
     state: State<'_, DesktopState>,
     session_id: String,
@@ -105,20 +218,16 @@ async fn resume_session(
     if !path.exists() {
         return Err(format!("Session not found: {session_id}"));
     }
-    let c = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let j: serde_json::Value = serde_json::from_str(&c).map_err(|e| e.to_string())?;
+    let c = std::fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let json: serde_json::Value = serde_json::from_str(&c).map_err(|error| error.to_string())?;
     let info = SessionInfo {
         id: session_id,
-        created: j["created"].as_str().unwrap_or("").to_string(),
-        task: j["task"].as_str().map(String::from),
+        created: json["created"].as_str().unwrap_or("").to_string(),
+        task: json["task"].as_str().map(String::from),
     };
     *state.session_id.lock().await = Some(info.id.clone());
     Ok(info)
 }
-
-// ═══════════════════════════════════════════════════════════
-//  CORE — Execution (WIRED to PandoraRuntime::run)
-// ═══════════════════════════════════════════════════════════
 
 #[derive(Serialize)]
 struct ExecutionResult {
@@ -129,17 +238,15 @@ struct ExecutionResult {
     model: String,
     success: bool,
 }
-
 #[tauri::command]
 async fn execute_task(
     app: AppHandle,
     state: State<'_, DesktopState>,
     task: String,
     domain: Option<String>,
+    profile: Option<String>,
 ) -> Result<ExecutionResult, String> {
     let domain = domain.unwrap_or_else(|| "general".into());
-
-    // Emit start event
     let _ = app.emit(
         "stream-event",
         serde_json::json!({
@@ -148,69 +255,80 @@ async fn execute_task(
         }),
     );
 
-    let mut runtime = state.runtime.lock().await;
-    match runtime.run(&task, &domain).await {
-        Ok(report) => {
-            // Emit completion
-            let _ = app.emit(
-                "stream-event",
-                serde_json::json!({
-                    "type": "execution.completed",
-                    "content": report.output,
-                    "metadata": {
-                        "duration_ms": report.duration_ms,
-                        "provider": report.provider,
-                        "execution_id": report.execution_id,
-                    }
-                }),
-            );
+    state
+        .api_client
+        .wait_ready()
+        .await
+        .map_err(|error| error.to_string())?;
 
-            // Save session record
-            if let Some(ref sid) = *state.session_id.lock().await {
-                let dir = dirs_next::home_dir()
-                    .unwrap_or_default()
-                    .join(".pandora")
-                    .join("sessions");
-                let _ = std::fs::create_dir_all(&dir);
-                let record = serde_json::json!({
-                    "session_id": sid,
-                    "execution_id": report.execution_id,
-                    "task": task,
-                    "output": report.output,
-                    "created": chrono::Utc::now().to_rfc3339(),
-                });
-                let _ = std::fs::write(
-                    dir.join(format!("{sid}.json")),
-                    serde_json::to_string_pretty(&record).unwrap_or_default(),
-                );
-            }
-
-            Ok(ExecutionResult {
-                execution_id: report.execution_id,
-                output: report.output,
-                duration_ms: report.duration_ms as u64,
-                provider: report.provider.clone(),
-                model: report.model.clone(),
-                success: true,
-            })
-        }
-        Err(e) => {
+    let response = state
+        .api_client
+        .execute(&ExecuteRequest {
+            task: task.clone(),
+            domain,
+            strategy: String::new(),
+            evaluator: String::new(),
+            profile,
+        })
+        .await
+        .map_err(|error| {
             let _ = app.emit(
                 "stream-event",
                 serde_json::json!({
                     "type": "execution.failed",
-                    "content": e.to_string(),
+                    "content": error.to_string(),
                 }),
             );
-            Err(e.to_string())
-        }
+            error.to_string()
+        })?;
+    let success = response.status == "completed";
+    let event_type = if success {
+        "execution.completed"
+    } else {
+        "execution.failed"
+    };
+    let _ = app.emit(
+        "stream-event",
+        serde_json::json!({
+            "type": event_type,
+            "content": response.output,
+            "metadata": {
+                "duration_ms": response.duration_ms,
+                "provider": response.provider,
+                "execution_id": response.session_id,
+                "status": response.status,
+            }
+        }),
+    );
+
+    if let Some(ref sid) = *state.session_id.lock().await {
+        let dir = dirs_next::home_dir()
+            .unwrap_or_default()
+            .join(".pandora")
+            .join("sessions");
+        let _ = std::fs::create_dir_all(&dir);
+        let record = serde_json::json!({
+            "session_id": sid,
+            "execution_id": response.session_id,
+            "task": task,
+            "output": response.output,
+            "created": chrono::Utc::now().to_rfc3339(),
+        });
+        let _ = std::fs::write(
+            dir.join(format!("{sid}.json")),
+            serde_json::to_string_pretty(&record).unwrap_or_default(),
+        );
     }
+
+    Ok(ExecutionResult {
+        execution_id: response.session_id,
+        output: response.output,
+        duration_ms: response.duration_ms,
+        provider: response.provider,
+        model: String::new(),
+        success,
+    })
 }
-
-// ═══════════════════════════════════════════════════════════
-//  PROVIDERS (WIRED to ConnectionRegistry)
-// ═══════════════════════════════════════════════════════════
-
 #[derive(Serialize)]
 struct ProviderInfo {
     name: String,
@@ -220,6 +338,18 @@ struct ProviderInfo {
     healthy: bool,
 }
 
+#[tauri::command]
+fn switch_model(provider: String, model: String) -> Result<(), String> {
+    if provider.trim().is_empty() || model.trim().is_empty() {
+        return Err("provider and model are required".into());
+    }
+    let mut registry = ConnectionRegistry::load();
+    let connection = registry
+        .find_mut(&provider)
+        .ok_or_else(|| format!("provider not found: {provider}"))?;
+    connection.default_model = model;
+    registry.save().map_err(|error| error.to_string())
+}
 #[tauri::command]
 async fn list_providers() -> Result<Vec<ProviderInfo>, String> {
     let cr = ConnectionRegistry::load();
@@ -238,6 +368,11 @@ async fn list_providers() -> Result<Vec<ProviderInfo>, String> {
 }
 
 #[tauri::command]
+fn list_profiles() -> Result<Vec<String>, String> {
+    pandora_types::profile::list_profiles().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 async fn list_models() -> Result<Vec<serde_json::Value>, String> {
     let cr = ConnectionRegistry::load();
     let healthy_set = cr.healthy();
@@ -248,6 +383,7 @@ async fn list_models() -> Result<Vec<serde_json::Value>, String> {
             serde_json::json!({
                 "name": c.default_model,
                 "provider": c.name,
+                "endpoint": c.endpoint,
                 "healthy": healthy_set.iter().any(|h| h.name == c.name),
             })
         })
@@ -456,59 +592,8 @@ async fn read_file_content(state: State<'_, DesktopState>, path: String) -> Resu
     std::fs::read_to_string(&resolved).map_err(|e| format!("Cannot read {path}: {e}"))
 }
 
-#[tauri::command]
-async fn write_file_content(
-    state: State<'_, DesktopState>,
-    path: String,
-    content: String,
-) -> Result<(), String> {
-    let project_root = workspace_root(state.project_path.lock().await.clone());
-    let resolved = resolve_rooted_path(&project_root, &path)?;
-    if let Some(parent) = resolved.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| format!("Cannot create {}: {e}", parent.display()))?;
-    }
-    std::fs::write(&resolved, &content).map_err(|e| format!("Cannot write {path}: {e}"))
-}
-
 // ═══════════════════════════════════════════════════════════
 //  TERMINAL — real subprocess
-// ═══════════════════════════════════════════════════════════
-
-#[tauri::command]
-async fn terminal_exec(
-    state: State<'_, DesktopState>,
-    command: String,
-    cwd: Option<String>,
-) -> Result<String, String> {
-    let project_root = workspace_root(state.project_path.lock().await.clone());
-    let dir = match cwd {
-        Some(path) => resolve_rooted_path(&project_root, &path)?,
-        None => canonicalize_existing(&project_root)?,
-    };
-    let output = if cfg!(windows) {
-        std::process::Command::new("cmd")
-            .args(["/C", &command])
-            .current_dir(&dir)
-            .output()
-    } else {
-        std::process::Command::new("bash")
-            .args(["-c", &command])
-            .current_dir(&dir)
-            .output()
-    };
-    match output {
-        Ok(o) => {
-            let stdout = String::from_utf8_lossy(&o.stdout);
-            let stderr = String::from_utf8_lossy(&o.stderr);
-            Ok(format!("{stdout}{stderr}").trim().to_string())
-        }
-        Err(e) => Err(format!("Command failed: {e}")),
-    }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  PALACE — honest: reads from filesystem, says what's real
 // ═══════════════════════════════════════════════════════════
 
 #[tauri::command]
@@ -565,8 +650,8 @@ async fn palace_install(package: String) -> Result<String, String> {
     tokio::task::spawn_blocking(move || {
         let registry = RegistryClient::new(&registry_url, token)?;
         let council = Arc::new(RwLock::new(ShadowCouncil::new()));
-        let mut kuber = pandora_kuber::Kuber::new(council);
-        kuber
+        let mut ko_palace = pandora_ko_palace::KoPalace::new(council);
+        ko_palace
             .install_remote(&registry, &package)
             .map_err(|e| e.to_string())?;
         Ok(format!("Installed: {package}"))
@@ -654,30 +739,30 @@ async fn governance_summary() -> Result<serde_json::Value, String> {
     let store = pandora_types::approval_store::ApprovalStore::new(
         pandora_types::approval_store::ApprovalStore::default_location(),
     );
-    let pending = store.list_pending();
-    let approved = pending
+    let approvals = store.list_all();
+    let approved = approvals
         .iter()
-        .filter(|a| {
+        .filter(|approval| {
             matches!(
-                a.status,
+                approval.status,
                 pandora_types::approval_store::ApprovalStatus::Approved
             )
         })
         .count();
-    let rejected = pending
+    let rejected = approvals
         .iter()
-        .filter(|a| {
+        .filter(|approval| {
             matches!(
-                a.status,
+                approval.status,
                 pandora_types::approval_store::ApprovalStatus::Rejected
             )
         })
         .count();
-    let waiting = pending
+    let waiting = approvals
         .iter()
-        .filter(|a| {
+        .filter(|approval| {
             matches!(
-                a.status,
+                approval.status,
                 pandora_types::approval_store::ApprovalStatus::Pending
             )
         })
@@ -686,8 +771,8 @@ async fn governance_summary() -> Result<serde_json::Value, String> {
         "pending": waiting,
         "approved": approved,
         "rejected": rejected,
-        "total": pending.len(),
-        "recent": pending.iter().map(|a| serde_json::json!({
+        "total": approvals.len(),
+        "recent": approvals.iter().take(8).map(|a| serde_json::json!({
             "id": a.id,
             "tool": a.tool_name,
             "reason": a.reason,
@@ -753,16 +838,61 @@ async fn multi_agent_status() -> Result<serde_json::Value, String> {
     }))
 }
 
-#[tauri::command]
-async fn check_updates() -> Result<serde_json::Value, String> {
-    Ok(serde_json::json!({
-        "current_version": env!("CARGO_PKG_VERSION"),
-        "update_available": false,
-        "release_url": "https://github.com/anisayakmitra-in/O-PANDORA/releases",
-        "note": "Automatic updates not yet integrated. Check releases page manually.",
-    }))
+#[derive(Debug, Deserialize)]
+struct GitHubReleaseAsset {
+    name: String,
+    browser_download_url: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct GitHubRelease {
+    tag_name: String,
+    html_url: String,
+    assets: Vec<GitHubReleaseAsset>,
+}
+#[tauri::command]
+async fn check_updates() -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    let release = client
+        .get("https://api.github.com/repos/anisayakmitra-in/O-PANDORA/releases/latest")
+        .header(reqwest::header::USER_AGENT, "pandora-desktop")
+        .send()
+        .await
+        .map_err(|error| format!("release check failed: {error}"))?
+        .error_for_status()
+        .map_err(|error| format!("release check failed: {error}"))?
+        .json::<GitHubRelease>()
+        .await
+        .map_err(|error| format!("release metadata invalid: {error}"))?;
+    let asset = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("windows", "x86_64") => "pandora-windows-x86_64.exe",
+        ("macos", "x86_64") => "pandora-macos-x86_64",
+        ("linux", "x86_64") => "pandora-linux-x86_64",
+        _ => "",
+    };
+    let binary = release.assets.iter().find(|item| item.name == asset);
+    let checksum_name = if asset.is_empty() {
+        String::new()
+    } else {
+        format!("{asset}.sha256")
+    };
+    let checksum = release
+        .assets
+        .iter()
+        .find(|item| item.name == checksum_name);
+    let latest_version = release.tag_name.trim_start_matches('v');
+    let current_version = env!("CARGO_PKG_VERSION");
+    Ok(serde_json::json!({
+        "current_version": current_version,
+        "latest_version": latest_version,
+        "update_available": is_newer_version(current_version, latest_version),
+        "release_url": release.html_url,
+        "download_url": binary.map(|item| item.browser_download_url.clone()),
+        "checksum_url": checksum.map(|item| item.browser_download_url.clone()),
+        "automatic_updates": false,
+        "note": "Download and verify the matching asset with the platform update helper. Automatic installation requires signed updater metadata.",
+    }))
+}
 #[tauri::command]
 async fn health() -> Result<serde_json::Value, String> {
     Ok(serde_json::json!({
@@ -775,6 +905,16 @@ async fn health() -> Result<serde_json::Value, String> {
 // ═══════════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════════
+
+fn is_newer_version(current: &str, latest: &str) -> bool {
+    match (
+        semver::Version::parse(current),
+        semver::Version::parse(latest),
+    ) {
+        (Ok(current), Ok(latest)) => latest > current,
+        _ => false,
+    }
+}
 
 fn run_git(cwd: &str, args: &[&str]) -> Result<String, String> {
     let output = std::process::Command::new("git")
@@ -841,31 +981,66 @@ fn read_dir_entries(dir: &std::path::Path, max_depth: usize) -> Result<Vec<FileE
 // ═══════════════════════════════════════════════════════════
 
 fn main() {
+    let api_token: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(48)
+        .map(char::from)
+        .collect();
+    std::env::set_var("PANDORA_API_TOKEN", &api_token);
+    let api_listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind local Pandora API");
+    api_listener
+        .set_nonblocking(true)
+        .expect("configure local Pandora API listener");
+    let api_address = api_listener
+        .local_addr()
+        .expect("read local Pandora API address");
+    let api_sessions = dirs_next::home_dir()
+        .unwrap_or_default()
+        .join(".pandora")
+        .join("sessions");
+    std::thread::spawn(move || {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("build local Pandora API runtime");
+        runtime.block_on(async move {
+            let listener = tokio::net::TcpListener::from_std(api_listener)
+                .expect("convert local Pandora API listener");
+            if let Err(error) = pandora_api::serve_listener(listener, api_sessions).await {
+                eprintln!("Local Pandora API stopped: {error}");
+            }
+        });
+    });
+
     let mut runtime = PandoraRuntime::new();
     pandora_harnesses::register_all(&mut runtime.council);
 
     let state = DesktopState {
         runtime: Arc::new(Mutex::new(runtime)),
+        api_client: ApiClient::new(format!("http://{api_address}"), Some(api_token)),
         session_id: Arc::new(Mutex::new(None)),
         project_path: Arc::new(Mutex::new(None)),
     };
-
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state)
         .invoke_handler(tauri::generate_handler![
             // Sessions (wired)
             create_session,
             list_sessions,
+            export_sessions,
             resume_session,
             // Execution (wired)
             execute_task,
+            send_message,
             // Providers (wired)
             list_providers,
+            switch_model,
             list_models,
+            list_profiles,
             // Harnesses + Genes (wired)
             list_harnesses,
             list_genes,
@@ -877,9 +1052,6 @@ fn main() {
             // File tree (wired)
             get_file_tree,
             read_file_content,
-            write_file_content,
-            // Terminal (wired)
-            terminal_exec,
             // Palace (wired)
             palace_list_packages,
             palace_install,
@@ -887,7 +1059,7 @@ fn main() {
             fleet_nodes,
             scheduler_list,
             scheduler_add,
-            // Unimplemented (honest errors)
+            // Governance, topology, fleet status, and release metadata
             governance_summary,
             approve_pending,
             reject_pending,
@@ -898,4 +1070,18 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("Pandora Desktop failed to start");
+}
+
+#[cfg(test)]
+mod update_tests {
+    use super::is_newer_version;
+
+    #[test]
+    fn only_newer_semver_releases_are_updates() {
+        assert!(is_newer_version("0.5.0", "0.6.0"));
+        assert!(is_newer_version("0.5.0", "1.0.0"));
+        assert!(!is_newer_version("0.5.0", "0.5.0"));
+        assert!(!is_newer_version("0.5.0", "0.4.9"));
+        assert!(!is_newer_version("0.5.0", "not-a-version"));
+    }
 }

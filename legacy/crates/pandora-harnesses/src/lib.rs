@@ -114,7 +114,7 @@ source_harness!(
 /// whatever packages are installed (defaults + user-installed).
 ///
 /// Users can remove defaults via `pandora harness uninstall <id>`
-/// and install replacements from K-O Palace.
+/// and install replacements from K-O-Palace.
 pub fn register_dynamic(sc: &mut ShadowCouncil) {
     let home = packages_dir();
 
@@ -206,12 +206,6 @@ fn seed_default_packages() {
             "Computer Use Harness",
             "domain",
             &["screenshot", "desktop"],
-        ),
-        (
-            "android-use",
-            "Android Use Harness",
-            "domain",
-            &["android", "mobile"],
         ),
         // Meta harness
         (
@@ -338,9 +332,6 @@ fn register_domain_by_id(sc: &mut ShadowCouncil, id: &str) {
         "computer-use" => {
             let _ = sc.install(Box::new(computer_use::ComputerUseHarness::new()));
         }
-        "android-use" => {
-            let _ = sc.install(Box::new(android_use::AndroidUseHarness::new()));
-        }
         _ => {}
     }
 }
@@ -376,6 +367,20 @@ fn packages_dir() -> std::path::PathBuf {
 /// Entry point — loads harnesses from local packages, seeding defaults on first run.
 pub fn register_all(sc: &mut ShadowCouncil) {
     register_dynamic(sc);
+
+    // Domain and coordination harnesses are execution roles. Source harnesses
+    // remain disabled until an explicit governance approval enables them.
+    for id in [
+        "coding-domain",
+        "design-domain",
+        "security-domain",
+        "cybersecurity-domain",
+        "research-domain",
+        "computer-use",
+        "coordination-meta",
+    ] {
+        let _ = sc.enable(id);
+    }
 }
 
 #[cfg(test)]
@@ -440,5 +445,4 @@ mod tests {
             .contains(&"governance".to_string()));
     }
 }
-pub mod android_use;
 pub mod computer_use;

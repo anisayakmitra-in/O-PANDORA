@@ -12,6 +12,7 @@ pub mod agentic_loop;
 pub mod constitutional_floor;
 pub mod gepa;
 pub mod provider_adapter;
+pub mod rsi;
 
 use anyhow::Result;
 use pandora_services::ExecutionController;
@@ -539,12 +540,15 @@ impl PandoraRuntime {
 
             // Run the agentic loop: LLM calls genes as tools
             let config = agentic_loop::AgenticConfig::default();
+            let user_permissions = pandora_types::config::PandoraConfig::load()
+                .with_env()
+                .user_permissions();
             let result = agentic_loop::run_agentic_loop(
                 task,
                 domain,
                 provider.as_ref(),
                 &gene_refs,
-                None,
+                Some(&user_permissions),
                 Some(&self.parliament),
                 &config,
                 Some(&mut self.constitutional_floor),

@@ -2,6 +2,7 @@
 //!
 //! Loaded on startup by PandoraRuntime. Override with env vars.
 
+use crate::permissions_manifest::{PermissionManifest, ShellPermissions};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -25,12 +26,15 @@ pub struct PandoraConfig {
     /// Maximum tokens per generation
     #[serde(default)]
     pub max_tokens: Option<usize>,
-    /// K-O Palace registry URL
+    /// K-O-Palace registry URL
     #[serde(default)]
     pub registry_url: Option<String>,
     /// Whether to persist events to disk
     #[serde(default)]
     pub persist_events: Option<bool>,
+    /// Shell patterns that are always denied for local executions.
+    #[serde(default)]
+    pub deny_shell_patterns: Vec<String>,
 }
 
 impl PandoraConfig {
@@ -62,6 +66,18 @@ impl PandoraConfig {
 
     fn path() -> PathBuf {
         config_dir().join("config.toml")
+    }
+
+    /// Build the user-level permission manifest used by the runtime.
+    pub fn user_permissions(&self) -> PermissionManifest {
+        PermissionManifest {
+            shell: ShellPermissions {
+                enabled: true,
+                blocked: self.deny_shell_patterns.clone(),
+                ..Default::default()
+            },
+            ..Default::default()
+        }
     }
 
     /// Merge env var overrides. Env vars take precedence over file.
@@ -128,5 +144,21 @@ mod tests {
     fn config_dir_exists() {
         let d = config_dir();
         assert!(d.to_string_lossy().contains(".pandora"));
+    }
+    #[test]
+    fn user_permissions_include_persistent_deny_rules() {
+        let config = PandoraConfig {
+            deny_shell_patterns: vec!["sudo *".into()],
+            ..Default::default()
+        };
+        let permissions = config.user_permissions();
+        assert!(matches!(
+            permissions.is_shell_allowed("sudo whoami"),
+            crate::permissions_manifest::PermissionVerdict::Denied { .. }
+        ));
+        assert!(matches!(
+            permissions.is_shell_allowed("git status"),
+            crate::permissions_manifest::PermissionVerdict::Allowed
+        ));
     }
 }

@@ -23,7 +23,7 @@ pandora-harnesses   → built-in harnesses               (edit for new harnesses
 pandora-genes       → built-in genes                   (edit for new genes)
 pandora             → CLI binary                       (edit for new commands)
 pandora-tui         → terminal dashboard               (edit for TUI)
-pandora-kuber       → package registry                 (edit for registry)
+pandora-ko-palace       → package registry                 (edit for registry)
 pandora-palace      → registry server                  (edit for server)
 pandora-fleet       → distributed workers              (edit for fleet)
 pandora-api         → MCP protocol                     (edit for MCP)

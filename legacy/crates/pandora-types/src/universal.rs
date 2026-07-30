@@ -410,9 +410,9 @@ pub struct TelemetryTimestamps {
     pub last_health_check_ms: u64,
 }
 
-/// Marketplace metadata for KUBER K-O Palace publishing.
+/// Marketplace metadata for K-O-Palace publishing.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct KuberMetadata {
+pub struct KoPalaceMetadata {
     pub publisher: String,
     pub organization: String,
     pub visibility: Visibility,
@@ -436,7 +436,7 @@ pub enum Visibility {
     Organization,
 }
 
-impl Default for KuberMetadata {
+impl Default for KoPalaceMetadata {
     fn default() -> Self {
         Self {
             publisher: String::new(),
@@ -562,8 +562,8 @@ mod tests {
         assert_eq!(GeneExecutionMode::default(), GeneExecutionMode::Chain);
     }
     #[test]
-    fn kuber_default() {
-        assert_eq!(KuberMetadata::default().visibility, Visibility::Public);
+    fn ko_palace_default() {
+        assert_eq!(KoPalaceMetadata::default().visibility, Visibility::Public);
     }
     #[test]
     fn shadow_council_serde() {

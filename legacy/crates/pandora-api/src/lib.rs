@@ -1,15 +1,15 @@
-//! Pandora Runtime API — local HTTP server exposing ExecutionController.
+﻿//! Pandora Runtime API ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â local HTTP server exposing ExecutionController.
 //!
 //! Start with: pandora serve
 //! Endpoints:
 //!   GET  /health
-//!   POST /execute       — run a task or plan
-//!   GET  /sessions       — list sessions
-//!   GET  /sessions/{id}  — get session detail
-//!   GET  /explain/{id}   — explain a session
-//!   GET  /graph/{id}     — render provenance graph
-//!   GET  /artifacts/{id} — list artifacts
-//!   GET  /providers      — provider health
+//!   POST /execute       ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â run a task or plan
+//!   GET  /sessions       ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â list sessions
+//!   GET  /sessions/{id}  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â get session detail
+//!   GET  /explain/{id}   ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â explain a session
+//!   GET  /graph/{id}     ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â render provenance graph
+//!   GET  /artifacts/{id} ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â list artifacts
+//!   GET  /providers      ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â provider health
 //!
 //! This is the foundation for MCP, IDE integration, and fleet workers.
 
@@ -20,15 +20,16 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use pandora_types::execution_plan::*;
-use serde::{Deserialize, Serialize};
+
+pub mod client;
+pub mod delivery;
+pub mod protocol;
 use std::sync::Arc;
 
 /// Check Bearer token. If PANDORA_API_TOKEN is set, auth is mandatory.
-/// If not set, the API runs in insecure mode (dev/CI only).
+/// If not set, the API runs in insecure mode only when explicitly enabled.
 fn require_auth(headers: &axum::http::HeaderMap) -> bool {
-    // Check for --insecure-plaintext flag via env
-    if std::env::var("PANDORA_INSECURE").is_ok() {
+    if env_flag_enabled("PANDORA_INSECURE") {
         return true;
     }
 
@@ -36,8 +37,8 @@ fn require_auth(headers: &axum::http::HeaderMap) -> bool {
         Ok(t) if !t.is_empty() => t,
         _ => {
             // In dev mode, warn but allow
-            if std::env::var("PANDORA_DEV_MODE").is_ok() {
-                eprintln!("[SECURITY] PANDORA_API_TOKEN not set — API is unprotected. Set a token or run with --insecure-plaintext.");
+            if env_flag_enabled("PANDORA_DEV_MODE") {
+                eprintln!("[SECURITY] PANDORA_API_TOKEN not set ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â API is unprotected. Set a token or run with --insecure-plaintext.");
                 return true;
             }
             // Production: require token
@@ -47,6 +48,22 @@ fn require_auth(headers: &axum::http::HeaderMap) -> bool {
     let auth = headers.get("authorization").and_then(|v| v.to_str().ok());
     auth.and_then(|a| a.strip_prefix("Bearer "))
         .is_some_and(|t| constant_time_compare(t, &expected))
+}
+
+fn execution_timeout() -> std::time::Duration {
+    let seconds = std::env::var("PANDORA_EXECUTION_TIMEOUT_SECONDS")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .filter(|value| (1..=86_400).contains(value))
+        .unwrap_or(1_800);
+    std::time::Duration::from_secs(seconds)
+}
+
+fn env_flag_enabled(name: &str) -> bool {
+    matches!(
+        std::env::var(name).ok().as_deref(),
+        Some("1") | Some("true") | Some("TRUE") | Some("yes") | Some("YES")
+    )
 }
 
 /// Constant-time string comparison to prevent timing attacks.
@@ -63,119 +80,279 @@ fn constant_time_compare(a: &str, b: &str) -> bool {
     }
     diff == 0
 }
+use std::collections::HashMap;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
+struct AuthState {
+    paired_tokens: Mutex<HashMap<String, Instant>>,
+    pair_attempts: Mutex<PairRate>,
+}
+
+struct PairRate {
+    window_started: Instant,
+    attempts: u8,
+}
+
+impl AuthState {
+    fn new() -> Self {
+        Self {
+            paired_tokens: Mutex::new(HashMap::new()),
+            pair_attempts: Mutex::new(PairRate {
+                window_started: Instant::now(),
+                attempts: 0,
+            }),
+        }
+    }
+
+    async fn allow_pair_attempt(&self) -> bool {
+        let mut rate = self.pair_attempts.lock().await;
+        let now = Instant::now();
+        if now.duration_since(rate.window_started) >= Duration::from_secs(60) {
+            rate.window_started = now;
+            rate.attempts = 0;
+        }
+        if rate.attempts >= 5 {
+            return false;
+        }
+        rate.attempts += 1;
+        true
+    }
+
+    async fn issue(&self) -> String {
+        use rand::{distributions::Alphanumeric, Rng};
+        let token: String = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(48)
+            .map(char::from)
+            .collect();
+        self.paired_tokens
+            .lock()
+            .await
+            .insert(token.clone(), Instant::now() + Duration::from_secs(3600));
+        token
+    }
+
+    async fn is_valid(&self, token: &str) -> bool {
+        let mut paired = self.paired_tokens.lock().await;
+        paired.retain(|_, expires_at| *expires_at > Instant::now());
+        paired.contains_key(token)
+    }
+    async fn revoke(&self, token: &str) -> bool {
+        self.paired_tokens.lock().await.remove(token).is_some()
+    }
+}
+
+async fn require_auth_state(headers: &axum::http::HeaderMap, auth: &AuthState) -> bool {
+    if require_auth(headers) {
+        return true;
+    }
+    let token = headers
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
+    let Some(token) = token else {
+        return false;
+    };
+    auth.is_valid(token).await
+}
 /// Shared runtime state.
 pub struct ApiState {
     pub runtime: Arc<Mutex<pandora_orchestrator::PandoraRuntime>>,
     pub sessions_dir: std::path::PathBuf,
+
+    auth: AuthState,
+    delivery: delivery::DeliveryLedger,
 }
 
-// ── Request/Response types ──
-
-#[derive(Debug, Deserialize)]
-struct ExecuteRequest {
-    task: String,
-    #[serde(default)]
-    domain: String,
-    #[serde(default)]
-    strategy: String,
-    #[serde(default)]
-    evaluator: String,
-}
-
-#[derive(Debug, Serialize)]
-struct ExecuteResponse {
-    session_id: String,
-    status: String,
-    output: String,
-    duration_ms: u64,
-    provider: String,
-}
-
-#[derive(Debug, Serialize)]
-#[expect(dead_code)]
-struct SessionInfo {
-    id: String,
-    prompt: String,
-    status: String,
-    timeline_count: usize,
-}
+// ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ Request/Response types ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬
 
 /// Helper: extract auth headers and check, returning 401 if unauthorized.
 macro_rules! auth_check {
-    ($headers:expr) => {
-        if !require_auth(&$headers) {
+    ($headers:expr, $state:expr) => {
+        if !require_auth_state(&$headers, &$state.auth).await {
             return StatusCode::UNAUTHORIZED.into_response();
         }
     };
 }
 
-// ── Handlers ──
+// ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ Handlers ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬
 
+async fn pair(
+    State(state): State<Arc<ApiState>>,
+    Json(request): Json<protocol::PairRequest>,
+) -> axum::response::Response {
+    let expected = match std::env::var("PANDORA_PAIRING_CODE") {
+        Ok(code) if !code.is_empty() => code,
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    if !state.auth.allow_pair_attempt().await {
+        return StatusCode::TOO_MANY_REQUESTS.into_response();
+    }
+    if !constant_time_compare(&request.code, &expected) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let token = state.auth.issue().await;
+    Json(protocol::PairResponse {
+        api_version: protocol::API_VERSION.to_string(),
+        token,
+        expires_in_seconds: 3600,
+    })
+    .into_response()
+}
+
+async fn revoke(
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+    Json(request): Json<protocol::RevokeRequest>,
+) -> axum::response::Response {
+    if !require_auth(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    if state.auth.revoke(&request.token).await {
+        StatusCode::NO_CONTENT.into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
 async fn health() -> impl IntoResponse {
-    Json(serde_json::json!({"status":"ok","runtime":"pandora-api","version":"0.2.0"}))
+    Json(protocol::HealthResponse {
+        api_version: protocol::API_VERSION.to_string(),
+        status: "ok".to_string(),
+        runtime: "pandora-api".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    })
+}
+
+async fn node_info(
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    auth_check!(headers, state);
+    let node_id = std::env::var("PANDORA_NODE_ID").unwrap_or_else(|_| "local".to_string());
+    let name = std::env::var("PANDORA_NODE_NAME").unwrap_or_else(|_| node_id.clone());
+    Json(protocol::NodeInfo {
+        api_version: protocol::API_VERSION.to_string(),
+        node_id,
+        name,
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        platform: std::env::consts::OS.to_string(),
+        architecture: std::env::consts::ARCH.to_string(),
+        capabilities: vec![
+            "execute".into(),
+            "sessions".into(),
+            "providers".into(),
+            "events.websocket".into(),
+        ],
+        auth_required: std::env::var("PANDORA_API_TOKEN")
+            .ok()
+            .is_some_and(|token| !token.is_empty()),
+    })
+    .into_response()
+}
+fn configure_runtime(
+    runtime: &mut pandora_orchestrator::PandoraRuntime,
+    request: &protocol::ExecuteRequest,
+) -> Result<(), String> {
+    if let Some(name) = request.profile.as_deref() {
+        let profile =
+            pandora_types::profile::load_profile(name).map_err(|error| error.to_string())?;
+        profile.apply_to(&mut runtime.plan);
+    }
+    runtime.plan.instruction = request.task.clone();
+    if !request.strategy.is_empty() {
+        runtime.plan.control_strategy = match request.strategy.as_str() {
+            "closed" => pandora_types::execution_plan::ControlStrategy::Closed,
+            "open" => pandora_types::execution_plan::ControlStrategy::Open,
+            "human" => pandora_types::execution_plan::ControlStrategy::Human,
+            "autonomous" => pandora_types::execution_plan::ControlStrategy::Autonomous,
+            _ => pandora_types::execution_plan::ControlStrategy::SingleShot,
+        };
+    }
+    if !request.evaluator.is_empty() {
+        runtime.plan.evaluator = match request.evaluator.as_str() {
+            "rust-tests" => pandora_types::execution_plan::EvaluatorKind::RustTests,
+            "python-tests" => pandora_types::execution_plan::EvaluatorKind::PythonTests,
+            value => pandora_types::execution_plan::EvaluatorKind::Custom(value.to_string()),
+        };
+    }
+    Ok(())
 }
 
 async fn execute(
     State(state): State<Arc<ApiState>>,
     headers: axum::http::HeaderMap,
-    Json(req): Json<ExecuteRequest>,
+    Json(req): Json<protocol::ExecuteRequest>,
 ) -> axum::response::Response {
-    if !require_auth(&headers) {
+    if !require_auth_state(&headers, &state.auth).await {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    let strategy = match req.strategy.as_str() {
-        "closed" => ControlStrategy::Closed,
-        "human" => ControlStrategy::Human,
-        _ => ControlStrategy::SingleShot,
-    };
-    let eval = match req.evaluator.as_str() {
-        "rust-tests" => EvaluatorKind::RustTests,
-        _ => EvaluatorKind::None,
-    };
-    let _plan = ExecutionPlan {
-        instruction: req.task.clone(),
-        control_strategy: strategy,
-        evaluator: eval,
-        stop_conditions: vec![StopCondition::GoalMet],
-        ..Default::default()
-    };
     let domain = if req.domain.is_empty() {
-        "default".to_string()
+        "default"
     } else {
-        req.domain.clone()
+        &req.domain
     };
     let mut runtime = state.runtime.lock().await;
-    match runtime.run(&req.task, &domain).await {
-        Ok(r) => Json(ExecuteResponse {
-            session_id: r.execution_id,
-            status: if r.success {
-                "completed".into()
-            } else {
-                "failed".into()
-            },
-            output: r.output.chars().take(2000).collect(),
-            duration_ms: r.duration_ms as u64,
-            provider: r.provider,
-        })
-        .into_response(),
-        Err(e) => Json(ExecuteResponse {
+    let response = match configure_runtime(&mut runtime, &req) {
+        Err(error) => protocol::ExecuteResponse {
+            api_version: protocol::API_VERSION.to_string(),
             session_id: String::new(),
             status: "error".into(),
-            output: e.to_string(),
+            output: error,
             duration_ms: 0,
             provider: String::new(),
-        })
-        .into_response(),
+        },
+        Ok(()) => {
+            match tokio::time::timeout(execution_timeout(), runtime.run(&req.task, domain)).await {
+                Ok(Ok(result)) => protocol::ExecuteResponse {
+                    api_version: protocol::API_VERSION.to_string(),
+                    session_id: result.execution_id,
+                    status: if result.success {
+                        "completed"
+                    } else {
+                        "failed"
+                    }
+                    .into(),
+                    output: result.output.chars().take(2000).collect(),
+                    duration_ms: result.duration_ms as u64,
+                    provider: result.provider,
+                },
+                Ok(Err(error)) => protocol::ExecuteResponse {
+                    api_version: protocol::API_VERSION.to_string(),
+                    session_id: String::new(),
+                    status: "error".into(),
+                    output: error.to_string(),
+                    duration_ms: 0,
+                    provider: String::new(),
+                },
+                Err(_) => protocol::ExecuteResponse {
+                    api_version: protocol::API_VERSION.to_string(),
+                    session_id: String::new(),
+                    status: "timeout".into(),
+                    output: "execution exceeded the configured timeout".into(),
+                    duration_ms: execution_timeout().as_millis() as u64,
+                    provider: String::new(),
+                },
+            }
+        }
+    };
+    drop(runtime);
+    if let Ok(payload) = serde_json::to_string(&response) {
+        if let Ok(delivery_id) = state
+            .delivery
+            .enqueue("http", &response.session_id, payload)
+        {
+            let _ = state.delivery.mark_delivered(&delivery_id);
+        }
     }
+    Json(response).into_response()
 }
 
 async fn sessions(
     State(state): State<Arc<ApiState>>,
     headers: axum::http::HeaderMap,
 ) -> axum::response::Response {
-    auth_check!(headers);
+    auth_check!(headers, state);
     let dir = &state.sessions_dir;
     let mut s = Vec::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
@@ -191,7 +368,14 @@ async fn session_detail(
     Path(id): Path<String>,
     headers: axum::http::HeaderMap,
 ) -> axum::response::Response {
-    auth_check!(headers);
+    auth_check!(headers, state);
+    if !is_safe_session_id(&id) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error":"invalid session id"})),
+        )
+            .into_response();
+    }
     let path = state.sessions_dir.join(format!("{id}.json"));
     match std::fs::read_to_string(&path) {
         Ok(json) => Json(serde_json::json!({"id":id,"data":json})).into_response(),
@@ -203,12 +387,27 @@ async fn session_detail(
     }
 }
 
+fn is_safe_session_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 128
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+}
+
 async fn explain(
     State(state): State<Arc<ApiState>>,
     Path(id): Path<String>,
     headers: axum::http::HeaderMap,
 ) -> axum::response::Response {
-    auth_check!(headers);
+    auth_check!(headers, state);
+    if !is_safe_session_id(&id) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error":"invalid session id"})),
+        )
+            .into_response();
+    }
     let path = state.sessions_dir.join(format!("{id}.json"));
     match std::fs::read_to_string(&path) {
         Ok(json) => {
@@ -226,8 +425,140 @@ async fn explain(
     }
 }
 
-async fn providers(headers: axum::http::HeaderMap) -> axum::response::Response {
-    auth_check!(headers);
+async fn websocket(
+    ws: axum::extract::ws::WebSocketUpgrade,
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    if !require_auth_state(&headers, &state.auth).await {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    ws.max_message_size(1_048_576)
+        .max_frame_size(1_048_576)
+        .on_upgrade(move |socket| websocket_session(socket, state))
+        .into_response()
+}
+
+async fn websocket_session(mut socket: axum::extract::ws::WebSocket, state: Arc<ApiState>) {
+    use axum::extract::ws::Message;
+
+    let mut sequence = 0_u64;
+    while let Some(Ok(Message::Text(text))) = socket.recv().await {
+        let request: protocol::ExecuteRequest = match serde_json::from_str(&text) {
+            Ok(request) => request,
+            Err(error) => {
+                sequence += 1;
+                let event = protocol::EventEnvelope {
+                    api_version: protocol::API_VERSION.to_string(),
+                    sequence,
+                    event: protocol::RuntimeEvent::Failed {
+                        session_id: String::new(),
+                        error: format!("invalid request: {error}"),
+                    },
+                };
+                let _ = socket
+                    .send(Message::Text(serde_json::to_string(&event).unwrap()))
+                    .await;
+                continue;
+            }
+        };
+
+        sequence += 1;
+        let started = protocol::EventEnvelope {
+            api_version: protocol::API_VERSION.to_string(),
+            sequence,
+            event: protocol::RuntimeEvent::Started {
+                session_id: String::new(),
+                task: request.task.clone(),
+            },
+        };
+        let started_payload = serde_json::to_string(&started).unwrap();
+        let started_delivery = state
+            .delivery
+            .enqueue("websocket", "", started_payload.clone())
+            .ok();
+        if socket.send(Message::Text(started_payload)).await.is_err() {
+            break;
+        }
+        if let Some(delivery_id) = started_delivery {
+            let _ = state.delivery.mark_delivered(&delivery_id);
+        }
+
+        let domain = if request.domain.is_empty() {
+            "default".to_string()
+        } else {
+            request.domain.clone()
+        };
+        let mut runtime = state.runtime.lock().await;
+        let configuration_error = configure_runtime(&mut runtime, &request).err();
+        let event = if let Some(error) = configuration_error {
+            protocol::RuntimeEvent::Failed {
+                session_id: String::new(),
+                error,
+            }
+        } else {
+            let result =
+                tokio::time::timeout(execution_timeout(), runtime.run(&request.task, &domain))
+                    .await;
+            match result {
+                Ok(Ok(result)) => protocol::RuntimeEvent::Completed {
+                    session_id: result.execution_id,
+                    success: result.success,
+                },
+                Ok(Err(error)) => protocol::RuntimeEvent::Failed {
+                    session_id: String::new(),
+                    error: error.to_string(),
+                },
+                Err(_) => protocol::RuntimeEvent::Failed {
+                    session_id: String::new(),
+                    error: "execution exceeded the configured timeout".into(),
+                },
+            }
+        };
+        sequence += 1;
+        let envelope = protocol::EventEnvelope {
+            api_version: protocol::API_VERSION.to_string(),
+            sequence,
+            event,
+        };
+        let payload = serde_json::to_string(&envelope).unwrap();
+        let session_id = match &envelope.event {
+            protocol::RuntimeEvent::Completed { session_id, .. }
+            | protocol::RuntimeEvent::Failed { session_id, .. } => session_id,
+            _ => "",
+        };
+        let delivery_id = state
+            .delivery
+            .enqueue("websocket", session_id, payload.clone())
+            .ok();
+        if socket.send(Message::Text(payload)).await.is_err() {
+            break;
+        }
+        if let Some(delivery_id) = delivery_id {
+            let _ = state.delivery.mark_delivered(&delivery_id);
+        }
+    }
+}
+async fn deliveries(
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    auth_check!(headers, state);
+    match state.delivery.list() {
+        Ok(records) => Json(records).into_response(),
+        Err(error) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": error.to_string()})),
+        )
+            .into_response(),
+    }
+}
+
+async fn providers(
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    auth_check!(headers, state);
     let providers = pandora_types::provider_health::check_ollama();
     Json(
         serde_json::json!({"providers":[{"name":providers.name,"status":providers.status,"models":providers.model_count,"latency_ms":providers.latency_ms}]}),
@@ -299,7 +630,7 @@ body{
 <body>
 
 <div class="sidebar g">
-  <h1>⚡ Pandora</h1>
+  <h1>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ Pandora</h1>
   <button class="nav-btn active" onclick="ST('chat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</button>
   <button class="nav-btn" onclick="ST('harnesses')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>Harnesses</button>
   <button class="nav-btn" onclick="ST('genes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Genes</button>
@@ -313,7 +644,7 @@ body{
   <div class="titlebar gp">
     <span class="dot" style="background:var(--green)" id="hd"></span>
     <span style="flex:1" id="ht">checking...</span>
-    <span style="color:var(--green)">⚡ governed</span>
+    <span style="color:var(--green)">ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ governed</span>
   </div>
 
   <div class="chat-area">
@@ -346,7 +677,7 @@ let T=Date.now(),tab='chat';
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',function(){document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));this.classList.add('active')}));
 
 async function H(){
-  try{let r=await fetch('/health');let d=await r.json();document.getElementById('hd').style.background='var(--green)';document.getElementById('ht').textContent='connected · v'+(d.version||'0.2.0');document.getElementById('sid').textContent=(d.session_id||'desktop-...').slice(0,20)}catch(e){document.getElementById('hd').style.background='var(--red)';document.getElementById('ht').textContent='offline'}
+  try{let r=await fetch('/health');let d=await r.json();document.getElementById('hd').style.background='var(--green)';document.getElementById('ht').textContent='connected ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· v'+(d.version||'0.2.0');document.getElementById('sid').textContent=(d.session_id||'desktop-...').slice(0,20)}catch(e){document.getElementById('hd').style.background='var(--red)';document.getElementById('ht').textContent='offline'}
 }
 H();setInterval(H,30000);
 
@@ -368,7 +699,7 @@ async function S(){
   if(!task)return;
   inp.value='';inp.disabled=true;document.getElementById('btn').disabled=true;
   let c=document.getElementById('chat-panel');
-  c.insertAdjacentHTML('beforeend','<div class="msg user">'+E(task)+'</div><div class="msg system" id="ld">• Executing...</div>');
+  c.insertAdjacentHTML('beforeend','<div class="msg user">'+E(task)+'</div><div class="msg system" id="ld">ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ Executing...</div>');
   try{
     let r=await fetch('/execute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:task,domain:'general'})});
     let d=await r.json();
@@ -412,17 +743,29 @@ async fn harnesses_list(_state: axum::extract::State<Arc<ApiState>>) -> impl Int
 async fn genes_list(_state: axum::extract::State<Arc<ApiState>>) -> impl IntoResponse {
     axum::Json(Vec::<String>::new())
 }
-// ── Server ──
+// ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ Server ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬
 
-pub async fn serve(addr: &str, sessions_dir: std::path::PathBuf) -> Result<(), anyhow::Error> {
-    let runtime = pandora_orchestrator::PandoraRuntime::new();
+pub fn router(sessions_dir: std::path::PathBuf) -> Router {
+    let mut runtime = pandora_orchestrator::PandoraRuntime::new();
+    pandora_harnesses::register_all(&mut runtime.council);
     let state = Arc::new(ApiState {
         runtime: Arc::new(Mutex::new(runtime)),
-        sessions_dir,
+        sessions_dir: sessions_dir.clone(),
+        auth: AuthState::new(),
+        delivery: delivery::DeliveryLedger::new(&sessions_dir),
     });
-    let app = Router::new()
+    Router::new()
         .route("/", get(dashboard))
         .route("/health", get(health))
+        .route("/api/v1/health", get(health))
+        .route("/api/v1/auth/pair", post(pair))
+        .route("/api/v1/auth/revoke", post(revoke))
+        .route("/api/v1/node", get(node_info))
+        .route("/api/v1/execute", post(execute))
+        .route("/api/v1/sessions", get(sessions))
+        .route("/api/v1/providers", get(providers))
+        .route("/api/v1/ws", get(websocket))
+        .route("/api/v1/deliveries", get(deliveries))
         .route("/execute", post(execute))
         .route("/sessions", get(sessions))
         .route("/sessions/{id}", get(session_detail))
@@ -430,11 +773,22 @@ pub async fn serve(addr: &str, sessions_dir: std::path::PathBuf) -> Result<(), a
         .route("/providers", get(providers))
         .route("/harnesses", get(harnesses_list))
         .route("/genes", get(genes_list))
-        .with_state(state);
-    println!("[API] Listening on {addr}");
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+        .with_state(state)
+}
+
+pub async fn serve_listener(
+    listener: tokio::net::TcpListener,
+    sessions_dir: std::path::PathBuf,
+) -> Result<(), anyhow::Error> {
+    let address = listener.local_addr()?;
+    println!("[API] Listening on {address}");
+    axum::serve(listener, router(sessions_dir)).await?;
     Ok(())
+}
+
+pub async fn serve(addr: &str, sessions_dir: std::path::PathBuf) -> Result<(), anyhow::Error> {
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    serve_listener(listener, sessions_dir).await
 }
 pub mod mcp;
 

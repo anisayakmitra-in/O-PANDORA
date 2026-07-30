@@ -74,6 +74,27 @@ fn run(args: &[&str]) -> (std::process::Output, PathBuf) {
     (output, dir)
 }
 
+fn run_with_home(args: &[&str], home: &std::path::Path) -> std::process::Output {
+    Command::new(pandora_bin())
+        .args(args)
+        .env("PANDORA_HOME", home)
+        .output()
+        .expect("failed to execute pandora")
+}
+
+fn run_with_home_and_env(
+    args: &[&str],
+    home: &std::path::Path,
+    environment: &[(&str, &str)],
+) -> std::process::Output {
+    let mut command = Command::new(pandora_bin());
+    command.args(args).env("PANDORA_HOME", home);
+    for (name, value) in environment {
+        command.env(name, value);
+    }
+    command.output().expect("failed to execute pandora")
+}
+
 fn assert_success(output: &std::process::Output, args: &[&str]) {
     assert!(
         output.status.success(),
@@ -117,6 +138,21 @@ fn version_shows_hash() {
         text.contains("pandora"),
         "Version must contain 'pandora':\n{}",
         text
+    );
+}
+
+#[test]
+fn completions_emit_bash_commands() {
+    let (output, _) = run(&["completions", "bash"]);
+    assert_success(&output, &["completions", "bash"]);
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        text.contains("_pandora"),
+        "Bash completion function missing"
+    );
+    assert!(
+        text.contains("run"),
+        "Bash completion must include run command"
     );
 }
 
@@ -182,6 +218,110 @@ fn new_skill_creates_scaffold() {
 }
 
 #[test]
+fn deny_rules_support_machine_readable_output() {
+    let home = tmp_dir().join("deny-json-home");
+    let add = run_with_home(&["--json", "deny", "add", "sudo *"], &home);
+    assert_success(&add, &["--json", "deny", "add"]);
+    let added: serde_json::Value = serde_json::from_slice(&add.stdout).expect("valid add JSON");
+    assert_eq!(added["status"], "active");
+
+    let list = run_with_home(&["--json", "deny", "list"], &home);
+    assert_success(&list, &["--json", "deny", "list"]);
+    let listed: serde_json::Value = serde_json::from_slice(&list.stdout).expect("valid list JSON");
+    assert_eq!(listed["deny_shell_patterns"][0], "sudo *");
+}
+
+#[test]
+fn keychain_migrate_is_safe_on_clean_install() {
+    let home = tmp_dir().join("migration-clean-home");
+    let output = run_with_home(&["keychain", "migrate"], &home);
+    assert_success(&output, &["keychain", "migrate"]);
+    let text = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        text.contains("No legacy provider credentials"),
+        "unexpected output: {text}"
+    );
+}
+
+#[test]
+fn keychain_migrate_moves_legacy_provider_key() {
+    let home = tmp_dir().join("migration-legacy-home");
+    let setup = run_with_home_and_env(
+        &[
+            "setup",
+            "--provider",
+            "openai",
+            "--endpoint",
+            "https://api.example.com/v1",
+            "--model",
+            "test-model",
+            "--name",
+            "legacy-openai",
+        ],
+        &home,
+        &[("PANDORA_PROVIDER_API_KEY", "legacy-secret")],
+    );
+    assert_success(&setup, &["setup", "--provider", "openai"]);
+
+    let path = home.join("connections.toml");
+    let current = std::fs::read_to_string(&path).expect("setup should write connections.toml");
+    let legacy = current.replacen(
+        "[[connections]]",
+        "[[connections]]\napi_key = \"legacy-secret\"",
+        1,
+    );
+    std::fs::write(&path, legacy).expect("write legacy connection fixture");
+
+    let migrated = run_with_home_and_env(
+        &["keychain", "migrate"],
+        &home,
+        &[("PANDORA_CREDENTIALS_KEY", "migration-test-key")],
+    );
+    assert_success(&migrated, &["keychain", "migrate"]);
+    assert!(String::from_utf8_lossy(&migrated.stdout).contains("Migrated 1"));
+
+    let connections = std::fs::read_to_string(path).expect("read migrated connections");
+    assert!(!connections.contains("legacy-secret"));
+    assert!(connections.contains("provider-legacy-openai"));
+}
+
+#[test]
+fn profiles_are_machine_readable_on_clean_install() {
+    let home = tmp_dir().join("profiles-json-home");
+    let output = run_with_home(&["--json", "profiles"], &home);
+    assert_success(&output, &["--json", "profiles"]);
+    let profiles: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid profile JSON");
+    assert_eq!(profiles, serde_json::json!([]));
+}
+
+#[test]
+fn rsi_list_is_machine_readable() {
+    let home = tmp_dir().join("rsi-json-home");
+    let output = run_with_home(&["--json", "rsi", "list"], &home);
+    assert_success(&output, &["--json", "rsi", "list"]);
+    let candidates: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid RSI JSON");
+    assert!(candidates.is_array(), "RSI list must return an array");
+}
+
+#[test]
+fn export_empty_history_is_machine_readable() {
+    let home = tmp_dir().join("export-home");
+    let output = run_with_home(&["export", "--format=json"], &home);
+    assert_success(&output, &["export", "--format=json"]);
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "[]");
+}
+
+#[test]
+fn export_rejects_unknown_format() {
+    let home = tmp_dir().join("export-invalid-home");
+    let output = run_with_home(&["export", "--format=toml"], &home);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Unsupported export format"));
+}
+
+#[test]
 fn run_does_not_panic() {
     let (output, _) = run(&["run", "say hello"]);
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -201,8 +341,45 @@ fn harnesses_lists_output() {
 }
 
 #[test]
+fn setup_non_interactive_writes_connection() {
+    let dir = tmp_dir().join("setup-home");
+    let output = run_with_home(
+        &[
+            "setup",
+            "--provider",
+            "ollama",
+            "--endpoint",
+            "http://127.0.0.1:11434",
+            "--model",
+            "llama3",
+            "--name",
+            "local",
+        ],
+        &dir,
+    );
+    assert_success(&output, &["setup", "--provider", "ollama"]);
+    let connections = std::fs::read_to_string(dir.join("connections.toml"))
+        .expect("setup should write connections.toml");
+    assert!(connections.contains("llama3"));
+    assert!(connections.contains("127.0.0.1:11434"));
+}
+
+#[test]
 fn doctor_does_not_crash() {
     let (output, _) = run(&["doctor"]);
     // May fail if Ollama is not running, but must not panic
     assert_no_panic(&output);
+}
+
+#[test]
+fn doctor_json_is_machine_readable() {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_pandora"))
+        .args(["--json", "doctor"])
+        .output()
+        .expect("run pandora doctor --json");
+    assert!(output.status.success());
+    let value: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid doctor JSON");
+    assert_eq!(value["api_version"], "v1");
+    assert!(value["dependencies"].is_object());
 }

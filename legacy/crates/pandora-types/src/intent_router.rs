@@ -330,10 +330,6 @@ impl IntentRouter {
                 "computer-use",
                 &["click", "screenshot", "desktop", "browser", "automation"],
             ),
-            (
-                "android",
-                &["android", "adb", "phone", "mobile", "tap", "swipe"],
-            ),
         ];
 
         for (cap, words) in keywords {

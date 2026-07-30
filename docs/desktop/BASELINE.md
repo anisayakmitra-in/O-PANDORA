@@ -1,52 +1,56 @@
-# Pandora Desktop — Baseline
+# Pandora Desktop ? Current Baseline
 
-**Date:** 2026-07-28
-**Branch:** feat/pandora-desktop
-**Commit:** ee65638
-**Platform:** Windows 10, Rust 1.97.1
+This page describes the desktop code that is present now. It is not a release claim.
 
 ## Workspace
 
-12 crates: pandora-types, pandora-services, pandora-orchestrator, pandora-shadow-council, pandora-genes, pandora-harnesses, pandora-kuber, pandora, pandora-api, pandora-tui, pandora-fleet, pandora-desktop
+The root Cargo workspace declares 12 members: 11 Rust crates under `legacy/crates` and `pandora-desktop/src-tauri`. `legacy/crates/pandora-tui` is included in workspace checks.
 
-## Build Commands
+## Build commands
 
 ```bash
-# Rust workspace
+cargo fmt --all -- --check
 cargo check --workspace
-cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
-cargo build --release -p pandora -p pandora-tui
+cargo test --workspace -- --test-threads=1
 
-# Desktop (requires node.js)
 cd pandora-desktop
-npm install
-npx tauri build
-npx tauri dev
+npm ci
+npm run build
 ```
 
-## CLI Entry Points
+A signed desktop bundle still requires the release workflow, platform signing credentials, and clean-machine installation tests.
 
-- `pandora` — interactive agent (default when no args)
-- `pandora run "task"` — headless single-turn
-- `pandora serve` — HTTP API server at :9090
-- `pandora-tui` — Ratatui monitoring dashboard
-- 55+ other CLI commands
+## Active desktop surface
 
-## Architecture Modules
+The Tauri client currently provides:
 
-- Parliament: governance, verdicts (Allow/Deny/RequireApproval/Modify/Escalate)
-- Shadow Council: capability-driven routing
-- Agentic loop: LLM ↔ gene tool calling
-- Constitutional floor: SHA-256 audit chain
-- Provider registry: 12 connection kinds
-- Gene registry: dynamic gene discovery
-- Harness registry: Source/Meta/Domain harnesses
-- KUBER/Palace: package management
-- Fleet: multi-node workers
-- Memory/ANUBIS: hierarchical memory
-- GEPA: self-evolution observer
+- session creation, listing, persistence, and resume;
+- provider/model listing and model switching;
+- local project selection through the Tauri directory picker, with branch and dirty-state reporting;
+- read-only project file tree and file preview backed by path-safe Tauri commands;
+- governance summary with explicit pending-approval actions and persisted approval history;
+- redacted JSON and Markdown session export through a user-selected save dialog;
+- task submission through the authenticated local API client;
+- streamed execution status and expandable tool output;
+- a runtime/session/model inspector;
+- project, file, Git, package, fleet, scheduler, governance, and update commands on the Rust side, not yet all exposed in the React UI;
 
-## Known Failures
+The execution path is shared with the API and orchestrator. The desktop client does not define a second agent runtime.
 
-- `pandora-genes::tests::python_math` — Python not on PATH (Windows-specific)
+## Architecture
+
+- `pandora-types`: contracts and shared state models;
+- `pandora-orchestrator`: execution lifecycle and agentic loop;
+- `pandora-api`: versioned HTTP/WebSocket protocol and authentication;
+- `pandora-desktop/src-tauri`: Tauri commands, local persistence, safety checks, and API connection;
+- `pandora-desktop/src`: React presentation and event-driven session UI.
+
+The visual direction uses restrained translucent surfaces and a bento-style inspector. It is implemented with cross-platform CSS rather than macOS-only APIs.
+
+## Known limits
+
+- Signed Windows, macOS, and Linux bundles are not yet published.
+- Remote-node selection and remote execution are not yet exposed in the desktop UI.
+- Clean-machine install, upgrade, rollback, and uninstall tests remain release gates.
+- Android and Termux support are intentionally paused and are not part of the active desktop surface.

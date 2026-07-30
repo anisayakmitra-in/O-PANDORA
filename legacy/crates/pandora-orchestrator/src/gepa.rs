@@ -92,7 +92,7 @@ impl GepaObserver {
                 let candidate = MutationCandidate {
                     id: format!(
                         "mutation-{}-{}",
-                        gene_id,
+                        safe_id_component(gene_id),
                         chrono::Utc::now().timestamp_millis()
                     ),
                     target_kind: MutationTarget::Gene,
@@ -137,6 +137,9 @@ impl GepaObserver {
 
     /// Show a specific candidate.
     pub fn get(&self, id: &str) -> Option<MutationCandidate> {
+        if !is_safe_candidate_id(id) {
+            return None;
+        }
         let path = self.candidates_dir.join(format!("{id}.json"));
         std::fs::read_to_string(&path)
             .ok()
@@ -188,9 +191,46 @@ impl GepaObserver {
     }
 
     fn save(&self, candidate: &MutationCandidate) {
+        if !is_safe_candidate_id(&candidate.id) {
+            return;
+        }
         let path = self.candidates_dir.join(format!("{}.json", candidate.id));
         if let Ok(json) = serde_json::to_string_pretty(candidate) {
             std::fs::write(&path, json).ok();
         }
+    }
+}
+
+fn safe_id_component(value: &str) -> String {
+    value
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_') {
+                character
+            } else {
+                '_'
+            }
+        })
+        .take(80)
+        .collect()
+}
+
+fn is_safe_candidate_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 160
+        && id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn candidate_ids_cannot_escape_storage_directory() {
+        assert_eq!(safe_id_component("../secret"), "___secret");
+        assert!(!is_safe_candidate_id("../secret"));
+        assert!(is_safe_candidate_id("mutation-gene-1"));
     }
 }

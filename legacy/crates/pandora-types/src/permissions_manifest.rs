@@ -6,7 +6,7 @@
 //!
 //! Inspired by mercury-agent's PermissionsManifest, but generalized to
 //! cover all Pandora capability types (filesystem, shell, network, git,
-//! browser, adb, docker, mcp, hardware).
+//! browser, docker, mcp, hardware).
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -70,14 +70,6 @@ pub struct DockerPermissions {
     pub allow_privileged: bool,
 }
 
-/// ADB / mobile device permissions.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct AdbPermissions {
-    pub enabled: bool,
-    pub allowed_devices: Vec<String>,
-    pub blocked_commands: Vec<String>,
-}
-
 /// MCP permissions.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct McpPermissions {
@@ -106,7 +98,6 @@ pub struct PermissionManifest {
     pub git: GitPermissions,
     pub browser: BrowserPermissions,
     pub docker: DockerPermissions,
-    pub adb: AdbPermissions,
     pub mcp: McpPermissions,
     pub hardware: HardwarePermissions,
     /// Custom permission keys for future/extension permissions.

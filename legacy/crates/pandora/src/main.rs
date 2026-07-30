@@ -7,7 +7,7 @@
 use std::sync::{Arc, RwLock};
 use std::{env, process};
 
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 
 /// Pandora — governed execution runtime for AI agents.
 #[derive(Parser, Debug)]
@@ -18,6 +18,9 @@ use clap::{Parser, Subcommand};
     long_about = "Pandora runs tasks through a pipeline of harnesses and genes, producing auditable decision logs and evidence."
 )]
 struct Cli {
+    /// Emit machine-readable JSON for supported commands.
+    #[arg(long, global = true)]
+    json: bool,
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -25,7 +28,23 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// Execute a task through the pipeline
-    Run { task: String },
+    Run {
+        task: String,
+        /// Load a named execution profile.
+        #[arg(long)]
+        profile: Option<String>,
+        /// Override the model for this task only.
+        #[arg(long)]
+        model: Option<String>,
+        /// Output format: text or json.
+        #[arg(long)]
+        output: Option<String>,
+        /// Suppress human-readable progress output.
+        #[arg(short, long)]
+        quiet: bool,
+    },
+    /// Preview capability routing without executing a provider call
+    Route { task: String },
     /// Execute a plan from a TOML file
     Execute { path: String },
     /// Start interactive operator shell
@@ -42,7 +61,7 @@ enum Commands {
     Explain { id: String },
     /// Show execution timeline
     Timeline { id: Option<String> },
-    /// Install a package (local or K-O Palace with --registry=URL)
+    /// Install a package (local or K-O-Palace with --registry=URL)
     Install {
         id: String,
         #[arg(long)]
@@ -56,7 +75,7 @@ enum Commands {
     List,
     /// Show package details
     Info { id: String },
-    /// Search K-O Palace registry
+    /// Search K-O-Palace registry
     Search { query: String },
     /// Publish current package
     Publish,
@@ -88,6 +107,12 @@ enum Commands {
     Service { action: String, id: Option<String> },
     /// Show configuration
     Config,
+    /// Store or retrieve encrypted credentials
+    Keychain {
+        action: String,
+        key: Option<String>,
+        value: Option<String>,
+    },
     /// Render provenance graph
     Graph { id: String },
     /// Show gene lineage
@@ -100,6 +125,11 @@ enum Commands {
     Stop { id: Option<String> },
     /// Governance dashboard
     Governance,
+    /// Manage persistent shell deny rules
+    Deny {
+        action: String,
+        pattern: Option<String>,
+    },
     /// Approve a pending action
     Approve { id: String },
     /// Reject a pending action
@@ -108,8 +138,28 @@ enum Commands {
     Sessions,
     /// Show session details
     Session { id: Option<String> },
+    /// Export one session or the complete session history
+    Export {
+        /// Session id; omit to export all sessions
+        id: Option<String>,
+        /// Export format: json or markdown
+        #[arg(long, default_value = "json")]
+        format: String,
+        /// Write to a file instead of stdout
+        #[arg(long)]
+        output: Option<String>,
+        /// Redact credential-like metadata values
+        #[arg(long)]
+        redact: bool,
+    },
     /// Start the HTTP API server
     Serve { addr: Option<String> },
+    /// Use a remote Pandora runtime node
+    Remote {
+        action: String,
+        endpoint: Option<String>,
+        task: Option<String>,
+    },
     /// Generate Ed25519 keypair for package signing
     Keygen,
     /// Sign a package
@@ -126,9 +176,9 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         args: Vec<String>,
     },
-    /// Login to K-O Palace
+    /// Login to K-O-Palace
     Login,
-    /// Browse K-O Palace marketplace
+    /// Browse K-O-Palace marketplace
     Featured,
     /// Browse trending packages
     Trending,
@@ -142,13 +192,37 @@ enum Commands {
     Overnight { task: String },
     /// Import settings from another AI agent
     Import { tool: String, path: Option<String> },
+    /// Configure a provider or run the interactive setup wizard
+    Setup {
+        #[arg(long)]
+        provider: Option<String>,
+        #[arg(long)]
+        endpoint: Option<String>,
+        #[arg(long)]
+        model: Option<String>,
+        #[arg(long, default_value = "default")]
+        name: String,
+        #[arg(long)]
+        api_key: Option<String>,
+        #[arg(long)]
+        non_interactive: bool,
+    },
+    /// List or inspect governed GEPA/DSR proposals
+    Rsi { action: String, id: Option<String> },
     /// List execution profiles
     Profiles,
+    /// Generate shell completion scripts
+    Completions { shell: String },
 }
 
 fn main() {
-    let _ = tracing_subscriber::fmt().try_init();
+    let _ = tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .try_init();
     let cli = Cli::parse();
+    if cli.json {
+        std::env::set_var("PANDORA_OUTPUT", "json");
+    }
 
     match &cli.command {
         Some(cmd) => {
@@ -175,8 +249,33 @@ fn main() {
 fn build_args(cmd: &Commands) -> Vec<String> {
     let mut a = vec!["pandora".to_string()];
     match cmd {
-        Commands::Run { task } => {
+        Commands::Run {
+            task,
+            profile,
+            model,
+            output,
+            quiet,
+        } => {
             a.push("run".into());
+            a.push(task.clone());
+            if let Some(value) = profile {
+                a.push("--profile".into());
+                a.push(value.clone());
+            }
+            if let Some(value) = model {
+                a.push("--model".into());
+                a.push(value.clone());
+            }
+            if let Some(value) = output {
+                a.push("--output".into());
+                a.push(value.clone());
+            }
+            if *quiet {
+                a.push("--quiet".into());
+            }
+        }
+        Commands::Route { task } => {
+            a.push("route".into());
             a.push(task.clone());
         }
         Commands::Execute { path } => {
@@ -291,6 +390,16 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             }
         }
         Commands::Config => a.push("config".into()),
+        Commands::Keychain { action, key, value } => {
+            a.push("keychain".into());
+            a.push(action.clone());
+            if let Some(item) = key {
+                a.push(item.clone());
+            }
+            if let Some(item) = value {
+                a.push(item.clone());
+            }
+        }
         Commands::Graph { id } => {
             a.push("graph".into());
             a.push(id.clone());
@@ -314,6 +423,13 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             }
         }
         Commands::Governance => a.push("governance".into()),
+        Commands::Deny { action, pattern } => {
+            a.push("deny".into());
+            a.push(action.clone());
+            if let Some(value) = pattern {
+                a.push(value.clone());
+            }
+        }
         Commands::Approve { id } => {
             a.push("approve".into());
             a.push(id.clone());
@@ -329,10 +445,42 @@ fn build_args(cmd: &Commands) -> Vec<String> {
                 a.push(i.clone());
             }
         }
+        Commands::Export {
+            id,
+            format,
+            output,
+            redact,
+        } => {
+            a.push("export".into());
+            if let Some(i) = id {
+                a.push(i.clone());
+            }
+            a.push(format!("--format={format}"));
+            if let Some(path) = output {
+                a.push(format!("--output={path}"));
+            }
+            if *redact {
+                a.push("--redact".into());
+            }
+        }
         Commands::Serve { addr } => {
             a.push("serve".into());
             if let Some(s) = addr {
                 a.push(s.clone());
+            }
+        }
+        Commands::Remote {
+            action,
+            endpoint,
+            task,
+        } => {
+            a.push("remote".into());
+            a.push(action.clone());
+            if let Some(value) = endpoint {
+                a.push(value.clone());
+            }
+            if let Some(value) = task {
+                a.push(value.clone());
             }
         }
         Commands::Keygen => a.push("keygen".into()),
@@ -364,6 +512,10 @@ fn build_args(cmd: &Commands) -> Vec<String> {
         }
         Commands::Benchmark => a.push("benchmark".into()),
         Commands::Profiles => a.push("profiles".into()),
+        Commands::Completions { shell } => {
+            a.push("completions".into());
+            a.push(shell.clone());
+        }
         Commands::Overnight { task } => {
             a.push("overnight".into());
             a.push(task.clone());
@@ -375,6 +527,44 @@ fn build_args(cmd: &Commands) -> Vec<String> {
                 a.push(p.clone());
             }
         }
+        Commands::Rsi { action, id } => {
+            a.push("rsi".into());
+            a.push(action.clone());
+            if let Some(value) = id {
+                a.push(value.clone());
+            }
+        }
+        Commands::Setup {
+            provider,
+            endpoint,
+            model,
+            name,
+            api_key,
+            non_interactive,
+        } => {
+            a.push("setup".into());
+            if let Some(value) = provider {
+                a.push("--provider".into());
+                a.push(value.clone());
+            }
+            if let Some(value) = endpoint {
+                a.push("--endpoint".into());
+                a.push(value.clone());
+            }
+            if let Some(value) = model {
+                a.push("--model".into());
+                a.push(value.clone());
+            }
+            a.push("--name".into());
+            a.push(name.clone());
+            if let Some(value) = api_key {
+                a.push("--api-key".into());
+                a.push(value.clone());
+            }
+            if *non_interactive {
+                a.push("--non-interactive".into());
+            }
+        }
     }
     a
 }
@@ -383,6 +573,7 @@ fn dispatch(args: &[String]) {
     match args.get(1).map(|s| s.as_str()) {
         Some("install") => cmd_install(args),
         Some("run") => cmd_run(args),
+        Some("route") => cmd_route(args),
         Some("execute") => cmd_execute(args),
         Some("search") => cmd_search(args),
         Some("list") => cmd_list(args),
@@ -396,13 +587,14 @@ fn dispatch(args: &[String]) {
         Some("genes") => cmd_genes(args),
         Some("doctor") => cmd_doctor(args),
         Some("keychain") => cmd_keychain(args),
-        Some("mutation") => cmd_mutation(args),
+        Some("mutation") | Some("rsi") => cmd_mutation(args),
         Some("inspect") => cmd_inspect(args),
         Some("status") => cmd_status(args),
         Some("stop") => cmd_stop(args),
         Some("resume") => cmd_resume(args),
         Some("timeline") => cmd_timeline(args),
         Some("governance") => cmd_governance(args),
+        Some("deny") => cmd_deny(args),
         Some("approve") => cmd_approve(args),
         Some("reject") => cmd_reject(args),
         Some("gene") => cmd_gene(args),
@@ -413,7 +605,9 @@ fn dispatch(args: &[String]) {
         Some("package") => cmd_package(args),
         Some("keygen") => cmd_keygen(args),
         Some("sign") => cmd_sign(args),
+        Some("verify") => cmd_verify(args),
         Some("serve") => cmd_serve(args),
+        Some("remote") => cmd_remote(args),
         Some("version") => cmd_version(args),
         Some("graph") => cmd_graph(args),
         Some("lineage") => cmd_lineage(args),
@@ -423,6 +617,7 @@ fn dispatch(args: &[String]) {
         Some("publish") => cmd_publish(args),
         Some("replay") => cmd_replay(args),
         Some("session") => cmd_session(args),
+        Some("export") => cmd_export(args),
         Some("artifacts") => cmd_artifacts(args),
         Some("fleet") => cmd_fleet(args),
         Some("login") => cmd_login(args),
@@ -432,6 +627,7 @@ fn dispatch(args: &[String]) {
         Some("architecture") => cmd_architecture(args),
         Some("benchmark") => cmd_benchmark(args),
         Some("profiles") => cmd_profiles(args),
+        Some("completions") => cmd_completions(args),
         Some("overnight") => cmd_overnight(args),
         Some("setup") => cmd_setup(args),
         Some("cron") => cmd_cron(args),
@@ -456,6 +652,43 @@ const PANDORA_ASCII: &str = r#"
      |  ╚══╝ |
      |___|||||
 "#;
+
+fn cmd_completions(args: &[String]) {
+    let Some(shell) = args.get(2).map(|value| value.to_ascii_lowercase()) else {
+        eprintln!("Usage: pandora completions <bash|zsh|fish|powershell|elvish>");
+        process::exit(2);
+    };
+    let commands = Cli::command()
+        .get_subcommands()
+        .map(|command| command.get_name())
+        .collect::<Vec<_>>()
+        .join(" ");
+    let script = match shell.as_str() {
+        "bash" => format!(
+            "_pandora() {{\n  local cur=\"${{COMP_WORDS[COMP_CWORD]}}\"\n  COMPREPLY=( $(compgen -W \"{commands}\" -- \"$cur\") )\n}}\ncomplete -F _pandora pandora\n"
+        ),
+        "zsh" => format!("#compdef pandora\n_arguments '1:command:(({commands}))'\n"),
+        "fish" => commands
+            .split_whitespace()
+            .map(|command| {
+                format!(
+                    "complete -c pandora -f -n '__fish_use_subcommand' -a '{command}'"
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n"),
+        "powershell" | "pwsh" => format!(
+            "Register-ArgumentCompleter -Native -CommandName pandora -ScriptBlock {{\n  param($wordToComplete, $commandAst, $cursorPosition)\n  '{commands}'.Split() | Where-Object {{ $_ -like \"$wordToComplete*\" }} | ForEach-Object {{ [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_) }}\n}}\n"
+        ),
+        "elvish" => format!("edit:completion:argreplace[pandora] = [ {commands} ]\n"),
+        _ => {
+            eprintln!("Unsupported shell: {shell}");
+            eprintln!("Supported shells: bash, zsh, fish, powershell, elvish");
+            process::exit(2);
+        }
+    };
+    print!("{script}");
+}
 
 fn cmd_version(_args: &[String]) {
     println!("{PANDORA_ASCII}");
@@ -486,13 +719,13 @@ fn usage() {
     eprintln!();
     eprintln!("    Packages:");
     eprintln!(
-        "        install <pkg>         Install a package (local or K-O Palace with --registry=URL)"
+        "        install <pkg>         Install a package (local or K-O-Palace with --registry=URL)"
     );
     eprintln!("        uninstall <pkg>       Remove a package");
     eprintln!("        update <pkg>          Update a package");
     eprintln!("        list                  List installed packages");
     eprintln!("        info <pkg>            Show package details");
-    eprintln!("        search <query>       Search K-O Palace registry");
+    eprintln!("        search <query>       Search K-O-Palace registry");
     eprintln!("        publish               Publish current package");
     eprintln!();
     eprintln!("    Providers:");
@@ -508,7 +741,9 @@ fn usage() {
     eprintln!("        doctor                Run health checks");
     eprintln!("        status                Show runtime status");
     eprintln!("        architecture          Show architecture diagram");
+    eprintln!("        keychain <store|get|delete>  Manage credentials");
     eprintln!("        sessions              List sessions");
+    eprintln!("        export [id]           Export sessions (JSON or Markdown)");
     eprintln!("        artifacts             List artifacts");
     eprintln!();
     eprintln!("    SDK:");
@@ -523,6 +758,7 @@ fn usage() {
     eprintln!("        graph                 Show execution graph");
     eprintln!("        lineage               Show gene lineage");
     eprintln!("        governance            Show governance state");
+    eprintln!("        deny <list|add|remove> Manage persistent deny rules");
     eprintln!("        fleet <subcommand>    Manage fleet workers");
     eprintln!("        serve                 Start MCP server");
     eprintln!();
@@ -564,9 +800,9 @@ fn cmd_install(args: &[String]) {
         .or_else(|| std::env::var("PANDORA_REGISTRY_URL").ok())
         .unwrap_or_else(|| "http://localhost:3001".to_string());
 
-    // 1. Try local KUBER sources first
+    // 1. Try local K-O-Palace sources first
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let mut k = pandora_kuber::Kuber::new(sc.clone());
+    let mut k = pandora_ko_palace::KoPalace::new(sc.clone());
     if let Ok(cwd) = env::current_dir() {
         k.add_source("local", &cwd.to_string_lossy());
     }
@@ -575,16 +811,16 @@ fn cmd_install(args: &[String]) {
         return;
     }
 
-    // 2. Try remote K-O Palace lookup
+    // 2. Try remote K-O-Palace lookup
     eprintln!(
-        "Not found locally. Trying K-O Palace at {} ...",
+        "Not found locally. Trying K-O-Palace at {} ...",
         registry_url
     );
     let token = std::env::var("PANDORA_TOKEN").ok();
-    let registry = match pandora_kuber::registry::RegistryClient::new(&registry_url, token) {
+    let registry = match pandora_ko_palace::registry::RegistryClient::new(&registry_url, token) {
         Ok(client) => client,
         Err(e) => {
-            eprintln!("Invalid K-O Palace URL: {e}");
+            eprintln!("Invalid K-O-Palace URL: {e}");
             process::exit(1);
         }
     };
@@ -597,7 +833,7 @@ fn cmd_install(args: &[String]) {
             }
         },
         Err(e) => {
-            eprintln!("Could not install from K-O Palace: {e}");
+            eprintln!("Could not install from K-O-Palace: {e}");
             eprintln!("Local install also failed.");
             process::exit(1);
         }
@@ -764,7 +1000,7 @@ fn interactive_agent() {
 
         // Slash commands
         if trimmed.starts_with('/') {
-            match handle_slash_command(trimmed, &mut runtime, &session_id) {
+            match handle_slash_command(trimmed) {
                 SlashResult::Quit => break,
                 SlashResult::Continue => continue,
                 SlashResult::Fallthrough(task) => {
@@ -863,11 +1099,7 @@ enum SlashResult {
     Fallthrough(String),
 }
 
-fn handle_slash_command(
-    input: &str,
-    _runtime: &mut pandora_orchestrator::PandoraRuntime,
-    _session_id: &str,
-) -> SlashResult {
+fn handle_slash_command(input: &str) -> SlashResult {
     let parts: Vec<&str> = input[1..].split_whitespace().collect();
     let cmd = parts.first().copied().unwrap_or("");
     let _rest = &input[1..];
@@ -913,8 +1145,13 @@ fn handle_slash_command(
         "model" => {
             let model_name = parts.get(1).copied();
             if let Some(m) = model_name {
-                println!("  Switching model to: {m}");
-                // TODO: wire to runtime model switching
+                let model = m.trim();
+                if model.is_empty() || model.chars().any(char::is_control) {
+                    println!("  Model name must contain printable characters.");
+                } else {
+                    std::env::set_var("PANDORA_DEFAULT_MODEL", model);
+                    println!("  Model selected for this shell: {model}");
+                }
             } else {
                 let current =
                     std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "auto".into());
@@ -1061,72 +1298,183 @@ fn handle_slash_command(
     }
 }
 
+fn cmd_route(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora route <task>");
+        process::exit(2);
+    }
+
+    let task = args[2..].join(" ");
+    let required = pandora_types::intent_router::IntentRouter::capabilities_from_intent(&task);
+    let mut council = pandora_shadow_council::ShadowCouncil::new();
+    pandora_harnesses::register_all(&mut council);
+    let request = pandora_types::intent_router::CapabilityRequest {
+        intent: task.clone(),
+        required: required.clone(),
+        preferred: Vec::new(),
+        budget: None,
+        policy: None,
+    };
+
+    match council.route(request) {
+        Ok(route) => {
+            if std::env::var_os("PANDORA_OUTPUT").is_some_and(|value| value == "json") {
+                let result = serde_json::json!({
+                    "task": task,
+                    "required_capabilities": required,
+                    "harness": route.harness_id,
+                    "gene": route.gene_id,
+                    "score": route.score,
+                    "rationale": route.rationale,
+                });
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&result).expect("route JSON serialization")
+                );
+            } else {
+                println!("Task: {task}");
+                println!("Capabilities: {}", required.join(", "));
+                println!("Harness: {}", route.harness_id);
+                if let Some(gene) = route.gene_id {
+                    println!("Gene: {gene}");
+                }
+                println!("Score: {:.2}", route.score);
+                println!("Reason: {}", route.rationale);
+            }
+        }
+        Err(error) => {
+            eprintln!("Routing failed: {error}");
+            process::exit(1);
+        }
+    }
+}
+
 fn cmd_run(args: &[String]) {
-    let output_json = args.iter().any(|a| {
-        a == "--output"
-            && args
-                .windows(2)
-                .any(|w| w[0] == "--output" && w[1] == "json")
-    });
-    let quiet = args.iter().any(|a| a == "--quiet" || a == "-q");
-    let task_args: Vec<&str> = args
-        .iter()
-        .skip(2)
-        .filter(|a| !a.starts_with("--"))
-        .map(|s| s.as_str())
-        .collect();
+    let output_json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json")
+        || args
+            .windows(2)
+            .any(|window| window[0] == "--output" && window[1].eq_ignore_ascii_case("json"))
+        || args.iter().any(|arg| arg == "--output=json");
+    let quiet = args.iter().any(|arg| arg == "--quiet" || arg == "-q");
+    let profile_name = args
+        .windows(2)
+        .find(|window| window[0] == "--profile")
+        .map(|window| window[1].as_str());
+    let model_name = args
+        .windows(2)
+        .find(|window| window[0] == "--model")
+        .map(|window| window[1].as_str());
+    if let Some(model) = model_name.map(str::trim) {
+        if model.is_empty() || model.chars().any(char::is_control) {
+            eprintln!("Model name must contain printable characters.");
+            process::exit(2);
+        }
+        env::set_var("PANDORA_DEFAULT_MODEL", model);
+    }
+    let mut task_args = Vec::new();
+    let mut index = 2;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--profile" | "--model" | "--output" => index += 2,
+            "--quiet" | "-q" => index += 1,
+            value
+                if value.starts_with("--profile=")
+                    || value.starts_with("--model=")
+                    || value.starts_with("--output=") =>
+            {
+                index += 1
+            }
+            value => {
+                task_args.push(value);
+                index += 1;
+            }
+        }
+    }
     if task_args.is_empty() {
-        eprintln!("Usage: pandora run <task> [--output json] [--quiet]");
+        eprintln!("Usage: pandora run <task> [--profile NAME] [--model NAME] [--output text|json] [--quiet]");
         process::exit(1);
     }
-    let task: String = task_args.join(" ");
+    let task = task_args.join(" ");
+    let profile = match profile_name {
+        Some(name) => match pandora_types::profile::load_profile(name) {
+            Ok(profile) => profile,
+            Err(error) => {
+                eprintln!("Could not load profile '{name}': {error}");
+                process::exit(1);
+            }
+        },
+        None => pandora_types::profile::Profile::default(),
+    };
     if !quiet && !output_json {
         println!("Task: {task}");
+        if let Some(name) = profile_name {
+            println!("Profile: {name}");
+        }
     }
     match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
-            // Register all built-in harnesses (source + domain + meta) via
-            // single discovery function. Adding a new harness = add it to
-            // register_all(), not here. See ARCHITECTURE_FREEZE.md invariant 7.
             pandora_harnesses::register_all(&mut runtime.council);
             use pandora_types::execution_plan::*;
+            let mut budget = ExecutionBudget::default();
+            if let Some(max_attempts) = profile.max_attempts {
+                budget.max_retries = max_attempts.saturating_sub(1);
+            }
+            if let Some(sandbox) = profile.sandbox {
+                budget.sandbox_level = match sandbox {
+                    0 => SandboxLevel::None,
+                    1 => SandboxLevel::Restricted,
+                    _ => SandboxLevel::Isolated,
+                };
+            }
             runtime.plan = ExecutionPlan {
                 instruction: task.clone(),
-                control_strategy: ControlStrategy::SingleShot,
-                evaluator: EvaluatorKind::None,
-                provider_policy: "default".into(),
-                budget: ExecutionBudget::default(),
+                control_strategy: match profile.strategy.as_deref() {
+                    Some("closed") => ControlStrategy::Closed,
+                    Some("open") => ControlStrategy::Open,
+                    Some("human") => ControlStrategy::Human,
+                    Some("autonomous") => ControlStrategy::Autonomous,
+                    _ => ControlStrategy::SingleShot,
+                },
+                evaluator: match profile.evaluator.as_deref() {
+                    Some("rust-tests") => EvaluatorKind::RustTests,
+                    Some("python-tests") => EvaluatorKind::PythonTests,
+                    Some(value) => EvaluatorKind::Custom(value.to_string()),
+                    None => EvaluatorKind::None,
+                },
+                provider_policy: profile.provider.unwrap_or_else(|| "default".into()),
+                approval_required: profile.approval.unwrap_or(false),
+                budget,
                 stop_conditions: vec![StopCondition::GoalMet],
                 ..Default::default()
             };
             match runtime.run(&task, "default").await {
-                Ok(r) if r.success => {
+                Ok(result) if result.success => {
                     if output_json {
                         let report = serde_json::json!({
                             "success": true,
-                            "output": r.output,
-                            "duration_ms": r.duration_ms,
-                            "execution_id": r.execution_id,
-                            "provider": r.provider,
+                            "output": result.output,
+                            "duration_ms": result.duration_ms,
+                            "execution_id": result.execution_id,
+                            "provider": result.provider,
                         });
                         println!("{}", serde_json::to_string_pretty(&report).unwrap_or_default());
                     } else if !quiet {
-                        println!("{}", r.output.chars().take(2000).collect::<String>())
+                        println!("{}", result.output.chars().take(2000).collect::<String>());
                     }
                 }
                 Ok(_) => {
-                    eprintln!("Pipeline returned empty — set PANDORA_DEFAULT_MODEL or add a connection: pandora connection add local ollama http://localhost:11434 MODEL");
+                    eprintln!("Pipeline returned empty ? set PANDORA_DEFAULT_MODEL or add a connection: pandora connection add local ollama http://localhost:11434 MODEL");
+                    process::exit(1);
                 }
-                Err(e) => {
-                    eprintln!("Pipeline failed: {e}\nSuggestion: Is Ollama running?");
+                Err(error) => {
+                    eprintln!("Pipeline failed: {error}\nSuggestion: Is Ollama running?");
                     process::exit(1);
                 }
             }
-            process::exit(0);
         }),
-        Err(e) => {
-            eprintln!("Failed to start runtime: {e}");
+        Err(error) => {
+            eprintln!("Failed to start runtime: {error}");
             process::exit(1);
         }
     }
@@ -1134,7 +1482,7 @@ fn cmd_run(args: &[String]) {
 
 fn cmd_list(_args: &[String]) {
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let k = pandora_kuber::Kuber::new(sc.clone());
+    let k = pandora_ko_palace::KoPalace::new(sc.clone());
     let i = k.list_installed();
     if i.is_empty() {
         println!("Nothing installed. Use: pandora install <name>");
@@ -1150,7 +1498,7 @@ fn cmd_info(args: &[String]) {
         process::exit(1);
     }
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let k = pandora_kuber::Kuber::new(sc.clone());
+    let k = pandora_ko_palace::KoPalace::new(sc.clone());
     match k.info(&args[2]) {
         Some(p) => println!("{} v{} ({})\n  {}", p.id, p.version, p.kind, p.description),
         None => println!("Not found: {}", args[2]),
@@ -1162,7 +1510,7 @@ fn cmd_uninstall(args: &[String]) {
         process::exit(1);
     }
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let mut k = pandora_kuber::Kuber::new(sc.clone());
+    let mut k = pandora_ko_palace::KoPalace::new(sc.clone());
     match k.uninstall(&args[2]) {
         Ok(_) => println!("Removed: {}", args[2]),
         Err(e) => {
@@ -1177,7 +1525,7 @@ fn cmd_update(args: &[String]) {
         process::exit(1);
     }
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let k = pandora_kuber::Kuber::new(sc.clone());
+    let k = pandora_ko_palace::KoPalace::new(sc.clone());
     let f: Vec<_> = k
         .check_updates()
         .into_iter()
@@ -1217,88 +1565,123 @@ fn cmd_providers(_args: &[String]) {
     }
 }
 fn cmd_harnesses(_args: &[String]) {
-    println!(
-        "Domain: 7 (coding, design, security, cybersecurity, research, computer-use, android-use)"
-    );
+    println!("Domain: 6 (coding, design, security, cybersecurity, research, computer-use)");
     println!("Meta: 1 (coordination)");
     println!("Source: 5 (memory, planning, execution, governance, identity)");
     println!("Loaded at runtime via pandora run");
 }
+fn store_credential(key: &str, value: &str) -> Result<String, String> {
+    pandora_secrets::SecretStore::default()
+        .set(key, value)
+        .map(|source| source.to_string())
+        .map_err(|error| error.to_string())
+}
+
+fn load_credential(key: &str) -> Result<String, String> {
+    match pandora_secrets::SecretStore::default()
+        .get(key)
+        .map_err(|error| error.to_string())?
+    {
+        Some(value) => Ok(value),
+        None => Err(format!("credential '{key}' not found")),
+    }
+}
 fn cmd_keychain(args: &[String]) {
     if args.len() < 3 {
-        eprintln!("Usage: pandora keychain <store|get> <key> [value]");
-        eprintln!("  store <key> <value>  — store a secret in the keychain");
-        eprintln!("  get <key>            — retrieve a secret from the keychain");
+        eprintln!("Usage: pandora keychain <store|get|delete|migrate> <key> [value]");
+        eprintln!("Uses the OS credential store on Windows/macOS; Linux uses AES-256-GCM with PANDORA_CREDENTIALS_KEY.");
         return;
     }
     let sub = &args[2];
     match sub.as_str() {
+        "migrate" => {
+            use pandora_types::connection_manager::ConnectionRegistry;
+            let mut registry = ConnectionRegistry::load();
+            let store = pandora_secrets::SecretStore::default();
+            let mut migrated = 0usize;
+            for connection in &mut registry.connections {
+                let Some(value) = connection.api_key.clone() else {
+                    continue;
+                };
+                let reference = match connection.credential_ref.clone() {
+                    Some(reference) => reference,
+                    None => match pandora_secrets::credential_name(&connection.name) {
+                        Ok(reference) => reference,
+                        Err(error) => {
+                            eprintln!("Could not migrate {}: {error}", connection.name);
+                            process::exit(1);
+                        }
+                    },
+                };
+                if let Err(error) = store.set(&reference, &value) {
+                    eprintln!("Could not migrate {}: {error}", connection.name);
+                    process::exit(1);
+                }
+                connection.credential_ref = Some(reference);
+                connection.api_key = None;
+                migrated += 1;
+            }
+            if let Err(error) = registry.save() {
+                eprintln!("Could not save migrated connections: {error}");
+                process::exit(1);
+            }
+            if migrated == 0 {
+                println!("No legacy provider credentials found.");
+            } else {
+                println!("Migrated {migrated} provider credential(s) into pandora-secrets.");
+            }
+        }
         "store" => {
             if args.len() < 5 {
                 eprintln!("Usage: pandora keychain store <key> <value>");
                 return;
             }
-            let key = &args[3];
-            let value = &args[4];
-            // Store in ~/.pandora/credentials.enc (ponytail: env-var encrypted, not OS keychain yet)
-            let creds_dir = sessions_dir()
-                .parent()
-                .map(|p| p.join("credentials"))
-                .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
-            let _ = std::fs::create_dir_all(&creds_dir);
-            let path = creds_dir.join(format!("{key}.enc"));
-            // Simple base64 encoding for now (real encryption via ring would be better)
-            let encoded = base64_encode(value.as_bytes());
-            std::fs::write(&path, &encoded).expect("Failed to write credential");
-            println!(
-                "Stored: {key} -> {}",
-                creds_dir.join(format!("{key}.enc")).display()
-            );
+            match store_credential(&args[3], &args[4]) {
+                Ok(location) => println!("Stored credential using {location}"),
+                Err(error) => {
+                    eprintln!("Could not store credential: {error}");
+                    process::exit(1);
+                }
+            }
         }
         "get" => {
             if args.len() < 4 {
                 eprintln!("Usage: pandora keychain get <key>");
                 return;
             }
-            let key = &args[3];
-            let creds_dir = sessions_dir()
-                .parent()
-                .map(|p| p.join("credentials"))
-                .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
-            let path = creds_dir.join(format!("{key}.enc"));
-            match std::fs::read_to_string(&path) {
-                Ok(encoded) => {
-                    if let Ok(decoded) = base64_decode(&encoded) {
-                        let value = String::from_utf8_lossy(&decoded);
-                        println!("{value}");
-                    } else {
-                        eprintln!("Error: corrupted credential");
-                    }
+            match load_credential(&args[3]) {
+                Ok(value) => println!("{value}"),
+                Err(error) => {
+                    eprintln!("Could not read credential: {error}");
+                    process::exit(1);
                 }
-                Err(_) => eprintln!("Key not found: {key}"),
             }
+        }
+        "delete" => {
+            if args.len() < 4 {
+                eprintln!("Usage: pandora keychain delete <key>");
+                return;
+            }
+            delete_credential(&args[3]);
+            println!("Deleted credential: {}", args[3]);
         }
         _ => {
             eprintln!("Unknown keychain command: {sub}");
-            eprintln!("Available: store, get");
+            eprintln!("Available: store, get, delete, migrate");
         }
     }
 }
 
-fn base64_encode(data: &[u8]) -> String {
-    use base64::Engine;
-    base64::engine::general_purpose::STANDARD.encode(data)
-}
-
 fn cmd_mutation(args: &[String]) {
     if args.len() < 3 {
-        eprintln!("Usage: pandora mutation <list|show|apply> [id]");
+        eprintln!("Usage: pandora rsi <list|show> [id]");
         eprintln!("  list              — list mutation candidates");
         eprintln!("  show <id>         — show a candidate's details");
         eprintln!("  apply <id>        — apply a candidate (requires Parliament approval)");
         return;
     }
     let sub = &args[2];
+    let json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json");
     let observer = pandora_orchestrator::gepa::GepaObserver::new(
         pandora_orchestrator::gepa::GepaObserver::default_dir(),
     );
@@ -1306,6 +1689,13 @@ fn cmd_mutation(args: &[String]) {
     match sub.as_str() {
         "list" => {
             let candidates = observer.list();
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&candidates).expect("RSI candidate serialization")
+                );
+                return;
+            }
             if candidates.is_empty() {
                 println!("No mutation candidates yet. Run some tasks and failures will generate proposals.");
                 return;
@@ -1331,6 +1721,13 @@ fn cmd_mutation(args: &[String]) {
             let id = &args[3];
             match observer.get(id) {
                 Some(c) => {
+                    if json {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&c).expect("RSI candidate serialization")
+                        );
+                        return;
+                    }
                     println!("Mutation: {}", c.id);
                     println!("  Target:    {:?} '{}'", c.target_kind, c.target_id);
                     println!("  Description: {}", c.description);
@@ -1349,30 +1746,67 @@ fn cmd_mutation(args: &[String]) {
                 return;
             }
             let id = &args[3];
-            println!("Applying mutation: {id}");
-            println!("This requires Parliament governance approval.");
-            println!("(Phase 8: approval gate via Parliament to be wired in Phase 8 completion)");
-
-            match observer.mark_applied(id) {
-                Ok(()) => println!("Marked as applied: {id}"),
-                Err(e) => eprintln!("Error: {e}"),
-            }
+            eprintln!("RSI proposal {id} was not applied.");
+            eprintln!("DSR activation requires a verified package, recorded approval, and rollback target.");
+            eprintln!("Use `pandora rsi show {id}` to inspect the proposal.");
         }
         _ => {
             eprintln!("Unknown mutation command: {sub}");
-            eprintln!("Available: list, show, apply");
+            eprintln!("Available: list, show");
         }
     }
 }
 
-fn base64_decode(data: &str) -> Result<Vec<u8>, String> {
-    use base64::Engine;
-    base64::engine::general_purpose::STANDARD
-        .decode(data.trim())
-        .map_err(|e| format!("base64: {e}"))
+fn provider_credentials_configured() -> bool {
+    pandora_types::connection_manager::ConnectionRegistry::load()
+        .connections
+        .iter()
+        .any(|connection| connection.credential_ref.is_some() || connection.api_key.is_some())
 }
-
+fn cmd_doctor_json() {
+    let credentials_dir = sessions_dir()
+        .parent()
+        .map(|path| path.join("credentials"))
+        .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
+    let credentials_stored = (credentials_dir.exists()
+        && std::fs::read_dir(&credentials_dir)
+            .map(|mut entries| entries.next().is_some())
+            .unwrap_or(false))
+        || provider_credentials_configured();
+    let dependencies = ["cargo", "docker", "gh", "node", "python3", "rustc"]
+        .into_iter()
+        .map(|command| {
+            let available = std::process::Command::new(command)
+                .arg("--version")
+                .output()
+                .is_ok_and(|output| output.status.success());
+            (command.to_string(), serde_json::json!(available))
+        })
+        .collect::<serde_json::Map<_, _>>();
+    let value = serde_json::json!({
+        "api_version": "v1",
+        "runtime": env!("CARGO_PKG_VERSION"),
+        "security": {
+            "api_token_set": env::var("PANDORA_API_TOKEN").is_ok_and(|token| !token.is_empty()),
+            "insecure_mode": env::var("PANDORA_INSECURE").is_ok(),
+            "credentials_stored": credentials_stored,
+            "keychain_available": cfg!(any(target_os = "windows", target_os = "macos"))
+                || env::var("PANDORA_CREDENTIALS_KEY").is_ok_and(|key| !key.is_empty()),
+        },
+        "dependencies": dependencies,
+        "sessions": std::fs::read_dir(sessions_dir()).map(|entries| entries.count()).unwrap_or(0),
+    });
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&value).expect("doctor JSON serialization")
+    );
+}
 fn cmd_doctor(_args: &[String]) {
+    if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+        cmd_doctor_json();
+        return;
+    }
+
     println!("=== Pandora Doctor ===\n");
 
     // ── Security checks (Phase 7) ──
@@ -1401,16 +1835,18 @@ fn cmd_doctor(_args: &[String]) {
         .parent()
         .map(|p| p.join("credentials"))
         .unwrap_or_else(|| std::path::PathBuf::from(".pandora/credentials"));
-    let creds_exist = creds_dir.exists()
+    let creds_exist = (creds_dir.exists()
         && std::fs::read_dir(&creds_dir)
-            .map(|mut d| d.next().is_some())
-            .unwrap_or(false);
+            .map(|mut entries| entries.next().is_some())
+            .unwrap_or(false))
+        || provider_credentials_configured();
     println!(
         "  Credentials stored:  {}",
         if creds_exist { "YES" } else { "NO" }
     );
 
-    let keychain_available = false; // OS keychain requires keyring-rs integration
+    let keychain_available = cfg!(any(target_os = "windows", target_os = "macos"))
+        || env::var("PANDORA_CREDENTIALS_KEY").is_ok_and(|key| !key.is_empty());
     println!(
         "  Keychain available:  {}",
         if keychain_available {
@@ -1482,7 +1918,7 @@ fn cmd_doctor(_args: &[String]) {
     }
 }
 fn cmd_genes(_args: &[String]) {
-    let all = pandora_kuber::builtin::all();
+    let all = pandora_ko_palace::builtin::all();
     println!("{} built-in genes:", all.len());
     for p in &all {
         println!("  {} — {}", p.id, p.description);
@@ -1498,7 +1934,7 @@ fn cmd_inspect(args: &[String]) {
         "  Genes: {} installed, {} enabled",
         s.genes, s.genes_enabled
     );
-    println!("  Built-in: {}", pandora_kuber::builtin::all().len());
+    println!("  Built-in: {}", pandora_ko_palace::builtin::all().len());
     println!("  Slash commands: {}", s.slash_commands);
     println!(
         "\nSessions: {}",
@@ -1527,7 +1963,7 @@ fn cmd_architecture(_args: &[String]) {
     println!("O-PANDORA Architecture\n  Constitutional Services -> Shadow Council -> Harnesses -> Genes -> Providers");
 }
 fn cmd_status(_args: &[String]) {
-    let built = pandora_kuber::builtin::all().len();
+    let built = pandora_ko_palace::builtin::all().len();
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
     let s = sc.read().expect("council lock read").summary();
     println!("Pandora Runtime: Running");
@@ -1560,13 +1996,87 @@ fn cmd_timeline(args: &[String]) {
 fn cmd_governance(_args: &[String]) {
     println!("Governance: default policy");
 }
+fn cmd_deny(args: &[String]) {
+    use pandora_types::config::PandoraConfig;
+
+    let mut config = PandoraConfig::load();
+    let json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json");
+    match args.get(2).map(String::as_str) {
+        Some("list") | None => {
+            if json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&serde_json::json!({
+                        "deny_shell_patterns": config.deny_shell_patterns
+                    }))
+                    .expect("deny rules are serializable")
+                );
+            } else if config.deny_shell_patterns.is_empty() {
+                println!("No persistent deny rules.");
+            } else {
+                for (index, pattern) in config.deny_shell_patterns.iter().enumerate() {
+                    println!("{}: {}", index + 1, pattern);
+                }
+            }
+        }
+        Some("add") => {
+            let Some(pattern) = args.get(3).filter(|value| !value.trim().is_empty()) else {
+                eprintln!("Usage: pandora deny add <shell-pattern>");
+                return;
+            };
+            if !config
+                .deny_shell_patterns
+                .iter()
+                .any(|rule| rule == pattern)
+            {
+                config.deny_shell_patterns.push(pattern.clone());
+                if let Err(error) = config.save() {
+                    eprintln!("Could not save deny rule: {error}");
+                    return;
+                }
+            }
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "active", "pattern": pattern})
+                );
+            } else {
+                println!("Deny rule active: {pattern}");
+            }
+        }
+        Some("remove") => {
+            let Some(pattern) = args.get(3) else {
+                eprintln!("Usage: pandora deny remove <shell-pattern>");
+                return;
+            };
+            let before = config.deny_shell_patterns.len();
+            config.deny_shell_patterns.retain(|rule| rule != pattern);
+            if config.deny_shell_patterns.len() == before {
+                eprintln!("Deny rule not found: {pattern}");
+                return;
+            }
+            if let Err(error) = config.save() {
+                eprintln!("Could not save deny rules: {error}");
+                return;
+            }
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "removed", "pattern": pattern})
+                );
+            } else {
+                println!("Deny rule removed: {pattern}");
+            }
+        }
+        Some(command) => eprintln!("Unknown deny command: {command}. Use list, add, or remove."),
+    }
+}
 fn cmd_approve(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora approve <id>");
         return;
     }
     let approval_id = &args[2];
-
     let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
 
     match store.approve(approval_id) {
@@ -1575,33 +2085,12 @@ fn cmd_approve(args: &[String]) {
             println!("  Tool:    {}", approval.tool_name);
             println!("  Session: {}", approval.session_id);
             println!("  Who:     {}", approval.who);
-            println!("\nRe-run your task to resume execution.");
+            println!(
+                "
+Re-run your task to resume execution."
+            );
         }
-        Err(e) => {
-            // Fallback: try session metadata
-            let sessions_dir = sessions_dir();
-            let session_file = sessions_dir.join(format!("{}.json", approval_id));
-            if session_file.exists() {
-                let session_json = std::fs::read_to_string(&session_file).unwrap();
-                let mut session: serde_json::Value = serde_json::from_str(&session_json).unwrap();
-                if let Some(metadata) = session.get_mut("metadata") {
-                    metadata["approval_status"] = serde_json::json!("approved");
-                    metadata["approved_at"] = serde_json::json!(std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs()
-                        .to_string());
-                }
-                std::fs::write(
-                    &session_file,
-                    serde_json::to_string_pretty(&session).unwrap(),
-                )
-                .unwrap();
-                println!("Approved session: {}", approval_id);
-            } else {
-                eprintln!("Error: {e}");
-            }
-        }
+        Err(error) => eprintln!("Error: {error}"),
     }
 }
 fn cmd_reject(args: &[String]) {
@@ -1610,7 +2099,6 @@ fn cmd_reject(args: &[String]) {
         return;
     }
     let approval_id = &args[2];
-
     let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
 
     match store.reject(approval_id) {
@@ -1619,31 +2107,7 @@ fn cmd_reject(args: &[String]) {
             println!("  Tool:    {}", approval.tool_name);
             println!("  Session: {}", approval.session_id);
         }
-        Err(e) => {
-            // Fallback to session metadata
-            let sessions_dir = sessions_dir();
-            let session_file = sessions_dir.join(format!("{}.json", approval_id));
-            if session_file.exists() {
-                let session_json = std::fs::read_to_string(&session_file).unwrap();
-                let mut session: serde_json::Value = serde_json::from_str(&session_json).unwrap();
-                if let Some(metadata) = session.get_mut("metadata") {
-                    metadata["approval_status"] = serde_json::json!("rejected");
-                    metadata["rejected_at"] = serde_json::json!(std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs()
-                        .to_string());
-                }
-                std::fs::write(
-                    &session_file,
-                    serde_json::to_string_pretty(&session).unwrap(),
-                )
-                .unwrap();
-                println!("Rejected session: {}", approval_id);
-            } else {
-                eprintln!("Error: {e}");
-            }
-        }
+        Err(error) => eprintln!("Error: {error}"),
     }
 }
 fn cmd_gene(args: &[String]) {
@@ -1652,7 +2116,7 @@ fn cmd_gene(args: &[String]) {
         return;
     }
     match args[2].as_str() {
-        "list" => println!("{} built-in genes", pandora_kuber::builtin::all().len()),
+        "list" => println!("{} built-in genes", pandora_ko_palace::builtin::all().len()),
         "inspect" => {
             if args.len() < 4 {
                 return;
@@ -1951,6 +2415,7 @@ fn cmd_service(args: &[String]) {
     }
     match args[2].as_str() {
         "list" => println!("9 constitutional services"),
+
         "health" => println!("All OK"),
         _ => {
             eprintln!("Subcommand: list, health");
@@ -2002,7 +2467,7 @@ fn cmd_graph(args: &[String]) {
 fn cmd_lineage(_args: &[String]) {
     println!(
         "Gene Lineage: {} built-in genes",
-        pandora_kuber::builtin::all().len()
+        pandora_ko_palace::builtin::all().len()
     );
 }
 
@@ -2157,7 +2622,7 @@ fn cmd_new(args: &[String]) {
             std::fs::write(dir.join("src").join("lib.rs"), t).expect("CLI I/O");
             println!("Created: {name}/");
         }
-        "skill" => match pandora_kuber::skill::scaffold(&args[3], ".") {
+        "skill" => match pandora_ko_palace::skill::scaffold(&args[3], ".") {
             Ok(p) => println!("Created: {p}"),
             Err(e) => eprintln!("{e}"),
         },
@@ -2302,7 +2767,62 @@ fn cmd_explain(args: &[String]) {
     }
 }
 
-fn cmd_setup(_args: &[String]) {
+fn cmd_setup(args: &[String]) {
+    let flag_value = |flag: &str| {
+        args.iter()
+            .position(|value| value == flag)
+            .and_then(|index| args.get(index + 1))
+            .cloned()
+    };
+    let provider = flag_value("--provider");
+    let non_interactive = args.iter().any(|value| value == "--non-interactive");
+    if provider.is_none() && non_interactive {
+        eprintln!("Non-interactive setup requires --provider.");
+        process::exit(2);
+    }
+    if let Some(provider) = provider {
+        let endpoint = flag_value("--endpoint").unwrap_or_else(|| match provider.as_str() {
+            "ollama" => "http://localhost:11434".into(),
+            "openai" => "https://api.openai.com/v1".into(),
+            "anthropic" => "https://api.anthropic.com".into(),
+            "openrouter" => "https://openrouter.ai/api/v1".into(),
+            "deepseek" => "https://api.deepseek.com/v1".into(),
+            _ => String::new(),
+        });
+        if endpoint.is_empty() {
+            eprintln!("Setup requires --endpoint for provider kind '{provider}'.");
+            process::exit(2);
+        }
+        let model = flag_value("--model")
+            .or_else(|| std::env::var("PANDORA_DEFAULT_MODEL").ok())
+            .filter(|value| !value.trim().is_empty());
+        let Some(model) = model else {
+            eprintln!("Setup requires --model or PANDORA_DEFAULT_MODEL.");
+            process::exit(2);
+        };
+        let name = flag_value("--name").unwrap_or_else(|| provider.clone());
+        let api_key = flag_value("--api-key")
+            .or_else(|| std::env::var("PANDORA_PROVIDER_API_KEY").ok())
+            .filter(|value| !value.trim().is_empty());
+        let mut connection_args = vec![
+            "pandora".into(),
+            "connection".into(),
+            "add".into(),
+            name,
+            provider,
+            endpoint,
+            "--model".into(),
+            model,
+        ];
+        if let Some(api_key) = api_key {
+            connection_args.push("--api-key".into());
+            connection_args.push(api_key);
+        }
+        cmd_connection(&connection_args);
+        println!("Provider setup complete. Run `pandora doctor` to verify connectivity.");
+        return;
+    }
+
     println!("╔══════════════════════════════════════════╗");
     println!("║       Pandora Setup Wizard v0.2.0       ║");
     println!("╚══════════════════════════════════════════╝");
@@ -2615,7 +3135,7 @@ fn cmd_import(args: &[String]) {
             _ => ".",
         });
     let expanded = shellexpand::tilde(path).to_string();
-    match pandora_kuber::import::import_from(tool, &expanded) {
+    match pandora_ko_palace::import::import_from(tool, &expanded) {
         Ok(result) => {
             println!("Import from {}:", result.tool);
             if result.imported.is_empty() {
@@ -2638,6 +3158,13 @@ fn cmd_import(args: &[String]) {
 fn cmd_profiles(_args: &[String]) {
     match pandora_types::profile::list_profiles() {
         Ok(p) => {
+            if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&p).expect("profile JSON serialization")
+                );
+                return;
+            }
             println!("Profiles:");
             for pr in &p {
                 println!("  {pr}");
@@ -2812,6 +3339,149 @@ fn cmd_session(args: &[String]) {
     println!("Session: {}\nPrompt:  {}", s.id, s.prompt);
 }
 
+fn cmd_export(args: &[String]) {
+    let mut session_id = None;
+    let mut format = "json".to_string();
+    let mut output = None;
+    let mut redact = false;
+
+    for arg in args.iter().skip(2) {
+        if let Some(value) = arg.strip_prefix("--format=") {
+            format = value.to_ascii_lowercase();
+        } else if let Some(value) = arg.strip_prefix("--output=") {
+            output = Some(value.to_string());
+        } else if arg == "--redact" {
+            redact = true;
+        } else if !arg.starts_with('-') && session_id.is_none() {
+            session_id = Some(arg.clone());
+        }
+    }
+
+    if format != "json" && format != "markdown" {
+        eprintln!("Unsupported export format: {format}. Use json or markdown.");
+        process::exit(2);
+    }
+
+    let mut sessions = Vec::new();
+    if let Some(id) = session_id {
+        let path = sessions_dir().join(format!("{id}.json"));
+        match std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|json| serde_json::from_str::<pandora_types::Session>(&json).ok())
+        {
+            Some(session) => sessions.push(session),
+            None => {
+                eprintln!("Session not found: {id}");
+                process::exit(1);
+            }
+        }
+    } else if let Ok(entries) = std::fs::read_dir(sessions_dir()) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|ext| ext == "json")
+                && path.file_stem() != Some(std::ffi::OsStr::new("index"))
+            {
+                if let Ok(json) = std::fs::read_to_string(path) {
+                    if let Ok(session) = serde_json::from_str::<pandora_types::Session>(&json) {
+                        sessions.push(session);
+                    }
+                }
+            }
+        }
+    }
+    sessions.sort_by_key(|session| session.created_at);
+
+    let rendered = if format == "json" {
+        let mut value = serde_json::to_value(&sessions).unwrap_or_else(|_| serde_json::json!([]));
+        if redact {
+            redact_export_value(&mut value);
+        }
+        serde_json::to_string_pretty(&value).unwrap_or_else(|_| "[]".to_string())
+    } else {
+        sessions
+            .iter()
+            .map(|session| export_session_markdown(session, redact))
+            .collect::<Vec<_>>()
+            .join("\n\n---\n\n")
+    };
+
+    match output.as_deref() {
+        Some("-") | None => println!("{rendered}"),
+        Some(path) => {
+            if let Err(error) = std::fs::write(path, rendered) {
+                eprintln!("Could not write export to {path}: {error}");
+                process::exit(1);
+            }
+            eprintln!("Export written to {path}");
+        }
+    }
+}
+
+fn redact_export_value(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(object) => {
+            for (key, child) in object.iter_mut() {
+                let sensitive = ["api_key", "apikey", "password", "secret", "token"]
+                    .iter()
+                    .any(|part| key.to_ascii_lowercase().contains(part));
+                if sensitive {
+                    *child = serde_json::Value::String("[REDACTED]".to_string());
+                } else {
+                    redact_export_value(child);
+                }
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for item in items {
+                redact_export_value(item);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn export_session_markdown(session: &pandora_types::Session, redact: bool) -> String {
+    let prompt = if redact {
+        "[REDACTION ENABLED]"
+    } else {
+        session.prompt.as_str()
+    };
+    let status = match &session.status {
+        pandora_types::SessionStatus::Pending => "pending".to_string(),
+        pandora_types::SessionStatus::Running => "running".to_string(),
+        pandora_types::SessionStatus::Completed => "completed".to_string(),
+        pandora_types::SessionStatus::Failed(error) => format!("failed: {error}"),
+        _ => "unknown".to_string(),
+    };
+    let mut markdown = format!(
+        "# Pandora session {}\n\n- **Status:** {status}\n- **Prompt:** {prompt}\n",
+        session.id
+    );
+    if let Some(workflow) = &session.workflow {
+        markdown.push_str(&format!("- **Workflow:** {workflow}\n"));
+    }
+    markdown.push_str("\n## Timeline\n\n");
+    if session.timeline.is_empty() {
+        markdown.push_str("No timeline frames recorded.\n");
+    } else {
+        for frame in &session.timeline {
+            markdown.push_str(&format!(
+                "- `{}` ? `{}` via `{}/{}` ? {}\n",
+                frame.step_kind,
+                frame.step_label,
+                frame.provider,
+                frame.model,
+                if frame.success { "success" } else { "failure" }
+            ));
+        }
+    }
+    markdown.push_str("\n## Artifacts\n\n");
+    for artifact in &session.artifacts {
+        markdown.push_str(&format!("- `{artifact}`\n"));
+    }
+    markdown
+}
+
 fn cmd_shell(_args: &[String]) {
     let hp = env::var("PANDORA_HOME")
         .map(|h| std::path::PathBuf::from(h).join("shell_history"))
@@ -2825,7 +3495,7 @@ fn cmd_shell(_args: &[String]) {
         .map(|s| s.lines().rev().take(100).map(String::from).collect())
         .unwrap_or_default();
     history.reverse();
-    println!("{PANDORA_ASCII}\nO-PANDORA Interactive Shell\nCommands: /run, /sessions, /session, /replay, /providers, /genes, /help, /quit");
+    println!("{PANDORA_ASCII}\nO-PANDORA Interactive Shell\nType /help for commands.");
     // Check if stdin is a terminal before entering interactive mode
     use std::io::IsTerminal;
     if !std::io::stdin().is_terminal() {
@@ -2845,6 +3515,13 @@ fn cmd_shell(_args: &[String]) {
         if t.is_empty() {
             continue;
         }
+        if t.starts_with('/') {
+            match handle_slash_command(&t) {
+                SlashResult::Quit => break,
+                SlashResult::Continue => continue,
+                SlashResult::Fallthrough(_) => {}
+            }
+        }
         if t == "/quit" || t == "/exit" {
             break;
         }
@@ -2854,7 +3531,7 @@ fn cmd_shell(_args: &[String]) {
         let cmd = parts[0];
         let rest = parts.get(1..).unwrap_or(&[]).join(" ");
         match cmd {
-            "/palace" | "/market" | "/kuber-palace" => {
+            "/palace" | "/market" => {
                 cmd_palace_shell();
             }
             "/help" => {
@@ -3071,7 +3748,7 @@ fn cmd_publish(args: &[String]) {
 }
 
 fn cmd_login(_args: &[String]) {
-    println!("KUBER K-O Palace Login");
+    println!("K-O-Palace Login");
     println!("  Registry: https://palace.pandora.dev (default)");
     println!("  Use: PANDORA_TOKEN=<token> to authenticate");
     println!("  Or set: pandora config palace.token <token>");
@@ -3216,7 +3893,7 @@ fn cmd_search(args: &[String]) {
     let registry_url =
         std::env::var("PANDORA_REGISTRY_URL").unwrap_or_else(|_| "http://localhost:3001".into());
     let mut remote_found = false;
-    if let Ok(registry) = pandora_kuber::registry::RegistryClient::new(
+    if let Ok(registry) = pandora_ko_palace::registry::RegistryClient::new(
         &registry_url,
         std::env::var("PANDORA_TOKEN").ok(),
     ) {
@@ -3240,9 +3917,9 @@ fn cmd_search(args: &[String]) {
         }
     }
     let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let k = pandora_kuber::Kuber::new(sc.clone());
+    let k = pandora_ko_palace::KoPalace::new(sc.clone());
     let r = k.search(q);
-    let b: Vec<_> = pandora_kuber::builtin::all()
+    let b: Vec<_> = pandora_ko_palace::builtin::all()
         .into_iter()
         .filter(|p| p.id.contains(q) || p.description.contains(q))
         .collect();
@@ -3278,7 +3955,7 @@ Results:
 }
 
 fn cmd_palace_shell() {
-    let builtins = pandora_kuber::builtin::all();
+    let builtins = pandora_ko_palace::builtin::all();
     let free_genes: Vec<_> = builtins
         .iter()
         .filter(|p| p.kind == "Tool" || p.kind == "Workflow")
@@ -3294,7 +3971,7 @@ fn cmd_palace_shell() {
 
     println!();
     println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║                    KUBER PALACE                            ║");
+    println!("║                    K-O-PALACE                            ║");
     println!("║         pandora publish · install · search · discover      ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  TRENDING          │  NEW               │  VERIFIED         ║");
@@ -3368,32 +4045,6 @@ fn cmd_palace_shell() {
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
 }
-#[expect(dead_code)]
-fn cmd_archive(args: &[String]) {
-    if args.len() < 4 {
-        eprintln!("Usage: pandora archive <dir> <output.tar.gz>");
-        process::exit(1);
-    }
-    let dir = &args[2];
-    let output = &args[3];
-    let src = std::path::Path::new(dir);
-    if !src.join("pandora.toml").exists() {
-        eprintln!("No pandora.toml found in {dir}");
-        process::exit(1);
-    }
-    let s = std::process::Command::new("tar")
-        .arg("czf")
-        .arg(output)
-        .arg("-C")
-        .arg(".")
-        .arg(dir)
-        .status();
-    match s {
-        Ok(st) if st.success() => println!("Created: {output}"),
-        _ => eprintln!("tar failed (install tar?)"),
-    }
-}
-
 fn cmd_keygen(_args: &[String]) {
     let kp = pandora_types::signing::generate_keypair();
     println!("Publisher Key Generated");
@@ -3402,34 +4053,421 @@ fn cmd_keygen(_args: &[String]) {
     println!();
     println!("  Save the secret key securely:");
     println!("    export PANDORA_SECRET_KEY={}", kp.secret_key);
-    println!("  Publish your public key to K-O Palace:");
+    println!("  Publish your public key to K-O-Palace:");
     println!("    pandora login && pandora publish .");
+}
+
+fn signatures_dir() -> std::path::PathBuf {
+    sessions_dir()
+        .parent()
+        .map(|path| path.join("signatures"))
+        .unwrap_or_else(|| std::path::PathBuf::from(".pandora/signatures"))
+}
+
+fn valid_signing_component(value: &str) -> bool {
+    !value.is_empty()
+        && value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
 }
 
 fn cmd_sign(args: &[String]) {
     if args.len() < 4 {
         eprintln!("Usage: pandora sign <id> <version>");
-        return;
+        process::exit(2);
     }
     let id = &args[2];
-    let ver = &args[3];
-    println!("Signing {id} v{ver}...");
-    println!("  Requires PANDORA_SECRET_KEY env var");
-    println!("  Implementation: enable ed25519 feature for real crypto");
+    let version = &args[3];
+    if !valid_signing_component(id) || !valid_signing_component(version) {
+        eprintln!("Package id and version may contain only letters, numbers, '.', '-' and '_'.");
+        process::exit(2);
+    }
+    let secret_key = match env::var("PANDORA_SECRET_KEY") {
+        Ok(value) if !value.is_empty() => value,
+        _ => {
+            eprintln!("PANDORA_SECRET_KEY is required; generate one with `pandora keygen`.");
+            process::exit(1);
+        }
+    };
+    let archive_hash = match env::var("PANDORA_ARCHIVE_SHA256") {
+        Ok(value) if !value.is_empty() => value,
+        _ => {
+            eprintln!("PANDORA_ARCHIVE_SHA256 is required; sign the exact published archive hash.");
+            process::exit(1);
+        }
+    };
+    let publisher = env::var("PANDORA_PUBLISHER").unwrap_or_else(|_| "local".to_string());
+    let signature = match pandora_types::signing::sign_package(
+        id,
+        version,
+        &publisher,
+        &secret_key,
+        &archive_hash,
+    ) {
+        Ok(signature) => signature,
+        Err(error) => {
+            eprintln!("Signing failed: {error}");
+            process::exit(1);
+        }
+    };
+    if let Err(error) = std::fs::create_dir_all(signatures_dir()) {
+        eprintln!("Cannot create signature directory: {error}");
+        process::exit(1);
+    }
+    let path = signatures_dir().join(format!("{id}-{version}.json"));
+    match serde_json::to_string_pretty(&signature)
+        .map_err(|error| error.to_string())
+        .and_then(|content| std::fs::write(&path, content).map_err(|error| error.to_string()))
+    {
+        Ok(()) => println!("Signature written to {}", path.display()),
+        Err(error) => {
+            eprintln!("Cannot write signature: {error}");
+            process::exit(1);
+        }
+    }
 }
 
-fn cmd_serve(_args: &[String]) {
+fn cmd_verify(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora verify <signature.json>");
+        process::exit(2);
+    }
+    let requested = std::path::PathBuf::from(&args[2]);
+    let path = if requested.exists() {
+        requested
+    } else {
+        signatures_dir().join(format!("{}.json", args[2]))
+    };
+    let content = match std::fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(error) => {
+            eprintln!("Cannot read signature {}: {error}", path.display());
+            process::exit(1);
+        }
+    };
+    let signature: pandora_types::signing::PackageSignature = match serde_json::from_str(&content) {
+        Ok(signature) => signature,
+        Err(error) => {
+            eprintln!("Invalid signature file: {error}");
+            process::exit(1);
+        }
+    };
+    let message = format!(
+        "{}:{}:{}:{}",
+        signature.package_id, signature.version, signature.publisher, signature.archive_sha256
+    );
+    match pandora_types::signing::verify_signature(&signature, message.as_bytes()) {
+        Ok(true) => println!(
+            "Signature valid: {} v{}",
+            signature.package_id, signature.version
+        ),
+        Ok(false) => {
+            eprintln!("Signature invalid: {}", path.display());
+            process::exit(1);
+        }
+        Err(error) => {
+            eprintln!("Signature verification failed: {error}");
+            process::exit(1);
+        }
+    }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct NodeProfile {
+    node_id: String,
+    name: String,
+    endpoint: String,
+    version: String,
+    platform: String,
+    architecture: String,
+    capabilities: Vec<String>,
+}
+
+fn nodes_file() -> std::path::PathBuf {
+    sessions_dir()
+        .parent()
+        .map(|path| path.join("nodes.json"))
+        .unwrap_or_else(|| std::path::PathBuf::from("nodes.json"))
+}
+
+fn load_node_profiles() -> Vec<NodeProfile> {
+    let path = nodes_file();
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|content| serde_json::from_str(&content).ok())
+        .unwrap_or_default()
+}
+
+fn save_node_profiles(nodes: &[NodeProfile]) -> Result<(), String> {
+    let path = nodes_file();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    let temporary = path.with_extension("json.tmp");
+    let content = serde_json::to_vec_pretty(nodes).map_err(|error| error.to_string())?;
+    std::fs::write(&temporary, content).map_err(|error| error.to_string())?;
+    if cfg!(windows) && path.exists() {
+        std::fs::remove_file(&path).map_err(|error| error.to_string())?;
+    }
+    std::fs::rename(temporary, path).map_err(|error| error.to_string())
+}
+fn remote_token_key(endpoint: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(endpoint.as_bytes());
+    let suffix = digest
+        .iter()
+        .take(16)
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!("remote-{suffix}")
+}
+
+fn delete_credential(key: &str) {
+    if let Err(error) = pandora_secrets::SecretStore::default().delete(key) {
+        eprintln!("Could not delete credential: {error}");
+    }
+}
+fn cmd_remote(args: &[String]) {
+    if args.len() < 3 {
+        eprintln!("Usage: pandora remote <list|add|remove|pair|revoke|health|info|run> [endpoint] [task|name]");
+        process::exit(2);
+    }
+    let action = &args[2];
+    if action == "list" {
+        let nodes = load_node_profiles();
+        if std::env::var_os("PANDORA_OUTPUT").is_some_and(|value| value == "json") {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&nodes).expect("node list JSON serialization")
+            );
+        } else if nodes.is_empty() {
+            println!("No remote nodes registered.");
+        } else {
+            println!("NAME                 NODE ID              ENDPOINT");
+            println!("-------------------- -------------------- ------------------------------");
+            for node in nodes {
+                println!("{:<20} {:<20} {}", node.name, node.node_id, node.endpoint);
+            }
+        }
+        return;
+    }
+    if args.len() < 4 {
+        eprintln!(
+            "Usage: pandora remote <add|remove|pair|revoke|health|info|run> <endpoint> [task|name]"
+        );
+        process::exit(2);
+    }
+    let endpoint = &args[3];
+    if action == "remove" {
+        let mut nodes = load_node_profiles();
+        let before = nodes.len();
+        nodes.retain(|node| node.endpoint != *endpoint && node.node_id != *endpoint);
+        if nodes.len() == before {
+            eprintln!("Remote node not found: {endpoint}");
+            process::exit(1);
+        }
+        if let Err(error) = save_node_profiles(&nodes) {
+            eprintln!("Cannot save node registry: {error}");
+            process::exit(1);
+        }
+        println!("Removed remote node: {endpoint}");
+        return;
+    }
+
+    let token = env::var("PANDORA_API_TOKEN")
+        .ok()
+        .filter(|value| !value.is_empty())
+        .or_else(|| load_credential(&remote_token_key(endpoint)).ok());
+    let client = pandora_api::client::ApiClient::new(endpoint, token);
+    let result = match action.as_str() {
+        "pair" => {
+            let code = args.get(4).cloned().unwrap_or_default();
+            if code.is_empty() {
+                eprintln!("Usage: pandora remote pair <endpoint> <pairing-code>");
+                process::exit(2);
+            }
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())
+                .and_then(|runtime| {
+                    runtime
+                        .block_on(client.pair(&code))
+                        .map_err(|error| error.to_string())
+                        .map(|response| {
+                            let key = remote_token_key(endpoint);
+                            let stored = match store_credential(&key, &response.token) {
+                                Ok(location) => {
+                                    eprintln!("Paired token stored using {location}.");
+                                    true
+                                }
+                                Err(error) => {
+                                    eprintln!(
+                                        "Pairing succeeded, but token was not stored: {error}"
+                                    );
+                                    false
+                                }
+                            };
+                            if stored {
+                                let mut output = serde_json::to_value(&response)
+                                    .expect("pair JSON serialization");
+                                output["token"] = serde_json::Value::String("[STORED]".to_string());
+                                println!(
+                                    "{}",
+                                    serde_json::to_string_pretty(&output)
+                                        .expect("pair JSON serialization")
+                                );
+                            } else {
+                                println!(
+                                    "{}",
+                                    serde_json::to_string_pretty(&response)
+                                        .expect("pair JSON serialization")
+                                );
+                            }
+                        })
+                })
+        }
+        "revoke" => {
+            let credential_key = remote_token_key(endpoint);
+            let paired_token = args
+                .get(4)
+                .cloned()
+                .or_else(|| load_credential(&credential_key).ok())
+                .unwrap_or_default();
+            if paired_token.is_empty() {
+                eprintln!("Usage: pandora remote revoke <endpoint> [paired-token]");
+                process::exit(2);
+            }
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())
+                .and_then(|runtime| {
+                    runtime
+                        .block_on(client.revoke(&paired_token))
+                        .map_err(|error| error.to_string())
+                        .map(|_| {
+                            delete_credential(&credential_key);
+                            println!("Revoked paired token")
+                        })
+                })
+        }
+        "add" => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| error.to_string())
+            .and_then(|runtime| {
+                runtime
+                    .block_on(client.node_info())
+                    .map_err(|error| error.to_string())
+                    .and_then(|info| {
+                        let mut nodes = load_node_profiles();
+                        nodes.retain(|node| node.endpoint != *endpoint);
+                        nodes.push(NodeProfile {
+                            node_id: info.node_id,
+                            name: args.get(4).cloned().unwrap_or(info.name),
+                            endpoint: endpoint.clone(),
+                            version: info.version,
+                            platform: info.platform,
+                            architecture: info.architecture,
+                            capabilities: info.capabilities,
+                        });
+                        save_node_profiles(&nodes)
+                            .map(|_| println!("Registered remote node: {endpoint}"))
+                    })
+            }),
+        "info" => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| error.to_string())
+            .and_then(|runtime| {
+                runtime
+                    .block_on(client.node_info())
+                    .map_err(|error| error.to_string())
+                    .map(|info| {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&info).expect("node JSON serialization")
+                        )
+                    })
+            }),
+        "health" => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|error| error.to_string())
+            .and_then(|runtime| {
+                runtime
+                    .block_on(client.health())
+                    .map_err(|error| error.to_string())
+                    .map(|health| {
+                        println!(
+                            "{}",
+                            serde_json::to_string_pretty(&health)
+                                .expect("health JSON serialization")
+                        )
+                    })
+            }),
+        "run" => {
+            let task = args[4..].join(" ");
+            if task.trim().is_empty() {
+                eprintln!("Usage: pandora remote run <endpoint> <task>");
+                process::exit(2);
+            }
+            let request = pandora_api::protocol::ExecuteRequest {
+                task,
+                domain: "default".into(),
+                strategy: String::new(),
+                evaluator: String::new(),
+                profile: None,
+            };
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())
+                .and_then(|runtime| {
+                    runtime
+                        .block_on(client.execute(&request))
+                        .map_err(|error| error.to_string())
+                        .map(|response| {
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&response)
+                                    .expect("execution JSON serialization")
+                            )
+                        })
+                })
+        }
+        _ => {
+            eprintln!(
+                "Unknown remote action: {action}. Available: list, add, remove, pair, revoke, health, info, run"
+            );
+            process::exit(2);
+        }
+    };
+    if let Err(error) = result {
+        eprintln!("Remote request failed: {error}");
+        process::exit(1);
+    }
+}
+fn cmd_serve(args: &[String]) {
     let sessions = sessions_dir();
+    let address = args.get(2).map(String::as_str).unwrap_or("127.0.0.1:9090");
+    let remote_bind = !address.starts_with("127.0.0.1:")
+        && !address.starts_with("localhost:")
+        && !address.starts_with("[::1]:");
     println!("Pandora Runtime API");
-    println!("  Starting on http://localhost:9090");
-    println!("  Endpoints: /health /execute /sessions /explain /providers");
+    println!("  Starting on http://{address}");
+    println!("  Endpoints: /api/v1/health /api/v1/node /api/v1/execute /api/v1/sessions /api/v1/providers /api/v1/ws");
     println!("  Integrations: MCP, Cursor, Claude Code, VS Code");
+    if remote_bind {
+        println!("  Remote bind enabled: PANDORA_API_TOKEN is required for protected endpoints.");
+    }
     match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
     {
         Ok(rt) => rt.block_on(async {
-            pandora_api::serve("0.0.0.0:9090", sessions)
+            pandora_api::serve(address, sessions)
                 .await
                 .unwrap_or_else(|e| eprintln!("Server error: {e}"));
         }),
@@ -3525,7 +4563,18 @@ fn cmd_connection(args: &[String]) {
 
             let mut conn = Connection::new(name, kind, endpoint).with_model(model);
             if let Some(key) = api_key {
-                conn = conn.with_api_key(key);
+                let reference = match pandora_secrets::credential_name(name) {
+                    Ok(reference) => reference,
+                    Err(error) => {
+                        eprintln!("Invalid credential reference: {error}");
+                        return;
+                    }
+                };
+                if let Err(error) = pandora_secrets::SecretStore::default().set(&reference, key) {
+                    eprintln!("Could not store provider credential: {error}");
+                    return;
+                }
+                conn = conn.with_credential_ref(&reference);
             }
             let mut reg = ConnectionRegistry::load();
             match reg.add(conn) {
@@ -3540,18 +4589,28 @@ fn cmd_connection(args: &[String]) {
             }
             let mut reg = ConnectionRegistry::load();
             match reg.find_mut(&args[3]) {
-                Some(conn) => match conn.test() {
-                    Ok(()) => {
-                        println!(
-                            "OK {} is online ({}ms, {} models)",
-                            conn.name,
-                            conn.latency_ms,
-                            conn.models.len()
-                        );
-                        let _ = reg.save();
+                Some(conn) => {
+                    if conn.api_key.is_none() {
+                        if let Some(reference) = &conn.credential_ref {
+                            conn.api_key = pandora_secrets::SecretStore::default()
+                                .get(reference)
+                                .ok()
+                                .flatten();
+                        }
                     }
-                    Err(e) => eprintln!("OFF {} unreachable: {e}", conn.name),
-                },
+                    match conn.test() {
+                        Ok(()) => {
+                            println!(
+                                "OK {} is online ({}ms, {} models)",
+                                conn.name,
+                                conn.latency_ms,
+                                conn.models.len()
+                            );
+                            let _ = reg.save();
+                        }
+                        Err(e) => eprintln!("OFF {} unreachable: {e}", conn.name),
+                    }
+                }
                 None => eprintln!("Not found: {}", args[3]),
             }
         }
@@ -3587,13 +4646,5 @@ mod cli_integration_tests {
     fn sessions_dir_exists() {
         let dir = sessions_dir();
         assert!(dir.to_string_lossy().contains(".pandora"));
-    }
-
-    #[test]
-    fn compound_intent_detection() {
-        let steps = pandora_harnesses::android_use::CompoundIntentDetector::detect(
-            "open app and send message",
-        );
-        assert!(!steps.is_empty());
     }
 }

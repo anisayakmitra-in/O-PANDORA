@@ -2,7 +2,7 @@
 //!
 //! Every Pandora component advertises capabilities. Registries index them,
 //! intent routing matches them, permissions authorize them, policies evaluate
-//! them, nodes expose them, providers declare them, K-O Palace searches by them.
+//! them, nodes expose them, providers declare them, K-O-Palace searches by them.
 //!
 //! Capabilities are string identifiers (e.g. "filesystem.read", "gpu.cuda").
 //! No hardcoded capability lists — the well-known set is documented, but the
@@ -83,10 +83,6 @@ pub mod well_known {
     pub const HW_BLUETOOTH: &str = "hardware.bluetooth";
     pub const HW_USB: &str = "hardware.usb";
     pub const HW_SENSORS: &str = "hardware.sensors";
-
-    // Mobile
-    pub const MOBILE_ADB: &str = "mobile.adb";
-    pub const MOBILE_NOTIFICATIONS: &str = "mobile.notifications";
 
     // Code intelligence
     pub const CODE_PARSE: &str = "code.parse";

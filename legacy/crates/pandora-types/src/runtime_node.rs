@@ -5,7 +5,7 @@
 //! in the core runtime — platform differences live in adapters.
 //!
 //! Invariant: "Treat every device as a Runtime Node. Never hardcode
-//! assumptions that a desktop controls a phone or vice versa."
+//! assumptions about which node controls another node."
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -17,8 +17,6 @@ pub enum NodeKind {
     Desktop,
     Laptop,
     Server,
-    Phone,
-    Tablet,
     Container,
     Vm,
     Edge,
@@ -32,8 +30,6 @@ impl NodeKind {
             Self::Desktop => "desktop",
             Self::Laptop => "laptop",
             Self::Server => "server",
-            Self::Phone => "phone",
-            Self::Tablet => "tablet",
             Self::Container => "container",
             Self::Vm => "vm",
             Self::Edge => "edge",
@@ -49,8 +45,6 @@ pub enum NodePlatform {
     Linux,
     Windows,
     Macos,
-    Android,
-    Ios,
     Wsl2,
     Custom(String),
 }
@@ -67,10 +61,6 @@ impl NodePlatform {
             Self::Windows
         } else if cfg!(target_os = "macos") {
             Self::Macos
-        } else if cfg!(target_os = "android") {
-            Self::Android
-        } else if cfg!(target_os = "ios") {
-            Self::Ios
         } else {
             Self::Custom(std::env::consts::OS.into())
         }
@@ -81,8 +71,6 @@ impl NodePlatform {
             Self::Linux => "linux",
             Self::Windows => "windows",
             Self::Macos => "macos",
-            Self::Android => "android",
-            Self::Ios => "ios",
             Self::Wsl2 => "wsl2",
             Self::Custom(name) => name,
         }
@@ -290,18 +278,6 @@ mod tests {
         desktop.id = "desktop-1".into();
         desktop.capabilities.gpu = true;
         reg.register(desktop);
-
-        let mut phone = RuntimeNode::local();
-        phone.id = "phone-1".into();
-        phone.kind = NodeKind::Phone;
-        phone.platform = NodePlatform::Android;
-        phone.capabilities.camera = true;
-        phone.capabilities.gpu = false;
-        reg.register(phone);
-
-        assert_eq!(reg.with_capability("gpu").len(), 1);
-        assert_eq!(reg.with_capability("camera").len(), 1);
-        assert_eq!(reg.by_kind(&NodeKind::Phone).len(), 1);
     }
 
     #[test]

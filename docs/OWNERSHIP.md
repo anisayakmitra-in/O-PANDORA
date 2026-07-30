@@ -1,253 +1,44 @@
-# Pandora Architecture Ownership
+# Ownership map
 
-Each architectural layer owns a clearly scoped set of responsibilities. This document answers "where should this feature live?"
+This map follows the current Cargo workspace. A feature belongs in the narrowest layer that can own it without duplicating a contract.
 
----
+| Package | Owns | Does not own |
+|---|---|---|
+| `pandora-types` | Shared contracts, manifests, errors, provider types, policies, sessions, events, node records, recording, telemetry | Execution sequencing, UI, network serving |
+| `pandora-secrets` | Secret-source interface, environment lookup, OS keychain, encrypted headless fallback | Provider policy, manifests, execution logic |
+| `pandora-services` | Default memory, planning, execution, governance, identity, workflow, provider-registry, scheduler, and ledger/storage implementations | Harness routing, CLI commands |
+| `pandora-shadow-council` | Harness, gene, capability, and slash-command registries; route and lifecycle decisions | Harness or gene implementations; pipeline sequencing |
+| `pandora-harnesses` | Built-in source, meta, and domain harness implementations | Canonical harness traits; package hosting |
+| `pandora-genes` | Built-in atomic gene implementations | Global routing; package installation |
+| `pandora-orchestrator` | Runtime pipeline, agentic loop, provider adapter, retries, recorder, telemetry, failure analysis, knowledge, ledger updates | Shared contract definitions; terminal/UI presentation |
+| `pandora-api` | HTTP routes, authentication, pairing, WebSocket transport, request limits | A second execution engine |
+| `pandora-fleet` | Worker and runtime-node coordination | Node contract definitions |
+| `pandora-ko-palace` | Local package client, validation, trust, install/update/publish operations | Registry server hosting; gene implementation ownership |
+| `pandora` | CLI parsing, command dispatch, setup, diagnostics, local files, remote-node commands | Runtime implementation; desktop UI |
+| `pandora-tui` | Terminal dashboard rendering and input handling; present but not currently a root workspace member | Execution and provider logic |
+| `pandora-desktop` | Tauri/React desktop presentation and local API connection | A second runtime or provider model |
 
-## Parliament
+## Harness ownership
 
-**Crate:** `pandora-parliament`  
-**Canonical:** Yes  
-**Role:** Constitutional runtime layer — owns the service registry, constitution engine, lease management, and event bus.
+`pandora-types` defines `Harness`, `HarnessKind`, and `HarnessManifest`. `pandora-harnesses` implements the built-in roles:
 
-**Owns:**
-- `ServiceRegistry` — lifecycle of constitutional services (register, resolve, unregister)
-- `ConstitutionEngine` — policy evaluation against the architecture constitution
-- `LeaseManager` — capability lease tracking (acquire, renew, release, revoke)
-- `EventBus` — inter-service event pub/sub
+- Source: memory, planning, execution, governance, identity
+- Meta: coordination
+- Domain: coding, design, security, cybersecurity, research, computer use
 
-**Does NOT own:**
-- Service implementations (each lives in its own service crate under `pandora-services`)
-- Shadow Council routing decisions
-- Harness or gene lifecycle
+The role is the contract. A built-in name is only one implementation of that role.
 
----
+## Gene ownership
 
-## Constitutional Services
+`pandora-types` defines `Gene` and its manifest types. `pandora-genes` owns built-in implementations. K-O-Palace owns package lifecycle and distribution. Shadow Council owns registration and route resolution.
 
-**Crate:** `pandora-services`  
-**Canonical:** Yes  
-**Role:** Ten constitutional services that provide the core cognitive capabilities.
+## Boundary test
 
-**Owns:**
-- `MemoryService` — persistent memory
-- `PlanningService` — task planning and decomposition
-- `ExecutionService` — task execution management
-- `GovernanceService` — policy enforcement
-- `IdentityService` — identity and authentication
-- `SandboxService` — sandboxed execution context
-- `WorkflowService` — workflow management
-- `SchedulerService` — task scheduling
-- `LedgerService` — execution ledger
-- `ProviderRegistryService` — provider resolution
+Before adding code, ask:
 
-**Does NOT own:**
-- The Shadow Council (routing, lifecycle)
-- Harness or gene implementations
-- Execution pipeline orchestration
-
----
-
-## Shadow Council
-
-**Crate:** `pandora-shadow-council`  
-**Canonical:** Yes  
-**Role:** Lifecycle management, routing, capability resolution, and coordination.
-
-**Owns:**
-- `ShadowCouncil` — central coordinator (summary, routing, lifecycle)
-- `CapabilityRegistry` — capability registration and resolution
-- `HarnessRegistry` — harness implementation registry
-- `GeneRegistry` — gene implementation and lifecycle
-- `SlashCommandRouter` — command routing and collision resolution
-- Routing policy (first-register-wins)
-- Capability-to-harness-to-gene resolution
-
-**Does NOT own:**
-- Service logic (those live in pandora-services)
-- The execution pipeline (lives in pandora-orchestrator)
-- Gene implementations (live in pandora-genes)
-
----
-
-## Harnesses
-
-**Crate:** `pandora-harnesses` (canonical, plural)  
-**Archive:** `pandora-harness` (singular, pre-freeze, moved to legacy)  
-**Role:** Pluggable execution modules wrapping genes into coherent capabilities.
-
-**Owns:**
-- **Source Harnesses** (5): `Memory`, `Planning`, `Execution`, `Governance`, `Identity`
-- **Meta Harnesses** (1): `Coordination`
-- **Domain Harnesses** (2): `Coding`, `Research`
-- Harness factory and registration
-- Harness-to-gene binding
-
-**Does NOT own:**
-- Gene implementations (those are in pandora-genes)
-- The Shadow Council routing decision (Shadow Council selects the harness)
-
----
-
-## Genes
-
-**Crate:** `pandora-genes`  
-**Canonical:** Yes  
-**Role:** Atomic reusable capabilities — the smallest unit of functionality.
-
-**Owns (14 built-in):**
-- `filesystem`, `shell`, `git`, `http`, `rust-tool`, `python-tool`, `workflow`
-- `docker`, `browser`, `sqlite`, `github`, `mcp`, `code-review`, `benchmark`
-- Each implements the `Gene` trait: `id()`, `version()`, `manifest()`, `execute()`
-- Gene manifest types (`GeneManifest`, `GeneKind`, `GeneLineage`, etc.)
-
-**Does NOT own:**
-- Gene packaging/distribution (owned by KUBER)
-- Gene lifecycle (owned by Shadow Council)
-
----
-
-## KUBER
-
-**Crate:** `pandora-kuber`  
-**Canonical:** Yes  
-**Role:** Package distribution — install, search, list, publish, score.
-
-**Owns:**
-- Built-in gene registry (14 first-party packages)
-- `install`, `search`, `list`, `info`, `uninstall`, `update` commands
-- Scoring system (8 dimensions)
-- Package packaging and publishing
-- Gene lineage tracking
-
-**Does NOT own:**
-- Gene implementations (pandora-genes)
-- Harness lifecycle (Shadow Council)
-- Execution pipeline (pandora-orchestrator)
-
----
-
-## Execution Pipeline
-
-**Crate:** `pandora-orchestrator`  
-**Canonical:** Yes  
-**Role:** The 9-stage constitutional execution pipeline.
-
-**Owns:**
-- `PandoraRuntime` — execution orchestrator
-- Pipeline stages: Task → Instruction → Workflow → Capability → Target → Execute → Record → Telemetry → Ledger
-- `RuntimeContext`, `ExecutionFrame`, `StageOutput`, `RuntimeDelta`
-- Session model (Session → Trace → Spans → Ledger)
-
-**Does NOT own:**
-- Individual service implementations
-- Provider selection (managed at the pipeline level)
-
----
-
-## Providers
-
-**Crate:** `pandora-provider`  
-**Canonical:** Yes  
-**Role:** Provider-agnostic LLM execution.
-
-**Owns:**
-- `Provider` trait (invoke, list_models, health)
-- `ProviderRegistry` — provider instance management
-- Adapters: Ollama, LlamaCpp, OpenAI-compatible, Custom
-- Provider discovery (LM Studio, vLLM, KoboldCPP, etc.)
-
-**Does NOT own:**
-- Provider selection in the pipeline (the orchestrator selects)
-- Model-specific behavior (handled by the adapter)
-
----
-
-## Telemetry
-
-**Crate:** `pandora-telemetry`  
-**Canonical:** Yes  
-**Role:** Execution observability.
-
-**Owns:**
-- `TelemetryEngine` — trace and span management
-- `ExecutionRecorder` — frame capture
-- Event emission during pipeline execution
-
-**Does NOT own:**
-- Long-term storage (owned by Ledger)
-- Logging or debugging tools
-
----
-
-## Ledger
-
-**Crate:** `pandora-ledger`  
-**Canonical:** Yes  
-**Role:** Immutable execution record.
-
-**Owns:**
-- `ExecutionLedger` — append-only event log
-- `LedgerEntry`, `LedgerOutcome` — entry types
-- Session-to-ledger mapping
-
-**Does NOT own:**
-- Telemetry collection (TelemetryEngine)
-- Replay logic (future)
-
----
-
-## Execution
-
-**Crate:** `pandora-execution`  
-**Canonical:** Yes  
-**Role:** Execution state machine and license management.
-
-**Owns:**
-- `RuntimeState` — execution state machine (Initializing → Running → Ready → Suspended → Terminated)
-- `ExecutionLicense`, `LicenseState` — execution licensing
-
----
-
-## TUI
-
-**Crate:** `pandora-tui`  
-**Canonical:** Yes  
-**Role:** Terminal UI dashboard — architecture-centric control plane.
-
-**Owns:**
-- Terminal dashboard with 11 architecture pages
-- Left sidebar navigation (architecture tree)
-- Right panel (services status, harness counts, runtime info)
-- Keyboard navigation and deep pink theme
-
-**Does NOT own:**
-- Web dashboard (pandora-web)
-
----
-
-## Web Dashboard
-
-**Crate:** `pandora-web`  
-**Canonical:** Yes  
-**Role:** Web UI dashboard (static HTML served by tiny_http).
-
-**Owns:**
-- Cyberpunk-themed web interface
-- HTTP server on configurable port
-
----
-
-## Legacy (pre-freeze)
-
-**Directory:** `legacy/archive/`  
-**Role:** Pre-freeze code preserved for reference, not active development.
-
-**Archived crates:**
-- `pandora-capability` — superseded by Shadow Council's `CapabilityRegistry`
-- `pandora-runtime` — superseded by `pandora-orchestrator`
-- `pandora-harness` (singular) — superseded by `pandora-harnesses` (plural)
-- `pandora-rahu` — pre-freeze cognition engine (48 source files, 0 tests)
-- `pandora-coordination`, `pandora-harness-manifest`, `pandora-graph`, etc.
-
-**Decision:** Archived code is read-only. Do not import or depend on it. If a type is needed, migrate it to the appropriate canonical crate first.
+1. Is this a reusable type or trait? Add it to `pandora-types` only if no canonical equivalent exists.
+2. Is this default service behavior? Add it to `pandora-services`.
+3. Is this route or lifecycle behavior? Add it to `pandora-shadow-council`.
+4. Is this a focused domain capability? Add a gene or harness.
+5. Is this sequencing, retry, or execution state? Add it to `pandora-orchestrator`.
+6. Is it transport or presentation? Keep it in the API, CLI, TUI, or desktop client.

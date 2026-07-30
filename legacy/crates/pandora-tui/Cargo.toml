@@ -9,7 +9,7 @@ edition.workspace = true
 [dependencies]
 pandora-types = { path = "../pandora-types" }
 pandora-shadow-council = { path = "../pandora-shadow-council" }
-pandora-kuber = { path = "../pandora-kuber" }
+pandora-ko-palace = { path = "../pandora-ko-palace" }
 pandora-services = { path = "../pandora-services" }
 pandora-harnesses = { path = "../pandora-harnesses" }
 pandora-genes = { path = "../pandora-genes" }

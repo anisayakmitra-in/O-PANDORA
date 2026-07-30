@@ -33,7 +33,7 @@ pub fn package_id(publisher: &str, name: &str) -> String {
 pub enum PackageTrustLevel {
     #[default]
     None,
-    /// Publisher is verified by K-O Palace.
+    /// Publisher is verified by K-O-Palace.
     PublisherVerified,
     /// Package is cryptographically signed.
     Signed,
@@ -269,7 +269,7 @@ pub struct PlanEntry {
     pub path: String,
 }
 
-/// Registry metadata — what K-O Palace stores about a package.
+/// Registry metadata — what K-O-Palace stores about a package.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RegistryPackage {
     pub manifest: PackageManifest,
@@ -324,7 +324,7 @@ impl RegistryPackage {
     }
 }
 
-/// Rich search result from K-O Palace.
+/// Rich search result from K-O-Palace.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RegistryListing {
     pub full_id: String,

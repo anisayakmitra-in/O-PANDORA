@@ -11,6 +11,7 @@ Exit code 0 = all checks pass, non-zero = failures found.
 import os
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -45,6 +46,24 @@ def check_version():
     workspace_ver = m.group(1)
     print(f"  workspace.package.version = {workspace_ver}")
 
+    desktop_manifest = REPO_ROOT / "pandora-desktop" / "package.json"
+    if desktop_manifest.exists():
+        import json
+        desktop = json.loads(desktop_manifest.read_text(encoding="utf-8"))
+        desktop_ver = desktop.get("version")
+        check(desktop_ver == workspace_ver,
+              f"Desktop package version ({desktop_ver}) != workspace ({workspace_ver})")
+        print(f"  Desktop package version = {desktop_ver}")
+
+    tauri_config = REPO_ROOT / "pandora-desktop" / "src-tauri" / "tauri.conf.json"
+    if tauri_config.exists():
+        import json
+        tauri = json.loads(tauri_config.read_text(encoding="utf-8"))
+        tauri_ver = tauri.get("version")
+        check(tauri_ver == workspace_ver,
+              f"Tauri application version ({tauri_ver}) != workspace ({workspace_ver})")
+        print(f"  Tauri application version = {tauri_ver}")
+
     # README badge version
     readme = REPO_ROOT / "README.md"
     if readme.exists():
@@ -70,9 +89,14 @@ def check_version():
     changelog = REPO_ROOT / "CHANGELOG.md"
     if changelog.exists():
         cl_text = changelog.read_text()
-        check(f"[{workspace_ver}]" in cl_text,
+        changelog_entry = re.search(
+            rf"^##\s+\[{re.escape(workspace_ver)}(?:-[^\]]+)?\]",
+            cl_text,
+            re.MULTILINE,
+        )
+        check(changelog_entry is not None,
               f"CHANGELOG missing entry for [{workspace_ver}]")
-        print(f"  CHANGELOG has [{workspace_ver}] entry: {'YES' if f'[{workspace_ver}]' in cl_text else 'NO'}")
+        print(f"  CHANGELOG has [{workspace_ver}] entry: {'YES' if changelog_entry else 'NO'}")
     else:
         check(False, "CHANGELOG.md not found")
 
@@ -89,7 +113,7 @@ def check_identity():
     for md_file in REPO_ROOT.rglob("*.md"):
         if md_file.name in historical_files:
             continue
-        if ".git" in str(md_file):
+        if ".git" in str(md_file) or any(part.startswith(".mobile-hold-") for part in md_file.parts):
             continue
         try:
             text = md_file.read_text(encoding="utf-8", errors="ignore")
@@ -125,23 +149,24 @@ def check_workspace():
     cargo_toml = REPO_ROOT / "Cargo.toml"
     content = cargo_toml.read_text()
 
-    # Extract members
-    members = re.findall(r'"legacy/crates/([^"]+)"', content)
+    # Parse the manifest so every workspace member, including desktop packages, is covered.
+    with open(cargo_toml, "rb") as handle:
+        manifest = tomllib.load(handle)
+    members = manifest.get("workspace", {}).get("members", [])
     actual_count = len(members)
     print(f"  Declared workspace members: {actual_count}")
 
     for member in members:
-        member_path = REPO_ROOT / "legacy" / "crates" / member
+        member_path = REPO_ROOT / member
         check(member_path.exists() and (member_path / "Cargo.toml").exists(),
-              f"Workspace member path missing: legacy/crates/{member}")
+              f"Workspace member path missing: {member}")
 
-    # Check version.workspace = true in each crate
+    # Check version.workspace = true in each Rust workspace crate.
     for member in members:
-        crate_toml = REPO_ROOT / "legacy" / "crates" / member / "Cargo.toml"
+        crate_toml = REPO_ROOT / member / "Cargo.toml"
         if crate_toml.exists():
             crate_content = crate_toml.read_text()
-            has_workspace = "version.workspace = true" in crate_content
-            if not has_workspace:
+            if "version.workspace = true" not in crate_content:
                 WARNINGS.append(f"{member}/Cargo.toml does not use version.workspace = true")
                 print(f"  WARNING: {member} does not inherit workspace version")
 

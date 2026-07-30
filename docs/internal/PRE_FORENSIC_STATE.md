@@ -24,7 +24,7 @@
 ## Baseline Observations
 
 - `scripts/validate_docs.py` hardcoded `/home/user/pandora-systems`, which breaks validation outside that path.
-- `scripts/run-palace.sh` still pointed at the removed `pandora-palace` crate instead of the external K-O Palace repository.
+- `scripts/run-palace.sh` still pointed at the removed `pandora-palace` crate instead of the external K-O-Palace repository.
 - `.gitignore` did not cover common local secret and runtime-state files.
 
 ## Notes

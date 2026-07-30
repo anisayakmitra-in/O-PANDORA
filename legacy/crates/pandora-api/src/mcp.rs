@@ -34,14 +34,6 @@ struct McpResponse {
     error: Option<Value>,
 }
 
-#[derive(Debug, Serialize)]
-#[expect(dead_code)]
-struct McpTool {
-    name: String,
-    description: String,
-    input_schema: Value,
-}
-
 // ── MCP State ──
 
 pub struct McpState {
@@ -91,7 +83,7 @@ async fn mcp_handler(
                 {"name":"pandora_harnesses","description":"List all registered harnesses","inputSchema":{"type":"object","properties":{}}},
                 {"name":"pandora_sessions","description":"List recent sessions","inputSchema":{"type":"object","properties":{"limit":{"type":"number"}}}},
                 {"name":"pandora_memory_search","description":"Search Pandora memory for relevant context","inputSchema":{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}},
-                {"name":"pandora_install","description":"Install a package from K-O Palace registry","inputSchema":{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}}
+                {"name":"pandora_install","description":"Install a package from K-O-Palace registry","inputSchema":{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}}
             ]})),
             error: None,
         }),

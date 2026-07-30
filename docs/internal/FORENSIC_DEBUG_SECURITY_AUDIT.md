@@ -151,7 +151,7 @@ Added explicit pinning comments for third-party actions.
 
 | ID | Issue | Severity | Notes |
 |----|-------|----------|-------|
-| LIM-01 | Token storage is file-based (not OS keychain) | MEDIUM | keyring-rs requires platform setup |
+| LIM-01 | Linux/headless token storage uses an encrypted file fallback | LOW | Windows/macOS prefer the native OS credential store; Linux requires `PANDORA_CREDENTIALS_KEY` |
 | LIM-02 | No TLS for pandora serve | LOW | Local-only by design |
 | LIM-03 | cargo-audit not available | LOW | Install `cargo install cargo-audit` |
 | LIM-04 | No container/sandbox for shell genes | MEDIUM | Relies on Parliament + permissions |

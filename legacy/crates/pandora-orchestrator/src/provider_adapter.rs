@@ -61,10 +61,17 @@ pub fn create_provider_for(conn: &Connection) -> Option<Arc<dyn Provider>> {
 
 pub fn load_providers_from_connections() -> Vec<ProviderEntry> {
     let cr = pandora_types::connection_manager::ConnectionRegistry::load();
+    let secrets = pandora_secrets::SecretStore::default();
     let mut providers = Vec::new();
     for conn in cr.healthy() {
-        if let Some(p) = create_provider_for(conn) {
-            providers.push((p, conn.name.clone()));
+        let mut resolved = conn.clone();
+        if resolved.api_key.is_none() {
+            if let Some(reference) = &resolved.credential_ref {
+                resolved.api_key = secrets.get(reference).ok().flatten();
+            }
+        }
+        if let Some(p) = create_provider_for(&resolved) {
+            providers.push((p, resolved.name.clone()));
         }
     }
     providers

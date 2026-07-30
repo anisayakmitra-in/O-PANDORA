@@ -7,11 +7,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-pandora-kuber = { path = "../pandora-kuber" }
+pandora-ko-palace = { path = "../pandora-ko-palace" }
 pandora-orchestrator = { path = "../pandora-orchestrator" }
 pandora-shadow-council = { path = "../pandora-shadow-council" }
 tokio.workspace = true
 pandora-types = { path = "../pandora-types" }
+serde.workspace = true
 serde_json.workspace = true
 pandora-api = { path = "../pandora-api" }
 pandora-harnesses = { path = "../pandora-harnesses" }
@@ -20,3 +21,8 @@ clap.workspace = true
 reqwest.workspace = true
 shellexpand = "3"
 base64.workspace = true
+ring.workspace = true
+sha2.workspace = true
+keyring.workspace = true
+
+pandora-secrets = { path = "../pandora-secrets" }

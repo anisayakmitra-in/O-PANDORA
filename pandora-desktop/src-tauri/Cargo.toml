@@ -1,12 +1,11 @@
 [package]
 name = "pandora-desktop"
-version = "0.5.0"
+version.workspace = true
 description = "Pandora native desktop app — governed AI coding agent"
 edition = "2021"
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon", "image-png", "image-ico"] }
-tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
@@ -18,6 +17,11 @@ pandora-orchestrator = { path = "../../legacy/crates/pandora-orchestrator" }
 pandora-types = { path = "../../legacy/crates/pandora-types" }
 pandora-harnesses = { path = "../../legacy/crates/pandora-harnesses" }
 pandora-shadow-council = { path = "../../legacy/crates/pandora-shadow-council" }
-pandora-kuber = { path = "../../legacy/crates/pandora-kuber" }
+pandora-ko-palace = { path = "../../legacy/crates/pandora-ko-palace" }
 chrono = { workspace = true }
 dirs-next = "2"
+pandora-api = { path = "../../legacy/crates/pandora-api" }
+rand.workspace = true
+
+reqwest.workspace = true
+semver.workspace = true

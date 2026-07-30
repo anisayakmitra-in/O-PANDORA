@@ -1,21 +1,15 @@
-# RuntimeNode Specification
+# Runtime node
 
-## What is this?
+A `RuntimeNode` represents a compute endpoint in the Pandora fleet. It advertises its platform, transports, and capabilities so the fleet can select a suitable worker.
 
-A RuntimeNode represents a compute endpoint in the Pandora fleet. It advertises what capabilities it supports and what transport it uses.
-
-## When is it used?
-
-When running Pandora in distributed mode. The Fleet crate manages worker nodes. Each worker registers as a RuntimeNode.
-
-## Capabilities
+## Example
 
 ```toml
 [node]
 id = "worker-1"
-kind = "Server"           # Desktop | Mobile | Server | Edge | Container
-platform = "Linux"        # Linux | macOS | Windows | WSL
-transport = "Tcp"         # Tcp | QUIC | WebSocket | gRPC | Bluetooth | USB
+kind = "Server"           # Desktop | Laptop | Server | Edge | Container | VM | Cloud
+platform = "Linux"        # Linux | macOS | Windows | WSL | custom
+transport = "Tcp"         # Tcp | QUIC | WebSocket | gRPC | Local IPC | custom
 
 [capabilities]
 shell = true
@@ -28,41 +22,40 @@ browser = false
 
 | Kind | Description |
 |------|-------------|
-| `Desktop` | Local workstation with GUI |
-| `Mobile` | Phone or tablet |
-| `Server` | Remote server, headless |
-| `Edge` | Edge device, limited resources |
-| `Container` | Docker/K8s container |
+| `Desktop` | Local workstation with a GUI |
+| `Laptop` | Portable workstation |
+| `Server` | Remote headless worker |
+| `Edge` | Resource-constrained worker |
+| `Container` | Containerized worker |
+| `Vm` | Virtual machine worker |
+| `Cloud` | Managed remote worker |
+| `Custom` | An application-defined node kind |
 
 ## Transports
 
 | Transport | Use case |
 |-----------|----------|
-| `Tcp` | Local network, reliable |
-| `QUIC` | WAN, lossy connections |
-| `WebSocket` | Browser-adjacent |
-| `gRPC` | Server-to-server |
-| `Bluetooth` | Local mobile |
-| `USB` | Tethered device |
+| `Tcp` | Local network or reliable private network |
+| `Quic` | Low-latency or lossy network |
+| `WebSocket` | HTTP-compatible streaming |
+| `Grpc` | Service-to-service communication |
+| `LocalIpc` | Same-machine client and runtime |
+| `Custom` | Application-defined transport |
 
 ## Node registry
 
 ```rust
-let mut reg = NodeRegistry::new();
-let node = RuntimeNode::new("worker-1")
-    .kind(NodeKind::Server)
-    .platform(NodePlatform::Linux)
-    .transport(TransportKind::Tcp)
-    .capabilities(NodeCapabilities {
-        shell: true,
-        filesystem: true,
-        ..Default::default()
-    });
-reg.register(node);
+let mut registry = NodeRegistry::new();
+let mut node = RuntimeNode::local();
+node.id = "worker-1".into();
+node.kind = NodeKind::Server;
+node.platform = NodePlatform::Linux;
+node.transports = vec![TransportKind::Tcp];
+registry.register(node);
 ```
 
-The Fleet matches task requirements to node capabilities. If no node supports the required capability, the task is queued or rejected.
+The fleet matches task requirements against advertised capabilities. If no node satisfies the request, the task is queued or rejected.
 
-## How to extend
+## Extending the model
 
-Implement a new transport by adding a variant to `TransportKind`. The runtime discovers transports through the node registry — no core changes needed.
+Add custom capability keys through `NodeCapabilities::custom`. Add a transport variant only when the runtime needs transport-specific behavior; do not encode a platform-specific client in the core node model.

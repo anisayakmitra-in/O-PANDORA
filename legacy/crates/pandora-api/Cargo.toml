@@ -15,3 +15,7 @@ axum.workspace = true
 chrono.workspace = true
 anyhow.workspace = true
 ring.workspace = true
+reqwest.workspace = true
+pandora-harnesses = { path = "../pandora-harnesses" }
+
+rand.workspace = true

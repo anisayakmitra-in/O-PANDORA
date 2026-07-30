@@ -41,7 +41,7 @@ pandora run --local ./my-tool "hello world"
 ```
 
 The `--local` flag loads your gene straight from the directory — no
-publishing, no Palace, no install step. Great for iterating.
+publishing, no K-O-Palace, no install step. Great for iterating.
 
 ### 4. When you're ready, install it
 

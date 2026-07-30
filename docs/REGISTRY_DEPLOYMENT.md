@@ -1,14 +1,14 @@
-# K-O Palace Deployment Guide
+# K-O-Palace Deployment Guide
 
 ## What is this?
 
-K-O Palace is Pandora's package registry server. It's an Axum-based HTTP API.
+K-O-Palace is Pandora's package registry server. It's an Axum-based HTTP API.
 
 ## When is it used?
 
 When you want to host a package registry for your team or the public Pandora ecosystem.
 
-## Running K-O Palace
+## Running K-O-Palace
 
 ```bash
 cargo build --release -p k-o-palace
@@ -32,7 +32,7 @@ Default port: `3000`.
 ## CLI integration
 
 ```bash
-# Point the CLI at your K-O Palace
+# Point the CLI at your K-O-Palace
 export PANDORA_REGISTRY_URL=http://your-palace:3001
 
 # Or per-command

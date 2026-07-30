@@ -1,6 +1,6 @@
 //! Package Health — automatic health status derived from CI, telemetry, security.
 //!
-//! Every package in K-O Palace has a health state computed from install failures,
+//! Every package in K-O-Palace has a health state computed from install failures,
 //! CI status, security reports, and compatibility data.
 
 use serde::{Deserialize, Serialize};

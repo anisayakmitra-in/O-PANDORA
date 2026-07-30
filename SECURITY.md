@@ -9,7 +9,7 @@ User → CLI → PandoraRuntime → Provider (LLM API)
                   ↓
             Network (provider endpoints)
                   ↓
-            Packages (K-O Palace registry)
+            Packages (K-O-Palace registry)
 ```
 
 ## Attack Surfaces

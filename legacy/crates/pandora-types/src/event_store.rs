@@ -46,10 +46,11 @@ impl EventStore {
             .buffer
             .lock()
             .map_err(|e| crate::PandoraError::Internal(e.to_string()))?;
-        let events: Vec<(String, PipelineEvent)> = buf.drain(..).collect();
-        for (session_id, event) in events {
+        let events = buf.clone();
+        let mut written = 0;
+        for (session_id, event) in &events {
             let path = self.dir.join(format!("{}.events.json", session_id));
-            let line = serde_json::to_string(&event)
+            let line = serde_json::to_string(event)
                 .map_err(|e| crate::PandoraError::Internal(e.to_string()))?;
             let mut file = fs::OpenOptions::new()
                 .create(true)
@@ -61,7 +62,11 @@ impl EventStore {
             use std::io::Write;
             writeln!(file, "{}", line)
                 .map_err(|e| crate::PandoraError::Internal(format!("Cannot write event: {e}")))?;
+            file.sync_data()
+                .map_err(|e| crate::PandoraError::Internal(format!("Cannot sync event: {e}")))?;
+            written += 1;
         }
+        buf.drain(..written);
         Ok(())
     }
 
