@@ -51,6 +51,7 @@ enum Commands {
     /// Execute a plan from a TOML file
     Execute { path: String },
     /// Start interactive operator shell
+    #[command(alias = "chat")]
     Shell,
     /// Resume interrupted execution
     Resume { id: Option<String> },

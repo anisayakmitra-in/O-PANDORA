@@ -173,7 +173,7 @@ pandora run --profile strict "review this repository"
 pandora run --output json "inspect this project"
 ```
 
-### `pandora shell`
+### `pandora shell` or `pandora chat`
 
 Start interactive operator shell.
 

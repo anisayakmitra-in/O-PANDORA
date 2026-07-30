@@ -128,6 +128,15 @@ fn help_shows_usage() {
         "Help must show 'run' command:\n{}",
         text
     );
+    let (chat_output, _) = run(&["chat", "--help"]);
+    assert_success(&chat_output, &["chat", "--help"]);
+    let chat_text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&chat_output.stdout),
+        String::from_utf8_lossy(&chat_output.stderr)
+    );
+    assert!(chat_text.contains("interactive operator shell"));
+
     let (setup_output, _) = run(&["setup", "--help"]);
     let setup_text = format!(
         "{}{}",
