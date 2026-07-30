@@ -155,7 +155,7 @@ pandora --json route "review this Rust parser for security issues"
 
 ### `pandora run <task> [--profile NAME] [--model NAME] [--output text|json] [--quiet] [--stream]`
 
-Execute a task through the pipeline. A profile supplies provider, strategy, evaluator, approval, retry, and sandbox defaults. Pandora resolves the domain from the task and the registered manifests; the command does not require a domain-specific flag. Add `--stream` to print provider chunks as they arrive when the provider supports streaming. Tool-calling turns remain buffered. `--stream` cannot be combined with JSON output.
+Execute a task through the pipeline. A profile supplies provider, strategy, evaluator, approval, retry, and sandbox defaults. Domain profiles may also name role-specific connections and models; `run` rejects bindings that reference missing connections. Pandora resolves the domain from the task and the registered manifests; the command does not require a domain-specific flag. Add `--stream` to print provider chunks as they arrive when the provider supports streaming. Tool-calling turns remain buffered. `--stream` cannot be combined with JSON output.
 
 ```
 pandora run "build a REST API in Rust"

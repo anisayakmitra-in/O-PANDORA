@@ -90,6 +90,31 @@ impl Profile {
     pub fn model_binding(&self, role: &str) -> Option<&ModelBinding> {
         self.models.get(role)
     }
+
+    /// Validate role bindings against the configured connection registry.
+    pub fn validate_model_bindings(
+        &self,
+        connections: &crate::connection_manager::ConnectionRegistry,
+    ) -> Result<(), String> {
+        for (role, binding) in &self.models {
+            if role.trim().is_empty() {
+                return Err("model binding role cannot be empty".into());
+            }
+            if binding.connection.trim().is_empty() {
+                return Err(format!("model binding '{role}' has no connection"));
+            }
+            if binding.model.trim().is_empty() {
+                return Err(format!("model binding '{role}' has no model"));
+            }
+            if connections.find(&binding.connection).is_none() {
+                return Err(format!(
+                    "model binding '{role}' references unknown connection '{}'",
+                    binding.connection
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Path to the profiles directory.
@@ -187,6 +212,23 @@ mod tests {
             profile.model_binding("planner").unwrap().model,
             "controller-model"
         );
+
+        let connections = crate::connection_manager::ConnectionRegistry {
+            connections: vec![
+                crate::connection_manager::Connection::new(
+                    "controller",
+                    crate::connection_manager::ConnectionKind::OpenAI,
+                    "https://example.com/controller",
+                ),
+                crate::connection_manager::Connection::new(
+                    "designer",
+                    crate::connection_manager::ConnectionKind::OpenAI,
+                    "https://example.com/designer",
+                ),
+            ],
+            default_connection: None,
+        };
+        assert!(profile.validate_model_bindings(&connections).is_ok());
     }
 
     #[test]

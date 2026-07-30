@@ -1428,6 +1428,12 @@ fn cmd_run(args: &[String]) {
         },
         None => pandora_types::profile::Profile::default(),
     };
+    if let Err(error) = profile
+        .validate_model_bindings(&pandora_types::connection_manager::ConnectionRegistry::load())
+    {
+        eprintln!("Invalid profile model binding: {error}");
+        process::exit(1);
+    }
     if !quiet && !output_json {
         println!("Task: {task}");
         if let Some(name) = profile_name {
