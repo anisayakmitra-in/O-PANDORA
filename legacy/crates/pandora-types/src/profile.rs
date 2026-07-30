@@ -6,19 +6,19 @@
 
 use crate::config::config_dir;
 use crate::execution_plan::{ControlStrategy, EvaluatorKind, ExecutionPlan, SandboxLevel};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Domain-level role metadata for a profile.
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct DomainProfile {
     /// The domain role presented by this profile, such as "design" or "coding".
     pub role: Option<String>,
 }
 
 /// A provider connection and model selected for one domain role.
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ModelBinding {
     pub connection: String,
     pub model: String,
@@ -27,7 +27,7 @@ pub struct ModelBinding {
 ///
 /// All fields are optional — profiles are partial configurations that
 /// override defaults rather than replacing them entirely.
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct Profile {
     /// Provider to use, e.g. "ollama", "openai".
     pub provider: Option<String>,

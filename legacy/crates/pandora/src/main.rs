@@ -215,8 +215,8 @@ enum Commands {
     },
     /// List or inspect governed GEPA/DSR proposals
     Rsi { action: String, id: Option<String> },
-    /// List execution profiles
-    Profiles,
+    /// List execution profiles or inspect one profile
+    Profiles { name: Option<String> },
     /// Generate shell completion scripts
     Completions { shell: String },
 }
@@ -525,7 +525,12 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             }
         }
         Commands::Benchmark => a.push("benchmark".into()),
-        Commands::Profiles => a.push("profiles".into()),
+        Commands::Profiles { name } => {
+            a.push("profiles".into());
+            if let Some(name) = name {
+                a.push(name.clone());
+            }
+        }
         Commands::Completions { shell } => {
             a.push("completions".into());
             a.push(shell.clone());
@@ -769,7 +774,7 @@ fn usage() {
     eprintln!("                              evaluator|policy|workflow|provider");
     eprintln!("        keygen                Generate Ed25519 keypair");
     eprintln!("        benchmark [provider]  Benchmark providers");
-    eprintln!("        profiles              List config profiles");
+    eprintln!("        profiles [NAME]       List or inspect config profiles");
     eprintln!();
     eprintln!("    Other:");
     eprintln!("        version, --version    Show version");
@@ -3371,30 +3376,68 @@ fn cmd_import(args: &[String]) {
     }
 }
 
-fn cmd_profiles(_args: &[String]) {
+fn cmd_profiles(args: &[String]) {
+    if let Some(name) = args.get(2) {
+        match pandora_types::profile::load_profile(name) {
+            Ok(profile) => {
+                if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&profile).expect("profile JSON serialization")
+                    );
+                } else {
+                    println!("Profile: {name}");
+                    if let Some(domain) = profile
+                        .domain
+                        .as_ref()
+                        .and_then(|domain| domain.role.as_deref())
+                    {
+                        println!("Domain: {domain}");
+                    }
+                    if let Some(provider) = profile.provider.as_deref() {
+                        println!("Provider: {provider}");
+                    }
+                    if profile.models.is_empty() {
+                        println!("Model bindings: none");
+                    } else {
+                        println!("Model bindings:");
+                        for (role, binding) in &profile.models {
+                            println!("  {role}: {} / {}", binding.connection, binding.model);
+                        }
+                    }
+                }
+            }
+            Err(error) => {
+                eprintln!("Could not load profile '{name}': {error}");
+                process::exit(1);
+            }
+        }
+        return;
+    }
+
     match pandora_types::profile::list_profiles() {
-        Ok(p) => {
+        Ok(profiles) => {
             if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
                 println!(
                     "{}",
-                    serde_json::to_string_pretty(&p).expect("profile JSON serialization")
+                    serde_json::to_string_pretty(&profiles).expect("profile JSON serialization")
                 );
                 return;
             }
             println!("Profiles:");
-            for pr in &p {
-                println!("  {pr}");
+            for profile in &profiles {
+                println!("  {profile}");
             }
-            if p.is_empty() {
+            if profiles.is_empty() {
                 println!("  (none found)");
             }
         }
-        Err(e) => {
-            eprintln!("Error: {e}");
+        Err(error) => {
+            eprintln!("Error: {error}");
+            process::exit(1);
         }
     }
 }
-
 fn cmd_overnight(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora overnight <task>");

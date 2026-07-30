@@ -153,6 +153,15 @@ pandora route "design an accessible settings screen"
 pandora --json route "review this Rust parser for security issues"
 ```
 
+### `pandora profiles [NAME]`
+
+List profile names or inspect one profile, including its domain role and named model bindings. `--json` returns the same data without credentials.
+
+```bash
+pandora profiles
+pandora profiles design
+pandora --json profiles design
+```
 ### `pandora run <task> [--profile NAME] [--model NAME] [--output text|json] [--quiet] [--stream]`
 
 Execute a task through the pipeline. A profile supplies provider, strategy, evaluator, approval, retry, and sandbox defaults. Domain profiles may also name role-specific connections and models; `run` rejects bindings that reference missing connections. Pandora resolves the domain from the task and the registered manifests; the command does not require a domain-specific flag. Add `--stream` to print provider chunks as they arrive when the provider supports streaming. Tool-calling turns remain buffered. `--stream` cannot be combined with JSON output.

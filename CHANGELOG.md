@@ -4,6 +4,17 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.15] — 2026-07-30
+
+### Added
+
+- Added `pandora profiles NAME` to inspect a named execution profile.
+- Added JSON serialization for profile inspection and automation.
+
+### Changed
+
+- Profile inspection now reports load failures with a non-zero exit status.
+
 ## [0.5.1-rc.14] — 2026-07-30
 
 This release candidate fixes explicit CLI model precedence. It does not claim stable availability.
