@@ -23,8 +23,35 @@ jobs:
       - run: python scripts/validate_repo.py
       - run: python scripts/validate_docs.py
 
+  script-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check POSIX shell scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
+      - name: Check PowerShell scripts
+        shell: pwsh
+        run: |
+          $parseErrors = @()
+          Get-ChildItem scripts -Filter '*.ps1' | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $parseErrors += $errors
+            }
+          }
+          if ($parseErrors.Count -gt 0) {
+            $parseErrors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
   test:
-    needs: [validate]
+    needs: [validate, script-syntax]
     strategy:
       fail-fast: false
       matrix:
