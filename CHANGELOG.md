@@ -38,8 +38,8 @@ This release candidate consolidates the CLI, desktop control plane, and release 
 
 - Windows, macOS, and Linux are the active CLI and desktop targets.
 - WSL is a Linux CLI environment, not a separate desktop target.
-- Termux and Android packaging remain paused and are not included in this candidate.
-- No Play Store package is available.
+- Mobile and Termux packaging remain paused and are not included in this candidate.
+- No mobile package is available.
 
 ### Validation
 
@@ -134,7 +134,7 @@ This release candidate consolidates the CLI, desktop control plane, and release 
 
 - Runtime architecture: ExecutionPipeline, ExecutionController, ShadowCouncil
 - 13 built-in harnesses: 5 source, 1 meta, 7 domain (coding, design, security,
-  research, computer-use, android-use)
+  research, computer-use, mobile-use)
 - 21 built-in genes across filesystem, git, docker, browser, and shell domains
 - 72 type system modules in pandora-types crate
 - Dynamic Model Registry — no hardcoded model lists

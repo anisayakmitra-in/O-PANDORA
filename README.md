@@ -147,8 +147,8 @@ Apache 2.0 — see [LICENSE](LICENSE)
 
 ## Platform support
 
-| Surface | Windows | macOS | Linux | WSL | Android / Termux | Play Store |
-|---|---|---|---|---|---|---|
-| pandora CLI | source build; RC artifact not published | source build; RC artifact not published | source build; RC artifact not published | Linux CLI environment; no separate artifact | paused | n/a |
-| Pandora Desktop | source build; signed package pending | Tauri target; package not published | Tauri target; package not published | not a desktop target | paused | not released |
-Mobile and Termux support are paused and are not advertised as available products. Termux would be a future CLI-only path; it cannot run the desktop client. A Play Store release would require a separate signed Android client and compliance review. WSL can run the Linux CLI, but it is not a separate packaged target. A successful Rust workspace build does not prove that a packaged desktop or Android release exists. See [Platform support](docs/PLATFORMS.md) and [the release contract](docs/RELEASE_CONTRACT.md) for the publication gates required before changing this table.
+Pandora CLI is supported on Windows, macOS, and Linux. WSL can run the Linux CLI, but it is not a separately packaged target.
+
+Pandora Desktop is a Tauri client for Windows, macOS, and Linux. Windows source builds and signed packages are pending; macOS and Linux are CI/package targets whose packages are not yet published. WSL is not a desktop target.
+
+Mobile and Termux support are paused and are not advertised as available products. Termux would be a future CLI-only path and cannot run the desktop client. A successful Rust workspace build does not prove that a packaged desktop release exists. See [Platform support](docs/PLATFORMS.md) and [the release contract](docs/RELEASE_CONTRACT.md) for the publication gates required before changing these claims.

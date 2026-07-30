@@ -2,36 +2,18 @@
 
 Pandora has two active product surfaces:
 
-- **CLI** — runs directly on Windows, macOS, and Linux. WSL uses the Linux CLI path.
-- **Desktop** — a Tauri client for Windows, macOS, and Linux. It is not a WSL, Termux, or Play Store package.
+- **CLI** — supported on Windows, macOS, and Linux. WSL uses the Linux CLI path.
+- **Desktop** — a Tauri client for Windows, macOS, and Linux. It is not a WSL or Termux package.
 
 ## Current status
 
-| Surface | Status |
-| --- | --- |
-| Windows CLI | Source build available; signed release artifact pending publication |
-| macOS CLI | Source build available; signed release artifact pending publication |
-| Linux CLI | Source build available; signed release artifact pending publication |
-| WSL CLI | Use the Linux CLI inside WSL; separately packaged support is not claimed |
-| Windows Desktop | Tauri build target; signed package pending publication |
-| macOS Desktop | Tauri build target; signed package pending publication |
-| Linux Desktop | Tauri build target; signed package pending publication |
-| Termux | Paused; no installer is shipped |
-| Android / Play Store | Paused; no Android client or store artifact is shipped |
+Pandora CLI has source-build support on Windows, macOS, and Linux. Release artifacts are pending publication.
 
-## What the boundaries mean
+Pandora Desktop has Windows, macOS, and Linux build targets. Signed packages are pending publication and clean-machine verification.
 
-### WSL
+WSL can run the Linux CLI, but it is not a separately packaged target. WSL becomes an official supported environment only after a clean-environment test is added.
 
-WSL is an execution environment for the Linux CLI. It is not a separate release target and does not make the Tauri desktop client a WSL application. WSL support becomes official only after a clean-environment test is added.
-
-### Termux
-
-Termux support would be a future CLI-only distribution. It would not install or launch Pandora Desktop. The Termux installer and Android-specific runtime code are intentionally held outside the active source tree until desktop and CLI releases stabilize.
-
-### Android and Play Store
-
-A desktop bundle cannot be submitted to the Play Store. Android support requires a separate signed client, an authenticated connection to a Pandora runtime, Android-specific permission review, emulator/device tests, and Play Store compliance checks. None of those release gates have passed.
+Mobile and Termux support are paused. Termux would be a future CLI-only distribution and would not install or launch Pandora Desktop. The Termux installer and mobile-specific runtime code remain outside the active source tree until the desktop and CLI releases stabilize.
 
 ## Publication rule
 
