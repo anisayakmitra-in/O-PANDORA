@@ -126,6 +126,10 @@ jobs:
           merge-multiple: true
       - name: Verify signed desktop artifacts
         run: python scripts/verify_desktop_release.py release-assets
+      - name: Generate CLI SBOM
+        run: python scripts/generate_sbom.py release-assets/pandora-sbom.cdx.json
+      - name: Verify CLI release artifacts
+        run: python scripts/verify_release.py release-assets --require-cli-platforms linux,macos,windows
       - name: Publish one desktop release
         uses: softprops/action-gh-release@v2
         with:
