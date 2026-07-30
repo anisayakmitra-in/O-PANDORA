@@ -227,6 +227,10 @@ Remove a connection.
 | `pandora new workflow <name>` | Workflow definition |
 | `pandora new provider <name>` | LLM provider plugin |
 
+### `pandora approve [id]` and `pandora reject [id]`
+
+List pending approvals when no ID is supplied. Pass an ID to record the decision for that exact tool request. Use `--json` for automation.
+
 ## Package commands
 
 `install`, `uninstall`, `update`, `list`, `info`, `search`, `publish`

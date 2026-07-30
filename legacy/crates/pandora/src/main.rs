@@ -131,9 +131,9 @@ enum Commands {
         pattern: Option<String>,
     },
     /// Approve a pending action
-    Approve { id: String },
+    Approve { id: Option<String> },
     /// Reject a pending action
-    Reject { id: String },
+    Reject { id: Option<String> },
     /// List sessions
     Sessions,
     /// Show session details
@@ -435,11 +435,15 @@ fn build_args(cmd: &Commands) -> Vec<String> {
         }
         Commands::Approve { id } => {
             a.push("approve".into());
-            a.push(id.clone());
+            if let Some(id) = id {
+                a.push(id.clone());
+            }
         }
         Commands::Reject { id } => {
             a.push("reject".into());
-            a.push(id.clone());
+            if let Some(id) = id {
+                a.push(id.clone());
+            }
         }
         Commands::Sessions => a.push("sessions".into()),
         Commands::Session { id } => {
@@ -2078,36 +2082,54 @@ fn cmd_deny(args: &[String]) {
         Some(command) => eprintln!("Unknown deny command: {command}. Use list, add, or remove."),
     }
 }
+fn print_pending_approvals(store: &pandora_types::ApprovalStore) {
+    let pending = store.list_pending();
+    if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&pending).expect("approval serialization")
+        );
+        return;
+    }
+    if pending.is_empty() {
+        println!("No pending approvals.");
+        return;
+    }
+    println!("{} pending approval(s):", pending.len());
+    for approval in pending {
+        println!("  {}", approval.id);
+        println!("    Tool:    {}", approval.tool_name);
+        println!("    Session: {}", approval.session_id);
+        println!("    Reason:  {}", approval.reason);
+    }
+}
+
 fn cmd_approve(args: &[String]) {
+    let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
     if args.len() < 3 {
-        eprintln!("Usage: pandora approve <id>");
+        print_pending_approvals(&store);
         return;
     }
     let approval_id = &args[2];
-    let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
-
     match store.approve(approval_id) {
         Ok(approval) => {
             println!("Approved: {}", approval_id);
             println!("  Tool:    {}", approval.tool_name);
             println!("  Session: {}", approval.session_id);
             println!("  Who:     {}", approval.who);
-            println!(
-                "
-Re-run your task to resume execution."
-            );
+            println!("\nRe-run your task to resume execution.");
         }
         Err(error) => eprintln!("Error: {error}"),
     }
 }
+
 fn cmd_reject(args: &[String]) {
+    let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
     if args.len() < 3 {
-        eprintln!("Usage: pandora reject <id>");
+        print_pending_approvals(&store);
         return;
     }
     let approval_id = &args[2];
-    let store = pandora_types::ApprovalStore::new(pandora_types::ApprovalStore::default_location());
-
     match store.reject(approval_id) {
         Ok(approval) => {
             println!("Rejected: {}", approval_id);
