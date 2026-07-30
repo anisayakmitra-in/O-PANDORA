@@ -316,6 +316,6 @@ $env:PANDORA_INSTALL_DIR="$HOME\\.pandora\\bin"; powershell -ExecutionPolicy Byp
 Use the platform helper to download, verify, health-check, and replace the CLI. A failed health check restores the `.previous` binary.
 
 ```text
-PANDORA_VERSION=0.5.0 bash scripts/update-cli.sh
+PANDORA_VERSION=<published-version> bash scripts/update-cli.sh
 powershell -ExecutionPolicy Bypass -File scripts/update-cli.ps1
 ```
