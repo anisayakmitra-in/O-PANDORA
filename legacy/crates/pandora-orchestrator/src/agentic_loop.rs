@@ -11,7 +11,7 @@ use pandora_types::gene::Gene;
 use pandora_types::parliament::{Parliament, ParliamentVerdict};
 use pandora_types::permissions_manifest::{PermissionManifest, PermissionVerdict};
 use pandora_types::provider::{
-    ChatCompletion, ChatMessage, GenerationRequest, Provider, ToolDefinition,
+    ChatCompletion, ChatMessage, GenerationRequest, Provider, StreamCallback, ToolDefinition,
 };
 use std::collections::HashMap;
 use std::time::Instant;
@@ -89,7 +89,31 @@ pub fn run_agentic_loop(
     permissions: Option<&PermissionManifest>,
     parliament: Option<&Parliament>,
     config: &AgenticConfig,
+    constitutional_floor: Option<&mut ConstitutionalFloor>,
+) -> Result<AgenticResult, pandora_types::PandoraError> {
+    run_agentic_loop_with_stream(
+        task,
+        domain,
+        provider,
+        genes,
+        permissions,
+        parliament,
+        config,
+        constitutional_floor,
+        None,
+    )
+}
+#[allow(clippy::too_many_arguments)]
+pub fn run_agentic_loop_with_stream(
+    task: &str,
+    domain: &str,
+    provider: &dyn Provider,
+    genes: &[&dyn Gene],
+    permissions: Option<&PermissionManifest>,
+    parliament: Option<&Parliament>,
+    config: &AgenticConfig,
     mut constitutional_floor: Option<&mut ConstitutionalFloor>,
+    stream: Option<&StreamCallback>,
 ) -> Result<AgenticResult, pandora_types::PandoraError> {
     let start = Instant::now();
     let tools = genes_to_tool_definitions(genes);
@@ -166,7 +190,11 @@ pub fn run_agentic_loop(
                 max_tokens: config.max_tokens,
                 ..Default::default()
             };
-            let text = provider.generate(req)?;
+            let text = if let Some(callback) = stream.filter(|_| provider.supports_streaming()) {
+                provider.generate_stream(req, callback)?
+            } else {
+                provider.generate(req)?
+            };
             ChatCompletion {
                 text,
                 tool_calls: vec![],

@@ -334,6 +334,15 @@ impl PandoraRuntime {
 
     /// Execute a task through the full 9-stage constitutional pipeline.
     pub async fn run(&mut self, task: &str, domain: &str) -> Result<ExecutionReport> {
+        self.run_with_stream(task, domain, None).await
+    }
+
+    pub async fn run_with_stream(
+        &mut self,
+        task: &str,
+        domain: &str,
+        stream: Option<&pandora_types::provider::StreamCallback>,
+    ) -> Result<ExecutionReport> {
         let execution_id = format!("exec-{}", chrono::Utc::now().timestamp_millis());
         let start = Instant::now();
 
@@ -517,9 +526,13 @@ impl PandoraRuntime {
                 temperature: 0.2,
                 ..Default::default()
             };
-            provider
-                .generate(request)
-                .map_err(|e| anyhow::anyhow!("Provider {} failed: {}", provider_name, e))?
+            let generated = if let Some(callback) = stream.filter(|_| provider.supports_streaming())
+            {
+                provider.generate_stream(request, callback)
+            } else {
+                provider.generate(request)
+            };
+            generated.map_err(|e| anyhow::anyhow!("Provider {} failed: {}", provider_name, e))?
         } else {
             // --- Load context from self-improvement modules ---
             // Search memory for relevant facts about this task
@@ -543,7 +556,7 @@ impl PandoraRuntime {
             let user_permissions = pandora_types::config::PandoraConfig::load()
                 .with_env()
                 .user_permissions();
-            let result = agentic_loop::run_agentic_loop(
+            let result = agentic_loop::run_agentic_loop_with_stream(
                 task,
                 domain,
                 provider.as_ref(),
@@ -552,6 +565,7 @@ impl PandoraRuntime {
                 Some(&self.parliament),
                 &config,
                 Some(&mut self.constitutional_floor),
+                stream,
             )
             .map_err(|e| anyhow::anyhow!("Agentic loop failed: {}", e))?;
 

@@ -42,6 +42,9 @@ enum Commands {
         /// Suppress human-readable progress output.
         #[arg(short, long)]
         quiet: bool,
+        /// Stream provider response chunks when supported.
+        #[arg(long)]
+        stream: bool,
     },
     /// Preview capability routing without executing a provider call
     Route { task: String },
@@ -258,6 +261,7 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             model,
             output,
             quiet,
+            stream,
         } => {
             a.push("run".into());
             a.push(task.clone());
@@ -275,6 +279,9 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             }
             if *quiet {
                 a.push("--quiet".into());
+            }
+            if *stream {
+                a.push("--stream".into());
             }
         }
         Commands::Route { task } => {
@@ -1367,6 +1374,11 @@ fn cmd_run(args: &[String]) {
             .any(|window| window[0] == "--output" && window[1].eq_ignore_ascii_case("json"))
         || args.iter().any(|arg| arg == "--output=json");
     let quiet = args.iter().any(|arg| arg == "--quiet" || arg == "-q");
+    let stream_requested = args.iter().any(|arg| arg == "--stream");
+    if stream_requested && output_json {
+        eprintln!("--stream cannot be combined with JSON output.");
+        process::exit(2);
+    }
     let profile_name = args
         .windows(2)
         .find(|window| window[0] == "--profile")
@@ -1387,7 +1399,7 @@ fn cmd_run(args: &[String]) {
     while index < args.len() {
         match args[index].as_str() {
             "--profile" | "--model" | "--output" => index += 2,
-            "--quiet" | "-q" => index += 1,
+            "--quiet" | "-q" | "--stream" => index += 1,
             value
                 if value.starts_with("--profile=")
                     || value.starts_with("--model=")
@@ -1402,7 +1414,7 @@ fn cmd_run(args: &[String]) {
         }
     }
     if task_args.is_empty() {
-        eprintln!("Usage: pandora run <task> [--profile NAME] [--model NAME] [--output text|json] [--quiet]");
+        eprintln!("Usage: pandora run <task> [--profile NAME] [--model NAME] [--output text|json] [--quiet] [--stream]");
         process::exit(1);
     }
     let task = task_args.join(" ");
@@ -1422,6 +1434,22 @@ fn cmd_run(args: &[String]) {
             println!("Profile: {name}");
         }
     }
+    let streamed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let stream_callback = if stream_requested {
+        let streamed = std::sync::Arc::clone(&streamed);
+        Some(
+            Box::new(move |chunk: pandora_types::provider::StreamChunk| {
+                if !chunk.text.is_empty() {
+                    use std::io::Write;
+                    print!("{}", chunk.text);
+                    let _ = std::io::stdout().flush();
+                    streamed.store(true, std::sync::atomic::Ordering::Relaxed);
+                }
+            }) as pandora_types::provider::StreamCallback,
+        )
+    } else {
+        None
+    };
     match tokio::runtime::Builder::new_current_thread().enable_all().build() {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
@@ -1459,7 +1487,7 @@ fn cmd_run(args: &[String]) {
                 stop_conditions: vec![StopCondition::GoalMet],
                 ..Default::default()
             };
-            match runtime.run(&task, "default").await {
+            match runtime.run_with_stream(&task, "default", stream_callback.as_ref()).await {
                 Ok(result) if result.success => {
                     if output_json {
                         let report = serde_json::json!({
@@ -1478,6 +1506,8 @@ fn cmd_run(args: &[String]) {
                             "success": result.success,
                         });
                         println!("{}", serde_json::to_string_pretty(&report).unwrap_or_default());
+                    } else if streamed.load(std::sync::atomic::Ordering::Relaxed) {
+                        println!();
                     } else if !quiet {
                         println!("{}", result.output.chars().take(2000).collect::<String>());
                     }

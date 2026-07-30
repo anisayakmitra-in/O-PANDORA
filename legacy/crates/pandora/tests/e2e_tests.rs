@@ -333,6 +333,13 @@ fn export_rejects_unknown_format() {
 }
 
 #[test]
+fn stream_rejects_json_output() {
+    let (output, _dir) = run(&["run", "inspect this", "--stream", "--output", "json"]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("--stream cannot be combined"));
+}
+
+#[test]
 fn run_does_not_panic() {
     let (output, _) = run(&["run", "say hello"]);
     let stderr = String::from_utf8_lossy(&output.stderr);
