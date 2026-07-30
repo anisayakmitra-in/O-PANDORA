@@ -85,6 +85,11 @@ impl Profile {
             };
         }
     }
+
+    /// Return the named model binding for a role, if configured.
+    pub fn model_binding(&self, role: &str) -> Option<&ModelBinding> {
+        self.models.get(role)
+    }
 }
 
 /// Path to the profiles directory.
@@ -171,9 +176,17 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(profile.domain.unwrap().role.as_deref(), Some("design"));
+        assert_eq!(
+            profile.domain.as_ref().unwrap().role.as_deref(),
+            Some("design")
+        );
         assert_eq!(profile.models["planner"].connection, "controller");
         assert_eq!(profile.models["execution"].model, "design-model");
+        assert_eq!(profile.model_binding("review"), None);
+        assert_eq!(
+            profile.model_binding("planner").unwrap().model,
+            "controller-model"
+        );
     }
 
     #[test]
