@@ -1,7 +1,12 @@
 $ErrorActionPreference = "Stop"
 $repo = "anisayakmitra-in/O-PANDORA"
 $version = if ($env:PANDORA_VERSION) { $env:PANDORA_VERSION } else { "latest" }
-$asset = "pandora-windows-x86_64.exe"
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+$asset = if ($architecture -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
+  "pandora-windows-arm64.exe"
+} else {
+  "pandora-windows-x86_64.exe"
+}
 $installDir = if ($env:PANDORA_INSTALL_DIR) { $env:PANDORA_INSTALL_DIR } else { Join-Path $HOME ".pandora\bin" }
 $base = if ($env:PANDORA_RELEASE_BASE_URL) { $env:PANDORA_RELEASE_BASE_URL.TrimEnd('/') } elseif ($version -eq "latest") { "https://github.com/$repo/releases/latest/download" } else { "https://github.com/$repo/releases/download/v$($version.TrimStart('v'))" }
 $temp = Join-Path ([System.IO.Path]::GetTempPath()) ("pandora-install-" + [Guid]::NewGuid())

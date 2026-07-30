@@ -17,7 +17,7 @@ Pandora has local release checks, installer scripts, API authentication, and des
 
 | Surface | Release requirement |
 | --- | --- |
-| CLI | Signed or checksum-verified binaries for Windows, macOS, and Linux |
+| CLI | Signed or checksum-verified binaries for Windows x86_64/ARM64, macOS x86_64/ARM64, and Linux x86_64/aarch64 |
 | Desktop | Tauri bundles built for Windows, macOS, and Linux |
 
 ## Required gates
