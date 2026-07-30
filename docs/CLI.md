@@ -214,11 +214,15 @@ pandora shell
 
 ### `pandora resume [id]`
 
-Resume interrupted execution from its last checkpoint.
+Checkpoint continuation is not available in this CLI release. The command exits with an error instead of claiming to resume work. Use `pandora replay <id>` to create a new pending execution record.
 
 ### `pandora replay <id>`
 
-Replay a completed execution.
+Create and persist a new pending session from a completed execution. This records the replay source; it does not start execution.
+
+### `pandora stop <id>`
+
+The standalone CLI cannot cancel a process it did not start. The command exits with an error instead of claiming to stop a session.
 
 ### `pandora trace <id>`
 
@@ -234,7 +238,7 @@ Explain why decisions were made.
 
 ### `pandora timeline [id]`
 
-Show chronological event timeline.
+Show the persisted execution timeline, including step, provider, model, duration, token count, and outcome. Use `pandora --json timeline <id>` for structured frames.
 
 ### `pandora status`
 

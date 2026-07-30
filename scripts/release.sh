@@ -43,4 +43,11 @@ VERSION="$(awk -F'"' '/^version = / { print $2; exit }' Cargo.toml)"
 COMMIT="$(git rev-parse HEAD)"
 printf '{"version":"%s","target":"%s","commit":"%s"}\n' "$VERSION" "$NAME" "$COMMIT" > "$ASSET.metadata.json"
 printf '%s\n' "$COMMIT" > "$OUT_DIR/pandora-build-commit.txt"
-printf 'Created %s, checksum, and metadata.\n' "$ASSET"
+python scripts/generate_sbom.py "$OUT_DIR/pandora-sbom.cdx.json"
+case "$NAME" in
+  pandora-linux-*) PLATFORM=linux ;;
+  pandora-macos-*) PLATFORM=macos ;;
+  *) echo "Unsupported release asset: $NAME" >&2; exit 1 ;;
+esac
+python scripts/verify_release.py "$OUT_DIR" --require-cli-platforms "$PLATFORM"
+printf 'Created %s, checksum, metadata, and SBOM.\n' "$ASSET"

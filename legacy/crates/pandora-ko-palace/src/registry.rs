@@ -8,6 +8,8 @@ use std::time::Duration;
 use tar::Archive;
 
 const MAX_ARTIFACT_BYTES: u64 = 100 * 1024 * 1024;
+const MAX_ARCHIVE_ENTRIES: usize = 10_000;
+const MAX_EXTRACTED_BYTES: u64 = 500 * 1024 * 1024;
 
 #[derive(Debug, Clone)]
 pub struct RegistryClient {
@@ -210,13 +212,37 @@ fn unpack_entries<R: std::io::Read>(
     let entries = archive
         .entries()
         .map_err(|e| format!("Invalid package archive: {e}"))?;
+    let mut entry_count = 0;
+    let mut extracted_bytes: u64 = 0;
     for entry in entries {
+        entry_count += 1;
+        if entry_count > MAX_ARCHIVE_ENTRIES {
+            return Err(format!(
+                "Package contains more than {MAX_ARCHIVE_ENTRIES} entries"
+            ));
+        }
         let mut entry = entry.map_err(|e| format!("Invalid package entry: {e}"))?;
         let path = entry
             .path()
             .map_err(|e| format!("Invalid package path: {e}"))?;
         if !is_safe_path(&path) {
             return Err(format!("Unsafe package path: {}", path.display()));
+        }
+        let entry_type = entry.header().entry_type();
+        if entry_type.is_symlink() || entry_type.is_hard_link() {
+            return Err(format!("Package links are not allowed: {}", path.display()));
+        }
+        let entry_size = entry
+            .header()
+            .size()
+            .map_err(|e| format!("Invalid package size: {e}"))?;
+        extracted_bytes = extracted_bytes
+            .checked_add(entry_size)
+            .ok_or_else(|| "Package extracted size overflow".to_string())?;
+        if extracted_bytes > MAX_EXTRACTED_BYTES {
+            return Err(format!(
+                "Package expands beyond {MAX_EXTRACTED_BYTES} bytes"
+            ));
         }
         entry
             .unpack_in(destination)
@@ -281,6 +307,26 @@ mod tests {
         assert!(!is_safe_path(Path::new("../escape.txt")));
         assert!(!is_safe_path(Path::new("/absolute.txt")));
         assert!(is_safe_path(Path::new("package/gene.toml")));
+    }
+
+    #[test]
+    fn rejects_archive_links() {
+        let mut bytes = Vec::new();
+        {
+            let mut builder = tar::Builder::new(&mut bytes);
+            let mut header = tar::Header::new_gnu();
+            builder
+                .append_link(&mut header, "outside", "package/link")
+                .expect("create link archive");
+            builder.finish().expect("finish link archive");
+        }
+        let destination =
+            std::env::temp_dir().join(format!("pandora-registry-link-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&destination);
+        let mut archive = Archive::new(std::io::Cursor::new(bytes));
+        let result = unpack_entries(&mut archive, &destination);
+        let _ = std::fs::remove_dir_all(&destination);
+        assert!(result.is_err());
     }
 
     #[test]

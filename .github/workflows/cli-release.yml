@@ -93,11 +93,19 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: dist
           pattern: cli-*
           merge-multiple: true
+      - name: Generate release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$GITHUB_SHA" > dist/pandora-build-commit.txt
+          python scripts/generate_sbom.py dist/pandora-sbom.cdx.json
+          python scripts/verify_release.py dist --require-cli-platforms linux,macos,windows
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}

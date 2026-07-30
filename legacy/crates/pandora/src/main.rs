@@ -2316,23 +2316,78 @@ fn cmd_status(args: &[String]) {
 fn cmd_stop(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora stop <id>");
-        return;
+        process::exit(2);
     }
-    println!("Stopped: {}", args[2]);
+    eprintln!(
+        "Cannot stop session '{}': the current CLI has no attached runtime process.",
+        args[2]
+    );
+    eprintln!("Use the running process's cancellation control, then inspect the session.");
+    process::exit(2);
 }
 fn cmd_resume(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora resume <id>");
-        return;
+        process::exit(2);
     }
-    println!("Resumed: {}", args[2]);
+    eprintln!(
+        "Cannot resume session '{}': checkpoint continuation is not available in this CLI release.",
+        args[2]
+    );
+    eprintln!("Use 'pandora replay <id>' to create a new pending execution record.");
+    process::exit(2);
 }
 fn cmd_timeline(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora timeline <id>");
+        process::exit(2);
+    }
+    let id = &args[2];
+    let path = sessions_dir().join(format!("{id}.json"));
+    let session = match std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|json| serde_json::from_str::<pandora_types::Session>(&json).ok())
+    {
+        Some(session) => session,
+        None => {
+            eprintln!("Session not found or invalid: {id}");
+            process::exit(1);
+        }
+    };
+    let output_json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json")
+        || args
+            .iter()
+            .any(|arg| arg == "--json" || arg == "--output=json");
+    if output_json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "api_version": "v1",
+                "session_id": session.id,
+                "status": session.status,
+                "timeline": session.timeline,
+            })
+        );
         return;
     }
-    println!("Timeline for: {}", args[2]);
+    println!(
+        "Timeline: {} ({} frames)",
+        session.id,
+        session.timeline.len()
+    );
+    for (index, frame) in session.timeline.iter().enumerate() {
+        println!(
+            "  {:>3}. {} [{}] {}/{} {}ms, {} tokens, {}",
+            index + 1,
+            frame.step_label,
+            frame.step_kind,
+            frame.provider,
+            frame.model,
+            frame.duration_ms,
+            frame.tokens_used,
+            if frame.success { "ok" } else { "failed" },
+        );
+    }
 }
 fn cmd_governance(_args: &[String]) {
     println!("Governance: default policy");
@@ -4005,7 +4060,40 @@ fn cmd_replay(args: &[String]) {
             process::exit(1);
         }
     };
-    println!("Replay: {}", s.id);
+    let replay_id = format!(
+        "replay-{}-{}",
+        s.id,
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |duration| duration.as_millis())
+    );
+    let mut replay =
+        pandora_types::Session::new(replay_id.clone(), format!("[REPLAY] {}", s.prompt));
+    replay
+        .metadata
+        .insert("original_session".into(), s.id.clone());
+    replay.replay_id = Some(s.id.clone());
+    let replay_path = sessions_dir().join(format!("{replay_id}.json"));
+    if let Some(parent) = replay_path.parent() {
+        if let Err(error) = std::fs::create_dir_all(parent) {
+            eprintln!("Could not create session directory: {error}");
+            process::exit(1);
+        }
+    }
+    let replay_json = match serde_json::to_vec_pretty(&replay) {
+        Ok(json) => json,
+        Err(error) => {
+            eprintln!("Could not serialize replay session: {error}");
+            process::exit(1);
+        }
+    };
+    if let Err(error) = std::fs::write(&replay_path, replay_json) {
+        eprintln!("Could not persist replay session: {error}");
+        process::exit(1);
+    }
+    println!("Replay queued: {replay_id}");
+    println!("  Source: {}", s.id);
+    println!("  Status: pending (execution has not started)");
 }
 
 fn cmd_session(args: &[String]) {

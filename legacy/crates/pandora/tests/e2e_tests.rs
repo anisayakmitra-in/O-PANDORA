@@ -2,6 +2,7 @@
 ///
 /// These tests verify that the built pandora binary behaves correctly
 /// from the user's perspective. They run the actual binary, not unit tests.
+use pandora_types::recorder::ExecutionFrame;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -525,6 +526,63 @@ fn status_json_reports_registry() {
     assert_eq!(value["genes"]["enabled"], 71);
     assert_eq!(value["genes"]["domain_preloaded"], 71);
     assert_eq!(value["genes"]["catalog"], 97);
+}
+#[test]
+fn timeline_reports_persisted_frames() {
+    let home = tmp_dir().join("timeline-home");
+    let sessions = home.join("sessions");
+    std::fs::create_dir_all(&sessions).expect("create timeline home");
+    let mut session = pandora_types::Session::new("timeline-session", "test timeline");
+    let mut frame = ExecutionFrame::new("tool", "inspect files");
+    frame.provider = "test-provider".into();
+    frame.model = "test-model".into();
+    frame.duration_ms = 42;
+    frame.tokens_used = 7;
+    session.add_frame(frame);
+    std::fs::write(
+        sessions.join("timeline-session.json"),
+        serde_json::to_vec(&session).expect("serialize timeline session"),
+    )
+    .expect("write timeline session");
+
+    let output = run_with_home(&["--json", "timeline", "timeline-session"], &home);
+    assert_success(&output, &["--json", "timeline"]);
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).expect("timeline JSON");
+    assert_eq!(value["api_version"], "v1");
+    assert_eq!(value["session_id"], "timeline-session");
+    assert_eq!(value["timeline"][0]["step_label"], "inspect files");
+    assert_eq!(value["timeline"][0]["duration_ms"], 42);
+}
+
+#[test]
+fn replay_persists_pending_session() {
+    let home = tmp_dir().join(format!(
+        "replay-home-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    let sessions = home.join("sessions");
+    std::fs::create_dir_all(&sessions).expect("create replay home");
+    let session = pandora_types::Session::new("source-session", "replay this task");
+    std::fs::write(
+        sessions.join("source-session.json"),
+        serde_json::to_vec(&session).expect("serialize source session"),
+    )
+    .expect("write source session");
+
+    let output = run_with_home(&["replay", "source-session"], &home);
+    assert_success(&output, &["replay", "source-session"]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Replay queued:"));
+    assert!(stdout.contains("Status: pending"));
+    let replay_files = std::fs::read_dir(sessions)
+        .expect("read replay sessions")
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "json"))
+        .count();
+    assert_eq!(replay_files, 2);
 }
 #[test]
 fn preloaded_harnesses_and_genes_are_discoverable() {

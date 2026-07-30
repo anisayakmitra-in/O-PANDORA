@@ -1,57 +1,29 @@
-# K-O-Palace Deployment Guide
+# K-O-Palace Integration
 
-## What is this?
+K-O-Palace is a separate registry and marketplace repository. Pandora contains the client and local package lifecycle code; it does not host the registry server in this workspace.
 
-K-O-Palace is Pandora's package registry server. It's an Axum-based HTTP API.
+Repository: https://github.com/anisayakmitra-in/k-o-palace
 
-## When is it used?
+## Configure Pandora
 
-When you want to host a package registry for your team or the public Pandora ecosystem.
+Set the registry URL for the CLI:
 
-## Running K-O-Palace
-
-```bash
-cargo build --release -p k-o-palace
-./target/release/k-o-palace
+```powershell
+$env:PANDORA_REGISTRY_URL = "https://your-k-o-palace.example"
+pandora search rust
+pandora install package-id
 ```
 
-Default port: `3000`.
+For a single install:
 
-## API endpoints
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/health` | GET | Health check |
-| `/api/login` | POST | User login |
-| `/api/v1/packages` | GET | List all packages |
-| `/api/v1/packages/{id}` | GET | Get package details |
-| `/api/v1/packages/{id}/versions` | GET | Get version history |
-| `/api/publish` | POST | Publish a package |
-| `/api/search` | POST | Search packages |
-
-## CLI integration
-
-```bash
-# Point the CLI at your K-O-Palace
-export PANDORA_REGISTRY_URL=http://your-palace:3001
-
-# Or per-command
-pandora install my-package --registry=http://your-palace:3001
+```powershell
+pandora install package-id --registry=https://your-k-o-palace.example
 ```
 
-## Known limitations (v0.1.0)
+The client requires HTTPS for production registries. Local HTTP endpoints are suitable only for development on a trusted machine.
 
-- **In-memory storage** — data is lost on restart. Production use requires adding persistence.
-- **No authentication middleware** — login endpoint exists but other endpoints don't enforce auth.
-- **Signature presence check** — full Ed25519 verification deferred (needs publisher public key lookup).
-- **No pagination** — `/api/v1/packages` returns all entries.
-- **No download endpoint** — package discovery works; archive download is not yet wired.
+## Installation checks
 
-## Future roadmap
+Pandora refuses artifacts without a content hash. When publisher metadata is present, it also verifies the Ed25519 signature before extraction. The package is extracted only after those checks pass.
 
-- SQLite persistence
-- Auth middleware on all endpoints
-- Publisher public-key metadata for signed packages
-- Pagination and ranking
-- Package archive download
-- Publisher profile pages
+The registry deployment, authentication, persistence, publisher workflow, and artifact hosting instructions belong in the K-O-Palace repository. Keep its API version compatible with the client in `legacy/crates/pandora-ko-palace/src/registry.rs`.

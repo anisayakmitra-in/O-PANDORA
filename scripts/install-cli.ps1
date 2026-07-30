@@ -9,6 +9,19 @@ $asset = if ($architecture -eq [System.Runtime.InteropServices.Architecture]::Ar
 }
 $installDir = if ($env:PANDORA_INSTALL_DIR) { $env:PANDORA_INSTALL_DIR } else { Join-Path $HOME ".pandora\bin" }
 $base = if ($env:PANDORA_RELEASE_BASE_URL) { $env:PANDORA_RELEASE_BASE_URL.TrimEnd('/') } elseif ($version -eq "latest") { "https://github.com/$repo/releases/latest/download" } else { "https://github.com/$repo/releases/download/v$($version.TrimStart('v'))" }
+function Add-InstallDirectoryToPath {
+  param([string]$Directory)
+  try {
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($null -eq $userPath) { $userPath = "" }
+    if (($userPath -split ';') -notcontains $Directory) {
+      [Environment]::SetEnvironmentVariable("Path", (($userPath.TrimEnd(';') + ";" + $Directory).Trim(';')), "User")
+      Write-Host "Added $Directory to the user PATH. Open a new terminal."
+    }
+  } catch {
+    Write-Warning "Could not update the user PATH automatically. Add $Directory to PATH manually."
+  }
+}
 $temp = Join-Path ([System.IO.Path]::GetTempPath()) ("pandora-install-" + [Guid]::NewGuid())
 New-Item -ItemType Directory -Path $temp | Out-Null
 try {
@@ -29,6 +42,7 @@ try {
       & $sourceBinary --version
       if ($LASTEXITCODE -ne 0) { throw "Source-built Pandora failed its health check." }
       Copy-Item $sourceBinary (Join-Path $installDir "pandora.exe") -Force
+      Add-InstallDirectoryToPath $installDir
       & (Join-Path $installDir "pandora.exe") --version
       if ($LASTEXITCODE -ne 0) { throw "Source-built Pandora failed its health check." }
       return
@@ -42,11 +56,8 @@ try {
   & $binary --version
   if ($LASTEXITCODE -ne 0) { throw "Downloaded Pandora failed its health check." }
   Copy-Item $binary (Join-Path $installDir "pandora.exe") -Force
-  $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-  if (($userPath -split ';') -notcontains $installDir) {
-    [Environment]::SetEnvironmentVariable("Path", (($userPath.TrimEnd(';') + ";" + $installDir).Trim(';')), "User")
-    Write-Host "Added $installDir to the user PATH. Open a new terminal."
-  }
+  Add-InstallDirectoryToPath $installDir
+
   & (Join-Path $installDir "pandora.exe") --version
   if ($LASTEXITCODE -ne 0) { throw "Installed Pandora failed its health check." }
 } finally {

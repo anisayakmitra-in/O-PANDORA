@@ -36,4 +36,7 @@ $version = (Select-String -Path "Cargo.toml" -Pattern '^version = "([^"]+)"' | S
 $commit = (git rev-parse HEAD).Trim()
 @{ version = $version; target = $assetName; commit = $commit } | ConvertTo-Json | Set-Content ("$asset.metadata.json")
 $commit | Set-Content (Join-Path $OutputDirectory "pandora-build-commit.txt") -NoNewline
-Write-Output "Created $asset, checksum, and metadata."
+python scripts/generate_sbom.py (Join-Path $OutputDirectory "pandora-sbom.cdx.json")
+python scripts/verify_release.py $OutputDirectory --require-cli-platforms windows
+if ($LASTEXITCODE -ne 0) { throw "release verification failed with exit code $LASTEXITCODE" }
+Write-Output "Created $asset, checksum, metadata, and SBOM."
