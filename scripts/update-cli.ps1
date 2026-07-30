@@ -24,7 +24,12 @@ try {
   $backup = "$target.previous"
   if (Test-Path $target) { Copy-Item $target $backup -Force }
   Copy-Item $binary $target -Force
-  try { & $target --version | Out-Null } catch {
+  try {
+    & $target --version | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "updated binary exited with code $LASTEXITCODE"
+    }
+  } catch {
     if (Test-Path $backup) { Move-Item $backup $target -Force }
     throw "Updated binary failed its health check; previous version restored."
   }

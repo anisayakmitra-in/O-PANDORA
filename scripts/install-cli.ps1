@@ -28,6 +28,7 @@ try {
       New-Item -ItemType Directory -Force -Path $installDir | Out-Null
       Copy-Item $sourceBinary (Join-Path $installDir "pandora.exe") -Force
       & (Join-Path $installDir "pandora.exe") --version
+      if ($LASTEXITCODE -ne 0) { throw "Source-built Pandora failed its health check." }
       return
     }
     throw "Pandora release binary unavailable. Set PANDORA_SOURCE_BUILD=1 to build from source."
@@ -43,6 +44,7 @@ try {
     Write-Host "Added $installDir to the user PATH. Open a new terminal."
   }
   & (Join-Path $installDir "pandora.exe") --version
+  if ($LASTEXITCODE -ne 0) { throw "Installed Pandora failed its health check." }
 } finally {
   Remove-Item $temp -Recurse -Force -ErrorAction SilentlyContinue
 }
