@@ -25,7 +25,13 @@ python scripts/validate_docs.py
 python scripts/test_installers.py
 ```
 
-A published artifact must include a checksum, build commit, version, and target. Installers must verify the checksum before replacing an existing binary. Upgrade and uninstall must preserve user configuration and sessions unless the user explicitly requests removal.
+A published artifact must include a checksum, build commit, version, and target. The `CLI release` workflow builds the supported native targets and publishes these assets when a `v*` tag is pushed:
+
+- `pandora-linux-x86_64`
+- `pandora-macos-x86_64` and `pandora-macos-arm64`
+- `pandora-windows-x86_64.exe` and `pandora-windows-arm64.exe`
+
+Each binary is accompanied by a `.sha256` checksum and metadata file. The release job uses the tag commit and does not publish desktop or mobile artifacts. Installers must verify the checksum before replacing an existing binary. Upgrade and uninstall must preserve user configuration and sessions unless the user explicitly requests removal.
 
 Provider credentials belong in the OS credential store or the encrypted headless fallback. They must never appear in artifacts, logs, or examples.
 
