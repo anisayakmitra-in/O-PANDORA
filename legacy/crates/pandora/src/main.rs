@@ -99,7 +99,10 @@ enum Commands {
     /// List registered genes
     Genes,
     /// System diagnostics
-    Doctor,
+    Doctor {
+        #[arg(long)]
+        strict: bool,
+    },
     /// Scaffold new components
     New { kind: String, name: String },
     /// Manage genes
@@ -372,7 +375,12 @@ fn build_args(cmd: &Commands) -> Vec<String> {
         }
         Commands::Harnesses => a.push("harnesses".into()),
         Commands::Genes => a.push("genes".into()),
-        Commands::Doctor => a.push("doctor".into()),
+        Commands::Doctor { strict } => {
+            a.push("doctor".into());
+            if *strict {
+                a.push("--strict".into());
+            }
+        }
         Commands::New { kind, name } => {
             a.push("new".into());
             a.push(kind.clone());
@@ -761,7 +769,7 @@ fn usage() {
     eprintln!("    Runtime:");
     eprintln!("        harnesses             List registered harnesses");
     eprintln!("        genes                 List built-in genes");
-    eprintln!("        doctor                Run health checks");
+    eprintln!("        doctor [--strict]     Run health checks");
     eprintln!("        status                Show runtime status");
     eprintln!("        architecture          Show architecture diagram");
     eprintln!("        keychain <store|get|delete>  Manage credentials");
@@ -1845,7 +1853,7 @@ fn provider_credentials_configured() -> bool {
         .iter()
         .any(|connection| connection.credential_ref.is_some() || connection.api_key.is_some())
 }
-fn cmd_doctor_json() {
+fn cmd_doctor_json(strict: bool) {
     let credentials_dir = sessions_dir()
         .parent()
         .map(|path| path.join("credentials"))
@@ -1909,14 +1917,21 @@ fn cmd_doctor_json() {
         "dependencies": dependencies,
         "sessions": std::fs::read_dir(sessions_dir()).map(|entries| entries.count()).unwrap_or(0),
     });
+    let healthy = checks
+        .iter()
+        .all(|check| check["ok"].as_bool().unwrap_or(false));
     println!(
         "{}",
         serde_json::to_string_pretty(&value).expect("doctor JSON serialization")
     );
+    if strict && !healthy {
+        process::exit(1);
+    }
 }
-fn cmd_doctor(_args: &[String]) {
+fn cmd_doctor(args: &[String]) {
+    let strict = args.iter().any(|arg| arg == "--strict");
     if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
-        cmd_doctor_json();
+        cmd_doctor_json(strict);
         return;
     }
 
@@ -2028,6 +2043,9 @@ fn cmd_doctor(_args: &[String]) {
         if let Ok(v) = env::var(var) {
             println!("  {var}={v}")
         }
+    }
+    if strict && (!creds_exist || !keychain_available || !sessions_dir().exists()) {
+        process::exit(1);
     }
 }
 fn cmd_genes(_args: &[String]) {

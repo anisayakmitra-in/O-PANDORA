@@ -4,6 +4,13 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.16] — 2026-07-30
+
+### Added
+
+- Added `pandora doctor --strict` for automation and CI health gates.
+- Preserved informational success behavior for the default doctor command.
+
 ## [0.5.1-rc.15] — 2026-07-30
 
 ### Added

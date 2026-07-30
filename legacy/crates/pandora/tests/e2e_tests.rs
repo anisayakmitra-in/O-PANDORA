@@ -435,3 +435,16 @@ fn doctor_json_is_machine_readable() {
     }
     assert!(value["dependencies"].is_object());
 }
+#[test]
+fn doctor_strict_returns_failure_for_unhealthy_home() {
+    let home = tmp_dir().join("doctor-strict-home");
+    let output = run_with_home(&["--json", "doctor", "--strict"], &home);
+    assert_eq!(output.status.code(), Some(1));
+    let value: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid strict doctor JSON");
+    assert!(value["checks"].as_array().is_some_and(|checks| {
+        checks
+            .iter()
+            .any(|check| check["ok"] == serde_json::json!(false))
+    }));
+}
