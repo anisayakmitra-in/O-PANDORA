@@ -1154,6 +1154,7 @@ fn handle_slash_command(input: &str) -> SlashResult {
             println!("  /diff            Show git diff");
             println!("  /changes         Show agent changes since session start");
             println!("  /model [name]    Show or change model");
+            println!("  /setup           Configure a provider");
             println!("  /providers       List providers");
             println!("  /harnesses       List harnesses");
             println!("  /genes           List genes");
@@ -1329,6 +1330,10 @@ fn handle_slash_command(input: &str) -> SlashResult {
         }
         "doctor" => {
             cmd_doctor(&[]);
+            SlashResult::Continue
+        }
+        "setup" => {
+            cmd_setup(&["pandora".into(), "setup".into()]);
             SlashResult::Continue
         }
         "clear" => {

@@ -35,7 +35,8 @@ Type anything. Pandora will route it through the runtime:
 | `/status` | Git status |
 | `/diff` | Show working tree changes |
 | `/changes` | Agent-created changes since session start |
-| `/model [name]` | Show or switch model |
+| /model [name] | Show or switch model |
+| /setup | Configure a provider without leaving the shell |
 | `/providers` | List configured LLM connections |
 | `/harnesses` | List installed harnesses |
 | `/genes` | List installed genes |
