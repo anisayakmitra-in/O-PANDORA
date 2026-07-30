@@ -85,6 +85,8 @@ enum Commands {
     Publish,
     /// List available providers
     Providers,
+    /// List built-in tools and capabilities
+    Tools,
     /// List configured connections
     Connections,
     /// Manage connections (add/remove/test)
@@ -361,6 +363,7 @@ fn build_args(cmd: &Commands) -> Vec<String> {
         }
         Commands::Publish => a.push("publish".into()),
         Commands::Providers => a.push("providers".into()),
+        Commands::Tools => a.push("tools".into()),
         Commands::Connections => a.push("connections".into()),
         Commands::Connection {
             action,
@@ -640,6 +643,7 @@ fn dispatch(args: &[String]) {
         Some("uninstall") => cmd_uninstall(args),
         Some("update") => cmd_update(args),
         Some("providers") => cmd_providers(args),
+        Some("tools") => cmd_tools(args),
         Some("connections") => cmd_connections(args),
         Some("connection") => cmd_connection(args),
         Some("harnesses") => cmd_harnesses(args),
@@ -1697,11 +1701,87 @@ fn cmd_providers(_args: &[String]) {
         }
     }
 }
-fn cmd_harnesses(_args: &[String]) {
-    println!("Domain: 6 (coding, design, security, cybersecurity, research, computer-use)");
-    println!("Meta: 1 (coordination)");
-    println!("Source: 5 (memory, planning, execution, governance, identity)");
-    println!("Loaded at runtime via pandora run");
+fn cmd_tools(_args: &[String]) {
+    let tools = pandora_ko_palace::builtin::all();
+    let json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json");
+    if json {
+        let entries = tools
+            .iter()
+            .map(|tool| {
+                serde_json::json!({
+                    "id": tool.id,
+                    "name": tool.name,
+                    "kind": tool.kind,
+                    "version": tool.version,
+                    "description": tool.description,
+                    "capabilities": tool.capabilities,
+                })
+            })
+            .collect::<Vec<_>>();
+        println!(
+            "{}",
+            serde_json::json!({"api_version": "v1", "tools": entries})
+        );
+        return;
+    }
+    println!("{} built-in tools:", tools.len());
+    for tool in tools {
+        println!(
+            "  {:<18} {:<42} [{}]",
+            tool.id,
+            tool.description,
+            tool.capabilities.join(", ")
+        );
+    }
+}
+fn cmd_harnesses(args: &[String]) {
+    let output_json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json")
+        || args
+            .iter()
+            .any(|arg| arg == "--json" || arg == "--output=json");
+    let mut council = pandora_shadow_council::ShadowCouncil::new();
+    pandora_harnesses::register_all(&mut council);
+    let mut entries = council.harnesses.all_entries();
+    entries.sort_by(|(left, _), (right, _)| left.id().cmp(right.id()));
+    if output_json {
+        let harnesses = entries
+            .into_iter()
+            .map(|(harness, state)| {
+                serde_json::json!({
+                    "id": harness.id(),
+                    "name": harness.manifest().name,
+                    "kind": harness.manifest().kind.as_str(),
+                    "version": harness.manifest().version,
+                    "state": format!("{state:?}").to_lowercase(),
+                    "capabilities": harness.manifest().capabilities,
+                    "owned_genes": harness.manifest().owned_genes,
+                    "slash_commands": harness.manifest().slash_commands.iter().map(|command| command.command.clone()).collect::<Vec<_>>(),
+                })
+            })
+            .collect::<Vec<_>>();
+        println!(
+            "{}",
+            serde_json::json!({"api_version": "v1", "harnesses": harnesses})
+        );
+        return;
+    }
+    let summary = council.summary();
+    println!(
+        "{} harnesses: {} source, {} meta, {} domain",
+        summary.total_harnesses, summary.source_count, summary.meta_count, summary.domain_count
+    );
+    for (harness, state) in entries {
+        println!(
+            "  {:<24} {:<7} {:<9} [{}]",
+            harness.id(),
+            harness.kind().as_str(),
+            format!("{state:?}").to_lowercase(),
+            harness.manifest().capabilities.join(", ")
+        );
+        if !harness.manifest().owned_genes.is_empty() {
+            println!("    owns: {}", harness.manifest().owned_genes.join(", "));
+        }
+    }
 }
 fn store_credential(key: &str, value: &str) -> Result<String, String> {
     pandora_secrets::SecretStore::default()
@@ -2092,16 +2172,59 @@ fn cmd_doctor(args: &[String]) {
         process::exit(1);
     }
 }
-fn cmd_genes(_args: &[String]) {
-    let all = pandora_ko_palace::builtin::all();
-    println!("{} built-in genes:", all.len());
-    for p in &all {
-        println!("  {} — {}", p.id, p.description);
+fn cmd_genes(args: &[String]) {
+    let output_json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json")
+        || args
+            .iter()
+            .any(|arg| arg == "--json" || arg == "--output=json");
+    let mut all = pandora_harnesses::preloaded_genes();
+    let domain_ids: std::collections::HashSet<String> =
+        all.iter().map(|gene| gene.id().to_string()).collect();
+    all.extend(
+        pandora_genes::builtin_genes()
+            .into_iter()
+            .filter(|gene| !domain_ids.contains(gene.id())),
+    );
+    if output_json {
+        let genes = all
+            .iter()
+            .map(|gene| {
+                serde_json::json!({
+                    "id": gene.id(),
+                    "name": gene.manifest().name,
+                    "kind": gene.manifest().kind.as_str(),
+                    "version": gene.manifest().version,
+                    "capabilities": gene.manifest().capabilities,
+                    "owner_harness": gene.manifest().owner_harness,
+                })
+            })
+            .collect::<Vec<_>>();
+        println!(
+            "{}",
+            serde_json::json!({"api_version": "v1", "genes": genes})
+        );
+        return;
+    }
+    println!("{} preloaded genes:", all.len());
+    for gene in &all {
+        let owner = gene
+            .manifest()
+            .owner_harness
+            .as_deref()
+            .unwrap_or("standalone");
+        println!(
+            "  {:<24} {:<12} {:<22} [{}]",
+            gene.id(),
+            gene.manifest().kind.as_str(),
+            owner,
+            gene.manifest().capabilities.join(", ")
+        );
     }
 }
 fn cmd_inspect(args: &[String]) {
-    let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let s = sc.read().expect("council lock read").summary();
+    let mut council = pandora_shadow_council::ShadowCouncil::new();
+    pandora_harnesses::register_all(&mut council);
+    let s = council.summary();
     println!("=== Pandora Runtime Inspection ===\n");
     println!("Shadow Council:");
     println!("  Harnesses: {} total", s.total_harnesses);
@@ -2137,14 +2260,57 @@ fn cmd_inspect(args: &[String]) {
 fn cmd_architecture(_args: &[String]) {
     println!("O-PANDORA Architecture\n  Constitutional Services -> Shadow Council -> Harnesses -> Genes -> Providers");
 }
-fn cmd_status(_args: &[String]) {
+fn cmd_status(args: &[String]) {
     let built = pandora_ko_palace::builtin::all().len();
-    let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let s = sc.read().expect("council lock read").summary();
+    let mut council = pandora_shadow_council::ShadowCouncil::new();
+    pandora_harnesses::register_all(&mut council);
+    let s = council.summary();
+    let domain_gene_ids: std::collections::HashSet<String> = pandora_harnesses::preloaded_genes()
+        .iter()
+        .map(|gene| gene.id().to_string())
+        .collect();
+    let catalog_genes = domain_gene_ids.len()
+        + pandora_genes::builtin_genes()
+            .iter()
+            .filter(|gene| !domain_gene_ids.contains(gene.id()))
+            .count();
+    let output_json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json")
+        || args
+            .iter()
+            .any(|arg| arg == "--json" || arg == "--output=json");
+    if output_json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "api_version": "v1",
+                "running": true,
+                "builtin_packages": built,
+                "harnesses": {
+                    "installed": s.total_harnesses,
+                    "enabled": s.enabled,
+                    "source": s.source_count,
+                    "meta": s.meta_count,
+                    "domain": s.domain_count,
+                },
+                "genes": {
+                    "installed": s.genes,
+                    "enabled": s.genes_enabled,
+                    "domain_preloaded": domain_gene_ids.len(),
+                    "catalog": catalog_genes,
+                },
+                "slash_commands": s.slash_commands,
+            })
+        );
+        return;
+    }
     println!("Pandora Runtime: Running");
     println!("  Built-in: {built}");
     println!("  Installed harnesses: {}", s.total_harnesses);
     println!("  Loaded genes: {} / {}", s.genes_enabled, s.genes);
+    println!(
+        "  Gene catalog: {catalog_genes} ({} domain-preloaded)",
+        domain_gene_ids.len()
+    );
     println!("  Commands: {}", s.slash_commands);
 }
 fn cmd_stop(args: &[String]) {

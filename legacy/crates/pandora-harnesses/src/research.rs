@@ -18,6 +18,33 @@ impl ResearchDomainHarness {
             .kind(HarnessKind::Domain)
             .description("Literature review, experiment design, data analysis, paper writing, deep research")
             .capability("research").capability("literature").capability("experiment")
+            .owned_gene("lit-review")
+            .owned_gene("lit-search")
+            .owned_gene("deep-research")
+            .owned_gene("github-research")
+            .owned_gene("experiment-design")
+            .owned_gene("experiment-code")
+            .owned_gene("data-analysis")
+            .owned_gene("figure-gen")
+            .owned_gene("table-gen")
+            .owned_gene("paper-assembly")
+            .owned_gene("paper-section")
+            .owned_gene("related-work")
+            .owned_gene("rebuttal")
+            .owned_gene("novelty")
+            .owned_gene("latex")
+            .owned_gene("research-plan")
+            .owned_gene("idea-gen")
+            .owned_gene("survey-gen")
+            .owned_gene("slides")
+            .owned_gene("math-reason")
+            .owned_gene("symbolic-eq")
+            .owned_gene("atomic-decomp")
+            .owned_gene("citation-mgmt")
+            .owned_gene("backward-trace")
+            .owned_gene("biopython")
+            .owned_gene("anndata")
+            .owned_gene("benchling")
             .build().unwrap() }
     }
 }
@@ -35,6 +62,8 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
+        .capability("research")
+        .owner_harness("research-domain")
         .build()
         .unwrap()
 }
@@ -217,6 +246,37 @@ research_gene!(
     "Benchling integration — lab notebooks, sequence design"
 );
 
+pub fn preloaded_genes() -> Vec<Box<dyn Gene>> {
+    vec![
+        Box::new(LiteratureReviewGene::new()),
+        Box::new(LiteratureSearchGene::new()),
+        Box::new(DeepResearchGene::new()),
+        Box::new(GithubResearchGene::new()),
+        Box::new(ExperimentDesignGene::new()),
+        Box::new(ExperimentCodeGene::new()),
+        Box::new(DataAnalysisGene::new()),
+        Box::new(FigureGenerationGene::new()),
+        Box::new(TableGenerationGene::new()),
+        Box::new(PaperAssemblyGene::new()),
+        Box::new(PaperWritingGene::new()),
+        Box::new(RelatedWorkGene::new()),
+        Box::new(RebuttalWritingGene::new()),
+        Box::new(NoveltyAssessmentGene::new()),
+        Box::new(LatexFormattingGene::new()),
+        Box::new(ResearchPlanningGene::new()),
+        Box::new(IdeaGenerationGene::new()),
+        Box::new(SurveyGenerationGene::new()),
+        Box::new(SlidesGene::new()),
+        Box::new(MathReasoningGene::new()),
+        Box::new(SymbolicEquationGene::new()),
+        Box::new(AtomicDecompGene::new()),
+        Box::new(CitationGene::new()),
+        Box::new(BackwardTraceGene::new()),
+        Box::new(BioPythonGene::new()),
+        Box::new(AnnDataGene::new()),
+        Box::new(BenchlingGene::new()),
+    ]
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -234,5 +294,17 @@ mod tests {
     #[test]
     fn idea_gen() {
         assert!(!IdeaGenerationGene::new().manifest().id.is_empty());
+    }
+    #[test]
+    fn research_owns_declared_genes() {
+        let manifest = ResearchDomainHarness::new().manifest().clone();
+        assert_eq!(manifest.owned_genes.len(), 27);
+        assert_eq!(
+            LiteratureReviewGene::new()
+                .manifest()
+                .owner_harness
+                .as_deref(),
+            Some("research-domain")
+        );
     }
 }

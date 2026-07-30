@@ -28,6 +28,16 @@ impl CodingDomainHarness {
                 .capability("simplify")
                 .capability("audit")
                 .capability("quality")
+                .owned_gene("code-review")
+                .owned_gene("code-audit")
+                .owned_gene("code-debt")
+                .owned_gene("code-gain")
+                .owned_gene("code-simplify")
+                .owned_gene("code-help")
+                .owned_gene("code-style")
+                .owned_gene("code-refactor")
+                .owned_gene("code-test")
+                .owned_gene("code-spike")
                 .build()
                 .unwrap(),
         }
@@ -47,6 +57,9 @@ fn mk(id: &str, kind: GeneKind, desc: &str) -> GeneManifest {
         .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
+        .capability("coding")
+        .capability("code-review")
+        .owner_harness("coding-domain")
         .build()
         .unwrap()
 }
@@ -136,6 +149,20 @@ coding_gene!(
     "Throwaway experiment to validate an idea before building"
 );
 
+pub fn preloaded_genes() -> Vec<Box<dyn Gene>> {
+    vec![
+        Box::new(CodingCodeReviewGene::new()),
+        Box::new(CodeAuditGene::new()),
+        Box::new(CodeDebtGene::new()),
+        Box::new(CodeGainGene::new()),
+        Box::new(CodeSimplifyGene::new()),
+        Box::new(CodeHelpGene::new()),
+        Box::new(CodeStyleGene::new()),
+        Box::new(CodeRefactorGene::new()),
+        Box::new(CodeTestGene::new()),
+        Box::new(CodeSpikeGene::new()),
+    ]
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,6 +181,18 @@ mod tests {
             &CodeSpikeGene::new(),
         ];
         assert_eq!(genes.len(), 10);
+    }
+    #[test]
+    fn coding_owns_declared_genes() {
+        let manifest = CodingDomainHarness::new().manifest().clone();
+        assert_eq!(manifest.owned_genes.len(), 10);
+        assert_eq!(
+            CodingCodeReviewGene::new()
+                .manifest()
+                .owner_harness
+                .as_deref(),
+            Some("coding-domain")
+        );
     }
     #[test]
     fn coding_domain() {

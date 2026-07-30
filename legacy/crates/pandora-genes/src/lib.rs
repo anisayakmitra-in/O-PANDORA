@@ -4,8 +4,35 @@ use pandora_types::evaluation_verdict::EvaluationVerdict;
 use pandora_types::gene::{Gene, GeneKind, GeneManifest, GeneManifestBuilder};
 use std::process::Command;
 
+fn capabilities_for(id: &str) -> &'static [&'static str] {
+    match id {
+        "filesystem" => &["filesystem", "filesystem.read", "filesystem.write"],
+        "shell" => &["shell", "execution"],
+        "git" => &["git", "vcs"],
+        "http" => &["http", "network"],
+        "rust-tool" => &["rust", "cargo", "compilation"],
+        "python-tool" => &["python", "scripting"],
+        "workflow" => &["workflow", "automation"],
+        "docker" | "docker-compose" => &["docker", "containers"],
+        "terraform" => &["terraform", "infrastructure"],
+        "kubectl" => &["kubernetes", "deployment"],
+        "browser" => &["browser", "web"],
+        "sqlite" => &["sqlite", "database"],
+        "github" => &["github", "devops"],
+        "mcp" => &["mcp", "protocol"],
+        "code-review" => &["code-review", "quality"],
+        "benchmark" => &["benchmark", "performance"],
+        "postgres" => &["postgres", "database"],
+        "go" => &["go", "compilation"],
+        "node" => &["node", "javascript"],
+        "java" => &["java", "compilation"],
+        id if id.starts_with("evaluator-") => &["evaluation", "quality"],
+        _ => &[],
+    }
+}
+
 fn mk(id: &str, kind: GeneKind) -> GeneManifest {
-    GeneManifestBuilder::default()
+    let mut builder = GeneManifestBuilder::default()
         .id(id)
         .name(id)
         .kind(kind)
@@ -13,9 +40,11 @@ fn mk(id: &str, kind: GeneKind) -> GeneManifest {
         .author("pandora")
         .description(format!("{id} gene"))
         .permission(format!("{id}.execute"))
-        .metadata("trust_level", "Official")
-        .build()
-        .expect("genes")
+        .metadata("trust_level", "Official");
+    for capability in capabilities_for(id) {
+        builder = builder.capability(*capability);
+    }
+    builder.build().expect("genes")
 }
 
 fn run(bin: &str, args: &[&str]) -> Result<String, pandora_types::PandoraError> {
@@ -634,6 +663,21 @@ mod tests {
         assert!(r.contains("step 1: a") && r.contains("step 2: b"));
     }
     #[test]
+    fn builtins_have_routing_capabilities() {
+        assert!(FilesystemGene::new()
+            .manifest()
+            .capabilities
+            .contains(&"filesystem".to_string()));
+        assert!(RustToolGene::new()
+            .manifest()
+            .capabilities
+            .contains(&"compilation".to_string()));
+        assert!(RustTestsEvaluator::new()
+            .manifest()
+            .capabilities
+            .contains(&"evaluation".to_string()));
+    }
+    #[test]
     fn all_have_ids() {
         let genes: [&dyn Gene; 27] = [
             &FilesystemGene::new(),
@@ -672,3 +716,35 @@ mod tests {
 pub mod code_graph;
 pub mod sandbox_gene;
 pub mod skill_gene;
+/// Construct the built-in genes shipped with Pandora.
+pub fn builtin_genes() -> Vec<Box<dyn Gene>> {
+    vec![
+        Box::new(FilesystemGene::new()),
+        Box::new(ShellGene::new()),
+        Box::new(GitGene::new()),
+        Box::new(HTTPGene::new()),
+        Box::new(RustToolGene::new()),
+        Box::new(PythonToolGene::new()),
+        Box::new(WorkflowGene::new()),
+        Box::new(DockerGene::new()),
+        Box::new(DockerComposeGene::new()),
+        Box::new(TerraformGene::new()),
+        Box::new(KubectlGene::new()),
+        Box::new(BrowserGene::new()),
+        Box::new(SQLiteGene::new()),
+        Box::new(GitHubGene::new()),
+        Box::new(MCPGene::new()),
+        Box::new(CodeReviewGene::new()),
+        Box::new(BenchmarkGene::new()),
+        Box::new(PostgresGene::new()),
+        Box::new(GoGene::new()),
+        Box::new(NodeGene::new()),
+        Box::new(JavaGene::new()),
+        Box::new(RustTestsEvaluator::new()),
+        Box::new(PythonTestsEvaluator::new()),
+        Box::new(OutputMatchEvaluator::new()),
+        Box::new(DockerfileEvaluator::new()),
+        Box::new(ShellCheckEvaluator::new()),
+        Box::new(MarkdownLintEvaluator::new()),
+    ]
+}

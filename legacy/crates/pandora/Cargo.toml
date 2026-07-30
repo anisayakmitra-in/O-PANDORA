@@ -16,6 +16,7 @@ serde.workspace = true
 serde_json.workspace = true
 pandora-api = { path = "../pandora-api" }
 pandora-harnesses = { path = "../pandora-harnesses" }
+pandora-genes = { path = "../pandora-genes" }
 tracing-subscriber.workspace = true
 clap.workspace = true
 reqwest.workspace = true

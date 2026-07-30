@@ -1203,6 +1203,7 @@ dependencies = [
  "clap",
  "keyring",
  "pandora-api",
+ "pandora-genes",
  "pandora-harnesses",
  "pandora-ko-palace",
  "pandora-orchestrator",

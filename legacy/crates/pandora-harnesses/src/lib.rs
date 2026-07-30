@@ -381,8 +381,39 @@ pub fn register_all(sc: &mut ShadowCouncil) {
     ] {
         let _ = sc.enable(id);
     }
+    register_preloaded_genes(sc);
 }
 
+/// Return the domain genes shipped with the preloaded harnesses.
+pub fn preloaded_genes() -> Vec<Box<dyn pandora_types::gene::Gene>> {
+    coding::preloaded_genes()
+        .into_iter()
+        .chain(design::preloaded_genes())
+        .chain(cybersecurity::preloaded_genes())
+        .chain(research::preloaded_genes())
+        .chain(computer_use::preloaded_genes())
+        .collect()
+}
+/// Install and enable the domain genes shipped with the preloaded harnesses.
+///
+/// Existing IDs win, so user-installed replacements are not overwritten.
+pub fn register_preloaded_genes(sc: &mut ShadowCouncil) -> usize {
+    let genes = preloaded_genes().into_iter();
+    let mut installed = 0;
+
+    for gene in genes {
+        let id = gene.id().to_string();
+        if sc.genes.get(&id).is_some() {
+            continue;
+        }
+        if sc.install_gene(gene).is_ok() {
+            let _ = sc.enable_gene(&id);
+            installed += 1;
+        }
+    }
+
+    installed
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -427,6 +458,48 @@ mod tests {
         let mut sc = ShadowCouncil::new();
         register_all(&mut sc);
         assert_eq!(sc.summary().source_count, 5);
+    }
+    #[test]
+    fn register_all_installs_preloaded_domain_genes() {
+        let mut sc = ShadowCouncil::new();
+        register_all(&mut sc);
+        assert_eq!(sc.summary().genes, 71);
+        assert_eq!(sc.summary().genes_enabled, 71);
+    }
+    #[test]
+    fn routes_design_intent_to_a_domain_gene() {
+        let mut sc = ShadowCouncil::new();
+        register_all(&mut sc);
+        let route = sc
+            .route(pandora_types::intent_router::CapabilityRequest {
+                intent: "design a user interface".into(),
+                required: Vec::new(),
+                preferred: Vec::new(),
+                budget: None,
+                policy: None,
+            })
+            .expect("design route");
+        assert_eq!(route.harness_id, "design-domain");
+        assert!(route.gene_id.is_some());
+    }
+    #[test]
+    fn routes_security_intent_to_a_domain_gene() {
+        let mut sc = ShadowCouncil::new();
+        register_all(&mut sc);
+        let route = sc
+            .route(pandora_types::intent_router::CapabilityRequest {
+                intent: "perform a security vulnerability scan".into(),
+                required: vec!["security-audit".into()],
+                preferred: vec!["pentest".into()],
+                budget: None,
+                policy: Some(pandora_types::intent_router::RoutingPolicy {
+                    owner_harness: Some("cybersecurity-domain".into()),
+                    ..Default::default()
+                }),
+            })
+            .expect("security route");
+        assert_eq!(route.harness_id, "cybersecurity-domain");
+        assert!(route.gene_id.is_some());
     }
     #[test]
     fn execution_spawns() {

@@ -26,6 +26,24 @@ impl CybersecurityDomainHarness {
                 .capability("security")
                 .capability("pentest")
                 .capability("compliance")
+                .owned_gene("vuln-assessment")
+                .owned_gene("api-auth-test")
+                .owned_gene("heap-spray-analysis")
+                .owned_gene("win-reg-artifact")
+                .owned_gene("phish-simulation")
+                .owned_gene("container-escape")
+                .owned_gene("ransom-killswitch")
+                .owned_gene("malware-reverse")
+                .owned_gene("priv-esc")
+                .owned_gene("ad-pentest")
+                .owned_gene("k8s-pentest")
+                .owned_gene("clickjack-test")
+                .owned_gene("arp-spoof")
+                .owned_gene("dmarc-email")
+                .owned_gene("mfa-config")
+                .owned_gene("stix-sharing")
+                .owned_gene("nerc-compliance")
+                .owned_gene("k8s-net-policy")
                 .build()
                 .unwrap(),
         }
@@ -45,6 +63,9 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
+        .capability("security")
+        .capability("security-audit")
+        .owner_harness("cybersecurity-domain")
         .build()
         .unwrap()
 }
@@ -170,6 +191,28 @@ cyber_gene!(
     "Kubernetes network policy implementation"
 );
 
+pub fn preloaded_genes() -> Vec<Box<dyn Gene>> {
+    vec![
+        Box::new(VulnAssessmentGene::new()),
+        Box::new(ApiAuthTestGene::new()),
+        Box::new(HeapSprayGene::new()),
+        Box::new(WinRegArtifactGene::new()),
+        Box::new(PhishSimGene::new()),
+        Box::new(ContainerEscapeGene::new()),
+        Box::new(RansomKillGene::new()),
+        Box::new(MalwareReGene::new()),
+        Box::new(PrivEscGene::new()),
+        Box::new(ActiveDirPentestGene::new()),
+        Box::new(K8sPentestGene::new()),
+        Box::new(ClickjackGene::new()),
+        Box::new(ArpSpoofGene::new()),
+        Box::new(DmarcGene::new()),
+        Box::new(MfaConfigGene::new()),
+        Box::new(StixGene::new()),
+        Box::new(NercGene::new()),
+        Box::new(K8sNetPolicyGene::new()),
+    ]
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,5 +226,17 @@ mod tests {
     #[test]
     fn gene_count() {
         assert!(!VulnAssessmentGene::new().manifest().id.is_empty());
+    }
+    #[test]
+    fn cybersecurity_owns_declared_genes() {
+        let manifest = CybersecurityDomainHarness::new().manifest().clone();
+        assert_eq!(manifest.owned_genes.len(), 18);
+        assert_eq!(
+            VulnAssessmentGene::new()
+                .manifest()
+                .owner_harness
+                .as_deref(),
+            Some("cybersecurity-domain")
+        );
     }
 }

@@ -27,6 +27,15 @@ impl ComputerUseHarness {
                 .capability("click")
                 .capability("typing")
                 .capability("context")
+                .owned_gene("ghost-context")
+                .owned_gene("ghost-click")
+                .owned_gene("ghost-type")
+                .owned_gene("ghost-screenshot")
+                .owned_gene("ghost-find")
+                .owned_gene("ghost-read")
+                .owned_gene("ghost-scroll")
+                .owned_gene("ghost-hotkey")
+                .owned_gene("ghost-inspect")
                 .build()
                 .unwrap(),
         }
@@ -51,6 +60,9 @@ fn mk(id: &str, desc: &str) -> GeneManifest {
         .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(desc)
+        .capability("computer-use")
+        .capability("screenshot")
+        .owner_harness("computer-use")
         .build()
         .unwrap()
 }
@@ -126,6 +138,19 @@ ghost_gene!(
     "Full metadata about one element"
 );
 
+pub fn preloaded_genes() -> Vec<Box<dyn Gene>> {
+    vec![
+        Box::new(GhostContextGene::new()),
+        Box::new(GhostClickGene::new()),
+        Box::new(GhostTypeGene::new()),
+        Box::new(GhostScreenshotGene::new()),
+        Box::new(GhostFindGene::new()),
+        Box::new(GhostReadGene::new()),
+        Box::new(GhostScrollGene::new()),
+        Box::new(GhostHotkeyGene::new()),
+        Box::new(GhostInspectGene::new()),
+    ]
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -136,5 +161,14 @@ mod tests {
     #[test]
     fn gene_id() {
         assert_eq!(GhostClickGene::new().manifest().id, "ghost-click");
+    }
+    #[test]
+    fn computer_use_owns_declared_genes() {
+        let manifest = ComputerUseHarness::new().manifest().clone();
+        assert_eq!(manifest.owned_genes.len(), 9);
+        assert_eq!(
+            GhostClickGene::new().manifest().owner_harness.as_deref(),
+            Some("computer-use")
+        );
     }
 }

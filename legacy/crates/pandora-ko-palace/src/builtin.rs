@@ -57,7 +57,7 @@ pub fn all() -> Vec<PackageInfo> {
             &["code-review", "quality"],
         ),
         pkg(
-            "browser",
+            "browser-playwright",
             "Headless browser via playwright",
             &["browser", "web", "automation"],
         ),
@@ -102,4 +102,17 @@ pub fn all() -> Vec<PackageInfo> {
 
 pub fn find(id: &str) -> Option<PackageInfo> {
     all().into_iter().find(|p| p.id == id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::all;
+    use std::collections::HashSet;
+
+    #[test]
+    fn builtin_package_ids_are_unique() {
+        let packages = all();
+        let ids: HashSet<_> = packages.iter().map(|package| package.id.as_str()).collect();
+        assert_eq!(ids.len(), packages.len());
+    }
 }

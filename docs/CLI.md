@@ -19,6 +19,7 @@ The installed binary exposes these command groups:
 |------|----------|
 | Execution | `run`, `route`, `execute`, `resume`, `replay`, `trace`, `inspect`, `explain`, `timeline`, `status`, `stop`, `export`, `overnight` |
 | Providers | `setup`/`init`, `providers`, `model`, `connections`, `connection`, `benchmark`, `profiles` |
+| Discovery | `tools`, `harnesses`, `genes`, `profiles` |
 | Components | `harnesses`, `genes`, `gene`, `harness`, `service`, `new` |
 | Governance | `governance`, `deny`, `approve`, `reject`, `rsi` |
 | Packages | `install`, `uninstall`, `update`, `list`, `info`, `search`, `publish`, `package`, `artifacts`, `keygen`, `sign`, `verify` |
@@ -66,6 +67,16 @@ Use `pandora --json ...` in scripts. Commands return non-zero status on invalid 
 
 `pandora run --model NAME ...` overrides the selected model for one task. Use a profile when the provider, policy, and execution settings should be reused.
 
+## `pandora tools`
+
+List the built-in tool packages and the capabilities they advertise. Use JSON when an integration needs stable fields:
+
+```text
+pandora tools
+pandora --json tools
+```
+
+The list comes from the K-O-Palace package catalog; it is not a second tool registry.
 ## Configuration
 
 Inspect effective configuration or update a supported persisted value:
@@ -225,6 +236,10 @@ Explain why decisions were made.
 
 Show chronological event timeline.
 
+### `pandora status`
+
+Show the live runtime registry. `Loaded genes` counts the 71 domain genes installed in the runtime; `Gene catalog` counts all 97 unique built-in genes, including standalone generic genes. Use `pandora --json status` for stable automation output.
+
 ## Provider commands
 
 ### `pandora providers`
@@ -333,3 +348,11 @@ Use the platform helper to download, verify, health-check, and replace the CLI. 
 PANDORA_VERSION=<published-version> bash scripts/update-cli.sh
 powershell -ExecutionPolicy Bypass -File scripts/update-cli.ps1
 ```
+
+## `pandora harnesses`
+
+List the preloaded harnesses from the runtime registry, including role, state, capabilities, owned genes, and slash commands. Use `pandora --json harnesses` for integrations.
+
+## `pandora genes`
+
+List the 97 unique preloaded genes: domain genes owned by their harness plus generic genes from `pandora-genes`. The coding-domain implementation owns the shared `code-review` ID. Use `pandora --json genes` for integrations.

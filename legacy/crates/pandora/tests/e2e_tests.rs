@@ -171,6 +171,21 @@ fn config_can_get_and_set_values() {
 }
 
 #[test]
+fn tools_list_builtins() {
+    let output = run(&["tools"]).0;
+    assert_success(&output, &["tools"]);
+    assert!(String::from_utf8_lossy(&output.stdout).contains("built-in tools"));
+
+    let json = run_with_home_and_env(&["--json", "tools"], &tmp_dir().join("tools"), &[]);
+    assert_success(&json, &["--json", "tools"]);
+    let value: serde_json::Value = serde_json::from_slice(&json.stdout).expect("tools JSON");
+    assert_eq!(value["api_version"], "v1");
+    assert!(value["tools"]
+        .as_array()
+        .is_some_and(|items| !items.is_empty()));
+}
+
+#[test]
 fn version_shows_hash() {
     let (output, _) = run(&["--version"]);
     let text = String::from_utf8_lossy(&output.stdout);
@@ -496,4 +511,39 @@ fn model_command_persists_default_model() {
     let value: serde_json::Value =
         serde_json::from_slice(&listed.stdout).expect("valid model JSON");
     assert_eq!(value["default_model"], "design-model");
+}
+
+#[test]
+fn status_json_reports_registry() {
+    let home = tmp_dir().join("status-json");
+    let output = run_with_home_and_env(&["status"], &home, &[("PANDORA_OUTPUT", "json")]);
+    assert_success(&output, &["status"]);
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout).expect("status JSON");
+    assert_eq!(value["api_version"], "v1");
+    assert_eq!(value["harnesses"]["installed"], 12);
+    assert_eq!(value["genes"]["installed"], 71);
+    assert_eq!(value["genes"]["enabled"], 71);
+    assert_eq!(value["genes"]["domain_preloaded"], 71);
+    assert_eq!(value["genes"]["catalog"], 97);
+}
+#[test]
+fn preloaded_harnesses_and_genes_are_discoverable() {
+    let home = tmp_dir().join("preloaded");
+    let harnesses = run_with_home(&["--json", "harnesses"], &home);
+    assert_success(&harnesses, &["--json", "harnesses"]);
+    let harnesses: serde_json::Value =
+        serde_json::from_slice(&harnesses.stdout).expect("harness JSON");
+    assert_eq!(harnesses["api_version"], "v1");
+    assert!(harnesses["harnesses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|entry| entry["owned_genes"].is_array()));
+    assert_eq!(harnesses["harnesses"].as_array().map(Vec::len), Some(12));
+
+    let genes = run_with_home(&["--json", "genes"], &home);
+    assert_success(&genes, &["--json", "genes"]);
+    let genes: serde_json::Value = serde_json::from_slice(&genes.stdout).expect("gene JSON");
+    assert_eq!(genes["api_version"], "v1");
+    assert_eq!(genes["genes"].as_array().map(Vec::len), Some(97));
 }

@@ -71,7 +71,7 @@ Meta harnesses answer: **how do components work together?**
 
 A Domain Harness packages an opinionated way to work in one area. It advertises capabilities, owns slash commands, and may bundle genes and workflows.
 
-Built-ins include coding, design, security, cybersecurity, research, and computer-use harnesses.
+Built-ins include coding, design, security, cybersecurity, research, and computer-use harnesses. Their 71 domain-specific genes are installed and enabled with their owning harness. Generic genes remain independently available through `pandora-genes`; duplicate IDs are resolved in favor of the owning domain implementation.
 
 A domain harness may run in agent mode, but it remains `HarnessKind::Domain`. It does not create a parallel runtime hierarchy.
 

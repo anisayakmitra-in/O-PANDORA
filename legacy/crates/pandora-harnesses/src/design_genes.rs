@@ -16,6 +16,8 @@ fn g(id: &str, name: &str, kind: GeneKind) -> GeneManifest {
         .version(env!("CARGO_PKG_VERSION"))
         .author("pandora")
         .description(format!("{name} design gene"))
+        .capability("design")
+        .owner_harness("design-domain")
         .build()
         .unwrap_or_else(|_| {
             // Fallback: construct a minimal valid manifest.
@@ -28,6 +30,8 @@ fn g(id: &str, name: &str, kind: GeneKind) -> GeneManifest {
                 .version(env!("CARGO_PKG_VERSION"))
                 .author("pandora")
                 .description("design gene")
+                .capability("design")
+                .owner_harness("design-domain")
                 .build()
                 .expect("fallback manifest must always build")
         })

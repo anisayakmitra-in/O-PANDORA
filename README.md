@@ -84,6 +84,7 @@ pandora run "..."   Execute a task
 pandora             Start the interactive shell
 pandora sessions    List or resume sessions
 pandora config get   Inspect effective configuration
+pandora tools        List built-in tools and capabilities
 pandora providers   Inspect provider connections
 pandora harnesses   List available harnesses
 pandora genes       List available genes
