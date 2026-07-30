@@ -11,9 +11,7 @@ Pandora CLI has source-build support on Windows, macOS, and Linux. Release artif
 
 Pandora Desktop has Windows, macOS, and Linux build targets. Signed packages are pending publication and clean-machine verification.
 
-WSL can run the Linux CLI, but it is not a separately packaged target. WSL becomes an official supported environment only after a clean-environment test is added.
-
-No packaged release is published yet. WSL is supported only as a Linux CLI environment; it is not a separate packaged target.
+WSL can run the Linux CLI, but it is not a separately packaged target. No packaged release is published yet.
 
 ## Publication rule
 

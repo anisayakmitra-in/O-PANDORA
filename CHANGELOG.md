@@ -134,7 +134,7 @@ This release candidate consolidates the CLI, desktop control plane, and release 
 
 - Runtime architecture: ExecutionPipeline, ExecutionController, ShadowCouncil
 - 13 built-in harnesses: 5 source, 1 meta, 7 domain (coding, design, security,
-  research, computer-use, mobile-use)
+  research, computer-use, application-use)
 - 21 built-in genes across filesystem, git, docker, browser, and shell domains
 - 72 type system modules in pandora-types crate
 - Dynamic Model Registry — no hardcoded model lists

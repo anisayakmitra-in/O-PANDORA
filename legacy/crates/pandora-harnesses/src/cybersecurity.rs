@@ -85,7 +85,7 @@ cyber_gene!(
 cyber_gene!(
     ApiAuthTestGene,
     "api-auth-test",
-    "Mobile API authentication testing"
+    "API authentication testing"
 );
 cyber_gene!(
     HeapSprayGene,
