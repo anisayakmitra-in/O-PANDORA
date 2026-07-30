@@ -1,6 +1,6 @@
 # O-PANDORA
 
-[![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.1)
+[![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.5)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
 An open-source AI development environment with inspectable execution and explicit approval boundaries.
@@ -149,7 +149,6 @@ Apache 2.0 — see [LICENSE](LICENSE)
 
 | Surface | Windows | macOS | Linux | WSL | Android / Termux | Play Store |
 |---|---|---|---|---|---|---|
-| `pandora` CLI | source build; release artifact pending | source build; release artifact pending | source build; release artifact pending | Linux environment; separately unverified | paused | n/a |
-| Pandora Desktop | source build; packaged release pending | CI/package target; not locally verified | CI/package target; not locally verified | not supported as a desktop target | paused | not released |
-
-Mobile and Termux support are paused and are not advertised as available products. A successful Rust workspace build does not prove that a packaged desktop or Android release exists. See [the release contract](docs/RELEASE_CONTRACT.md) for the gates required before changing this table.
+| pandora CLI | source build; RC artifact not published | source build; RC artifact not published | source build; RC artifact not published | Linux CLI environment; no separate artifact | paused | n/a |
+| Pandora Desktop | source build; signed package pending | Tauri target; package not published | Tauri target; package not published | not a desktop target | paused | not released |
+Mobile and Termux support are paused and are not advertised as available products. Termux would be a future CLI-only path; it cannot run the desktop client. A Play Store release would require a separate signed Android client and compliance review. WSL can run the Linux CLI, but it is not a separate packaged target. A successful Rust workspace build does not prove that a packaged desktop or Android release exists. See [Platform support](docs/PLATFORMS.md) and [the release contract](docs/RELEASE_CONTRACT.md) for the publication gates required before changing this table.

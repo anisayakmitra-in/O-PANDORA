@@ -4,25 +4,47 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
-## [0.5.1-rc.1] — 2026-07-30
+## [0.5.1-rc.5] — 2026-07-30
 
-### Added
+This release candidate consolidates the CLI, desktop control plane, and release pipeline. It does not claim stable or mobile availability.
 
-- Shared authenticated runtime API for CLI, desktop, and remote nodes.
-- Secure provider credential storage with legacy migration.
-- Architecture-aware CLI release scripts with checksums and build metadata.
-- Per-task model selection with `pandora run --model`.
+### Highlights
 
-### Changed
+- Adds one authenticated runtime API used by the CLI, desktop, and remote-node clients.
+- Adds secure provider credential storage with legacy-key migration.
+- Adds architecture-aware CLI release assets, checksums, build metadata, and verification.
+- Adds pandora run --model NAME for per-task model selection.
+- Keeps K-O-Palace as a separate registry service and removes stale in-repository Palace CI.
 
-- Consolidated generic, provider, and remote credential paths in `pandora-secrets`.
-- Paused mobile and Termux packaging until desktop release gates pass.
-- Renamed the package registry integration to K-O-Palace.
+### CLI
 
-### Removed
+- Adds setup, doctor, JSON output, sessions, profiles, remote nodes, credentials, updates, and uninstall flows to the documented command surface.
+- Preserves source installation as a fallback while release artifacts remain gated by CI and signing.
+- Reports credentials configured through secure keychain references without printing secret values.
 
-- Unreachable archive command and unused internal artifact/MCP types.
+### Desktop
 
+- Keeps the Tauri desktop client on the shared authenticated runtime API.
+- Retains the bento-grid and glass visual system, provider setup, session views, and runtime diagnostics.
+- Builds target Windows, macOS, and Linux desktop bundles; signed publication still requires repository secrets.
+
+### Release engineering
+
+- Tagged releases build CLI and desktop artifacts in separate jobs and publish them together.
+- Release candidates are marked as prereleases.
+- Removes duplicate CLI release publishing and a stale workflow that treated the main repository as K-O-Palace.
+
+### Platforms and limitations
+
+- Windows, macOS, and Linux are the active CLI and desktop targets.
+- WSL is a Linux CLI environment, not a separate desktop target.
+- Termux and Android packaging remain paused and are not included in this candidate.
+- No Play Store package is available.
+
+### Validation
+
+- Local formatting, workspace checks, Clippy, tests, repository validation, documentation validation, and frontend build passed before tagging.
+- Stable release remains blocked until GitHub produces signed artifacts and clean-machine install, upgrade, and removal checks pass.
 ## [0.5.0] � 2026-07-28
 
 ### Changed
