@@ -4,6 +4,17 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.14] — 2026-07-30
+
+This release candidate fixes explicit CLI model precedence. It does not claim stable availability.
+
+### Changes
+
+- Makes `pandora run --model NAME` override the profile execution model while retaining the profile connection.
+
+### Validation
+
+- Targeted CLI tests, clippy, documentation validation, and diff checks passed.
 ## [0.5.1-rc.13] — 2026-07-30
 
 This release candidate adds role-aware execution selection for domain profiles. It does not claim stable availability.
