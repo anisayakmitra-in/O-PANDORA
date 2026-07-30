@@ -13,13 +13,21 @@ else
   bash "$TMP_INSTALLER"
 fi
 
-if command -v pandora >/dev/null 2>&1; then
-  HERMES_DIR="${HOME}/.hermes"
-  CLAUDE_DIR="${HOME}/.claude"
-  OPENCODE_DIR="${HOME}/.config/opencode"
-  [[ -d "$HERMES_DIR" ]] && pandora import hermes 2>/dev/null || true
-  [[ -d "$CLAUDE_DIR" ]] && pandora import claude-code 2>/dev/null || true
-  [[ -d "$OPENCODE_DIR" ]] && pandora import opencode 2>/dev/null || true
-  pandora setup 2>/dev/null || pandora doctor 2>/dev/null || true
-  printf '\nPandora is ready. Try: pandora run "say hello"\n'
+INSTALL_DIR="${PANDORA_INSTALL_DIR:-$HOME/.local/bin}"
+PANDORA_BIN="$INSTALL_DIR/pandora"
+if [[ ! -x "$PANDORA_BIN" ]]; then
+  PANDORA_BIN="$(command -v pandora || true)"
 fi
+if [[ -z "$PANDORA_BIN" || ! -x "$PANDORA_BIN" ]]; then
+  echo "Pandora was installed, but the binary could not be located." >&2
+  exit 1
+fi
+
+"$PANDORA_BIN" --version
+if ! "$PANDORA_BIN" doctor; then
+  printf '\nPandora installed, but doctor reported issues. Run `pandora doctor --strict` for details.\n' >&2
+  exit 1
+fi
+
+printf '\nPandora is installed at %s.\n' "$PANDORA_BIN"
+printf 'Next steps:\n  pandora setup\n  pandora run "inspect this project"\n'

@@ -21,5 +21,10 @@ class InstallerContractTests(unittest.TestCase):
         )
 
 
+    def test_wrapper_does_not_start_setup_or_import(self):
+        script = (ROOT / "scripts" / "install.sh").read_text(encoding="utf-8")
+        self.assertNotIn("pandora setup 2>/dev/null", script)
+        self.assertNotIn("pandora import", script)
+        self.assertIn('"$PANDORA_BIN" doctor', script)
 if __name__ == "__main__":
     unittest.main()
