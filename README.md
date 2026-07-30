@@ -83,6 +83,7 @@ pandora doctor      Check installation and runtime health
 pandora run "..."   Execute a task
 pandora             Start the interactive shell
 pandora sessions    List or resume sessions
+pandora config get   Inspect effective configuration
 pandora providers   Inspect provider connections
 pandora harnesses   List available harnesses
 pandora genes       List available genes

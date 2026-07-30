@@ -112,8 +112,15 @@ enum Commands {
     Harness { action: String, id: Option<String> },
     /// Manage services
     Service { action: String, id: Option<String> },
-    /// Show configuration
-    Config,
+    /// Show or update local configuration
+    Config {
+        /// Operation: get or set
+        action: Option<String>,
+        /// Configuration key
+        key: Option<String>,
+        /// Configuration value for set
+        value: Option<String>,
+    },
     /// Store or retrieve encrypted credentials
     Keychain {
         action: String,
@@ -411,7 +418,18 @@ fn build_args(cmd: &Commands) -> Vec<String> {
                 a.push(i.clone());
             }
         }
-        Commands::Config => a.push("config".into()),
+        Commands::Config { action, key, value } => {
+            a.push("config".into());
+            if let Some(item) = action {
+                a.push(item.clone());
+            }
+            if let Some(item) = key {
+                a.push(item.clone());
+            }
+            if let Some(item) = value {
+                a.push(item.clone());
+            }
+        }
         Commands::Keychain { action, key, value } => {
             a.push("keychain".into());
             a.push(action.clone());
@@ -2597,8 +2615,118 @@ fn cmd_service(args: &[String]) {
         }
     }
 }
-fn cmd_config(_args: &[String]) {
-    println!("Configuration\n  PG_HOST=localhost  GO_CMD=go  NODE_CMD=node  JAVA_CMD=java");
+fn cmd_config(args: &[String]) {
+    use pandora_types::config::{config_dir, PandoraConfig};
+
+    let json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json");
+    let action = args.get(2).map(String::as_str).unwrap_or("get");
+    let path = config_dir().join("config.toml");
+    match action {
+        "get" => {
+            let config = PandoraConfig::load().with_env();
+            let key = args.get(3).map(String::as_str);
+            let values = serde_json::json!({
+                "default_provider": config.default_provider,
+                "default_model": config.default_model,
+                "provider_policy": config.provider_policy,
+                "max_attempts": config.max_attempts,
+                "sandbox_level": config.sandbox_level,
+                "max_tokens": config.max_tokens,
+                "registry_url": config.registry_url,
+                "persist_events": config.persist_events,
+                "deny_shell_patterns": config.deny_shell_patterns,
+            });
+            if let Some(key) = key {
+                let Some(value) = values.get(key) else {
+                    eprintln!("Unknown configuration key: {key}");
+                    process::exit(2);
+                };
+                if json {
+                    println!("{}", serde_json::json!({"key": key, "value": value}));
+                } else {
+                    println!("{key} = {value}");
+                }
+            } else if json {
+                println!("{}", serde_json::json!({"path": path, "values": values}));
+            } else {
+                println!("Configuration: {}", path.display());
+                for (key, value) in values.as_object().expect("configuration object") {
+                    println!("{key} = {value}");
+                }
+            }
+        }
+        "set" => {
+            let (Some(key), Some(value)) = (args.get(3), args.get(4)) else {
+                eprintln!("Usage: pandora config set <key> <value>");
+                process::exit(2);
+            };
+            let mut config = PandoraConfig::load();
+            let result = match key.as_str() {
+                "default_provider" => {
+                    config.default_provider = Some(value.clone());
+                    Ok(())
+                }
+                "default_model" => {
+                    config.default_model = Some(value.clone());
+                    Ok(())
+                }
+                "provider_policy" => {
+                    config.provider_policy = Some(value.clone());
+                    Ok(())
+                }
+                "registry_url" => {
+                    config.registry_url = Some(value.clone());
+                    Ok(())
+                }
+                "max_attempts" => value
+                    .parse::<u32>()
+                    .map(|parsed| config.max_attempts = Some(parsed))
+                    .map_err(|_| "must be an unsigned integer"),
+                "sandbox_level" => value
+                    .parse::<u32>()
+                    .map(|parsed| config.sandbox_level = Some(parsed))
+                    .map_err(|_| "must be an unsigned integer"),
+                "max_tokens" => value
+                    .parse::<usize>()
+                    .map(|parsed| config.max_tokens = Some(parsed))
+                    .map_err(|_| "must be an unsigned integer"),
+                "persist_events" => value
+                    .parse::<bool>()
+                    .map(|parsed| config.persist_events = Some(parsed))
+                    .map_err(|_| "must be true or false"),
+                "deny_shell_patterns" => {
+                    config.deny_shell_patterns = value
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|item| !item.is_empty())
+                        .map(ToOwned::to_owned)
+                        .collect();
+                    Ok(())
+                }
+                _ => Err("unknown configuration key"),
+            };
+            if let Err(error) = result {
+                eprintln!("Could not set {key}: {error}");
+                process::exit(2);
+            }
+            if let Err(error) = config.save() {
+                eprintln!("Could not save configuration: {error}");
+                process::exit(1);
+            }
+            if json {
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "updated", "key": key, "path": path})
+                );
+            } else {
+                println!("Updated {key} in {}", path.display());
+            }
+        }
+        _ => {
+            eprintln!("Usage: pandora config [get [key]|set <key> <value>]");
+            process::exit(2);
+        }
+    }
 }
 fn cmd_graph(args: &[String]) {
     if args.len() >= 3 {

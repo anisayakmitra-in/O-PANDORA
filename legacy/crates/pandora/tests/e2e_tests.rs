@@ -154,6 +154,23 @@ fn help_shows_usage() {
 }
 
 #[test]
+fn config_can_get_and_set_values() {
+    let home = tmp_dir().join("config");
+    let set = run_with_home(&["config", "set", "default_model", "test-model"], &home);
+    assert_success(&set, &["config", "set", "default_model", "test-model"]);
+
+    let get = run_with_home(&["config", "get", "default_model"], &home);
+    assert_success(&get, &["config", "get", "default_model"]);
+    assert!(String::from_utf8_lossy(&get.stdout).contains("test-model"));
+
+    let json = run_with_home_and_env(&["--json", "config", "get", "default_model"], &home, &[]);
+    assert_success(&json, &["--json", "config", "get", "default_model"]);
+    let value: serde_json::Value = serde_json::from_slice(&json.stdout).expect("config JSON");
+    assert_eq!(value["key"], "default_model");
+    assert_eq!(value["value"], "test-model");
+}
+
+#[test]
 fn version_shows_hash() {
     let (output, _) = run(&["--version"]);
     let text = String::from_utf8_lossy(&output.stdout);

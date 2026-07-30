@@ -66,6 +66,18 @@ Use `pandora --json ...` in scripts. Commands return non-zero status on invalid 
 
 `pandora run --model NAME ...` overrides the selected model for one task. Use a profile when the provider, policy, and execution settings should be reused.
 
+## Configuration
+
+Inspect effective configuration or update a supported persisted value:
+
+```text
+pandora config get
+pandora config get default_model
+pandora config set default_model deepseek-chat
+pandora --json config get default_model
+```
+
+Supported keys are `default_provider`, `default_model`, `provider_policy`, `max_attempts`, `sandbox_level`, `max_tokens`, `registry_url`, `persist_events`, and `deny_shell_patterns` (comma-separated). Provider credentials are managed by `pandora setup`, never by `config set`.
 ## Shell completion
 
 Generate a completion script from the installed CLI.
