@@ -3,10 +3,12 @@
 Pandora is a governed Rust runtime with three clients:
 
 ```text
-pandora CLI ??
-pandora app ???> pandora-api ?> PandoraRuntime
-HTTP client ??                         ?
-                         council ? provider ? genes
+Pandora CLI ---------+
+Pandora desktop -----+--> pandora-api ---> PandoraRuntime
+HTTP clients --------+                         |
+                                                 +--> ShadowCouncil
+                                                 +--> providers
+                                                 +--> genes
 ```
 
 The CLI and desktop app are clients. `pandora-orchestrator` is the execution engine. `pandora-types` owns shared contracts. K-O-Palace is a separate registry service.
@@ -15,14 +17,30 @@ The CLI and desktop app are clients. `pandora-orchestrator` is the execution eng
 
 ```text
 request
-  ? plan
-  ? capability route
-  ? provider selection
-  ? model/tool loop
-  ? policy and approval checks
-  ? gene execution
-  ? evaluation
-  ? session, trace, knowledge, and audit records
+  |
+  v
+plan
+  |
+  v
+capability route
+  |
+  v
+provider selection
+  |
+  v
+model/tool loop
+  |
+  v
+policy and approval checks
+  |
+  v
+gene execution
+  |
+  v
+evaluation
+  |
+  v
+session, trace, knowledge, and audit records
 ```
 
 `PandoraRuntime::run` in `legacy/crates/pandora-orchestrator` owns this sequence. The API and desktop use the same runtime instead of maintaining a second engine.
