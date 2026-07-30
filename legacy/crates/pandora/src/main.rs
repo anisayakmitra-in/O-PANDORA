@@ -2775,6 +2775,7 @@ fn cmd_explain(args: &[String]) {
 }
 
 fn cmd_setup(args: &[String]) {
+    use std::io::IsTerminal;
     let flag_value = |flag: &str| {
         args.iter()
             .position(|value| value == flag)
@@ -2895,6 +2896,75 @@ fn cmd_setup(args: &[String]) {
         println!();
     }
 
+    if cr.connections.is_empty() && std::io::stdin().is_terminal() {
+        println!();
+        println!("  Select a provider:");
+        println!("  1. Local Ollama");
+        println!("  2. OpenAI");
+        println!("  3. OpenRouter");
+        println!("  4. OpenAI-compatible endpoint");
+        println!("  5. DeepSeek");
+        println!("  6. Skip");
+        let choice = read_input("  Provider [1-6]: ");
+        let (provider, default_endpoint) = match choice.trim() {
+            "1" => ("ollama", "http://localhost:11434"),
+            "2" => ("openai", "https://api.openai.com/v1"),
+            "3" => ("openrouter", "https://openrouter.ai/api/v1"),
+            "4" => ("custom", ""),
+            "5" => ("deepseek", "https://api.deepseek.com/v1"),
+            "6" | "" => {
+                println!("Setup skipped. Add a connection with `pandora connection add`.");
+                return;
+            }
+            _ => {
+                eprintln!("Unknown provider choice. Setup skipped.");
+                return;
+            }
+        };
+        let endpoint_prompt = if default_endpoint.is_empty() {
+            "  Endpoint: ".to_string()
+        } else {
+            format!("  Endpoint [{default_endpoint}]: ")
+        };
+        let endpoint_input = read_input(&endpoint_prompt);
+        let endpoint = if endpoint_input.trim().is_empty() {
+            default_endpoint.to_string()
+        } else {
+            endpoint_input.trim().to_string()
+        };
+        if endpoint.is_empty() {
+            eprintln!("An endpoint is required.");
+            return;
+        }
+        let model = read_input("  Model: ");
+        if model.trim().is_empty() {
+            eprintln!("A model is required.");
+            return;
+        }
+        let name_input = read_input(&format!("  Connection name [{provider}]: "));
+        let name = if name_input.trim().is_empty() {
+            provider.to_string()
+        } else {
+            name_input.trim().to_string()
+        };
+        let setup_args = vec![
+            "pandora".to_string(),
+            "setup".to_string(),
+            "--provider".to_string(),
+            provider.to_string(),
+            "--endpoint".to_string(),
+            endpoint,
+            "--model".to_string(),
+            model.trim().to_string(),
+            "--name".to_string(),
+            name,
+            "--non-interactive".to_string(),
+        ];
+        cmd_setup(&setup_args);
+        if std::env::var("PANDORA_PROVIDER_API_KEY").is_err() && provider != "ollama" {
+            println!("Add a provider key later with PANDORA_PROVIDER_API_KEY or --api-key-stdin.");
+        }
+    }
     // ── Step 2: Import from another agent ──
     println!("Step 2: Import from another AI agent?");
     println!("  Pandora can import connections and config from:");

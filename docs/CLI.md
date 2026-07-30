@@ -13,7 +13,7 @@ Pandora's CLI is the primary interface. Every command follows:
 
 ## First-run setup
 
-Run the wizard for guided setup:
+Run the guided wizard. It asks for the provider, endpoint, model, and connection name:
 
 ```text
 pandora setup
