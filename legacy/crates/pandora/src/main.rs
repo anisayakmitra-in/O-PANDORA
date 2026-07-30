@@ -1461,10 +1461,10 @@ fn cmd_run(args: &[String]) {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
             pandora_harnesses::register_all(&mut runtime.council);
             if let Some(binding) = profile.model_binding("execution") {
-                if let Err(error) = runtime.set_execution_target(
-                    binding.connection.clone(),
-                    binding.model.clone(),
-                ) {
+                let model = model_name
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| binding.model.clone());
+                if let Err(error) = runtime.set_execution_target(binding.connection.clone(), model) {
                     eprintln!("Invalid execution model binding: {error}");
                     process::exit(1);
                 }
