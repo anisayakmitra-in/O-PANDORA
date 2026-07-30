@@ -4733,7 +4733,7 @@ fn cmd_connection(args: &[String]) {
                 "custom" => ConnectionKind::Custom,
                 _ => {
                     eprintln!("Unknown kind: {}", args[4]);
-                    return;
+                    process::exit(2);
                 }
             };
             // Extract --model and --api-key flags
@@ -4755,19 +4755,22 @@ fn cmd_connection(args: &[String]) {
                     Ok(reference) => reference,
                     Err(error) => {
                         eprintln!("Invalid credential reference: {error}");
-                        return;
+                        process::exit(1);
                     }
                 };
                 if let Err(error) = pandora_secrets::SecretStore::default().set(&reference, key) {
                     eprintln!("Could not store provider credential: {error}");
-                    return;
+                    process::exit(1);
                 }
                 conn = conn.with_credential_ref(&reference);
             }
             let mut reg = ConnectionRegistry::load();
             match reg.add(conn) {
                 Ok(()) => println!("Added: {}", name),
-                Err(e) => eprintln!("Error: {e}"),
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    process::exit(1);
+                }
             }
         }
         "test" => {

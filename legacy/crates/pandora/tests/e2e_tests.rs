@@ -362,6 +362,28 @@ fn harnesses_lists_output() {
 }
 
 #[test]
+fn setup_reports_invalid_credential_name() {
+    let home = tmp_dir().join("setup-invalid-name-home");
+    let output = run_with_home_and_env(
+        &[
+            "setup",
+            "--provider",
+            "openai",
+            "--endpoint",
+            "https://api.example.com/v1",
+            "--model",
+            "test-model",
+            "--name",
+            "../outside",
+        ],
+        &home,
+        &[("PANDORA_PROVIDER_API_KEY", "test-secret")],
+    );
+    assert!(!output.status.success(), "invalid setup must fail");
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Invalid credential reference"));
+}
+
+#[test]
 fn setup_non_interactive_writes_connection() {
     let dir = tmp_dir().join("setup-home");
     let output = run_with_home(
