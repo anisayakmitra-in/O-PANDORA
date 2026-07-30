@@ -73,7 +73,7 @@ jobs:
       - name: Generate desktop integrity metadata
         shell: bash
         run: |
-          TARGET_ROOT="pandora-desktop/src-tauri/target"
+          TARGET_ROOT="target"
           BUNDLE_DIR="$(find "$TARGET_ROOT" -type f \( \
             -iname '*.appimage' -o -iname '*.deb' -o -iname '*.dmg' -o \
             -iname '*.msi' -o -iname '*.exe' -o -iname '*.rpm' -o \
@@ -100,8 +100,8 @@ jobs:
         with:
           name: pandora-desktop-${{ runner.os }}
           path: |
-            pandora-desktop/src-tauri/target/${{ matrix.rust_target }}/release/bundle/**
-            pandora-desktop/src-tauri/target/release/bundle/**
+            target/${{ matrix.rust_target }}/release/bundle/**
+            target/release/bundle/**
             pandora-desktop-${{ runner.os }}.sha256
             pandora-desktop-${{ runner.os }}-build-commit.txt
           if-no-files-found: error

@@ -4,6 +4,12 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.24] ? 2026-07-30
+
+### Fixed
+
+- Use the workspace-level Cargo `target` directory for Tauri bundle discovery and artifact upload.
+
 ## [0.5.1-rc.23] ? 2026-07-30
 
 ### Fixed
