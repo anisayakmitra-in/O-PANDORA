@@ -6,7 +6,9 @@ VERSION="${PANDORA_VERSION:-latest}"
 INSTALL_DIR="${PANDORA_INSTALL_DIR:-$HOME/.local/bin}"
 case "$(uname -s):$(uname -m)" in
   Linux:x86_64) ASSET="pandora-linux-x86_64"; HASH_TOOL="sha256sum" ;;
+  Linux:aarch64|Linux:arm64) ASSET="pandora-linux-aarch64"; HASH_TOOL="sha256sum" ;;
   Darwin:x86_64) ASSET="pandora-macos-x86_64"; HASH_TOOL="shasum -a 256" ;;
+  Darwin:arm64) ASSET="pandora-macos-arm64"; HASH_TOOL="shasum -a 256" ;;
   *) echo "Unsupported platform." >&2; exit 1 ;;
 esac
 if [[ -n "${PANDORA_RELEASE_BASE_URL:-}" ]]; then
