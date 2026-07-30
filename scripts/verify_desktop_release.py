@@ -61,7 +61,7 @@ def main() -> None:
         if not artifact.is_file():
             raise SystemExit(f"signature has no matching artifact: {signature.name}")
 
-    checksums = list(root.glob("pandora-desktop-*.sha256"))
+    checksums = sorted(root.rglob("pandora-desktop-*.sha256"))
     if not checksums:
         raise SystemExit("no desktop checksum manifests found")
     checked_artifacts = set()
@@ -71,7 +71,7 @@ def main() -> None:
         if signature.with_suffix("").resolve() not in checked_artifacts:
             raise SystemExit(f"signed artifact is absent from checksum manifests: {signature.name}")
 
-    build_commits = list(root.glob("pandora-desktop-*-build-commit.txt"))
+    build_commits = sorted(root.rglob("pandora-desktop-*-build-commit.txt"))
     if not build_commits:
         raise SystemExit("no desktop build commit metadata found")
     for metadata in build_commits:

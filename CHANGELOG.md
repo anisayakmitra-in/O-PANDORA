@@ -4,6 +4,12 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.25] ? 2026-07-30
+
+### Fixed
+
+- Discover desktop checksum manifests and build metadata recursively after artifact merging.
+
 ## [0.5.1-rc.24] ? 2026-07-30
 
 ### Fixed
