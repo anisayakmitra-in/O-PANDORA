@@ -16,6 +16,7 @@
 ## Runtime
 - [Execution Pipeline](ARCHITECTURE.md#execution-pipeline) - 9-stage pipeline
 - [Shadow Council](ARCHITECTURE.md#shadow-council) - harness routing
+- [Routing](ROUTING.md) - capability routing and domain model bindings
 - [Workflow Specification](WORKFLOW.md) - lifecycle states and plan format
 - [Memory Specification](MEMORY.md) - hierarchical memory layers
 - [RuntimeNode Specification](RUNTIME_NODE.md) - node capabilities and transports
