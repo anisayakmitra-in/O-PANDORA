@@ -4,6 +4,21 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.12] — 2026-07-30
+
+This release candidate adds profile-aware domain routing and fail-closed model-binding validation. It does not claim stable availability.
+
+### Changes
+
+- Routes `pandora run` through an explicit profile role or the task's inferred capability instead of a hard-coded default domain.
+- Validates named role connections before execution and rejects missing or incomplete model bindings.
+- Honors preferred capabilities in Shadow Council route scoring.
+- Adds concise routing documentation and preserves the deferred mobile scope.
+
+### Validation
+
+- Rust formatting, workspace checks, clippy, tests, installer checks, repository validation, and documentation validation passed.
+
 ## [0.5.1-rc.11] — 2026-07-30
 
 This release candidate consolidates the CLI, desktop control plane, and release pipeline. It does not claim stable availability.
