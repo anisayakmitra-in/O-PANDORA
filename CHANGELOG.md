@@ -4,6 +4,13 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.17] — 2026-07-30
+
+### Changed
+
+- Interactive setup now reads cloud-provider API keys through hidden terminal input.
+- Added the pinned `rpassword` dependency for cross-platform secret prompts.
+
 ## [0.5.1-rc.16] — 2026-07-30
 
 ### Added

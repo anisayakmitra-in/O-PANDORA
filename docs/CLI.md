@@ -29,7 +29,7 @@ The installed binary exposes these command groups:
 Run `pandora <command> --help` for the accepted arguments and actions for any command.
 ## First-run setup
 
-Run the guided wizard. It asks for the provider, endpoint, model, and connection name:
+Run the guided wizard. It asks for the provider, endpoint, model, and connection name. For cloud providers, it reads the API key with hidden terminal input and stores only a credential reference:
 
 ```text
 pandora setup

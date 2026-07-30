@@ -3089,6 +3089,20 @@ fn cmd_setup(args: &[String]) {
         } else {
             name_input.trim().to_string()
         };
+        let api_key = if provider != "ollama" && std::env::var("PANDORA_PROVIDER_API_KEY").is_err()
+        {
+            match rpassword::prompt_password("  API key (leave blank to configure later): ") {
+                Ok(value) if !value.trim().is_empty() => Some(value),
+                Ok(_) => None,
+                Err(error) => {
+                    eprintln!("Could not read the provider key securely: {error}");
+                    process::exit(1);
+                }
+            }
+        } else {
+            None
+        };
+        let api_key_provided = api_key.is_some();
         let setup_args = vec![
             "pandora".to_string(),
             "setup".to_string(),
@@ -3102,8 +3116,18 @@ fn cmd_setup(args: &[String]) {
             name,
             "--non-interactive".to_string(),
         ];
+        let mut setup_args = setup_args;
+        if let Some(api_key) = api_key {
+            setup_args.splice(
+                setup_args.len() - 1..setup_args.len() - 1,
+                ["--api-key".to_string(), api_key],
+            );
+        }
         cmd_setup(&setup_args);
-        if std::env::var("PANDORA_PROVIDER_API_KEY").is_err() && provider != "ollama" {
+        if !api_key_provided
+            && std::env::var("PANDORA_PROVIDER_API_KEY").is_err()
+            && provider != "ollama"
+        {
             println!("Add a provider key later with PANDORA_PROVIDER_API_KEY or --api-key-stdin.");
         }
     }
