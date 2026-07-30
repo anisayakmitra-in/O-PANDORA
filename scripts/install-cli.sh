@@ -39,6 +39,7 @@ EOF
   CARGO_ARGS=(install --git "https://github.com/$REPO.git" --locked --bin pandora --root "$SOURCE_ROOT" --force)
   if [[ "$VERSION" != "latest" ]]; then CARGO_ARGS+=(--tag "v${VERSION#v}"); fi
   cargo "${CARGO_ARGS[@]}"
+  "$SOURCE_ROOT/bin/pandora" --version
   mkdir -p "$INSTALL_DIR"
   install -m 0755 "$SOURCE_ROOT/bin/pandora" "$INSTALL_DIR/pandora"
   "$INSTALL_DIR/pandora" --version
@@ -53,6 +54,7 @@ else
 fi
 [[ "$EXPECTED" == "$ACTUAL" ]] || { echo "Checksum verification failed." >&2; exit 1; }
 
+"$BINARY" --version
 mkdir -p "$INSTALL_DIR"
 install -m 0755 "$BINARY" "$INSTALL_DIR/pandora"
 case ":$PATH:" in *":$INSTALL_DIR:"*) ;; *) echo "Add $INSTALL_DIR to PATH to run pandora." ;; esac
