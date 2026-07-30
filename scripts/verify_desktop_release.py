@@ -27,7 +27,16 @@ def verify_checksum_manifest(root: Path, manifest: Path) -> set[Path]:
             raise SystemExit(f"invalid checksum entry: {manifest.name}")
         artifact = safe_artifact(root, fields[1])
         if not artifact.is_file():
-            raise SystemExit(f"checksum target is missing: {fields[1]}")
+            suffix = "/" + Path(fields[1].lstrip("*")).as_posix()
+            matches = [
+                candidate
+                for candidate in root.rglob(Path(fields[1].lstrip("*")).name)
+                if candidate.is_file()
+                and candidate.relative_to(root).as_posix().endswith(suffix)
+            ]
+            if len(matches) != 1:
+                raise SystemExit(f"checksum target is missing or ambiguous: {fields[1]}")
+            artifact = matches[0]
         actual = hashlib.sha256(artifact.read_bytes()).hexdigest()
         if actual.lower() != fields[0].lower():
             raise SystemExit(f"desktop checksum mismatch: {artifact.name}")

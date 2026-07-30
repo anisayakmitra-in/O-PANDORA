@@ -74,7 +74,14 @@ jobs:
         shell: bash
         run: |
           BUNDLE_DIR="pandora-desktop/src-tauri/target/${{ matrix.rust_target }}/release/bundle"
-          if [ ! -d "$BUNDLE_DIR" ]; then BUNDLE_DIR="pandora-desktop/src-tauri/target/release/bundle"; fi
+          if [ ! -d "$BUNDLE_DIR" ] || ! find "$BUNDLE_DIR" -type f -print -quit | grep -q .; then
+            BUNDLE_DIR="pandora-desktop/src-tauri/target/release/bundle"
+          fi
+          if ! find "$BUNDLE_DIR" -type f -print -quit | grep -q .; then
+            echo "No desktop artifacts found under candidate bundle directories."
+            find pandora-desktop/src-tauri/target -maxdepth 6 -type f -print || true
+            exit 1
+          fi
           python scripts/generate_checksums.py "$BUNDLE_DIR" "pandora-desktop-${{ runner.os }}.sha256"
           git rev-parse HEAD > "pandora-desktop-${{ runner.os }}-build-commit.txt"
       - name: Upload desktop bundles

@@ -1,6 +1,6 @@
 # O-PANDORA
 
-[![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.20)
+[![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.21)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
 An open-source AI development environment with inspectable execution and explicit approval boundaries.

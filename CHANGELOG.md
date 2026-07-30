@@ -4,6 +4,13 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.21] ? 2026-07-30
+
+### Fixed
+
+- Select the first populated desktop bundle directory instead of an empty target directory.
+- Verify desktop checksums when GitHub artifact download preserves nested bundle paths.
+
 ## [0.5.1-rc.20] ? 2026-07-30
 
 ### Fixed
