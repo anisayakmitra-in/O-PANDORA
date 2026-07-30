@@ -4,6 +4,14 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.19] ? 2026-07-30
+
+### Changed
+
+- Release candidates can publish checksum-verified unsigned desktop bundles when signing secrets are unavailable.
+- Stable desktop releases remain blocked unless Tauri signing secrets are configured.
+- Desktop verification reports whether artifacts are signed or unsigned release candidates.
+
 ## [0.5.1-rc.18] — 2026-07-30
 
 ### Added

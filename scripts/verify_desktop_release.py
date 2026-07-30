@@ -36,15 +36,16 @@ def verify_checksum_manifest(root: Path, manifest: Path) -> set[Path]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Verify signed Pandora desktop release artifacts")
+    parser = argparse.ArgumentParser(description="Verify Pandora desktop release artifacts")
     parser.add_argument("directory", type=Path)
+    parser.add_argument("--allow-unsigned", action="store_true", help="Allow unsigned release-candidate artifacts")
     args = parser.parse_args()
     root = args.directory
     if not root.is_dir():
         raise SystemExit(f"release directory does not exist: {root}")
 
     signatures = [path for path in root.rglob("*.sig") if path.is_file() and path.stat().st_size]
-    if not signatures:
+    if not signatures and not args.allow_unsigned:
         raise SystemExit("no non-empty Tauri signatures found")
     for signature in signatures:
         artifact = signature.with_suffix("")
@@ -68,8 +69,9 @@ def main() -> None:
         if not re.fullmatch(r"[0-9a-f]{40}\n?", metadata.read_text(encoding="utf-8")):
             raise SystemExit(f"invalid desktop build commit metadata: {metadata.name}")
 
+    mode = "signed" if signatures else "unsigned RC"
     print(
-        f"verified {len(signatures)} Tauri signatures, "
+        f"verified {mode} desktop artifacts, "
         f"{len(checksums)} checksum manifests, and "
         f"{len(build_commits)} build metadata files"
     )

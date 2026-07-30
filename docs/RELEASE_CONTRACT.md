@@ -11,7 +11,7 @@ This document defines the reproducible baseline for Pandora releases.
 
 ## Current status
 
-Current candidate: v0.5.1-rc.18. Pandora has local release checks, installer scripts, API authentication, and desktop CI definitions. This repository does not claim a production release yet. Stable release status remains blocked until GitHub publishes signed artifacts and clean-machine installation, upgrade, and removal tests pass for each supported desktop and CLI platform.
+Current candidate: v0.5.1-rc.19. Pandora has local release checks, installer scripts, API authentication, and desktop CI definitions. This repository does not claim a production release yet. Stable release status remains blocked until GitHub publishes signed artifacts and clean-machine installation, upgrade, and removal tests pass for each supported desktop and CLI platform.
 
 ## Supported release surfaces
 
@@ -35,7 +35,7 @@ python scripts/validate_docs.py
 python scripts/test_installers.py
 ```
 
-Release artifacts must include the version, target platform, checksum, and build commit. Desktop release verification also requires every signature to have a matching artifact and every checksum manifest entry to resolve and match its file. A release must not claim support for a platform whose artifact or clean-install test is missing.
+Release artifacts must include the version, target platform, checksum, and build commit. Desktop release verification also requires every signature to have a matching artifact and every checksum manifest entry to resolve and match its file. Release candidates may publish checksum-verified unsigned desktop bundles when signing secrets are unavailable; stable desktop releases remain signing-gated. A release must not claim support for a platform whose artifact or clean-install test is missing.
 Installers and update helpers accept `PANDORA_RELEASE_BASE_URL` for staging or private release mirrors; the value must point to a directory containing the platform binary and matching `.sha256` file.
 
 ## Configuration and data
