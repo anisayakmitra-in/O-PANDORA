@@ -41,7 +41,7 @@
 ## Release
 - [Changelog](../CHANGELOG.md) - version history
 - [Release contract](RELEASE_CONTRACT.md) - version and release requirements
-- [Platform support](PLATFORMS.md) - active targets and mobile hold
+- [Platform support](PLATFORMS.md) - active targets and publication status
 - [Migration Guide](MIGRATION.md) - upgrade paths
 
 ## SDK and Development

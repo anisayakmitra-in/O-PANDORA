@@ -128,6 +128,17 @@ fn help_shows_usage() {
         "Help must show 'run' command:\n{}",
         text
     );
+    let (setup_output, _) = run(&["setup", "--help"]);
+    let setup_text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&setup_output.stdout),
+        String::from_utf8_lossy(&setup_output.stderr)
+    );
+    assert!(
+        setup_text.contains("--api-key-stdin"),
+        "Setup help must document stdin secret input:\n{}",
+        setup_text
+    );
 }
 
 #[test]

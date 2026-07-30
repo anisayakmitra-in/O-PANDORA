@@ -4,9 +4,9 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
-## [0.5.1-rc.5] — 2026-07-30
+## [0.5.1-rc.11] — 2026-07-30
 
-This release candidate consolidates the CLI, desktop control plane, and release pipeline. It does not claim stable or mobile availability.
+This release candidate consolidates the CLI, desktop control plane, and release pipeline. It does not claim stable availability.
 
 ### Highlights
 
@@ -21,6 +21,7 @@ This release candidate consolidates the CLI, desktop control plane, and release 
 - Adds setup, doctor, JSON output, sessions, profiles, remote nodes, credentials, updates, and uninstall flows to the documented command surface.
 - Preserves source installation as a fallback while release artifacts remain gated by CI and signing.
 - Reports credentials configured through secure keychain references without printing secret values.
+- Adds pandora setup --api-key-stdin for pipe-based credential input without shell-history exposure.
 
 ### Desktop
 
@@ -38,8 +39,7 @@ This release candidate consolidates the CLI, desktop control plane, and release 
 
 - Windows, macOS, and Linux are the active CLI and desktop targets.
 - WSL is a Linux CLI environment, not a separate desktop target.
-- Mobile and Termux packaging remain paused and are not included in this candidate.
-- No mobile package is available.
+- No packaged client beyond the listed desktop targets is included in this candidate.
 
 ### Validation
 

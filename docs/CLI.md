@@ -27,7 +27,14 @@ pandora setup --provider openai --endpoint https://api.openai.com/v1 --model gpt
 PANDORA_PROVIDER_API_KEY=... pandora setup --provider openai --model gpt-4o
 ```
 
-Use `--non-interactive` to fail instead of opening the wizard when required flags are missing. API keys are preferably supplied through `PANDORA_PROVIDER_API_KEY` rather than shell arguments.
+For a secret supplied by a password manager or CI pipe, avoid shell history and process listings:
+
+```text
+Get-Content .\openai-key.txt | pandora setup --provider openai --model gpt-4o --api-key-stdin
+printf %s "$OPENAI_API_KEY" | pandora setup --provider openai --model gpt-4o --api-key-stdin
+```
+
+Use `--non-interactive` to fail instead of opening the wizard when required flags are missing. `--api-key-stdin` requires redirected input and cannot be combined with `--api-key`.
 
 For a clean machine, the shortest supported flow is:
 

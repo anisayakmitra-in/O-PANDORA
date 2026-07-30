@@ -204,6 +204,9 @@ enum Commands {
         name: String,
         #[arg(long)]
         api_key: Option<String>,
+        /// Read the provider key from stdin instead of exposing it in process arguments
+        #[arg(long)]
+        api_key_stdin: bool,
         #[arg(long)]
         non_interactive: bool,
     },
@@ -540,6 +543,7 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             model,
             name,
             api_key,
+            api_key_stdin,
             non_interactive,
         } => {
             a.push("setup".into());
@@ -560,6 +564,9 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             if let Some(value) = api_key {
                 a.push("--api-key".into());
                 a.push(value.clone());
+            }
+            if *api_key_stdin {
+                a.push("--api-key-stdin".into());
             }
             if *non_interactive {
                 a.push("--non-interactive".into());
@@ -2801,9 +2808,29 @@ fn cmd_setup(args: &[String]) {
             process::exit(2);
         };
         let name = flag_value("--name").unwrap_or_else(|| provider.clone());
-        let api_key = flag_value("--api-key")
-            .or_else(|| std::env::var("PANDORA_PROVIDER_API_KEY").ok())
-            .filter(|value| !value.trim().is_empty());
+        let api_key_arg = flag_value("--api-key");
+        let api_key_stdin = args.iter().any(|value| value == "--api-key-stdin");
+        if api_key_arg.is_some() && api_key_stdin {
+            eprintln!("Choose either --api-key or --api-key-stdin, not both.");
+            process::exit(2);
+        }
+        let api_key = if api_key_stdin {
+            use std::io::{IsTerminal, Read};
+            if std::io::stdin().is_terminal() {
+                eprintln!("--api-key-stdin requires a piped or redirected secret.");
+                process::exit(2);
+            }
+            let mut input = std::io::stdin();
+            let mut value = String::new();
+            if input.read_to_string(&mut value).is_err() {
+                eprintln!("Could not read the provider key from stdin.");
+                process::exit(2);
+            }
+            Some(value.trim_end().to_string())
+        } else {
+            api_key_arg.or_else(|| std::env::var("PANDORA_PROVIDER_API_KEY").ok())
+        }
+        .filter(|value| !value.trim().is_empty());
         let mut connection_args = vec![
             "pandora".into(),
             "connection".into(),

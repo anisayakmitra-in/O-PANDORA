@@ -2,8 +2,8 @@
 
 Pandora has two active product surfaces:
 
-- **CLI** — supported on Windows, macOS, and Linux. WSL uses the Linux CLI path.
-- **Desktop** — a Tauri client for Windows, macOS, and Linux. It is not a WSL or Termux package.
+- **CLI** - source-build support is available on Windows, macOS, and Linux. WSL uses the Linux CLI path.
+- **Desktop** - Tauri build targets exist for Windows, macOS, and Linux.
 
 ## Current status
 
@@ -13,7 +13,7 @@ Pandora Desktop has Windows, macOS, and Linux build targets. Signed packages are
 
 WSL can run the Linux CLI, but it is not a separately packaged target. WSL becomes an official supported environment only after a clean-environment test is added.
 
-Mobile and Termux support are paused. Termux would be a future CLI-only distribution and would not install or launch Pandora Desktop. The Termux installer and mobile-specific runtime code remain outside the active source tree until the desktop and CLI releases stabilize.
+No packaged release is published yet. WSL is supported only as a Linux CLI environment; it is not a separate packaged target.
 
 ## Publication rule
 

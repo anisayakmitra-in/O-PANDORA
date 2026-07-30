@@ -53,4 +53,4 @@ The visual direction uses restrained translucent surfaces and a bento-style insp
 - Signed Windows, macOS, and Linux bundles are not yet published.
 - Remote-node selection and remote execution are not yet exposed in the desktop UI.
 - Clean-machine install, upgrade, rollback, and uninstall tests remain release gates.
-- Mobile and Termux support are intentionally paused and are not part of the active desktop surface.
+- No packaged desktop release is published yet; signing and clean-machine verification remain release gates.

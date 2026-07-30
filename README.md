@@ -151,4 +151,4 @@ Pandora CLI is supported on Windows, macOS, and Linux. WSL can run the Linux CLI
 
 Pandora Desktop is a Tauri client for Windows, macOS, and Linux. Windows source builds and signed packages are pending; macOS and Linux are CI/package targets whose packages are not yet published. WSL is not a desktop target.
 
-Mobile and Termux support are paused and are not advertised as available products. Termux would be a future CLI-only path and cannot run the desktop client. A successful Rust workspace build does not prove that a packaged desktop release exists. See [Platform support](docs/PLATFORMS.md) and [the release contract](docs/RELEASE_CONTRACT.md) for the publication gates required before changing these claims.
+No packaged release is published yet. A successful Rust workspace build does not prove that an installable artifact exists. See [Platform support](docs/PLATFORMS.md) and [the release contract](docs/RELEASE_CONTRACT.md) for the publication gates.
