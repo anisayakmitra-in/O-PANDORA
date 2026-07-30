@@ -202,6 +202,7 @@ enum Commands {
     /// Import settings from another AI agent
     Import { tool: String, path: Option<String> },
     /// Configure a provider or run the interactive setup wizard
+    #[command(alias = "init")]
     Setup {
         #[arg(long)]
         provider: Option<String>,

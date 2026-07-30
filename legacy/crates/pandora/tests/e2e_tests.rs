@@ -137,6 +137,9 @@ fn help_shows_usage() {
     );
     assert!(chat_text.contains("interactive operator shell"));
 
+    let (init_output, _) = run(&["init", "--help"]);
+    assert_success(&init_output, &["init", "--help"]);
+
     let (setup_output, _) = run(&["setup", "--help"]);
     let setup_text = format!(
         "{}{}",

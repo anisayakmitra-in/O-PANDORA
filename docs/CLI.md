@@ -18,7 +18,7 @@ The installed binary exposes these command groups:
 | Group | Commands |
 |------|----------|
 | Execution | `run`, `route`, `execute`, `resume`, `replay`, `trace`, `inspect`, `explain`, `timeline`, `status`, `stop`, `export`, `overnight` |
-| Providers | `setup`, `providers`, `model`, `connections`, `connection`, `benchmark`, `profiles` |
+| Providers | `setup`/`init`, `providers`, `model`, `connections`, `connection`, `benchmark`, `profiles` |
 | Components | `harnesses`, `genes`, `gene`, `harness`, `service`, `new` |
 | Governance | `governance`, `deny`, `approve`, `reject`, `rsi` |
 | Packages | `install`, `uninstall`, `update`, `list`, `info`, `search`, `publish`, `package`, `artifacts`, `keygen`, `sign`, `verify` |
