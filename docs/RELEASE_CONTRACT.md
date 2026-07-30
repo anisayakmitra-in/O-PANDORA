@@ -11,7 +11,7 @@ This document defines the reproducible baseline for Pandora releases.
 
 ## Current status
 
-Current candidate: v0.5.1-rc.22. Pandora has local release checks, installer scripts, API authentication, and desktop CI definitions. This repository does not claim a production release yet. Stable release status remains blocked until GitHub publishes signed artifacts and clean-machine installation, upgrade, and removal tests pass for each supported desktop and CLI platform.
+Current candidate: v0.5.1-rc.23. Pandora has local release checks, installer scripts, API authentication, and desktop CI definitions. This repository does not claim a production release yet. Stable release status remains blocked until GitHub publishes signed artifacts and clean-machine installation, upgrade, and removal tests pass for each supported desktop and CLI platform.
 
 ## Supported release surfaces
 

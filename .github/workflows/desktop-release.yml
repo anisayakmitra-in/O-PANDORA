@@ -73,16 +73,23 @@ jobs:
       - name: Generate desktop integrity metadata
         shell: bash
         run: |
-          BUNDLE_DIR=""
-          while IFS= read -r candidate; do
-            if find "$candidate" -type f -print -quit | grep -q .; then
-              BUNDLE_DIR="$candidate"
-              break
-            fi
-          done < <(find pandora-desktop/src-tauri/target -type d -name bundle -print)
+          TARGET_ROOT="pandora-desktop/src-tauri/target"
+          BUNDLE_DIR="$(find "$TARGET_ROOT" -type f \( \
+            -iname '*.appimage' -o -iname '*.deb' -o -iname '*.dmg' -o \
+            -iname '*.msi' -o -iname '*.exe' -o -iname '*.rpm' -o \
+            -iname '*.app.tar.gz' -o -iname '*.tar.gz' \
+          \) -exec dirname {} \; | head -n 1)"
           if [ -z "$BUNDLE_DIR" ]; then
-            echo "No populated Tauri bundle directory found."
-            find pandora-desktop/src-tauri/target -maxdepth 8 -print || true
+            while IFS= read -r candidate; do
+              if find "$candidate" -type f -print -quit | grep -q .; then
+                BUNDLE_DIR="$candidate"
+                break
+              fi
+            done < <(find "$TARGET_ROOT" -type d -name bundle -print)
+          fi
+          if [ -z "$BUNDLE_DIR" ]; then
+            echo "No desktop artifact file or populated Tauri bundle directory found."
+            find "$TARGET_ROOT" -maxdepth 8 -print || true
             exit 1
           fi
           echo "Using desktop bundle directory: $BUNDLE_DIR"
