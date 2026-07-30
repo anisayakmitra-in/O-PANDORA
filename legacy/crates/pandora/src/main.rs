@@ -1832,8 +1832,39 @@ fn cmd_doctor_json() {
             (command.to_string(), serde_json::json!(available))
         })
         .collect::<serde_json::Map<_, _>>();
+    let keychain_available = cfg!(any(target_os = "windows", target_os = "macos"))
+        || env::var("PANDORA_CREDENTIALS_KEY").is_ok_and(|key| !key.is_empty());
+    let mut checks = Vec::new();
+    checks.push(serde_json::json!({
+        "ok": credentials_stored,
+        "check": "credentials",
+        "message": if credentials_stored { "Provider credentials are configured." } else { "No provider credentials are configured." },
+        "remediation": if credentials_stored { "No action required." } else { "Run `pandora setup` or configure a supported credential source." },
+    }));
+    checks.push(serde_json::json!({
+        "ok": keychain_available,
+        "check": "credential_source",
+        "message": if keychain_available { "A credential source is available." } else { "No native or encrypted credential source is available." },
+        "remediation": if keychain_available { "No action required." } else { "Set PANDORA_CREDENTIALS_KEY for headless encrypted credentials." },
+    }));
+    checks.push(serde_json::json!({
+        "ok": sessions_dir().exists(),
+        "check": "sessions_directory",
+        "message": if sessions_dir().exists() { "The sessions directory is available." } else { "The sessions directory is unavailable." },
+        "remediation": if sessions_dir().exists() { "No action required." } else { "Check PANDORA_HOME permissions and disk space." },
+    }));
+    for (command, available) in &dependencies {
+        let is_available = available.as_bool().unwrap_or(false);
+        checks.push(serde_json::json!({
+            "ok": is_available,
+            "check": format!("dependency:{command}"),
+            "message": if is_available { format!("{command} is available.") } else { format!("{command} is not available.") },
+            "remediation": if is_available { "No action required.".to_string() } else { format!("Install {command} only if your selected workflow requires it.") },
+        }));
+    }
     let value = serde_json::json!({
         "api_version": "v1",
+        "checks": checks,
         "runtime": env!("CARGO_PKG_VERSION"),
         "security": {
             "api_token_set": env::var("PANDORA_API_TOKEN").is_ok_and(|token| !token.is_empty()),

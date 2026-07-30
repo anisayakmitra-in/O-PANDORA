@@ -402,5 +402,14 @@ fn doctor_json_is_machine_readable() {
     let value: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("valid doctor JSON");
     assert_eq!(value["api_version"], "v1");
+    assert!(value["checks"].is_array());
+    let checks = value["checks"].as_array().expect("doctor checks array");
+    assert!(!checks.is_empty());
+    for check in checks {
+        assert!(check["ok"].is_boolean());
+        assert!(check["check"].is_string());
+        assert!(check["message"].is_string());
+        assert!(check["remediation"].is_string());
+    }
     assert!(value["dependencies"].is_object());
 }

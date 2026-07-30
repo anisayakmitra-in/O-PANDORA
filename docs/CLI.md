@@ -79,6 +79,16 @@ pandora completions fish > ~/.config/fish/completions/pandora.fish
 
 On Windows PowerShell, run `pandora completions powershell` and add the output to `$PROFILE`. Elvish is available with `pandora completions elvish`.
 
+## `pandora doctor`
+
+Run local health checks before the first task. Human output is concise; `pandora --json doctor` returns `api_version`, `checks`, `security`, `dependencies`, and `sessions`. Each check includes `ok`, `check`, `message`, and `remediation`.
+
+```text
+pandora doctor
+pandora --json doctor
+```
+
+Missing optional tools are reported as diagnostics. Install a tool only when the workflow that needs it requires it.
 ## Execution commands
 
 ### `pandora remote <action> [endpoint] [task]`
