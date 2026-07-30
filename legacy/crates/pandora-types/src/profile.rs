@@ -7,8 +7,22 @@
 use crate::config::config_dir;
 use crate::execution_plan::{ControlStrategy, EvaluatorKind, ExecutionPlan, SandboxLevel};
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::path::PathBuf;
 
+/// Domain-level role metadata for a profile.
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct DomainProfile {
+    /// The domain role presented by this profile, such as "design" or "coding".
+    pub role: Option<String>,
+}
+
+/// A provider connection and model selected for one domain role.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct ModelBinding {
+    pub connection: String,
+    pub model: String,
+}
 /// A named execution profile loaded from TOML.
 ///
 /// All fields are optional — profiles are partial configurations that
@@ -29,6 +43,11 @@ pub struct Profile {
     pub approval: Option<bool>,
     /// Maximum execution attempts.
     pub max_attempts: Option<u32>,
+    /// Optional domain role metadata.
+    pub domain: Option<DomainProfile>,
+    /// Named provider/model bindings for domain roles.
+    #[serde(default)]
+    pub models: HashMap<String, ModelBinding>,
 }
 
 impl Profile {
@@ -133,6 +152,29 @@ pub fn list_profiles() -> Result<Vec<String>, crate::PandoraError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn domain_model_roles_are_deserialized() {
+        let profile: Profile = toml::from_str(
+            r#"
+            [domain]
+            role = "design"
+
+            [models.planner]
+            connection = "controller"
+            model = "controller-model"
+
+            [models.execution]
+            connection = "designer"
+            model = "design-model"
+            "#,
+        )
+        .unwrap();
+
+        assert_eq!(profile.domain.unwrap().role.as_deref(), Some("design"));
+        assert_eq!(profile.models["planner"].connection, "controller");
+        assert_eq!(profile.models["execution"].model, "design-model");
+    }
 
     #[test]
     fn profile_names_cannot_escape_directory() {
