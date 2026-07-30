@@ -12,6 +12,10 @@ jobs:
   build:
     name: Build ${{ matrix.asset }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -72,6 +76,10 @@ jobs:
             shasum -a 256 "dist/$ASSET" > "dist/$ASSET.sha256"
           fi
           printf '{"version":"%s","target":"%s","commit":"%s"}\n' "$VERSION" "$ASSET" "$COMMIT" > "dist/$ASSET.metadata.json"
+      - name: Attest CLI binary
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/${{ matrix.asset }}
       - uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.target }}
