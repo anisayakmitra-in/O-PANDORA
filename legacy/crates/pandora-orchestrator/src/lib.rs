@@ -152,6 +152,7 @@ use pandora_types::provider::ExecutionTarget;
 /// Registry of available providers with model-level resolution.
 pub struct ProviderRegistry {
     providers: Vec<Arc<dyn Provider>>,
+    aliases: HashMap<String, Arc<dyn Provider>>,
     default_provider_name: Option<String>,
     default_model_name: Option<String>,
 }
@@ -160,22 +161,34 @@ impl ProviderRegistry {
     pub fn new() -> Self {
         Self {
             providers: Vec::new(),
+            aliases: HashMap::new(),
             default_provider_name: None,
             default_model_name: None,
         }
     }
 
     pub fn register(&mut self, provider: Arc<dyn Provider>) {
+        let name = provider.name().to_string();
+        self.register_named(provider, name);
+    }
+
+    /// Register a provider under its connection name as well as its provider name.
+    pub fn register_named(&mut self, provider: Arc<dyn Provider>, name: impl Into<String>) {
+        let name = name.into();
         if self.default_provider_name.is_none() {
-            self.default_provider_name = Some(provider.name().to_string());
+            self.default_provider_name = Some(name.clone());
             let manifest = provider.manifest();
             self.default_model_name = manifest.models.first().cloned();
         }
+        self.aliases.insert(name, Arc::clone(&provider));
         self.providers.push(provider);
     }
 
     pub fn get(&self, name: &str) -> Option<Arc<dyn Provider>> {
-        self.providers.iter().find(|p| p.name() == name).cloned()
+        self.aliases
+            .get(name)
+            .cloned()
+            .or_else(|| self.providers.iter().find(|p| p.name() == name).cloned())
     }
 
     pub fn set_default_model(&mut self, model: Option<String>) {
@@ -258,6 +271,7 @@ pub struct PandoraRuntime {
     pub healing: pandora_types::self_healing::HealingSession,
     pub constitutional_floor: crate::constitutional_floor::ConstitutionalFloor,
     pub provider_failover_count: u32,
+    execution_target: Option<(String, String)>,
 }
 
 impl PandoraRuntime {
@@ -268,8 +282,8 @@ impl PandoraRuntime {
         // Each connection is mapped to the correct Provider implementation.
         match crate::provider_adapter::load_providers_from_connections() {
             loaded if !loaded.is_empty() => {
-                for (provider, _name) in loaded {
-                    providers.register(provider);
+                for (provider, name) in loaded {
+                    providers.register_named(provider, name);
                 }
             }
             _ => {
@@ -324,12 +338,28 @@ impl PandoraRuntime {
             healing: pandora_types::self_healing::HealingSession::new("default"),
             constitutional_floor: crate::constitutional_floor::ConstitutionalFloor::new("default"),
             provider_failover_count: 0,
+            execution_target: None,
         }
     }
 
     /// Register an additional provider at runtime.
     pub fn register_provider(&mut self, provider: Arc<dyn Provider>) {
         self.providers.register(provider);
+    }
+
+    /// Select the provider connection and model for the execution role.
+    pub fn set_execution_target(
+        &mut self,
+        connection: impl Into<String>,
+        model: impl Into<String>,
+    ) -> Result<()> {
+        let connection = connection.into();
+        let model = model.into();
+        if connection.trim().is_empty() || model.trim().is_empty() {
+            anyhow::bail!("execution target requires a connection and model");
+        }
+        self.execution_target = Some((connection, model));
+        Ok(())
     }
 
     /// Execute a task through the full 9-stage constitutional pipeline.
@@ -453,7 +483,10 @@ impl PandoraRuntime {
         debug!("[PERM] sandbox level: {:?}", self.plan.budget.sandbox_level);
         // Stage 3: Capability Resolution
         let candidates = self.cap_resolution.resolve_domain(domain);
-        let (provider_name, model) = if let Some(best) = candidates.first() {
+        let (provider_name, model) = if let Some((provider, model)) = self.execution_target.clone()
+        {
+            (provider, model)
+        } else if let Some(best) = candidates.first() {
             (best.provider.clone(), best.model.clone())
         } else if let Some((p, m)) = self
             .provider_db
@@ -993,6 +1026,18 @@ mod tests {
         assert_eq!(rt.ledger.len(), 0);
         assert_eq!(rt.failure_intel.root_cause_count(), 0);
         assert_eq!(rt.knowledge.knowledge_count(), 0);
+    }
+
+    #[test]
+    fn execution_target_requires_connection_and_model() {
+        let mut runtime = PandoraRuntime::new();
+        assert!(runtime.set_execution_target("", "model").is_err());
+        assert!(runtime.set_execution_target("connection", "").is_err());
+        assert!(runtime.set_execution_target("connection", "model").is_ok());
+        assert_eq!(
+            runtime.execution_target,
+            Some(("connection".into(), "model".into()))
+        );
     }
 
     #[test]

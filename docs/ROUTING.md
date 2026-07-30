@@ -33,7 +33,7 @@ connection = "reviewer"
 model = "review-model"
 ```
 
-These fields identify connections by name. They never contain credentials. The current execution path still uses one provider policy, so role bindings are contracts until role-aware provider selection is enabled.
+These fields identify connections by name. They never contain credentials. The `execution` binding now selects one named connection and model for a run. Planner and review bindings remain contracts until their pipeline stages are enabled.
 
 ## Next safe extension
 

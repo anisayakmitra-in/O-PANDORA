@@ -22,7 +22,7 @@ Provider        supplies model execution
 - The CLI and desktop use the same authenticated execution API.
 - K-O-Palace is the package and registry service.
 
-Profiles may now declare a domain role and named planner, execution, or review model bindings. The current execution path still selects one provider policy, so these bindings are configuration contracts until role-aware execution is enabled.
+Profiles may declare a domain role and named planner, execution, or review model bindings. The execution binding selects the provider connection and model for the current run; planner and review bindings remain declarative until those pipeline stages are enabled.
 
 ## Target profile
 

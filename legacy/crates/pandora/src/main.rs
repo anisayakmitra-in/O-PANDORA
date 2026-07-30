@@ -1460,6 +1460,15 @@ fn cmd_run(args: &[String]) {
         Ok(rt) => rt.block_on(async {
             let mut runtime = pandora_orchestrator::PandoraRuntime::new();
             pandora_harnesses::register_all(&mut runtime.council);
+            if let Some(binding) = profile.model_binding("execution") {
+                if let Err(error) = runtime.set_execution_target(
+                    binding.connection.clone(),
+                    binding.model.clone(),
+                ) {
+                    eprintln!("Invalid execution model binding: {error}");
+                    process::exit(1);
+                }
+            }
             use pandora_types::execution_plan::*;
             let mut budget = ExecutionBudget::default();
             if let Some(max_attempts) = profile.max_attempts {
