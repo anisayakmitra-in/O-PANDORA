@@ -26,6 +26,8 @@ try {
       $sourceBinary = Join-Path $sourceRoot "bin\pandora.exe"
       if (-not (Test-Path $sourceBinary)) { throw "Source build did not produce pandora.exe." }
       New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+      & $sourceBinary --version
+      if ($LASTEXITCODE -ne 0) { throw "Source-built Pandora failed its health check." }
       Copy-Item $sourceBinary (Join-Path $installDir "pandora.exe") -Force
       & (Join-Path $installDir "pandora.exe") --version
       if ($LASTEXITCODE -ne 0) { throw "Source-built Pandora failed its health check." }
@@ -37,6 +39,8 @@ try {
   $actual = (Get-FileHash $binary -Algorithm SHA256).Hash.ToUpperInvariant()
   if ($expected -ne $actual) { throw "Checksum verification failed." }
   New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+  & $binary --version
+  if ($LASTEXITCODE -ne 0) { throw "Downloaded Pandora failed its health check." }
   Copy-Item $binary (Join-Path $installDir "pandora.exe") -Force
   $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
   if (($userPath -split ';') -notcontains $installDir) {

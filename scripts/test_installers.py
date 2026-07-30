@@ -13,3 +13,13 @@ class InstallerContractTests(unittest.TestCase):
             script.index('install -m 0755 "$BINARY" "$INSTALL_DIR/pandora"'),
         )
 
+    def test_powershell_checks_download_before_replacement(self):
+        script = (ROOT / "scripts" / "install-cli.ps1").read_text(encoding="utf-8")
+        self.assertLess(
+            script.index('& $binary --version'),
+            script.index('Copy-Item $binary (Join-Path $installDir "pandora.exe") -Force'),
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
