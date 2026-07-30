@@ -270,7 +270,10 @@ fn keychain_migrate_moves_legacy_provider_key() {
             "legacy-openai",
         ],
         &home,
-        &[("PANDORA_PROVIDER_API_KEY", "legacy-secret")],
+        &[
+            ("PANDORA_PROVIDER_API_KEY", "legacy-secret"),
+            ("PANDORA_CREDENTIALS_KEY", "migration-test-key"),
+        ],
     );
     assert_success(&setup, &["setup", "--provider", "openai"]);
 
