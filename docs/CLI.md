@@ -60,7 +60,7 @@ pandora setup
 pandora run "inspect this project"
 ```
 
-Use `pandora --json ...` in scripts. Commands return non-zero status on invalid input or failed execution; do not parse human-readable output.
+Use `pandora --json ...` in scripts. Commands return non-zero status on invalid input or failed execution; do not parse human-readable output. The JSON execution report includes the execution ID, provider, model, duration, workflow steps, telemetry spans, knowledge and ledger counts, replay ID, and success status.
 
 `pandora run --model NAME ...` overrides the selected model for one task. Use a profile when the provider, policy, and execution settings should be reused.
 

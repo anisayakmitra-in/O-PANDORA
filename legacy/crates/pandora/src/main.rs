@@ -1468,6 +1468,14 @@ fn cmd_run(args: &[String]) {
                             "duration_ms": result.duration_ms,
                             "execution_id": result.execution_id,
                             "provider": result.provider,
+                            "model": result.model,
+                            "workflow_steps": result.workflow_steps,
+                            "telemetry_spans": result.telemetry_spans,
+                            "root_causes_found": result.root_causes_found,
+                            "knowledge_nodes": result.knowledge_nodes,
+                            "ledger_entries": result.ledger_entries,
+                            "replay_id": result.replay_id,
+                            "success": result.success,
                         });
                         println!("{}", serde_json::to_string_pretty(&report).unwrap_or_default());
                     } else if !quiet {
