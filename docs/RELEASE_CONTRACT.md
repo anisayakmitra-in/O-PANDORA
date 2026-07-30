@@ -34,7 +34,7 @@ python scripts/validate_repo.py
 python scripts/validate_docs.py
 ```
 
-Release artifacts must include the version, target platform, checksum, and build commit. A release must not claim support for a platform whose artifact or clean-install test is missing.
+Release artifacts must include the version, target platform, checksum, and build commit. Desktop release verification also requires every signature to have a matching artifact and every checksum manifest entry to resolve and match its file. A release must not claim support for a platform whose artifact or clean-install test is missing.
 Installers and update helpers accept `PANDORA_RELEASE_BASE_URL` for staging or private release mirrors; the value must point to a directory containing the platform binary and matching `.sha256` file.
 
 ## Configuration and data
