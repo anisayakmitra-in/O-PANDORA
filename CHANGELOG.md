@@ -4,6 +4,19 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.13] — 2026-07-30
+
+This release candidate adds role-aware execution selection for domain profiles. It does not claim stable availability.
+
+### Changes
+
+- Uses the `execution` profile binding to select a named provider connection and model.
+- Resolves connection names to their concrete provider instances, including multiple connections of one provider kind.
+- Keeps planner and review bindings declarative until those pipeline stages exist.
+
+### Validation
+
+- Full workspace formatting, checks, clippy, tests, installer checks, repository validation, and documentation validation passed.
 ## [0.5.1-rc.12] — 2026-07-30
 
 This release candidate adds profile-aware domain routing and fail-closed model-binding validation. It does not claim stable availability.
