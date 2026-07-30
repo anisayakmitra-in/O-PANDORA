@@ -1,21 +1,19 @@
 # Pandora architecture
 
-Pandora is a governed Rust runtime with three clients:
+Pandora is a governed Rust runtime exposed through the CLI and authenticated API:
 
 ```text
 Pandora CLI ---------+
-Pandora desktop -----+--> pandora-api ---> PandoraRuntime
-HTTP clients --------+                         |
-                                                 +--> ShadowCouncil
-                                                 +--> providers
-                                                 +--> genes
+HTTP clients --------+--> pandora-api ---> PandoraRuntime
+                                             |
+                                             +--> ShadowCouncil
+                                             +--> providers
+                                             +--> genes
 ```
 
-The CLI and desktop app are clients. `pandora-orchestrator` is the execution engine. `pandora-types` owns shared contracts. K-O-Palace is a separate registry service.
+`pandora-orchestrator` is the execution engine. `pandora-types` owns shared contracts. K-O-Palace is a separate registry service. Other clients remain adapters and do not define another runtime.
 
-## One task
-
-```text
+## One task```text
 request
   |
   v
@@ -43,7 +41,7 @@ evaluation
 session, trace, knowledge, and audit records
 ```
 
-`PandoraRuntime::run` in `legacy/crates/pandora-orchestrator` owns this sequence. The API and desktop use the same runtime instead of maintaining a second engine.
+`PandoraRuntime::run` in `legacy/crates/pandora-orchestrator` owns this sequence. The API and CLI use the same runtime instead of maintaining a second engine.
 
 ## The layers
 
@@ -199,7 +197,7 @@ Run `pandora harnesses` and `pandora genes` to see what is installed. Use `/help
 | Worker and node coordination | `legacy/crates/pandora-fleet` |
 | Package lifecycle and trust | `legacy/crates/pandora-ko-palace` |
 | Terminal client | `legacy/crates/pandora` |
-| Desktop client | `pandora-desktop` |
+| CLI client | `legacy/crates/pandora` |
 | Hosted registry and marketplace | K-O-Palace repository |
 
 Reusable contracts belong in `pandora-types`. Execution sequencing belongs in the orchestrator. User interfaces remain adapters. New domain behavior starts as a package before it becomes a core dependency.

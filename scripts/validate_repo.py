@@ -113,7 +113,7 @@ def check_identity():
     for md_file in REPO_ROOT.rglob("*.md"):
         if md_file.name in historical_files:
             continue
-        if ".git" in str(md_file) or any(part.startswith(".mobile-hold-") for part in md_file.parts):
+        if ".git" in str(md_file) or any(part.startswith((".mobile-hold-", ".app-hold-")) for part in md_file.parts):
             continue
         try:
             text = md_file.read_text(encoding="utf-8", errors="ignore")
@@ -149,7 +149,7 @@ def check_workspace():
     cargo_toml = REPO_ROOT / "Cargo.toml"
     content = cargo_toml.read_text()
 
-    # Parse the manifest so every workspace member, including desktop packages, is covered.
+    # Parse the manifest so every workspace member, is covered.
     with open(cargo_toml, "rb") as handle:
         manifest = tomllib.load(handle)
     members = manifest.get("workspace", {}).get("members", [])

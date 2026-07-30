@@ -14,7 +14,7 @@ errors = []
 md_files = set()
 for dirpath, _, filenames in os.walk(ROOT):
     parts = set(Path(dirpath).parts)
-    if parts & EXCLUDED_DIRS or any(part.startswith(".mobile-hold-") for part in parts):
+    if parts & EXCLUDED_DIRS or any(part.startswith((".mobile-hold-", ".app-hold-")) for part in parts):
         continue
     for fn in filenames:
         if fn.endswith(".md"):

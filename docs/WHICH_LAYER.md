@@ -15,7 +15,7 @@ Start with the smallest unit that owns the behavior.
 | Add a model backend | Provider/Connection | provider adapter and local connection registry |
 | Add a user command | Slash command | harness or gene manifest |
 | Distribute a component | Package | K-O-Palace |
-| Add a client view or command | Adapter | CLI, API, or desktop crate |
+| Add a client view or command | Adapter | CLI, API, or TUI crate |
 
 ## Tests for placement
 

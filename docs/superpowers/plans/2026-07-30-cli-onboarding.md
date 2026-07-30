@@ -10,8 +10,8 @@
 
 ## Global Constraints
 
-- Mobile and Termux remain deferred and are not added to this milestone.
-- Desktop code and Tauri behavior remain unchanged.
+- Additional client surfaces remain outside this milestone.
+- Archived client code remains outside this milestone.
 - Existing CLI commands and flags remain available.
 - Source compilation is available only through explicit `PANDORA_SOURCE_BUILD=1`.
 - Installers must reject missing assets and checksum mismatches with nonzero status.
@@ -193,7 +193,7 @@ pandora run "inspect this project"
 
 - [ ] **Step 2: Remove unsupported release claims**
 
-State the actual artifact publication status and keep platform claims tied to the release contract. Do not mention deferred mobile products as supported surfaces.
+State the actual artifact publication status and keep platform claims tied to the release contract. Do not describe archived client surfaces as supported products.
 
 - [ ] **Step 3: Run documentation validation**
 

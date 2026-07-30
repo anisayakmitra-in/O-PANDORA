@@ -1,46 +1,32 @@
-# Pandora Release Contract
+# Release contract
 
-This document defines the reproducible baseline for Pandora releases.
+This document defines the current CLI release baseline.
 
 ## Versioning
 
-- The workspace version in `Cargo.toml` is the source of truth.
-- `pandora-desktop/package.json` and `pandora-desktop/src-tauri/tauri.conf.json` must match it.
-- Release tags use `vMAJOR.MINOR.PATCH-rc.N` for candidates and `vMAJOR.MINOR.PATCH` for stable releases.
-- Breaking CLI or configuration changes require a new major version and a migration note.
+- Workspace version: `0.5.1`.
+- Release candidates use `vMAJOR.MINOR.PATCH-rc.N`.
+- Stable releases use `vMAJOR.MINOR.PATCH`.
+- A release must identify its source commit and target platform.
 
-## Current status
+## Supported surface
 
-Current candidate: v0.5.1-rc.25. Pandora has local release checks, installer scripts, API authentication, and desktop CI definitions. This repository does not claim a production release yet. Stable release status remains blocked until GitHub publishes signed artifacts and clean-machine installation, upgrade, and removal tests pass for each supported desktop and CLI platform.
+The CLI has source-build support on Windows, macOS, and Linux. WSL uses the Linux path. Packaged binaries are not advertised until the publication gates pass.
 
-## Supported release surfaces
-
-| Surface | Release requirement |
-| --- | --- |
-| CLI | Signed or checksum-verified binaries for Windows x86_64/ARM64, macOS x86_64/ARM64, and Linux x86_64/aarch64 |
-| Desktop | Tauri bundles built for Windows, macOS, and Linux |
-
-## Required gates
-
-Every release candidate must pass:
+## Required checks
 
 ```text
 cargo fmt --all -- --check
-cargo check --workspace
+cargo check --workspace --locked
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace -- --test-threads=1
-npm ci && npm run build   (from pandora-desktop)
+cargo test --workspace --lib --tests
 python scripts/validate_repo.py
 python scripts/validate_docs.py
 python scripts/test_installers.py
 ```
 
-Release artifacts must include the version, target platform, checksum, and build commit. Desktop release verification also requires every signature to have a matching artifact and every checksum manifest entry to resolve and match its file. Release candidates may publish checksum-verified unsigned desktop bundles when signing secrets are unavailable; stable desktop releases remain signing-gated. A release must not claim support for a platform whose artifact or clean-install test is missing.
-Installers and update helpers accept `PANDORA_RELEASE_BASE_URL` for staging or private release mirrors; the value must point to a directory containing the platform binary and matching `.sha256` file.
+A published artifact must include a checksum, build commit, version, and target. Installers must verify the checksum before replacing an existing binary. Upgrade and uninstall must preserve user configuration and sessions unless the user explicitly requests removal.
 
-## Configuration and data
+Provider credentials belong in the OS credential store or the encrypted headless fallback. They must never appear in artifacts, logs, or examples.
 
-User configuration and sessions are stored under the platform-specific Pandora data directory. Installers must never overwrite user data without an explicit migration or uninstall action.
-
-Provider credentials must be configured through Pandora's connection or setup flow and must not be written to release artifacts, logs, or documentation examples.
-Desktop tagged releases require TAURI_UPDATER_PUBKEY, TAURI_UPDATER_ENDPOINT, TAURI_SIGNING_PRIVATE_KEY, and (when configured) TAURI_SIGNING_PRIVATE_KEY_PASSWORD repository secrets. The generated updater configuration is never committed.
+The desktop client is archived outside Git and has no release contract in this milestone.

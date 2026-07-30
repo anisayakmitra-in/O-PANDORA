@@ -3,7 +3,7 @@
 ## Goal
 
 Give a new user one reliable path from installation to a first governed task.
-The CLI remains the only product surface in this milestone. Desktop code stays unchanged, and mobile and Termux remain deferred outside Git.
+The CLI remains the only product surface in this milestone. Archived client code remains outside Git.
 
 ## Current boundary
 
@@ -89,4 +89,4 @@ Add focused tests for:
 
 ## Deferred work
 
-Remote execution improvements, provider routing across domain harnesses, graph-backed knowledge, GEPA/DSR activation, desktop redesign, Figma work, Liquid Glass styling, and Ponytail installation remain separate milestones. They must not be mixed into this onboarding change.
+Remote execution improvements, provider routing across domain harnesses, graph-backed knowledge, GEPA/DSR activation, future client redesign and visual work remain separate milestones. They must not be mixed into this onboarding change.

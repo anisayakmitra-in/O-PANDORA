@@ -3,11 +3,11 @@
 [![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.25)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-An open-source AI development environment with inspectable execution and explicit approval boundaries.
+Pandora is a Rust AI development environment with inspectable execution, explicit approvals, provider routing, and reusable domain capabilities.
 
-## Quick Start
+## Quick start
 
-Pandora does not publish a binary release yet. Build the CLI explicitly from a clean checkout:
+Build from a clean checkout:
 
 ```bash
 cargo build --release -p pandora
@@ -16,143 +16,93 @@ cargo build --release -p pandora
 ./target/release/pandora run "inspect this project"
 ```
 
-When a tagged release publishes the required asset for your platform, the installer downloads and verifies it:
+The source installer is explicit and never compiles silently:
 
 ```bash
-# Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | bash
-
-# Windows PowerShell
-irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
+curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | PANDORA_SOURCE_BUILD=1 bash
 ```
 
-The installer never compiles source unless `PANDORA_SOURCE_BUILD=1` is set explicitly.
+On Windows PowerShell:
 
-## What Pandora provides
+```powershell
+$env:PANDORA_SOURCE_BUILD="1"; irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
+```
 
-**Inspectable execution.** Execution records include decisions, events, and outcomes for later review.
+Pandora does not claim a packaged binary release until the release contract passes.
 
-**Approval boundaries.** Governance checks actions before execution where the selected policy requires approval.
+## What it does
 
-**Pluggable components.** Harnesses, genes, and provider connections are separate components with explicit manifests.
-
-**Multiple providers.** The current provider layer supports Ollama, OpenAI, Anthropic, OpenRouter, DeepSeek, and custom endpoints.
+- Records plans, tool calls, approvals, failures, and results.
+- Routes work through capabilities, policies, harnesses, genes, and providers.
+- Supports local, cloud, and custom provider connections.
+- Runs as a CLI or headless authenticated API service.
+- Installs and verifies packages from K-O-Palace-compatible sources.
 
 ## Architecture
 
-The CLI is the current primary interface. The same runtime also powers headless server mode and the Tauri desktop client.
+```text
+CLI or API client
+        |
+        v
+Pandora runtime
+  |-- constitutional services
+  |-- source harnesses
+  |-- meta harnesses
+  |-- domain harnesses
+  |-- genes and workflows
+  |-- capability routing
+  |-- providers
+  |-- policy, approvals, and audit records
+  `-- K-O-Palace package client
+```
 
-```
-Pandora Desktop (Tauri + React)
-        ↓
-Application Services (pandora-api)
-        ↓
-Pandora Runtime
-   ├── Parliament (governance)
-   ├── Shadow Council (routing)
-   ├── Harnesses (execution domains)
-   ├── Genes (capabilities)
-   ├── Providers (model connections)
-   ├── Memory (context persistence)
-   ├── K-O-Palace (package registry)
-   └── Fleet (multi-node workers)
-```
+A harness provides a role. A gene provides one capability. A domain agent is a domain harness running an agent profile; it does not create another runtime hierarchy.
 
 ## Workspace
 
-13 workspace members in the Cargo workspace:
-
-| Crate | Purpose |
-|-------|---------|
-| `pandora-types` | Shared types, traits, error definitions |
+| Crate | Responsibility |
+|---|---|
+| `pandora-types` | Shared contracts, manifests, events, policies, sessions, and errors |
 | `pandora-secrets` | Provider secret sources and secure local storage |
-| `pandora-services` | Service implementations |
-| `pandora-orchestrator` | Execution orchestration, agentic loop |
-| `pandora-shadow-council` | Capability routing, harness/gene registry |
-| `pandora-genes` | Gene implementations |
-| `pandora-harnesses` | Harness implementations |
-| `pandora-ko-palace` | Package management, K-O-Palace |
-| `pandora-fleet` | Multi-node worker swarm |
-| `pandora-api` | HTTP API + desktop application services |
-| `pandora` | CLI binary (headless/development) |
-| `pandora-desktop` | Native desktop app (Tauri) |
+| `pandora-services` | Default service implementations |
+| `pandora-orchestrator` | Execution sequencing, agentic loop, retries, and recording |
+| `pandora-shadow-council` | Capability, harness, gene, and command routing |
+| `pandora-genes` | Built-in gene implementations |
+| `pandora-harnesses` | Built-in source, meta, and domain harnesses |
+| `pandora-ko-palace` | Package validation, trust, install, update, and publish operations |
+| `pandora-fleet` | Worker and runtime-node coordination |
+| `pandora-api` | Authenticated HTTP and WebSocket transport |
+| `pandora` | CLI commands, setup, diagnostics, and local state |
+| `pandora-tui` | Terminal dashboard components |
 
-## Install
+## Common commands
 
-### Desktop App
-
-```bash
-cd pandora-desktop
-npm install
-npx tauri dev      # development
-npx tauri build    # production build
-```
-
-### CLI (Headless)
-
-```bash
-# Linux/macOS: downloads and verifies a published release binary
-curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | bash
-
-# Until a release is published, build from source explicitly (requires Rust)
-curl -fsSL https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install.sh | PANDORA_SOURCE_BUILD=1 bash
-
-# Windows PowerShell: published release binary
-irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
-
-# Windows source fallback (requires Rust)
-$env:PANDORA_SOURCE_BUILD="1"; irm https://raw.githubusercontent.com/anisayakmitra-in/O-PANDORA/main/scripts/install-cli.ps1 | iex
-
-# Run a task
-pandora run "Audit dependencies for vulnerabilities"
-
-# Start the API server
-pandora serve
-
-# Check system health
-pandora doctor
-```
-
-> Release binaries are available only after a tagged workflow publishes a GitHub Release. If no release asset exists, use the explicit source fallback above; the installer will not silently compile code.
-
-## Setup
-
-The setup wizard stores provider connections in Pandora's user configuration and keeps credentials in the native OS keychain when available. Linux and headless environments can use the encrypted fallback described in [Configuration](docs/CONFIGURATION.md).
-
-The setup wizard walks you through:
-1. Open a project
-2. Configure a model provider
-3. Review permissions
-4. Start your first task
-
-```bash
-pandora setup
+```text
+pandora setup       Configure providers and models
+pandora doctor      Check installation and runtime health
+pandora run         Execute a task
+pandora sessions    List or resume sessions
+pandora providers   Inspect provider connections
+pandora harnesses   List available harnesses
+pandora genes       List available genes
+pandora serve       Start the authenticated API service
+pandora --help      Show the complete command surface
 ```
 
 ## Development
 
 ```bash
-# All gates
 cargo fmt --all -- --check
 cargo check --workspace
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+cargo test --workspace --lib --tests
 cargo build --release -p pandora
-
-# Desktop only
-cd pandora-desktop
-cargo check -p pandora-desktop
-npx tauri build
+python scripts/validate_repo.py
+python scripts/validate_docs.py
 ```
+
+The Tauri client is archived locally under `.app-hold-20260730/` and is not part of the published workspace. See [platform support](docs/PLATFORMS.md) and the [release contract](docs/RELEASE_CONTRACT.md).
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE)
-
-## Platform support
-
-Pandora CLI is supported on Windows, macOS, and Linux. WSL can run the Linux CLI, but it is not a separately packaged target.
-
-Pandora Desktop is a Tauri client for Windows, macOS, and Linux. Windows source builds and signed packages are pending; macOS and Linux are CI/package targets whose packages are not yet published. WSL is not a desktop target.
-
-No packaged release is published yet. A successful Rust workspace build does not prove that an installable artifact exists. See [Platform support](docs/PLATFORMS.md) and [the release contract](docs/RELEASE_CONTRACT.md) for the publication gates.
+Apache 2.0. See [LICENSE](LICENSE).

@@ -59,7 +59,7 @@ The safe order is:
 2. Add provenance for every extracted node and edge.
 3. Add deterministic quality checks and deletion/retention behavior.
 4. Expose read/write operations through the authenticated API.
-5. Add a desktop graph and document view after the CLI/runtime contracts stabilize.
+5. Add a client graph and document view after the CLI/runtime contracts stabilize.
 
 ## What is not added
 

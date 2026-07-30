@@ -1,18 +1,11 @@
 # Platform support
 
-Pandora has two active product surfaces:
+The published Pandora product is the CLI.
 
-- **CLI** - source-build support is available on Windows, macOS, and Linux. WSL uses the Linux CLI path.
-- **Desktop** - Tauri build targets exist for Windows, macOS, and Linux.
+- Windows, macOS, and Linux support source builds.
+- WSL uses the Linux CLI path and is not a separate package.
+- Packaged binaries remain unavailable until a tagged release publishes verified assets.
 
-## Current status
+The Tauri client is archived outside Git under `.app-hold-20260730/` while CLI onboarding, distribution, and runtime stability are completed. It is not a supported release surface.
 
-Pandora CLI has source-build support on Windows, macOS, and Linux. Release artifacts are pending publication.
-
-Pandora Desktop has Windows, macOS, and Linux build targets. Signed packages are pending publication and clean-machine verification.
-
-WSL can run the Linux CLI, but it is not a separately packaged target. No packaged release is published yet.
-
-## Publication rule
-
-Do not describe a platform as released because Rust compilation succeeds. A platform is released only when its artifact, checksum or signature, clean installation, upgrade, removal, and documentation checks pass. See the [release contract](RELEASE_CONTRACT.md).
+A platform claim requires a working artifact, integrity metadata, clean installation, upgrade, removal, and documentation checks. Rust compilation alone is not enough. See the [release contract](RELEASE_CONTRACT.md).

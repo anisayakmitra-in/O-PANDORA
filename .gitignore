@@ -33,7 +33,8 @@ id_ed25519
 /artifacts/
 /telemetry/
 /traces/
-/pandora-desktop/src-tauri/gen/android/keystore.properties
 
 /.mobile-hold-20260730/
 /dist/
+
+/.app-hold-20260730/

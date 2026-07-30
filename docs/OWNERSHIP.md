@@ -14,9 +14,8 @@ This map follows the current Cargo workspace. A feature belongs in the narrowest
 | `pandora-api` | HTTP routes, authentication, pairing, WebSocket transport, request limits | A second execution engine |
 | `pandora-fleet` | Worker and runtime-node coordination | Node contract definitions |
 | `pandora-ko-palace` | Local package client, validation, trust, install/update/publish operations | Registry server hosting; gene implementation ownership |
-| `pandora` | CLI parsing, command dispatch, setup, diagnostics, local files, remote-node commands | Runtime implementation; desktop UI |
+| `pandora` | CLI parsing, command dispatch, setup, diagnostics, local files, remote-node commands | Runtime implementation; client UI |
 | `pandora-tui` | Terminal dashboard rendering and input handling; present but not currently a root workspace member | Execution and provider logic |
-| `pandora-desktop` | Tauri/React desktop presentation and local API connection | A second runtime or provider model |
 
 ## Harness ownership
 
@@ -41,4 +40,4 @@ Before adding code, ask:
 3. Is this route or lifecycle behavior? Add it to `pandora-shadow-council`.
 4. Is this a focused domain capability? Add a gene or harness.
 5. Is this sequencing, retry, or execution state? Add it to `pandora-orchestrator`.
-6. Is it transport or presentation? Keep it in the API, CLI, TUI, or desktop client.
+6. Is it transport or presentation? Keep it in the API, CLI, or TUI client.
