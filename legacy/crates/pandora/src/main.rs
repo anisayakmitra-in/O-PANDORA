@@ -172,6 +172,8 @@ enum Commands {
     Sign { id: String, version: String },
     /// Verify a package signature
     Verify { id: String },
+    /// Show or set the default model
+    Model { name: Option<String> },
     /// Show version
     Version,
     /// Show architecture info
@@ -515,6 +517,12 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             a.push("verify".into());
             a.push(id.clone());
         }
+        Commands::Model { name } => {
+            a.push("model".into());
+            if let Some(name) = name {
+                a.push(name.clone());
+            }
+        }
         Commands::Version => a.push("version".into()),
         Commands::Architecture => a.push("architecture".into()),
         Commands::Fleet { action, args } => {
@@ -639,6 +647,7 @@ fn dispatch(args: &[String]) {
         Some("verify") => cmd_verify(args),
         Some("serve") => cmd_serve(args),
         Some("remote") => cmd_remote(args),
+        Some("model") => cmd_model(args),
         Some("version") => cmd_version(args),
         Some("graph") => cmd_graph(args),
         Some("lineage") => cmd_lineage(args),
@@ -785,6 +794,7 @@ fn usage() {
     eprintln!("        profiles [NAME]       List or inspect config profiles");
     eprintln!();
     eprintln!("    Other:");
+    eprintln!("        model [NAME]         Show or set default model");
     eprintln!("        version, --version    Show version");
     eprintln!("        graph                 Show execution graph");
     eprintln!("        lineage               Show gene lineage");
@@ -1400,6 +1410,14 @@ fn cmd_run(args: &[String]) {
         .windows(2)
         .find(|window| window[0] == "--model")
         .map(|window| window[1].as_str());
+    if model_name.is_none() {
+        if let Some(model) = pandora_types::config::PandoraConfig::load()
+            .with_env()
+            .default_model
+        {
+            env::set_var("PANDORA_DEFAULT_MODEL", model);
+        }
+    }
     if let Some(model) = model_name.map(str::trim) {
         if model.is_empty() || model.chars().any(char::is_control) {
             eprintln!("Model name must contain printable characters.");
@@ -3418,6 +3436,77 @@ fn cmd_import(args: &[String]) {
     }
 }
 
+fn cmd_model(args: &[String]) {
+    use pandora_types::config::PandoraConfig;
+    use pandora_types::connection_manager::ConnectionRegistry;
+
+    let json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json");
+    let mut config = PandoraConfig::load();
+    if let Some(name) = args.get(2) {
+        let name = name.trim();
+        if name.is_empty() || name.chars().any(char::is_control) {
+            eprintln!("Model name must contain printable characters.");
+            process::exit(2);
+        }
+        config.default_model = Some(name.to_owned());
+        if let Err(error) = config.save() {
+            eprintln!("Could not save default model: {error}");
+            process::exit(1);
+        }
+        if json {
+            println!(
+                "{}",
+                serde_json::json!({"default_model": name, "persisted": true})
+            );
+        } else {
+            println!("Default model: {name}");
+        }
+        return;
+    }
+
+    let config = config.with_env();
+    let connections = ConnectionRegistry::load()
+        .connections
+        .into_iter()
+        .map(|connection| {
+            serde_json::json!({
+                "name": connection.name,
+                "provider": connection.kind.label(),
+                "model": connection.default_model,
+            })
+        })
+        .collect::<Vec<_>>();
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "default_model": config.default_model,
+                "connections": connections,
+            })
+        );
+    } else {
+        println!(
+            "Default model: {}",
+            config.default_model.as_deref().unwrap_or("auto")
+        );
+        if connections.is_empty() {
+            println!("No configured connections.");
+        } else {
+            println!("Connection models:");
+            for connection in connections {
+                println!(
+                    "  {}: {} / {}",
+                    connection["name"].as_str().unwrap_or("unknown"),
+                    connection["provider"].as_str().unwrap_or("unknown"),
+                    connection["model"]
+                        .as_str()
+                        .filter(|model| !model.is_empty())
+                        .unwrap_or("(none)")
+                );
+            }
+        }
+    }
+}
 fn cmd_profiles(args: &[String]) {
     if let Some(name) = args.get(2) {
         match pandora_types::profile::load_profile(name) {

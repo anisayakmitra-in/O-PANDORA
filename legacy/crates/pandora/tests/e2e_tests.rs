@@ -448,3 +448,18 @@ fn doctor_strict_returns_failure_for_unhealthy_home() {
             .any(|check| check["ok"] == serde_json::json!(false))
     }));
 }
+#[test]
+fn model_command_persists_default_model() {
+    let home = tmp_dir().join("model-command-home");
+    let set = run_with_home(&["model", "design-model"], &home);
+    assert_success(&set, &["model", "design-model"]);
+    let config = std::fs::read_to_string(home.join("config.toml"))
+        .expect("model command should write config.toml");
+    assert!(config.contains("default_model = \"design-model\""));
+
+    let listed = run_with_home(&["--json", "model"], &home);
+    assert_success(&listed, &["--json", "model"]);
+    let value: serde_json::Value =
+        serde_json::from_slice(&listed.stdout).expect("valid model JSON");
+    assert_eq!(value["default_model"], "design-model");
+}

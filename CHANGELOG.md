@@ -4,6 +4,13 @@ All notable changes to O-PANDORA will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [0.5.1-rc.18] — 2026-07-30
+
+### Added
+
+- Added pandora model [NAME] to inspect or persist the default model.
+- pandora run now honors the persisted default model when no explicit model is supplied.
+
 ## [0.5.1-rc.17] — 2026-07-30
 
 ### Changed

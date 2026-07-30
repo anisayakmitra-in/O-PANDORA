@@ -18,7 +18,7 @@ The installed binary exposes these command groups:
 | Group | Commands |
 |------|----------|
 | Execution | `run`, `route`, `execute`, `resume`, `replay`, `trace`, `inspect`, `explain`, `timeline`, `status`, `stop`, `export`, `overnight` |
-| Providers | `setup`, `providers`, `connections`, `connection`, `benchmark`, `profiles` |
+| Providers | `setup`, `providers`, `model`, `connections`, `connection`, `benchmark`, `profiles` |
 | Components | `harnesses`, `genes`, `gene`, `harness`, `service`, `new` |
 | Governance | `governance`, `deny`, `approve`, `reject`, `rsi` |
 | Packages | `install`, `uninstall`, `update`, `list`, `info`, `search`, `publish`, `package`, `artifacts`, `keygen`, `sign`, `verify` |
@@ -216,6 +216,16 @@ Show chronological event timeline.
 ### `pandora providers`
 
 List providers with health status.
+
+### `pandora model [NAME]`
+
+Show the persisted default model and configured connection models, or set a new default. An explicit `pandora run --model NAME` still overrides it for one task.
+
+```text
+pandora model
+pandora model deepseek-coder
+pandora --json model
+```
 
 ### `pandora connection add <name> <kind> <endpoint> [model]`
 
