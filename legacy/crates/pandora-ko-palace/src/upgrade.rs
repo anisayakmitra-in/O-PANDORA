@@ -209,6 +209,9 @@ mod tests {
 
     #[test]
     fn backup_and_rollback() {
+        let _lock = crate::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let dir = std::env::temp_dir().join(format!(
             "rollback-test-{}",
             std::time::SystemTime::now()

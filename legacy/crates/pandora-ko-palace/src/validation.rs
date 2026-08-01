@@ -21,26 +21,35 @@ impl std::fmt::Display for ManifestError {
 
 impl std::error::Error for ManifestError {}
 
+pub fn validate_package_id(id: &str) -> Result<(), ManifestError> {
+    if id.is_empty() {
+        return Err(ManifestError {
+            field: "id".into(),
+            message: "package id is required".into(),
+        });
+    }
+
+    if !id
+        .chars()
+        .all(|character| character.is_alphanumeric() || character == '-' || character == '_')
+    {
+        return Err(ManifestError {
+            field: "id".into(),
+            message: "id must be alphanumeric with hyphens/underscores only".into(),
+        });
+    }
+
+    Ok(())
+}
+
 /// Validate a package manifest. Returns a list of errors (empty = valid).
 pub fn validate_manifest(manifest: &GenePackageManifest) -> Vec<ManifestError> {
     let mut errors = Vec::new();
 
     // ── Required fields ──
 
-    if manifest.id.is_empty() {
-        errors.push(ManifestError {
-            field: "id".into(),
-            message: "package id is required".into(),
-        });
-    } else if !manifest
-        .id
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
-    {
-        errors.push(ManifestError {
-            field: "id".into(),
-            message: "id must be alphanumeric with hyphens/underscores only".into(),
-        });
+    if let Err(error) = validate_package_id(&manifest.id) {
+        errors.push(error);
     }
 
     if manifest.name.is_empty() {

@@ -23,6 +23,9 @@ pub mod trust_policy;
 pub mod upgrade;
 pub mod validation;
 
+#[cfg(test)]
+pub(crate) static TEST_ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 use pandora_shadow_council::ShadowCouncil;
 use pandora_types::gene_package::discover_gene_packages;
 use pandora_types::trust::TrustPolicy;

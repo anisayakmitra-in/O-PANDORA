@@ -106,6 +106,8 @@ impl PackageLoader for HarnessLoader {
             .get("id")
             .and_then(|v| v.as_str())
             .ok_or_else(|| PandoraError::validation(String::from("harness.toml missing 'id'")))?;
+        crate::validation::validate_package_id(id)
+            .map_err(|error| PandoraError::validation(error.to_string()))?;
 
         let staging = pandora_types::gene_package::packages_dir()
             .join("harnesses")
@@ -298,4 +300,99 @@ fn copy_dir_contents(src: &Path, dst: &Path) -> Result<(), PandoraError> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pandora_types::harness::HarnessKind;
+    use std::ffi::OsString;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    struct EnvGuard {
+        name: &'static str,
+        previous: Option<OsString>,
+    }
+
+    impl EnvGuard {
+        fn set(name: &'static str, value: &Path) -> Self {
+            let previous = std::env::var_os(name);
+            std::env::set_var(name, value);
+            Self { name, previous }
+        }
+    }
+
+    impl Drop for EnvGuard {
+        fn drop(&mut self) {
+            if let Some(value) = &self.previous {
+                std::env::set_var(self.name, value);
+            } else {
+                std::env::remove_var(self.name);
+            }
+        }
+    }
+
+    fn test_root(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time after Unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "pandora-ko-palace-{label}-{}-{nonce}",
+            std::process::id()
+        ))
+    }
+
+    fn write_harness(root: &Path, id: &str) -> PathBuf {
+        let package = root.join("package");
+        std::fs::create_dir_all(&package).expect("create package fixture");
+        std::fs::write(
+            package.join("harness.toml"),
+            format!("id = {id:?}\nkind = \"domain\"\n"),
+        )
+        .expect("write harness manifest");
+        package
+    }
+
+    #[test]
+    fn harness_loader_rejects_traversal_id_before_staging() {
+        let _lock = crate::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let root = test_root("traversal");
+        let pandora_home = root.join("home");
+        let package = write_harness(&root, "../../outside");
+        let _pandora_home = EnvGuard::set("PANDORA_HOME", &pandora_home);
+        let mut council = ShadowCouncil::new();
+
+        let error = HarnessLoader::new(HarnessKind::Domain)
+            .load(&mut council, &package)
+            .expect_err("traversal identifier must be rejected");
+
+        assert!(matches!(error, PandoraError::Validation(_)));
+        assert!(!pandora_home.join("outside").exists());
+        std::fs::remove_dir_all(root).expect("remove package fixture");
+    }
+
+    #[test]
+    fn harness_loader_stages_valid_identifier() {
+        let _lock = crate::TEST_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let root = test_root("valid");
+        let pandora_home = root.join("home");
+        let package = write_harness(&root, "safe-harness");
+        let _pandora_home = EnvGuard::set("PANDORA_HOME", &pandora_home);
+        let mut council = ShadowCouncil::new();
+
+        HarnessLoader::new(HarnessKind::Domain)
+            .load(&mut council, &package)
+            .expect("valid harness should load");
+
+        assert!(pandora_home
+            .join("packages/harnesses/safe-harness/harness.toml")
+            .is_file());
+        std::fs::remove_dir_all(root).expect("remove package fixture");
+    }
 }
