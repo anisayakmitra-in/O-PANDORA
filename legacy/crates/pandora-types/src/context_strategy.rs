@@ -100,14 +100,15 @@ impl ContextManager {
     ///
     /// ## Termination guarantee
     ///
-    /// This method MUST always terminate. It uses two safeguards:
+    /// This method MUST always terminate. It uses three safeguards:
     ///
-    /// 1. **Iteration guard**: After `MAX_ITERATIONS` iterations, the loop
-    ///    breaks unconditionally.
-    /// 2. **Fallback**: If the chosen strategy (Summarize, Archive,
-    ///    Externalize) cannot reduce tokens enough — e.g., a summary stub
-    ///    alone exceeds `max_tokens` — the strategy automatically falls back
-    ///    to `DropOldest` which removes messages entirely.
+    /// 1. **No-progress guard**: If every remaining message is pinned, it
+    ///    stops without changing protected context.
+    /// 2. **Iteration guard**: After `MAX_ITERATIONS` iterations, it falls
+    ///    back to `DropOldest`.
+    /// 3. **Fallback**: If the chosen strategy (Summarize, Archive,
+    ///    Externalize) cannot reduce tokens enough, the strategy automatically
+    ///    falls back to `DropOldest` which removes messages entirely.
     fn enforce_limit(&mut self) {
         let mut iterations = 0;
         let mut summarize_attempts = 0;
@@ -115,9 +116,13 @@ impl ContextManager {
 
         while self.is_over_limit() && self.messages.len() > 1 {
             iterations += 1;
-            if iterations > MAX_ITERATIONS {
-                // Hard guard — never spin forever.
+            if self.first_droppable().is_none() {
                 break;
+            }
+            if iterations > MAX_ITERATIONS {
+                self.fell_back_to_drop = true;
+                self.drop_oldest();
+                continue;
             }
 
             // If we've tried summarizing more times than there are messages
@@ -149,13 +154,14 @@ impl ContextManager {
             }
         }
 
-        // Final safety: if still over limit after all strategies, drop
-        // messages until within limit. This is the last resort.
+        // Final safety: remove droppable messages until within limit.
         while self.is_over_limit() && self.messages.len() > 1 {
+            if self.first_droppable().is_none() {
+                break;
+            }
             self.drop_oldest();
         }
     }
-
     fn drop_oldest(&mut self) {
         if let Some(idx) = self.first_droppable() {
             self.messages.remove(idx);
@@ -270,6 +276,54 @@ mod tests {
 
     // ── Regression tests for C1 (infinite loop fix) ──
 
+    #[test]
+    fn all_pinned_messages_return_without_spinning() {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            let mut cm = ContextManager::new(1, ContextStrategy::DropOldest);
+            cm.push(ContextMessage {
+                role: "system".into(),
+                content: "x".repeat(100),
+                timestamp: 1,
+                pinned: true,
+            });
+            cm.push(ContextMessage {
+                role: "system".into(),
+                content: "y".repeat(100),
+                timestamp: 2,
+                pinned: true,
+            });
+            sender.send(cm.messages.len()).unwrap();
+        });
+
+        assert_eq!(
+            receiver
+                .recv_timeout(std::time::Duration::from_millis(250))
+                .expect("pinned contexts must return"),
+            2
+        );
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn iteration_guard_falls_back_to_drop_oldest() {
+        let mut cm = ContextManager {
+            messages: (0..=MAX_ITERATIONS)
+                .map(|timestamp| ContextMessage {
+                    role: "user".into(),
+                    content: "x".repeat(100),
+                    timestamp: timestamp as u64,
+                    pinned: false,
+                })
+                .collect(),
+            max_tokens: 0,
+            strategy: ContextStrategy::Summarize,
+            ..Default::default()
+        };
+        cm.enforce_limit();
+        assert!(cm.fell_back_to_drop);
+        assert_eq!(cm.messages.len(), 1);
+    }
     #[test]
     fn summarize_eventually_terminates() {
         // This test would hang forever before the fix.
