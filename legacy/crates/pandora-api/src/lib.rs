@@ -297,21 +297,17 @@ fn configure_runtime(
     Ok(())
 }
 
-async fn execute(
-    State(state): State<Arc<ApiState>>,
-    headers: axum::http::HeaderMap,
-    Json(req): Json<protocol::ExecuteRequest>,
-) -> axum::response::Response {
-    if !require_auth_state(&headers, &state.auth).await {
-        return StatusCode::UNAUTHORIZED.into_response();
-    }
-    let domain = if req.domain.is_empty() {
+async fn execute_request(
+    state: &ApiState,
+    request: &protocol::ExecuteRequest,
+) -> protocol::ExecuteResponse {
+    let domain = if request.domain.is_empty() {
         "default"
     } else {
-        &req.domain
+        &request.domain
     };
     let mut runtime = state.runtime.lock().await;
-    let response = match configure_runtime(&mut runtime, &req) {
+    match configure_runtime(&mut runtime, request) {
         Err(error) => protocol::ExecuteResponse {
             api_version: protocol::API_VERSION.to_string(),
             session_id: String::new(),
@@ -321,7 +317,9 @@ async fn execute(
             provider: String::new(),
         },
         Ok(()) => {
-            match tokio::time::timeout(execution_timeout(), runtime.run(&req.task, domain)).await {
+            match tokio::time::timeout(execution_timeout(), runtime.run(&request.task, domain))
+                .await
+            {
                 Ok(Ok(result)) => protocol::ExecuteResponse {
                     api_version: protocol::API_VERSION.to_string(),
                     session_id: result.execution_id,
@@ -353,8 +351,41 @@ async fn execute(
                 },
             }
         }
-    };
-    drop(runtime);
+    }
+}
+
+fn websocket_event_from_response(response: protocol::ExecuteResponse) -> protocol::RuntimeEvent {
+    let protocol::ExecuteResponse {
+        status,
+        session_id,
+        output,
+        ..
+    } = response;
+    match status.as_str() {
+        "completed" => protocol::RuntimeEvent::Completed {
+            session_id,
+            success: true,
+        },
+        "failed" => protocol::RuntimeEvent::Completed {
+            session_id,
+            success: false,
+        },
+        _ => protocol::RuntimeEvent::Failed {
+            session_id,
+            error: output,
+        },
+    }
+}
+
+async fn execute(
+    State(state): State<Arc<ApiState>>,
+    headers: axum::http::HeaderMap,
+    Json(req): Json<protocol::ExecuteRequest>,
+) -> axum::response::Response {
+    if !require_auth_state(&headers, &state.auth).await {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let response = execute_request(&state, &req).await;
     if let Ok(payload) = serde_json::to_string(&response) {
         if let Ok(delivery_id) = state
             .delivery
@@ -502,37 +533,7 @@ async fn websocket_session(mut socket: axum::extract::ws::WebSocket, state: Arc<
             let _ = state.delivery.mark_delivered(&delivery_id);
         }
 
-        let domain = if request.domain.is_empty() {
-            "default".to_string()
-        } else {
-            request.domain.clone()
-        };
-        let mut runtime = state.runtime.lock().await;
-        let configuration_error = configure_runtime(&mut runtime, &request).err();
-        let event = if let Some(error) = configuration_error {
-            protocol::RuntimeEvent::Failed {
-                session_id: String::new(),
-                error,
-            }
-        } else {
-            let result =
-                tokio::time::timeout(execution_timeout(), runtime.run(&request.task, &domain))
-                    .await;
-            match result {
-                Ok(Ok(result)) => protocol::RuntimeEvent::Completed {
-                    session_id: result.execution_id,
-                    success: result.success,
-                },
-                Ok(Err(error)) => protocol::RuntimeEvent::Failed {
-                    session_id: String::new(),
-                    error: error.to_string(),
-                },
-                Err(_) => protocol::RuntimeEvent::Failed {
-                    session_id: String::new(),
-                    error: "execution exceeded the configured timeout".into(),
-                },
-            }
-        };
+        let event = websocket_event_from_response(execute_request(&state, &request).await);
         sequence += 1;
         let envelope = protocol::EventEnvelope {
             api_version: protocol::API_VERSION.to_string(),

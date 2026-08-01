@@ -182,6 +182,153 @@ async fn paired_token_can_be_revoked() {
 }
 
 #[tokio::test]
+async fn execute_reports_profile_configuration_errors() {
+    let _guard = ENV_LOCK.lock().await;
+    let _insecure = EnvVarGuard::set("PANDORA_INSECURE", "1");
+    let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let sessions_dir =
+        std::env::temp_dir().join(format!("pandora-api-execute-{}", rand::random::<u64>()));
+    let state = std::sync::Arc::new(crate::ApiState {
+        runtime: std::sync::Arc::new(tokio::sync::Mutex::new(
+            pandora_orchestrator::PandoraRuntime::new(),
+        )),
+        sessions_dir: sessions_dir.clone(),
+        auth: crate::AuthState::new(),
+        delivery: crate::delivery::DeliveryLedger::new(&sessions_dir),
+    });
+    let response = crate::execute(
+        axum::extract::State(state),
+        axum::http::HeaderMap::new(),
+        axum::Json(crate::protocol::ExecuteRequest {
+            task: "test".to_string(),
+            domain: String::new(),
+            strategy: String::new(),
+            evaluator: String::new(),
+            profile: Some(format!("missing-profile-{}", rand::random::<u64>())),
+        }),
+    )
+    .await;
+
+    assert_eq!(response.status(), axum::http::StatusCode::OK);
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("response body should be readable");
+    let payload: crate::protocol::ExecuteResponse =
+        serde_json::from_slice(&body).expect("response should match execution contract");
+    assert_eq!(payload.api_version, crate::protocol::API_VERSION);
+    assert_eq!(payload.status, "error");
+    assert!(payload.session_id.is_empty());
+    assert_eq!(payload.duration_ms, 0);
+    assert!(!payload.output.is_empty());
+}
+
+#[test]
+fn websocket_event_mapping_preserves_execution_status() {
+    let response =
+        |status: &str, session_id: &str, output: &str| crate::protocol::ExecuteResponse {
+            api_version: crate::protocol::API_VERSION.to_string(),
+            session_id: session_id.to_string(),
+            status: status.to_string(),
+            output: output.to_string(),
+            duration_ms: 1,
+            provider: "test".to_string(),
+        };
+
+    assert!(matches!(
+        crate::websocket_event_from_response(response("completed", "session-a", "")),
+        crate::protocol::RuntimeEvent::Completed { session_id, success: true } if session_id == "session-a"
+    ));
+    assert!(matches!(
+        crate::websocket_event_from_response(response("failed", "session-b", "")),
+        crate::protocol::RuntimeEvent::Completed { session_id, success: false } if session_id == "session-b"
+    ));
+    assert!(matches!(
+        crate::websocket_event_from_response(response("error", "", "configuration failed")),
+        crate::protocol::RuntimeEvent::Failed { session_id, error }
+            if session_id.is_empty() && error == "configuration failed"
+    ));
+    assert!(matches!(
+        crate::websocket_event_from_response(response("timeout", "", "execution exceeded timeout")),
+        crate::protocol::RuntimeEvent::Failed { session_id, error }
+            if session_id.is_empty() && error == "execution exceeded timeout"
+    ));
+}
+
+#[tokio::test]
+async fn websocket_reports_configuration_failure_events() {
+    use futures_util::{SinkExt, StreamExt};
+
+    let _guard = ENV_LOCK.lock().await;
+    let _insecure = EnvVarGuard::set("PANDORA_INSECURE", "1");
+    let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let sessions_dir =
+        std::env::temp_dir().join(format!("pandora-api-websocket-{}", rand::random::<u64>()));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind test listener");
+    let endpoint = format!(
+        "http://{}",
+        listener.local_addr().expect("listener address")
+    );
+    let server = tokio::spawn(crate::serve_listener(listener, sessions_dir));
+    let client = crate::client::ApiClient::new(endpoint.clone(), None);
+
+    client.wait_ready().await.expect("API should start");
+    let websocket_url = format!("{}/api/v1/ws", endpoint.replacen("http://", "ws://", 1));
+    let (mut socket, _) = tokio_tungstenite::connect_async(websocket_url)
+        .await
+        .expect("WebSocket should connect");
+    let request = serde_json::to_string(&crate::protocol::ExecuteRequest {
+        task: "test".to_string(),
+        domain: String::new(),
+        strategy: String::new(),
+        evaluator: String::new(),
+        profile: Some(format!("missing-profile-{}", rand::random::<u64>())),
+    })
+    .expect("request should serialize");
+    socket
+        .send(tokio_tungstenite::tungstenite::Message::Text(request))
+        .await
+        .expect("request should send");
+
+    let started = tokio::time::timeout(std::time::Duration::from_secs(5), socket.next())
+        .await
+        .expect("started event should arrive promptly")
+        .expect("started event should arrive")
+        .expect("started event should be valid")
+        .into_text()
+        .expect("started event should be text");
+    let started: crate::protocol::EventEnvelope =
+        serde_json::from_str(&started).expect("started event should match contract");
+    assert_eq!(started.api_version, crate::protocol::API_VERSION);
+    assert_eq!(started.sequence, 1);
+    assert!(matches!(
+        started.event,
+        crate::protocol::RuntimeEvent::Started { task, .. } if task == "test"
+    ));
+
+    let failed = tokio::time::timeout(std::time::Duration::from_secs(5), socket.next())
+        .await
+        .expect("failure event should arrive promptly")
+        .expect("failure event should arrive")
+        .expect("failure event should be valid")
+        .into_text()
+        .expect("failure event should be text");
+    let failed: crate::protocol::EventEnvelope =
+        serde_json::from_str(&failed).expect("failure event should match contract");
+    assert_eq!(failed.api_version, crate::protocol::API_VERSION);
+    assert_eq!(failed.sequence, 2);
+    assert!(matches!(
+        failed.event,
+        crate::protocol::RuntimeEvent::Failed { error, .. } if !error.is_empty()
+    ));
+
+    server.abort();
+}
+
+#[tokio::test]
 async fn paired_token_can_only_revoke_itself_via_api() {
     let _guard = ENV_LOCK.lock().await;
     let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
