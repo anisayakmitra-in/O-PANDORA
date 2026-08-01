@@ -143,8 +143,7 @@ impl RegistryClient {
                 return Err("Package signature verification failed".into());
             }
         }
-        extract_archive(&bytes, destination)?;
-        find_package_root(destination)
+        extract_archive_transactionally(&bytes, destination)
     }
 
     pub fn search(&self, query: &str) -> Result<Vec<RegistryPackage>, String> {
@@ -192,6 +191,74 @@ fn read_limited(response: Response) -> Result<Vec<u8>, String> {
     Ok(bytes.to_vec())
 }
 
+fn extract_archive_transactionally(bytes: &[u8], destination: &Path) -> Result<PathBuf, String> {
+    match std::fs::symlink_metadata(destination) {
+        Ok(_) => {
+            return Err(format!(
+                "Staging destination already exists: {}",
+                destination.display()
+            ));
+        }
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+            return Err(format!(
+                "Could not inspect staging destination {}: {error}",
+                destination.display()
+            ));
+        }
+        Err(_) => {}
+    }
+
+    let parent = destination
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    std::fs::create_dir_all(parent)
+        .map_err(|error| format!("Could not create staging parent: {error}"))?;
+    let name = destination
+        .file_name()
+        .ok_or_else(|| "Staging destination must have a file name".to_string())?
+        .to_string_lossy();
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| format!("System clock error: {error}"))?
+        .as_nanos();
+    let mut staging = None;
+    for attempt in 0..10 {
+        let candidate = parent.join(format!(
+            ".{name}-download-{}-{timestamp}-{attempt}",
+            std::process::id()
+        ));
+        match std::fs::create_dir(&candidate) {
+            Ok(()) => {
+                staging = Some(candidate);
+                break;
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                return Err(format!(
+                    "Could not create extraction staging directory: {error}"
+                ))
+            }
+        }
+    }
+    let staging =
+        staging.ok_or_else(|| "Could not allocate extraction staging directory".to_string())?;
+
+    let result = (|| {
+        extract_archive(bytes, &staging)?;
+        let root = find_package_root(&staging)?;
+        let relative_root = root
+            .strip_prefix(&staging)
+            .map_err(|_| "Extraction root escaped staging directory".to_string())?;
+        std::fs::rename(&staging, destination)
+            .map_err(|error| format!("Could not commit extracted package: {error}"))?;
+        Ok(destination.join(relative_root))
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_dir_all(&staging);
+    }
+    result
+}
 fn extract_archive(bytes: &[u8], destination: &Path) -> Result<(), String> {
     std::fs::create_dir_all(destination)
         .map_err(|e| format!("Could not create staging directory: {e}"))?;
@@ -329,6 +396,68 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[test]
+    fn failed_extraction_leaves_destination_untouched() {
+        let mut bytes = Vec::new();
+        {
+            let mut archive = tar::Builder::new(&mut bytes);
+            let mut header = tar::Header::new_gnu();
+            header.set_size(4);
+            header.set_mode(0o644);
+            header.set_cksum();
+            archive
+                .append_data(&mut header, "package/readme.txt", &b"safe"[..])
+                .expect("create archive entry");
+            archive.finish().expect("finish archive");
+        }
+
+        let destination = std::env::temp_dir().join(format!(
+            "pandora-registry-transaction-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock")
+                .as_nanos()
+        ));
+        let _ = std::fs::remove_dir_all(&destination);
+        let result = extract_archive_transactionally(&bytes, &destination);
+        let destination_exists = destination.exists();
+        let _ = std::fs::remove_dir_all(&destination);
+
+        assert!(result.is_err());
+        assert!(!destination_exists);
+    }
+    #[test]
+    fn successful_extraction_commits_staging_directory() {
+        let mut bytes = Vec::new();
+        {
+            let mut archive = tar::Builder::new(&mut bytes);
+            let mut header = tar::Header::new_gnu();
+            header.set_size(4);
+            header.set_mode(0o644);
+            header.set_cksum();
+            archive
+                .append_data(&mut header, "package/gene.toml", &b"safe"[..])
+                .expect("create package archive");
+            archive.finish().expect("finish archive");
+        }
+
+        let destination = std::env::temp_dir().join(format!(
+            "pandora-registry-commit-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock")
+                .as_nanos()
+        ));
+        let _ = std::fs::remove_dir_all(&destination);
+        let root = extract_archive_transactionally(&bytes, &destination).expect("extract archive");
+        let installed = root.join("gene.toml").is_file();
+        let _ = std::fs::remove_dir_all(&destination);
+
+        assert_eq!(root, destination.join("package"));
+        assert!(installed);
+    }
     #[test]
     fn encodes_ids_and_queries() {
         assert_eq!(
