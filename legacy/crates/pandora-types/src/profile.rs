@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn missing_profile_directory_is_empty() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let directory =
             std::env::temp_dir().join(format!("pandora-profiles-{}", rand::random::<u64>()));
         let _directory = crate::EnvVarGuard::set("PANDORA_PROFILES_DIR", &directory);

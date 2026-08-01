@@ -150,3 +150,24 @@ impl Drop for EnvVarGuard {
         }
     }
 }
+#[cfg(test)]
+pub(crate) fn environment_lock() -> std::sync::MutexGuard<'static, ()> {
+    ENV_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+#[cfg(test)]
+mod test_support_tests {
+    #[test]
+    fn environment_lock_recovers_after_panic() {
+        let thread = std::thread::spawn(|| {
+            let _guard = crate::ENV_LOCK
+                .lock()
+                .expect("environment lock should be available");
+            panic!("poison the environment lock");
+        });
+        assert!(thread.join().is_err());
+
+        let _guard = crate::environment_lock();
+    }
+}

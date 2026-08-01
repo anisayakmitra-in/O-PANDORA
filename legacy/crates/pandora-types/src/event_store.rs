@@ -254,9 +254,7 @@ mod tests {
 
     #[test]
     fn default_uses_pandora_home() {
-        let _guard = crate::ENV_LOCK
-            .lock()
-            .expect("environment lock should be available");
+        let _guard = crate::environment_lock();
         let root = std::env::temp_dir().join(format!("event-store-root-{}", rand::random::<u64>()));
         let fallback_home =
             std::env::temp_dir().join(format!("event-store-home-{}", rand::random::<u64>()));

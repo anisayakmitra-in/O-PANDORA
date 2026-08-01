@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn checkpoint_save_and_load() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let root = std::env::temp_dir().join("pandora-checkpoint-save");
         let _ = std::fs::remove_dir_all(&root);
         let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn incomplete_detection() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let root = std::env::temp_dir().join("pandora-checkpoint-incomplete");
         let _ = std::fs::remove_dir_all(&root);
         let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn complete_execution() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let root = std::env::temp_dir().join("pandora-checkpoint-complete");
         let _ = std::fs::remove_dir_all(&root);
         let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);

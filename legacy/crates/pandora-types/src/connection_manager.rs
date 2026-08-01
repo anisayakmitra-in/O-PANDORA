@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn registry_add_remove() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let root = std::env::temp_dir().join("pandora-connection-registry");
         let _ = std::fs::remove_dir_all(&root);
         let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);

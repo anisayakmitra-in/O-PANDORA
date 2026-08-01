@@ -135,7 +135,7 @@ mod tests {
     }
     #[test]
     fn config_with_env() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let original = std::env::var_os("PANDORA_DEFAULT_MODEL");
         let model = crate::EnvVarGuard::set("PANDORA_DEFAULT_MODEL", "test-model");
         let c = PandoraConfig::default().with_env();
@@ -146,7 +146,7 @@ mod tests {
 
     #[test]
     fn config_dir_exists() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let d = config_dir();
         if let Some(home) = std::env::var_os("PANDORA_HOME") {
             assert_eq!(d, PathBuf::from(home));
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn config_dir_uses_pandora_home() {
-        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let _guard = crate::environment_lock();
         let home = std::env::temp_dir().join("pandora-config-home");
         let _home = crate::EnvVarGuard::set("PANDORA_HOME", &home);
         assert_eq!(config_dir(), home);
