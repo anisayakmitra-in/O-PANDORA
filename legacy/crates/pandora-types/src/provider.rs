@@ -6,6 +6,18 @@
 
 use serde::{Deserialize, Serialize};
 
+fn new_blocking_client(
+    factory: impl FnOnce() -> reqwest::blocking::Client + Send + 'static,
+) -> reqwest::blocking::Client {
+    if tokio::runtime::Handle::try_current().is_ok() {
+        std::thread::spawn(factory)
+            .join()
+            .expect("provider client initialization thread panicked")
+    } else {
+        factory()
+    }
+}
+
 // ── Core types ──
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,14 +164,14 @@ pub mod ollama {
             Self {
                 endpoint: endpoint.to_string(),
                 model: model.to_string(),
-                client: reqwest::blocking::Client::new(),
+                client: new_blocking_client(reqwest::blocking::Client::new),
             }
         }
         pub fn new_default() -> Self {
             Self {
                 endpoint: "http://localhost:11434".into(),
                 model: std::env::var("PANDORA_DEFAULT_MODEL").unwrap_or_else(|_| "".into()),
-                client: reqwest::blocking::Client::new(),
+                client: new_blocking_client(reqwest::blocking::Client::new),
             }
         }
     }
@@ -461,10 +473,12 @@ pub mod openai_compat {
                 }
             }
 
-            let client = reqwest::blocking::Client::builder()
-                .default_headers(headers)
-                .build()
-                .unwrap_or_else(|_| reqwest::blocking::Client::new());
+            let client = new_blocking_client(move || {
+                reqwest::blocking::Client::builder()
+                    .default_headers(headers)
+                    .build()
+                    .unwrap_or_else(|_| reqwest::blocking::Client::new())
+            });
 
             Self {
                 endpoint: endpoint.trim_end_matches('/').to_string(),
@@ -668,6 +682,28 @@ pub mod openai_compat {
                 finish_reason,
                 tokens_used,
             })
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ollama::OllamaProvider, openai_compat::OpenAiCompatibleProvider, Provider};
+
+    #[tokio::test]
+    async fn ollama_client_is_safe_inside_tokio_runtime() {
+        {
+            let provider = OllamaProvider::new_default();
+            assert_eq!(provider.name(), "ollama");
+        }
+    }
+
+    #[tokio::test]
+    async fn openai_compatible_client_is_safe_inside_tokio_runtime() {
+        {
+            let provider =
+                OpenAiCompatibleProvider::new("https://example.invalid", "test-model", None);
+            assert_eq!(provider.name(), "openai-compatible");
         }
     }
 }
