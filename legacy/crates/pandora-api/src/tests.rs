@@ -263,10 +263,16 @@ async fn registry_endpoints_list_registered_components() {
 }
 
 #[tokio::test]
-async fn registry_endpoints_are_available_under_versioned_paths() {
+async fn versioned_endpoints_preserve_legacy_responses() {
     let _guard = ENV_LOCK.lock().await;
     let home = TempDirGuard::new("pandora-api-routes");
     let _home = EnvVarGuard::set("PANDORA_HOME", home.path().as_os_str());
+    let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let token = "versioned-route-token";
+    let _token = EnvVarGuard::set("PANDORA_API_TOKEN", token);
+    let sessions_dir = home.path().join("sessions");
+    std::fs::create_dir_all(&sessions_dir).expect("test sessions directory should exist");
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("test listener should bind");
@@ -275,27 +281,48 @@ async fn registry_endpoints_are_available_under_versioned_paths() {
         .expect("test listener should expose its address");
     let server = AbortOnDrop::new(tokio::spawn(crate::serve_listener(
         listener,
-        home.path().join("sessions"),
+        sessions_dir.clone(),
     )));
     let client = reqwest::Client::new();
+
+    let session = pandora_types::Session::new("versioned-route-test", "inspect the session route");
+    std::fs::write(
+        sessions_dir.join("versioned-route-test.json"),
+        serde_json::to_string(&session).expect("test session should serialize"),
+    )
+    .expect("test session should persist");
+    assert!(
+        sessions_dir.join("versioned-route-test.json").is_file(),
+        "test session should remain on disk"
+    );
 
     for (legacy_path, versioned_path) in [
         ("/harnesses", "/api/v1/harnesses"),
         ("/genes", "/api/v1/genes"),
+        (
+            "/sessions/versioned-route-test",
+            "/api/v1/sessions/versioned-route-test",
+        ),
+        (
+            "/explain/versioned-route-test",
+            "/api/v1/explain/versioned-route-test",
+        ),
     ] {
         let legacy = client
             .get(format!("http://{address}{legacy_path}"))
+            .bearer_auth(token)
             .send()
             .await
             .expect("legacy request should succeed");
         let versioned = client
             .get(format!("http://{address}{versioned_path}"))
+            .bearer_auth(token)
             .send()
             .await
             .expect("versioned request should succeed");
 
-        assert!(legacy.status().is_success());
-        assert!(versioned.status().is_success());
+        let legacy_status = legacy.status();
+        let versioned_status = versioned.status();
         let legacy = legacy
             .bytes()
             .await
@@ -304,6 +331,16 @@ async fn registry_endpoints_are_available_under_versioned_paths() {
             .bytes()
             .await
             .expect("versioned response body should be readable");
+        assert!(
+            legacy_status.is_success(),
+            "legacy route {legacy_path} returned {legacy_status}: {}",
+            String::from_utf8_lossy(&legacy)
+        );
+        assert!(
+            versioned_status.is_success(),
+            "versioned route {versioned_path} returned {versioned_status}: {}",
+            String::from_utf8_lossy(&versioned)
+        );
         assert!(!legacy.is_empty());
         assert_eq!(versioned, legacy);
     }
