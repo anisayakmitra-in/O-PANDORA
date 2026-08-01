@@ -347,6 +347,60 @@ async fn versioned_endpoints_preserve_legacy_responses() {
 
     let _ = server.abort_and_join().await;
 }
+
+#[tokio::test]
+async fn standalone_mcp_requires_api_authentication() {
+    let _guard = ENV_LOCK.lock().await;
+    let home = TempDirGuard::new("pandora-api-mcp-auth");
+    let _home = EnvVarGuard::set("PANDORA_HOME", home.path().as_os_str());
+    let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let token = "mcp-auth-token";
+    let _token = EnvVarGuard::set("PANDORA_API_TOKEN", token);
+    let reservation = std::net::TcpListener::bind("127.0.0.1:0").expect("reserve MCP test address");
+    let address = reservation.local_addr().expect("reserved MCP address");
+    drop(reservation);
+    let server_address = address.to_string();
+    let server = AbortOnDrop::new(tokio::spawn(async move {
+        crate::mcp::serve_mcp(&server_address).await
+    }));
+    let client = reqwest::Client::new();
+    let endpoint = format!("http://{address}/");
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {}
+    });
+
+    let mut unauthenticated = None;
+    for _ in 0..50 {
+        match client.post(&endpoint).json(&request).send().await {
+            Ok(response) => {
+                unauthenticated = Some(response);
+                break;
+            }
+            Err(_) => tokio::time::sleep(std::time::Duration::from_millis(10)).await,
+        }
+    }
+    let unauthenticated = unauthenticated.expect("MCP server should accept connections");
+    assert_eq!(
+        unauthenticated.status(),
+        axum::http::StatusCode::UNAUTHORIZED
+    );
+
+    let authenticated = client
+        .post(endpoint)
+        .bearer_auth(token)
+        .json(&request)
+        .send()
+        .await
+        .expect("authenticated MCP request should complete");
+    assert_eq!(authenticated.status(), axum::http::StatusCode::OK);
+
+    let _ = server.abort_and_join().await;
+}
+
 #[tokio::test]
 async fn pairing_attempts_are_rate_limited() {
     let auth = crate::AuthState::new();

@@ -6,6 +6,8 @@
 
 use axum::{
     extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
@@ -60,8 +62,13 @@ pub async fn serve_mcp(addr: &str) -> Result<(), anyhow::Error> {
 /// Handle MCP JSON-RPC messages.
 async fn mcp_handler(
     State(state): State<Arc<McpState>>,
+    headers: axum::http::HeaderMap,
     Json(req): Json<McpRequest>,
-) -> Json<McpResponse> {
+) -> Response {
+    if !super::require_auth(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+
     match req.method.as_str() {
         "initialize" => Json(McpResponse {
             jsonrpc: "2.0".into(),
@@ -153,4 +160,5 @@ async fn mcp_handler(
             result: None,
         }),
     }
+    .into_response()
 }
