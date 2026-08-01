@@ -64,9 +64,8 @@ impl ApiClient {
             .json(&RevokeRequest {
                 token: token.to_string(),
             });
-        if let Some(auth_token) = &self.token {
-            builder = builder.bearer_auth(auth_token);
-        }
+        let auth_token = self.token.as_deref().unwrap_or(token);
+        builder = builder.bearer_auth(auth_token);
         builder.send().await?.error_for_status()?;
         Ok(())
     }

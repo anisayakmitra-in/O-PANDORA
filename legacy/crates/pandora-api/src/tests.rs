@@ -180,3 +180,143 @@ async fn paired_token_can_be_revoked() {
     assert!(auth.revoke(&token).await);
     assert!(!crate::require_auth_state(&headers, &auth).await);
 }
+
+#[tokio::test]
+async fn paired_token_can_only_revoke_itself_via_api() {
+    let _guard = ENV_LOCK.lock().await;
+    let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+    let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+
+    let sessions_dir =
+        std::env::temp_dir().join(format!("pandora-api-revoke-{}", rand::random::<u64>()));
+    let auth = crate::AuthState::new();
+    let paired_token = auth.issue().await;
+    let other_paired_token = auth.issue().await;
+    let state = std::sync::Arc::new(crate::ApiState {
+        runtime: std::sync::Arc::new(tokio::sync::Mutex::new(
+            pandora_orchestrator::PandoraRuntime::new(),
+        )),
+        sessions_dir: sessions_dir.clone(),
+        auth,
+        delivery: crate::delivery::DeliveryLedger::new(&sessions_dir),
+    });
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        "authorization",
+        format!("Bearer {paired_token}")
+            .parse()
+            .expect("valid header"),
+    );
+
+    let other_response = crate::revoke(
+        axum::extract::State(state.clone()),
+        headers.clone(),
+        axum::Json(crate::protocol::RevokeRequest {
+            token: other_paired_token.clone(),
+        }),
+    )
+    .await;
+    assert_eq!(
+        other_response.status(),
+        axum::http::StatusCode::UNAUTHORIZED
+    );
+    let mut other_headers = axum::http::HeaderMap::new();
+    other_headers.insert(
+        "authorization",
+        format!("Bearer {other_paired_token}")
+            .parse()
+            .expect("valid header"),
+    );
+    assert!(crate::require_auth_state(&other_headers, &state.auth).await);
+
+    let response = crate::revoke(
+        axum::extract::State(state.clone()),
+        headers.clone(),
+        axum::Json(crate::protocol::RevokeRequest {
+            token: paired_token,
+        }),
+    )
+    .await;
+
+    assert_eq!(response.status(), axum::http::StatusCode::NO_CONTENT);
+    assert!(!crate::require_auth_state(&headers, &state.auth).await);
+}
+
+#[tokio::test]
+async fn api_client_uses_paired_token_for_self_revoke() {
+    let _guard = ENV_LOCK.lock().await;
+    let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+    let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let _pairing_code = EnvVarGuard::set("PANDORA_PAIRING_CODE", "test-pairing-code");
+    let sessions_dir = std::env::temp_dir().join(format!(
+        "pandora-api-client-revoke-{}",
+        rand::random::<u64>()
+    ));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind test listener");
+    let endpoint = format!(
+        "http://{}",
+        listener.local_addr().expect("listener address")
+    );
+    let server = tokio::spawn(crate::serve_listener(listener, sessions_dir));
+    let client = crate::client::ApiClient::new(endpoint, None);
+
+    client.wait_ready().await.expect("API should start");
+    let paired_token = client
+        .pair("test-pairing-code")
+        .await
+        .expect("pairing should succeed")
+        .token;
+    client
+        .revoke(&paired_token)
+        .await
+        .expect("paired token should revoke itself");
+
+    server.abort();
+}
+#[tokio::test]
+async fn primary_api_token_can_revoke_any_paired_token() {
+    let _guard = ENV_LOCK.lock().await;
+    let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+    let _token = EnvVarGuard::set("PANDORA_API_TOKEN", "primary-token");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let _pairing_code = EnvVarGuard::set("PANDORA_PAIRING_CODE", "test-pairing-code");
+    let sessions_dir = std::env::temp_dir().join(format!(
+        "pandora-api-primary-revoke-{}",
+        rand::random::<u64>()
+    ));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind test listener");
+    let endpoint = format!(
+        "http://{}",
+        listener.local_addr().expect("listener address")
+    );
+    let server = tokio::spawn(crate::serve_listener(listener, sessions_dir));
+    let pairing_client = crate::client::ApiClient::new(endpoint.clone(), None);
+
+    pairing_client.wait_ready().await.expect("API should start");
+    let paired_token = pairing_client
+        .pair("test-pairing-code")
+        .await
+        .expect("pairing should succeed")
+        .token;
+    let primary_client =
+        crate::client::ApiClient::new(endpoint.clone(), Some("primary-token".into()));
+    primary_client
+        .revoke(&paired_token)
+        .await
+        .expect("primary token should revoke paired token");
+    let response = reqwest::Client::new()
+        .get(format!("{endpoint}/api/v1/node"))
+        .bearer_auth(paired_token)
+        .send()
+        .await
+        .expect("revoked-token request should reach API");
+    assert_eq!(response.status(), axum::http::StatusCode::UNAUTHORIZED);
+
+    server.abort();
+}

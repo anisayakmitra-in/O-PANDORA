@@ -138,6 +138,12 @@ impl AuthState {
         paired.retain(|_, expires_at| *expires_at > Instant::now());
         paired.contains_key(token)
     }
+    async fn revoke_if_valid(&self, token: &str) -> bool {
+        let mut paired = self.paired_tokens.lock().await;
+        paired.retain(|_, expires_at| *expires_at > Instant::now());
+        paired.remove(token).is_some()
+    }
+
     async fn revoke(&self, token: &str) -> bool {
         self.paired_tokens.lock().await.remove(token).is_some()
     }
@@ -206,13 +212,25 @@ async fn revoke(
     headers: axum::http::HeaderMap,
     Json(request): Json<protocol::RevokeRequest>,
 ) -> axum::response::Response {
-    if !require_auth(&headers) {
+    let is_primary_credential = require_auth(&headers);
+    let presented_token = headers
+        .get("authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "));
+    if is_primary_credential {
+        return if state.auth.revoke(&request.token).await {
+            StatusCode::NO_CONTENT.into_response()
+        } else {
+            StatusCode::NOT_FOUND.into_response()
+        };
+    }
+    if presented_token != Some(request.token.as_str()) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    if state.auth.revoke(&request.token).await {
+    if state.auth.revoke_if_valid(&request.token).await {
         StatusCode::NO_CONTENT.into_response()
     } else {
-        StatusCode::NOT_FOUND.into_response()
+        StatusCode::UNAUTHORIZED.into_response()
     }
 }
 async fn health() -> impl IntoResponse {
