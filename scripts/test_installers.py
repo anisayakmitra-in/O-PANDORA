@@ -27,6 +27,12 @@ class InstallerContractTests(unittest.TestCase):
         self.assertEqual(script.count("Add-InstallDirectoryToPath $installDir"), 2)
         self.assertIn("Could not update the user PATH automatically", script)
 
+
+    def test_powershell_uses_os_architecture_for_asset_selection(self):
+        script = (ROOT / "scripts" / "install-cli.ps1").read_text(encoding="utf-8")
+        self.assertIn("RuntimeInformation]::OSArchitecture", script)
+        self.assertNotIn("RuntimeInformation]::ProcessArchitecture", script)
+
     def test_wrapper_does_not_start_setup_or_import(self):
         script = (ROOT / "scripts" / "install.sh").read_text(encoding="utf-8")
         self.assertNotIn("pandora setup 2>/dev/null", script)

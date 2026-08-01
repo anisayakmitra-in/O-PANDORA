@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $repo = "anisayakmitra-in/O-PANDORA"
 $version = if ($env:PANDORA_VERSION) { $env:PANDORA_VERSION } else { "latest" }
-$architecture = [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 $asset = if ($architecture -eq [System.Runtime.InteropServices.Architecture]::Arm64) {
   "pandora-windows-arm64.exe"
 } else {
