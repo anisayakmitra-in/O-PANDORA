@@ -33,6 +33,28 @@ impl Drop for EnvVarGuard {
     }
 }
 
+struct TempDirGuard {
+    path: std::path::PathBuf,
+}
+
+impl TempDirGuard {
+    fn new(prefix: &str) -> Self {
+        Self {
+            path: std::env::temp_dir().join(format!("{prefix}-{}", rand::random::<u64>())),
+        }
+    }
+
+    fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+}
+
+impl Drop for TempDirGuard {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::all)]
 mod tests {
@@ -155,6 +177,64 @@ fn protocol_types_round_trip() {
     let decoded: crate::protocol::ExecuteRequest =
         serde_json::from_str(&json).expect("deserialize request");
     assert_eq!(decoded.task, "inspect");
+}
+
+#[tokio::test]
+async fn registry_endpoints_list_registered_components() {
+    use axum::response::IntoResponse;
+
+    let _guard = ENV_LOCK.lock().await;
+    let home = TempDirGuard::new("pandora-api-registry");
+    let _home = EnvVarGuard::set("PANDORA_HOME", home.path().as_os_str());
+    let sessions_dir = home.path().join("sessions");
+    let mut runtime = pandora_orchestrator::PandoraRuntime::new();
+    runtime
+        .council
+        .install(Box::new(
+            pandora_harnesses::coding::CodingDomainHarness::new(),
+        ))
+        .expect("coding harness should install");
+    runtime
+        .council
+        .install(Box::new(
+            pandora_harnesses::design::DesignDomainHarness::new(),
+        ))
+        .expect("design harness should install");
+    runtime
+        .council
+        .install_gene(Box::new(pandora_harnesses::coding::CodeAuditGene::new()))
+        .expect("code audit gene should install");
+    runtime
+        .council
+        .install_gene(Box::new(
+            pandora_harnesses::coding::CodingCodeReviewGene::new(),
+        ))
+        .expect("code review gene should install");
+    let state = std::sync::Arc::new(crate::ApiState {
+        runtime: std::sync::Arc::new(tokio::sync::Mutex::new(runtime)),
+        sessions_dir: sessions_dir.clone(),
+        auth: crate::AuthState::new(),
+        delivery: crate::delivery::DeliveryLedger::new(&sessions_dir),
+    });
+
+    let harnesses = crate::harnesses_list(axum::extract::State(state.clone()))
+        .await
+        .into_response();
+    let harnesses = axum::body::to_bytes(harnesses.into_body(), usize::MAX)
+        .await
+        .expect("harness response body should be readable");
+    let harnesses: Vec<String> =
+        serde_json::from_slice(&harnesses).expect("harness response should be JSON");
+    assert_eq!(harnesses, vec!["coding-domain", "design-domain"]);
+
+    let genes = crate::genes_list(axum::extract::State(state))
+        .await
+        .into_response();
+    let genes = axum::body::to_bytes(genes.into_body(), usize::MAX)
+        .await
+        .expect("gene response body should be readable");
+    let genes: Vec<String> = serde_json::from_slice(&genes).expect("gene response should be JSON");
+    assert_eq!(genes, vec!["code-audit", "code-review"]);
 }
 
 #[tokio::test]
