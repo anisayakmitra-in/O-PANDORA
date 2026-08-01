@@ -226,8 +226,7 @@ impl EventStore {
 
 impl Default for EventStore {
     fn default() -> Self {
-        let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-        Self::new(PathBuf::from(home).join(".pandora"))
+        Self::new(crate::config::config_dir())
     }
 }
 
@@ -253,6 +252,35 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    #[test]
+    fn default_uses_pandora_home() {
+        let _guard = crate::ENV_LOCK
+            .lock()
+            .expect("environment lock should be available");
+        let root = std::env::temp_dir().join(format!("event-store-root-{}", rand::random::<u64>()));
+        let fallback_home =
+            std::env::temp_dir().join(format!("event-store-home-{}", rand::random::<u64>()));
+        let _root = crate::EnvVarGuard::set("PANDORA_HOME", &root);
+        let _home = crate::EnvVarGuard::set("HOME", &fallback_home);
+        let store = EventStore::default();
+
+        store
+            .try_push(
+                "default-store",
+                PipelineEvent::StageStarted {
+                    stage: "test".into(),
+                },
+            )
+            .expect("event should be accepted");
+        store.flush().expect("event should persist");
+
+        assert!(root.join("events/default-store.events.json").is_file());
+        assert!(!fallback_home
+            .join(".pandora/events/default-store.events.json")
+            .exists());
+        let _ = std::fs::remove_dir_all(root);
+        let _ = std::fs::remove_dir_all(fallback_home);
+    }
     #[test]
     fn reconstruct_timeline() {
         let dir = std::env::temp_dir().join(format!("evtest-{}", rand::random::<u64>()));
