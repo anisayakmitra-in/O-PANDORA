@@ -605,3 +605,31 @@ fn preloaded_harnesses_and_genes_are_discoverable() {
     assert_eq!(genes["api_version"], "v1");
     assert_eq!(genes["genes"].as_array().map(Vec::len), Some(97));
 }
+
+#[test]
+fn doctor_treats_a_clean_session_home_as_ready() {
+    let home = tmp_dir().join(format!(
+        "doctor-clean-home-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    let output = run_with_home(&["--json", "doctor"], &home);
+    assert_success(&output, &["--json", "doctor"]);
+    let value: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid doctor JSON");
+    let sessions = value["checks"]
+        .as_array()
+        .and_then(|checks| {
+            checks
+                .iter()
+                .find(|check| check["check"] == "sessions_directory")
+        })
+        .expect("sessions directory check");
+    assert_eq!(sessions["ok"], true);
+    assert!(sessions["message"]
+        .as_str()
+        .is_some_and(|message| message.contains("ready")));
+    assert!(home.join("sessions").is_dir());
+}

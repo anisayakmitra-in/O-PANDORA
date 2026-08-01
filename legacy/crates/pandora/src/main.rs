@@ -2011,11 +2011,12 @@ fn cmd_doctor_json(strict: bool) {
         "message": if keychain_available { "A credential source is available." } else { "No native or encrypted credential source is available." },
         "remediation": if keychain_available { "No action required." } else { "Set PANDORA_CREDENTIALS_KEY for headless encrypted credentials." },
     }));
+    let sessions_directory_ready = std::fs::create_dir_all(sessions_dir()).is_ok();
     checks.push(serde_json::json!({
-        "ok": sessions_dir().exists(),
+        "ok": sessions_directory_ready,
         "check": "sessions_directory",
-        "message": if sessions_dir().exists() { "The sessions directory is available." } else { "The sessions directory is unavailable." },
-        "remediation": if sessions_dir().exists() { "No action required." } else { "Check PANDORA_HOME permissions and disk space." },
+        "message": if sessions_directory_ready { "The sessions directory is ready." } else { "The sessions directory could not be created." },
+        "remediation": if sessions_directory_ready { "No action required." } else { "Check PANDORA_HOME permissions and disk space." },
     }));
     for (command, available) in &dependencies {
         let is_available = available.as_bool().unwrap_or(false);
