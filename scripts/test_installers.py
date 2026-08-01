@@ -1,3 +1,4 @@
+import re
 import unittest
 from pathlib import Path
 
@@ -12,6 +13,15 @@ class InstallerContractTests(unittest.TestCase):
             script.index('"$BINARY" --version'),
             script.index('install -m 0755 "$BINARY" "$INSTALL_DIR/pandora"'),
         )
+
+    def test_bash_prebuilt_assets_are_published(self):
+        script = (ROOT / "scripts" / "install-cli.sh").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github" / "workflows" / "cli-release.yml").read_text(
+            encoding="utf-8"
+        )
+
+        for asset in re.findall(r'ASSET="(pandora-[^"]+)"', script):
+            self.assertIn(f"asset: {asset}", workflow)
 
     def test_powershell_checks_download_before_replacement(self):
         script = (ROOT / "scripts" / "install-cli.ps1").read_text(encoding="utf-8")
