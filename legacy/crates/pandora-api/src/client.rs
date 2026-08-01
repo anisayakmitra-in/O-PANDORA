@@ -12,10 +12,32 @@ pub struct ApiClient {
     client: reqwest::Client,
 }
 
+fn secure_base_url(base_url: String) -> String {
+    let trimmed = base_url.trim_end_matches('/').to_string();
+    let Ok(mut url) = reqwest::Url::parse(&trimmed) else {
+        return trimmed;
+    };
+    if url.scheme() == "http" {
+        let host = url
+            .host_str()
+            .unwrap_or_default()
+            .trim_start_matches('[')
+            .trim_end_matches(']');
+        let is_loopback = host.eq_ignore_ascii_case("localhost")
+            || host
+                .parse::<std::net::IpAddr>()
+                .is_ok_and(|address| address.is_loopback());
+        if !is_loopback {
+            let _ = url.set_scheme("https");
+        }
+    }
+    url.to_string().trim_end_matches('/').to_string()
+}
+
 impl ApiClient {
     pub fn new(base_url: impl Into<String>, token: Option<String>) -> Self {
         Self {
-            base_url: base_url.into().trim_end_matches('/').to_string(),
+            base_url: secure_base_url(base_url.into()),
             token,
             client: reqwest::Client::new(),
         }
@@ -88,5 +110,40 @@ impl ApiClient {
             builder = builder.bearer_auth(token);
         }
         builder.send().await?.error_for_status()?.json().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ApiClient;
+
+    #[test]
+    fn remote_http_endpoints_are_upgraded_to_https() {
+        let client = ApiClient::new("http://runtime.example:9090", Some("secret".into()));
+        assert_eq!(client.base_url, "https://runtime.example:9090");
+    }
+
+    #[test]
+    fn loopback_http_endpoints_remain_available() {
+        for endpoint in [
+            "http://127.0.0.1:9090",
+            "http://[::1]:9090",
+            "http://localhost:9090",
+        ] {
+            let client = ApiClient::new(endpoint, Some("secret".into()));
+            assert_eq!(client.base_url, endpoint);
+        }
+    }
+
+    #[test]
+    fn misleading_loopback_hostname_is_treated_as_remote() {
+        let client = ApiClient::new("http://localhost.example:9090", Some("secret".into()));
+        assert_eq!(client.base_url, "https://localhost.example:9090");
+    }
+
+    #[test]
+    fn existing_https_endpoint_is_unchanged() {
+        let client = ApiClient::new("https://runtime.example/api", Some("secret".into()));
+        assert_eq!(client.base_url, "https://runtime.example/api");
     }
 }
