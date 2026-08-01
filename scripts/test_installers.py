@@ -33,6 +33,23 @@ class InstallerContractTests(unittest.TestCase):
         self.assertIn("RuntimeInformation]::OSArchitecture", script)
         self.assertNotIn("RuntimeInformation]::ProcessArchitecture", script)
 
+    def test_release_workflow_smoke_tests_installer_after_publication(self):
+        workflow = (ROOT / ".github" / "workflows" / "cli-release.yml").read_text(encoding="utf-8")
+        self.assertIn("installer-smoke:", workflow)
+        self.assertIn("needs: publish", workflow)
+        self.assertIn("ref: ${{ github.ref_name }}", workflow)
+        self.assertIn("PANDORA_VERSION: ${{ github.ref_name }}", workflow)
+        self.assertIn("bash scripts/install-cli.sh", workflow)
+        self.assertIn("& .\\scripts\\install-cli.ps1", workflow)
+
+    def test_manual_smoke_workflow_uses_requested_tagged_scripts(self):
+        workflow = (ROOT / ".github" / "workflows" / "installer-smoke.yml").read_text(encoding="utf-8")
+        self.assertIn("ref: v${{ inputs.version }}", workflow)
+        self.assertIn("PANDORA_VERSION: ${{ inputs.version }}", workflow)
+        self.assertIn("bash scripts/install-cli.sh", workflow)
+        self.assertIn("& .\\scripts\\install-cli.ps1", workflow)
+        self.assertNotIn("raw.githubusercontent.com", workflow)
+
     def test_wrapper_does_not_start_setup_or_import(self):
         script = (ROOT / "scripts" / "install.sh").read_text(encoding="utf-8")
         self.assertNotIn("pandora setup 2>/dev/null", script)
