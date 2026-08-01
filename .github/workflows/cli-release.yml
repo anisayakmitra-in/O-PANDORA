@@ -22,7 +22,7 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo check --workspace --locked
       - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace --lib --tests -- --test-threads=1
+      - run: cargo test --workspace --lib --tests
       - run: python scripts/validate_repo.py
       - run: python scripts/validate_docs.py
       - run: python -m unittest scripts/test_installers.py

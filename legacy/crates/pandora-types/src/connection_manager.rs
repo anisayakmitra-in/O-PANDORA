@@ -376,9 +376,10 @@ mod tests {
 
     #[test]
     fn registry_add_remove() {
+        let _guard = crate::ENV_LOCK.lock().unwrap();
         let root = std::env::temp_dir().join("pandora-connection-registry");
         let _ = std::fs::remove_dir_all(&root);
-        std::env::set_var("PANDORA_HOME", &root);
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);
         let mut reg = ConnectionRegistry::default();
         reg.add(Connection::new(
             "test",
@@ -390,6 +391,5 @@ mod tests {
         reg.remove("test").unwrap();
         assert!(reg.find("test").is_none());
         let _ = std::fs::remove_dir_all(&root);
-        std::env::remove_var("PANDORA_HOME");
     }
 }

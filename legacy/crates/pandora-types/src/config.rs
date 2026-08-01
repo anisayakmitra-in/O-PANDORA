@@ -135,16 +135,34 @@ mod tests {
     }
     #[test]
     fn config_with_env() {
-        std::env::set_var("PANDORA_DEFAULT_MODEL", "test-model");
+        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let original = std::env::var_os("PANDORA_DEFAULT_MODEL");
+        let model = crate::EnvVarGuard::set("PANDORA_DEFAULT_MODEL", "test-model");
         let c = PandoraConfig::default().with_env();
         assert_eq!(c.default_model, Some("test-model".into()));
-        std::env::remove_var("PANDORA_DEFAULT_MODEL");
+        drop(model);
+        assert_eq!(std::env::var_os("PANDORA_DEFAULT_MODEL"), original);
     }
+
     #[test]
     fn config_dir_exists() {
+        let _guard = crate::ENV_LOCK.lock().unwrap();
         let d = config_dir();
-        assert!(d.to_string_lossy().contains(".pandora"));
+        if let Some(home) = std::env::var_os("PANDORA_HOME") {
+            assert_eq!(d, PathBuf::from(home));
+        } else {
+            assert!(d.ends_with(".pandora"));
+        }
     }
+
+    #[test]
+    fn config_dir_uses_pandora_home() {
+        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let home = std::env::temp_dir().join("pandora-config-home");
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &home);
+        assert_eq!(config_dir(), home);
+    }
+
     #[test]
     fn user_permissions_include_persistent_deny_rules() {
         let config = PandoraConfig {

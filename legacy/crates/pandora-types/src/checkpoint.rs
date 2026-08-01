@@ -157,36 +157,41 @@ mod tests {
 
     #[test]
     fn checkpoint_save_and_load() {
+        let _guard = crate::ENV_LOCK.lock().unwrap();
         let root = std::env::temp_dir().join("pandora-checkpoint-save");
         let _ = std::fs::remove_dir_all(&root);
-        std::env::set_var("PANDORA_HOME", &root);
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);
         let cm = CheckpointManager::new();
         cm.save("test-exec", PipelineStage::Plan, None);
         assert_eq!(cm.last_stage("test-exec"), Some(PipelineStage::Plan));
         cm.clear("test-exec");
         let _ = std::fs::remove_dir_all(&root);
-        std::env::remove_var("PANDORA_HOME");
     }
 
     #[test]
     fn incomplete_detection() {
+        let _guard = crate::ENV_LOCK.lock().unwrap();
         let root = std::env::temp_dir().join("pandora-checkpoint-incomplete");
         let _ = std::fs::remove_dir_all(&root);
-        std::env::set_var("PANDORA_HOME", &root);
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);
         let cm = CheckpointManager::new();
         cm.save("test-incomplete", PipelineStage::Execution, None);
         assert!(cm.is_in_progress("test-incomplete"));
         cm.clear("test-incomplete");
         let _ = std::fs::remove_dir_all(&root);
-        std::env::remove_var("PANDORA_HOME");
     }
 
     #[test]
     fn complete_execution() {
+        let _guard = crate::ENV_LOCK.lock().unwrap();
+        let root = std::env::temp_dir().join("pandora-checkpoint-complete");
+        let _ = std::fs::remove_dir_all(&root);
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &root);
         let cm = CheckpointManager::new();
         cm.complete("test-done");
         assert!(!cm.is_in_progress("test-done"));
         cm.clear("test-done");
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
