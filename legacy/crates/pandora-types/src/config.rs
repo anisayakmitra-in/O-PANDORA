@@ -135,6 +135,7 @@ mod tests {
     }
     #[test]
     fn config_with_env() {
+        let _guard = crate::test_support::process_env_lock();
         std::env::set_var("PANDORA_DEFAULT_MODEL", "test-model");
         let c = PandoraConfig::default().with_env();
         assert_eq!(c.default_model, Some("test-model".into()));
@@ -142,6 +143,7 @@ mod tests {
     }
     #[test]
     fn config_dir_exists() {
+        let _guard = crate::test_support::process_env_lock();
         let d = config_dir();
         assert!(d.to_string_lossy().contains(".pandora"));
     }

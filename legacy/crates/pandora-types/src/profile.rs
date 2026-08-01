@@ -233,6 +233,7 @@ mod tests {
 
     #[test]
     fn profile_names_cannot_escape_directory() {
+        let _guard = crate::test_support::process_env_lock();
         for name in ["../outside", r"..\\outside", "nested/name", "..hidden"] {
             assert!(validate_profile_name(name).is_err());
         }
