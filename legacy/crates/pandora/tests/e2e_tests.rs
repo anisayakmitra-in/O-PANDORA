@@ -439,6 +439,38 @@ fn doctor_does_not_crash() {
 }
 
 #[test]
+fn doctor_does_not_execute_ollama_host_as_shell_code() {
+    let home = tmp_dir().join(format!(
+        "doctor-shell-home-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    let marker = home.join("injected.txt");
+    std::fs::create_dir_all(&home).expect("create doctor home");
+    let marker_path = marker.to_string_lossy().replace('\\', "/");
+    let malicious_host = if cfg!(windows) {
+        format!("http://127.0.0.1:9 & echo injected>{marker_path} & rem")
+    } else {
+        format!("http://127.0.0.1:9; printf injected > {marker_path}; #")
+    };
+
+    let output = run_with_home_and_env(
+        &["doctor"],
+        &home,
+        &[("OLLAMA_HOST", malicious_host.as_str())],
+    );
+
+    assert_no_panic(&output);
+    assert!(
+        !marker.exists(),
+        "OLLAMA_HOST must never execute shell code"
+    );
+    std::fs::remove_dir_all(home).expect("remove doctor fixture");
+}
+
+#[test]
 fn doctor_json_is_machine_readable() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_pandora"))
         .args(["--json", "doctor"])

@@ -2122,34 +2122,33 @@ fn cmd_doctor(args: &[String]) {
     println!();
     println!("--- Environment ---");
     let oh = env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
-    let ck = |label: &str, cmd: &str| {
-        print!("{label}... ");
-        let shell = if cfg!(windows) { "cmd" } else { "sh" };
-        let flag = if cfg!(windows) { "/c" } else { "-c" };
-        match std::process::Command::new(shell)
-            .arg(flag)
-            .arg(cmd)
-            .output()
-        {
-            Ok(o) if o.status.success() => println!("OK"),
-            _ => println!("FAIL"),
-        }
+    let report = |label: &str, available: bool| {
+        println!("{label}... {}", if available { "OK" } else { "FAIL" });
     };
-    ck(
-        "Ollama",
-        &format!("curl -s {oh}/api/tags > /dev/null && echo ok"),
-    );
-    ck(
-        "Ollama reachable",
-        &format!("curl -s {oh}/api/tags | head -c 100 > /dev/null && echo ok"),
-    );
-    ck("Git", "git --version > /dev/null 2>&1 && echo ok");
-    ck("Docker", "docker --version > /dev/null 2>&1 && echo ok");
-    ck("GitHub CLI", "gh --version > /dev/null 2>&1 && echo ok");
-    ck("cargo", "cargo --version > /dev/null 2>&1 && echo ok");
-    ck("python3", "python3 --version > /dev/null 2>&1 && echo ok");
-    ck("node", "node --version > /dev/null 2>&1 && echo ok");
-    ck("rustc", "rustc --version > /dev/null 2>&1 && echo ok");
+    let ollama_url = format!("{}/api/tags", oh.trim_end_matches('/'));
+    let ollama_reachable = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .ok()
+        .and_then(|client| client.get(ollama_url).send().ok())
+        .is_some();
+    report("Ollama", ollama_reachable);
+    report("Ollama reachable", ollama_reachable);
+
+    let check_command = |label: &str, command: &str| {
+        let available = std::process::Command::new(command)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success());
+        report(label, available);
+    };
+    check_command("Git", "git");
+    check_command("Docker", "docker");
+    check_command("GitHub CLI", "gh");
+    check_command("cargo", "cargo");
+    check_command("python3", "python3");
+    check_command("node", "node");
+    check_command("rustc", "rustc");
     let sd = sessions_dir();
     let session_count = std::fs::read_dir(&sd).map(|d| d.count()).unwrap_or(0);
     println!("\nSessions: {session_count} stored");
