@@ -334,12 +334,12 @@ impl PandoraRuntime {
             memory: pandora_types::hierarchical_memory::HierarchicalMemory::new(),
             event_store: pandora_types::event_store::EventStore::new(
                 std::env::var("PANDORA_HOME")
-                    .map(|h| std::path::PathBuf::from(h).join("events"))
+                    .map(std::path::PathBuf::from)
                     .unwrap_or_else(|_| {
                         std::path::PathBuf::from(
                             std::env::var("HOME").unwrap_or_else(|_| ".".into()),
                         )
-                        .join(".pandora/events")
+                        .join(".pandora")
                     }),
             ),
             healing: pandora_types::self_healing::HealingSession::new("default"),
@@ -1053,6 +1053,34 @@ mod tests {
         assert_eq!(rt.knowledge.knowledge_count(), 0);
     }
 
+    #[test]
+    fn runtime_persists_events_under_pandora_home() {
+        let home =
+            std::env::temp_dir().join(format!("pandora-runtime-home-{}", rand::random::<u64>()));
+        let previous_home = std::env::var_os("PANDORA_HOME");
+        std::env::set_var("PANDORA_HOME", &home);
+
+        let runtime = PandoraRuntime::new();
+        runtime
+            .event_store
+            .try_push(
+                "runtime-home",
+                pandora_types::events::PipelineEvent::StageStarted {
+                    stage: "test".into(),
+                },
+            )
+            .expect("event should be accepted");
+        runtime.event_store.flush().expect("event should persist");
+
+        match previous_home {
+            Some(value) => std::env::set_var("PANDORA_HOME", value),
+            None => std::env::remove_var("PANDORA_HOME"),
+        }
+
+        assert!(home.join("events/runtime-home.events.json").is_file());
+        assert!(!home.join("events/events/runtime-home.events.json").exists());
+        let _ = std::fs::remove_dir_all(home);
+    }
     #[test]
     fn execution_target_requires_connection_and_model() {
         let mut runtime = PandoraRuntime::new();
