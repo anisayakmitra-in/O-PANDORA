@@ -2752,6 +2752,10 @@ fn cmd_harness(args: &[String]) {
                 return;
             }
             let id = flag_args[3].as_str();
+            if let Err(error) = pandora_ko_palace::validation::validate_package_id(id) {
+                eprintln!("Invalid harness id: {error}");
+                return;
+            }
             let mut council = sc.write().expect("council lock write");
 
             // Also clean up staging

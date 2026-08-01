@@ -364,6 +364,28 @@ fn harnesses_lists_output() {
 }
 
 #[test]
+fn harness_uninstall_rejects_path_traversal() {
+    let home = tmp_dir().join(format!(
+        "harness-uninstall-home-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(home.join("sessions/harnesses"))
+        .expect("create harness staging directory");
+    let victim = home.join("victim");
+    std::fs::create_dir_all(&victim).expect("create victim directory");
+    std::fs::write(victim.join("marker.txt"), "preserve").expect("write victim marker");
+
+    let output = run_with_home(&["harness", "uninstall", "../../victim"], &home);
+
+    assert!(victim.join("marker.txt").is_file());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("Invalid harness id"));
+    std::fs::remove_dir_all(home).expect("remove uninstall fixture");
+}
+
+#[test]
 fn setup_reports_invalid_credential_name() {
     let home = tmp_dir().join("setup-invalid-name-home");
     let output = run_with_home_and_env(
