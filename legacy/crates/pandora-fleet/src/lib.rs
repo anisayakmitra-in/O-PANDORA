@@ -305,7 +305,7 @@ pub async fn health_check_all(controller: &FleetController) -> Vec<(String, Work
     let client = reqwest::Client::new();
     let mut results = Vec::new();
     for w in &workers {
-        match client.get(&format!("{}/health", w.endpoint)).send().await {
+        match client.get(format!("{}/health", w.endpoint)).send().await {
             Ok(r) if r.status().is_success() => {
                 controller
                     .scheduler
@@ -335,13 +335,16 @@ pub async fn dispatch_task(
 ) -> Result<ExecutionOutcome, pandora_types::PandoraError> {
     let client = reqwest::Client::new();
     let resp = client
-        .post(&format!("{}/execute", worker_endpoint))
+        .post(format!("{}/execute", worker_endpoint))
         .json(plan)
         .send()
         .await
         .map_err(|e| pandora_types::PandoraError::Internal(format!("Dispatch failed: {e}")))?;
     if !resp.status().is_success() {
-        return Err(format!("Worker returned {}", resp.status()));
+        return Err(pandora_types::PandoraError::Internal(format!(
+            "Worker returned {}",
+            resp.status()
+        )));
     }
     let outcome: ExecutionOutcome = resp
         .json()

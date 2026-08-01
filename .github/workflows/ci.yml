@@ -65,8 +65,11 @@ jobs:
       - run: rustup component add clippy rustfmt
       - run: cargo fmt --all -- --check
       - run: cargo check --workspace
+      - run: cargo check -p pandora-fleet --features reqwest
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy -p pandora-fleet --all-targets --features reqwest -- -D warnings
       - run: cargo test --workspace --lib --tests
+      - run: cargo test -p pandora-fleet --features reqwest
       - run: cargo build --release -p pandora
       - name: Validate release contract
         run: python scripts/validate_repo.py
