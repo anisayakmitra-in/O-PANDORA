@@ -95,6 +95,27 @@ pub struct SessionStore {
 
 // ── Helpers ──
 
+fn is_reserved_windows_device_name(id: &str) -> bool {
+    let upper = id.to_ascii_uppercase();
+    matches!(upper.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || (upper.len() == 4
+            && matches!(&upper[..3], "COM" | "LPT")
+            && matches!(upper.as_bytes()[3], b'1'..=b'9'))
+}
+
+fn validate_session_id(id: &str) -> Result<(), PandoraError> {
+    if id.is_empty()
+        || id.len() > 128
+        || !id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+        || is_reserved_windows_device_name(id)
+    {
+        return Err(PandoraError::validation("invalid session ID"));
+    }
+    Ok(())
+}
+
 fn sessions_dir() -> std::path::PathBuf {
     let base = std::env::var("PANDORA_HOME")
         .map(std::path::PathBuf::from)
@@ -106,6 +127,15 @@ fn sessions_dir() -> std::path::PathBuf {
 }
 
 fn write_sessions(sessions: &HashMap<String, Session>) -> Result<(), crate::PandoraError> {
+    for (id, session) in sessions {
+        validate_session_id(id)?;
+        validate_session_id(&session.id)?;
+        if id != &session.id {
+            return Err(PandoraError::validation(
+                "session key does not match session ID",
+            ));
+        }
+    }
     let dir = sessions_dir();
     std::fs::create_dir_all(&dir)
         .map_err(|e| crate::PandoraError::Internal(format!("Cannot create sessions dir: {e}")))?;
@@ -168,6 +198,7 @@ impl SessionStore {
             let ids: Vec<String> = serde_json::from_str(&content)
                 .map_err(|e| crate::PandoraError::Internal(format!("Parse index: {e}")))?;
             for id in &ids {
+                validate_session_id(id)?;
                 let path = dir.join(format!("{id}.json"));
                 if !path.exists() {
                     continue;
@@ -195,6 +226,7 @@ impl SessionStore {
                 let json = std::fs::read_to_string(&path)
                     .map_err(|e| crate::PandoraError::Internal(format!("Read: {e}")))?;
                 if let Ok(session) = serde_json::from_str::<Session>(&json) {
+                    validate_session_id(&session.id)?;
                     self.sessions.insert(session.id.clone(), session);
                 }
             }
@@ -263,6 +295,7 @@ impl SessionStore {
 
     /// Remove a session from the store and delete its file.
     pub fn remove(&mut self, id: &str) -> Result<(), PandoraError> {
+        validate_session_id(id)?;
         self.sessions
             .remove(id)
             .ok_or_else(|| PandoraError::not_found(format!("Session not found: {id}")))?;
@@ -292,5 +325,66 @@ impl SessionStore {
             .insert("original_session".to_string(), id.to_string());
         replayed.replay_id = original.replay_id.clone();
         Ok(replayed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_home(label: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!("pandora-session-{label}-{}", rand::random::<u64>()))
+    }
+
+    #[test]
+    fn save_does_not_escape_sessions_directory() {
+        let _lock = crate::environment_lock();
+        let home = test_home("save");
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &home);
+        let mut store = SessionStore::default();
+
+        store.create("../outside", "unsafe session");
+
+        assert!(!home.join("outside.json").exists());
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn load_rejects_unsafe_index_ids() {
+        let _lock = crate::environment_lock();
+        let home = test_home("load");
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &home);
+        let dir = home.join("sessions");
+        std::fs::create_dir_all(&dir).expect("create sessions directory");
+        std::fs::write(dir.join("index.json"), r#"["../outside"]"#).expect("write index");
+        std::fs::write(
+            home.join("outside.json"),
+            serde_json::to_string(&Session::new("../outside", "unsafe session"))
+                .expect("serialize session"),
+        )
+        .expect("write escaped session");
+        let mut store = SessionStore::default();
+
+        assert!(store.load().is_err());
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn remove_rejects_unsafe_ids_without_deleting_files() {
+        let _lock = crate::environment_lock();
+        let home = test_home("remove");
+        let _home = crate::EnvVarGuard::set("PANDORA_HOME", &home);
+        std::fs::create_dir_all(home.join("sessions")).expect("create sessions directory");
+        let victim = home.join("victim.json");
+        std::fs::write(&victim, "preserve").expect("write victim");
+        let mut store = SessionStore::default();
+        store.sessions.insert(
+            "../victim".into(),
+            Session::new("../victim", "unsafe session"),
+        );
+
+        assert!(store.remove("../victim").is_err());
+        assert!(victim.exists());
+        let _ = std::fs::remove_dir_all(home);
     }
 }
