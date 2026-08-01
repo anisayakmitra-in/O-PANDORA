@@ -445,6 +445,162 @@ fn websocket_event_mapping_preserves_execution_status() {
     ));
 }
 
+#[test]
+fn websocket_execution_ids_are_unique() {
+    assert_ne!(crate::next_execution_id(), crate::next_execution_id());
+}
+
+#[tokio::test]
+async fn websocket_streams_provider_output_before_completion() {
+    use futures_util::{SinkExt, StreamExt};
+
+    struct StreamingProvider;
+
+    impl pandora_types::provider::Provider for StreamingProvider {
+        fn name(&self) -> &str {
+            "streaming-test"
+        }
+
+        fn generate(
+            &self,
+            _request: pandora_types::provider::GenerationRequest,
+        ) -> Result<String, pandora_types::PandoraError> {
+            Ok("first second".to_string())
+        }
+
+        fn manifest(&self) -> pandora_types::provider::ProviderManifest {
+            pandora_types::provider::ProviderManifest {
+                name: self.name().to_string(),
+                endpoint: "http://streaming.test".to_string(),
+                models: vec!["streaming-model".to_string()],
+                capabilities: vec!["text".to_string()],
+                locality: "local".to_string(),
+            }
+        }
+
+        fn supports_streaming(&self) -> bool {
+            true
+        }
+
+        fn generate_stream(
+            &self,
+            _request: pandora_types::provider::GenerationRequest,
+            callback: &pandora_types::provider::StreamCallback,
+        ) -> Result<String, pandora_types::PandoraError> {
+            callback(pandora_types::provider::StreamChunk {
+                text: "first ".to_string(),
+                tool_calls: vec![],
+                done: false,
+            });
+            std::thread::sleep(std::time::Duration::from_millis(25));
+            callback(pandora_types::provider::StreamChunk {
+                text: "second".to_string(),
+                tool_calls: vec![],
+                done: false,
+            });
+            callback(pandora_types::provider::StreamChunk {
+                text: String::new(),
+                tool_calls: vec![],
+                done: true,
+            });
+            Ok("first second".to_string())
+        }
+    }
+
+    let _guard = ENV_LOCK.lock().await;
+    let home = TempDirGuard::new("pandora-api-streaming");
+    let _home = EnvVarGuard::set("PANDORA_HOME", home.path().as_os_str());
+    let _legacy_home = EnvVarGuard::set("HOME", home.path().as_os_str());
+    let _insecure = EnvVarGuard::set("PANDORA_INSECURE", "1");
+    let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+    let sessions_dir = home.path().join("sessions");
+    let mut runtime = pandora_orchestrator::PandoraRuntime::new();
+    pandora_harnesses::register_all(&mut runtime.council);
+    runtime.register_provider(std::sync::Arc::new(StreamingProvider));
+    let state = std::sync::Arc::new(crate::ApiState {
+        runtime: std::sync::Arc::new(tokio::sync::Mutex::new(runtime)),
+        sessions_dir: sessions_dir.clone(),
+        auth: crate::AuthState::new(),
+        delivery: crate::delivery::DeliveryLedger::new(&sessions_dir),
+    });
+    let app = axum::Router::new()
+        .route("/api/v1/ws", axum::routing::get(crate::websocket))
+        .with_state(state);
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind streaming test listener");
+    let endpoint = format!(
+        "ws://{}/api/v1/ws",
+        listener.local_addr().expect("listener address")
+    );
+    let server = AbortOnDrop::new(tokio::spawn(
+        async move { axum::serve(listener, app).await },
+    ));
+    let (mut socket, _) = tokio_tungstenite::connect_async(endpoint)
+        .await
+        .expect("WebSocket should connect");
+    let request = serde_json::to_string(&crate::protocol::ExecuteRequest {
+        task: "summarize a streaming result".to_string(),
+        domain: "coding".to_string(),
+        strategy: String::new(),
+        evaluator: String::new(),
+        profile: None,
+    })
+    .expect("request should serialize");
+    socket
+        .send(tokio_tungstenite::tungstenite::Message::Text(request))
+        .await
+        .expect("request should send");
+
+    let mut events = Vec::new();
+    for _ in 0..4 {
+        let message = tokio::time::timeout(std::time::Duration::from_secs(5), socket.next())
+            .await
+            .expect("stream event should arrive promptly")
+            .expect("stream event should arrive")
+            .expect("stream event should be valid")
+            .into_text()
+            .expect("stream event should be text");
+        events.push(
+            serde_json::from_str::<crate::protocol::EventEnvelope>(&message)
+                .expect("stream event should match contract"),
+        );
+    }
+
+    assert_eq!(
+        events
+            .iter()
+            .map(|event| event.sequence)
+            .collect::<Vec<_>>(),
+        vec![1, 2, 3, 4]
+    );
+    let session_id = match &events[0].event {
+        crate::protocol::RuntimeEvent::Started { session_id, task } => {
+            assert_eq!(task, "summarize a streaming result");
+            assert!(!session_id.is_empty());
+            session_id.clone()
+        }
+        event => panic!("expected started event, got {event:?}"),
+    };
+    assert!(matches!(
+        &events[1].event,
+        crate::protocol::RuntimeEvent::Output { session_id: event_session, chunk }
+            if event_session == &session_id && chunk == "first "
+    ));
+    assert!(matches!(
+        &events[2].event,
+        crate::protocol::RuntimeEvent::Output { session_id: event_session, chunk }
+            if event_session == &session_id && chunk == "second"
+    ));
+    assert!(matches!(
+        &events[3].event,
+        crate::protocol::RuntimeEvent::Completed { session_id: event_session, success: true }
+            if event_session == &session_id
+    ));
+
+    let _ = server.abort_and_join().await;
+}
 #[tokio::test]
 async fn websocket_reports_configuration_failure_events() {
     use futures_util::{SinkExt, StreamExt};

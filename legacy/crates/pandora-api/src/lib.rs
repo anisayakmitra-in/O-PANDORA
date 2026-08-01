@@ -59,6 +59,10 @@ fn execution_timeout() -> std::time::Duration {
     std::time::Duration::from_secs(seconds)
 }
 
+fn next_execution_id() -> String {
+    pandora_types::runtime_context::ExecutionId::new().0
+}
+
 fn env_flag_enabled(name: &str) -> bool {
     matches!(
         std::env::var(name).ok().as_deref(),
@@ -354,6 +358,89 @@ async fn execute_request(
     }
 }
 
+async fn execute_request_with_stream(
+    state: Arc<ApiState>,
+    request: protocol::ExecuteRequest,
+    execution_id: String,
+    stream_sender: tokio::sync::mpsc::Sender<pandora_types::provider::StreamChunk>,
+) -> protocol::ExecuteResponse {
+    let domain = if request.domain.is_empty() {
+        "default".to_string()
+    } else {
+        request.domain.clone()
+    };
+    let task = request.task.clone();
+    let runtime = Arc::clone(&state.runtime);
+    let response_execution_id = execution_id.clone();
+    let runtime_execution_id = execution_id.clone();
+    let handle = tokio::runtime::Handle::current();
+    let execution = tokio::task::spawn_blocking(move || {
+        let mut runtime = runtime.blocking_lock();
+        match configure_runtime(&mut runtime, &request) {
+            Err(error) => protocol::ExecuteResponse {
+                api_version: protocol::API_VERSION.to_string(),
+                session_id: runtime_execution_id,
+                status: "error".into(),
+                output: error,
+                duration_ms: 0,
+                provider: String::new(),
+            },
+            Ok(()) => {
+                let stream = Box::new(move |chunk| {
+                    let _ = stream_sender.try_send(chunk);
+                }) as pandora_types::provider::StreamCallback;
+                match handle.block_on(runtime.run_with_execution_id_and_stream(
+                    runtime_execution_id.clone(),
+                    &task,
+                    &domain,
+                    Some(&stream),
+                )) {
+                    Ok(result) => protocol::ExecuteResponse {
+                        api_version: protocol::API_VERSION.to_string(),
+                        session_id: result.execution_id,
+                        status: if result.success {
+                            "completed"
+                        } else {
+                            "failed"
+                        }
+                        .into(),
+                        output: result.output.chars().take(2000).collect(),
+                        duration_ms: result.duration_ms as u64,
+                        provider: result.provider,
+                    },
+                    Err(error) => protocol::ExecuteResponse {
+                        api_version: protocol::API_VERSION.to_string(),
+                        session_id: runtime_execution_id,
+                        status: "error".into(),
+                        output: error.to_string(),
+                        duration_ms: 0,
+                        provider: String::new(),
+                    },
+                }
+            }
+        }
+    });
+
+    match tokio::time::timeout(execution_timeout(), execution).await {
+        Ok(Ok(response)) => response,
+        Ok(Err(error)) => protocol::ExecuteResponse {
+            api_version: protocol::API_VERSION.to_string(),
+            session_id: response_execution_id,
+            status: "error".into(),
+            output: format!("execution worker failed: {error}"),
+            duration_ms: 0,
+            provider: String::new(),
+        },
+        Err(_) => protocol::ExecuteResponse {
+            api_version: protocol::API_VERSION.to_string(),
+            session_id: response_execution_id,
+            status: "timeout".into(),
+            output: "execution exceeded the configured timeout".into(),
+            duration_ms: execution_timeout().as_millis() as u64,
+            provider: String::new(),
+        },
+    }
+}
 fn websocket_event_from_response(response: protocol::ExecuteResponse) -> protocol::RuntimeEvent {
     let protocol::ExecuteResponse {
         status,
@@ -488,6 +575,82 @@ async fn websocket(
         .into_response()
 }
 
+async fn send_websocket_event(
+    socket: &mut axum::extract::ws::WebSocket,
+    state: &ApiState,
+    sequence: &mut u64,
+    event: protocol::RuntimeEvent,
+) -> bool {
+    use axum::extract::ws::Message;
+
+    *sequence += 1;
+    let envelope = protocol::EventEnvelope {
+        api_version: protocol::API_VERSION.to_string(),
+        sequence: *sequence,
+        event,
+    };
+    let payload = match serde_json::to_string(&envelope) {
+        Ok(payload) => payload,
+        Err(_) => return false,
+    };
+    let session_id = match &envelope.event {
+        protocol::RuntimeEvent::Started { session_id, .. }
+        | protocol::RuntimeEvent::Output { session_id, .. }
+        | protocol::RuntimeEvent::ToolCall { session_id, .. }
+        | protocol::RuntimeEvent::ApprovalRequired { session_id, .. }
+        | protocol::RuntimeEvent::Completed { session_id, .. }
+        | protocol::RuntimeEvent::Failed { session_id, .. } => session_id,
+    };
+    let delivery_id = state
+        .delivery
+        .enqueue("websocket", session_id, payload.clone())
+        .ok();
+    if socket.send(Message::Text(payload)).await.is_err() {
+        return false;
+    }
+    if let Some(delivery_id) = delivery_id {
+        let _ = state.delivery.mark_delivered(&delivery_id);
+    }
+    true
+}
+
+async fn send_stream_chunk(
+    socket: &mut axum::extract::ws::WebSocket,
+    state: &ApiState,
+    sequence: &mut u64,
+    session_id: &str,
+    chunk: pandora_types::provider::StreamChunk,
+) -> bool {
+    for tool_call in chunk.tool_calls {
+        if !send_websocket_event(
+            socket,
+            state,
+            sequence,
+            protocol::RuntimeEvent::ToolCall {
+                session_id: session_id.to_string(),
+                tool: tool_call.name,
+            },
+        )
+        .await
+        {
+            return false;
+        }
+    }
+    if chunk.text.is_empty() {
+        return true;
+    }
+    send_websocket_event(
+        socket,
+        state,
+        sequence,
+        protocol::RuntimeEvent::Output {
+            session_id: session_id.to_string(),
+            chunk: chunk.text,
+        },
+    )
+    .await
+}
+
 async fn websocket_session(mut socket: axum::extract::ws::WebSocket, state: Arc<ApiState>) {
     use axum::extract::ws::Message;
 
@@ -512,49 +675,59 @@ async fn websocket_session(mut socket: axum::extract::ws::WebSocket, state: Arc<
             }
         };
 
-        sequence += 1;
-        let started = protocol::EventEnvelope {
-            api_version: protocol::API_VERSION.to_string(),
-            sequence,
-            event: protocol::RuntimeEvent::Started {
-                session_id: String::new(),
+        let execution_id = next_execution_id();
+        if !send_websocket_event(
+            &mut socket,
+            &state,
+            &mut sequence,
+            protocol::RuntimeEvent::Started {
+                session_id: execution_id.clone(),
                 task: request.task.clone(),
             },
-        };
-        let started_payload = serde_json::to_string(&started).unwrap();
-        let started_delivery = state
-            .delivery
-            .enqueue("websocket", "", started_payload.clone())
-            .ok();
-        if socket.send(Message::Text(started_payload)).await.is_err() {
+        )
+        .await
+        {
             break;
-        }
-        if let Some(delivery_id) = started_delivery {
-            let _ = state.delivery.mark_delivered(&delivery_id);
         }
 
-        let event = websocket_event_from_response(execute_request(&state, &request).await);
-        sequence += 1;
-        let envelope = protocol::EventEnvelope {
-            api_version: protocol::API_VERSION.to_string(),
-            sequence,
-            event,
+        let (stream_sender, mut stream_receiver) = tokio::sync::mpsc::channel(256);
+        let execution = execute_request_with_stream(
+            Arc::clone(&state),
+            request,
+            execution_id.clone(),
+            stream_sender,
+        );
+        tokio::pin!(execution);
+        let response = loop {
+            tokio::select! {
+                Some(chunk) = stream_receiver.recv() => {
+                    if !send_stream_chunk(
+                        &mut socket,
+                        &state,
+                        &mut sequence,
+                        &execution_id,
+                        chunk,
+                    ).await {
+                        return;
+                    }
+                }
+                response = &mut execution => break response,
+            }
         };
-        let payload = serde_json::to_string(&envelope).unwrap();
-        let session_id = match &envelope.event {
-            protocol::RuntimeEvent::Completed { session_id, .. }
-            | protocol::RuntimeEvent::Failed { session_id, .. } => session_id,
-            _ => "",
-        };
-        let delivery_id = state
-            .delivery
-            .enqueue("websocket", session_id, payload.clone())
-            .ok();
-        if socket.send(Message::Text(payload)).await.is_err() {
-            break;
+        while let Ok(chunk) = stream_receiver.try_recv() {
+            if !send_stream_chunk(&mut socket, &state, &mut sequence, &execution_id, chunk).await {
+                return;
+            }
         }
-        if let Some(delivery_id) = delivery_id {
-            let _ = state.delivery.mark_delivered(&delivery_id);
+        if !send_websocket_event(
+            &mut socket,
+            &state,
+            &mut sequence,
+            websocket_event_from_response(response),
+        )
+        .await
+        {
+            break;
         }
     }
 }

@@ -274,6 +274,13 @@ pub struct PandoraRuntime {
     execution_target: Option<(String, String)>,
 }
 
+fn is_safe_execution_id(execution_id: &str) -> bool {
+    !execution_id.is_empty()
+        && execution_id.len() <= 128
+        && execution_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+}
 impl PandoraRuntime {
     pub fn new() -> Self {
         let mut providers = ProviderRegistry::new();
@@ -373,7 +380,25 @@ impl PandoraRuntime {
         domain: &str,
         stream: Option<&pandora_types::provider::StreamCallback>,
     ) -> Result<ExecutionReport> {
-        let execution_id = format!("exec-{}", chrono::Utc::now().timestamp_millis());
+        self.run_with_execution_id_and_stream(
+            pandora_types::runtime_context::ExecutionId::new().0,
+            task,
+            domain,
+            stream,
+        )
+        .await
+    }
+
+    pub async fn run_with_execution_id_and_stream(
+        &mut self,
+        execution_id: String,
+        task: &str,
+        domain: &str,
+        stream: Option<&pandora_types::provider::StreamCallback>,
+    ) -> Result<ExecutionReport> {
+        if !is_safe_execution_id(&execution_id) {
+            anyhow::bail!("invalid execution id");
+        }
         let start = Instant::now();
 
         // ── Provenance: initialize graph ──
@@ -1166,5 +1191,14 @@ mod tests {
         let reg = ProviderRegistry::new();
         assert!(reg.resolve(None, None, None).is_none());
         // No providers registered, any hint should return None
+    }
+    #[tokio::test]
+    async fn explicit_execution_ids_reject_path_syntax() {
+        let mut runtime = PandoraRuntime::new();
+        let error = runtime
+            .run_with_execution_id_and_stream("../escape".into(), "task", "default", None)
+            .await
+            .expect_err("unsafe execution IDs must be rejected before execution");
+        assert!(error.to_string().contains("invalid execution id"));
     }
 }
