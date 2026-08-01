@@ -633,3 +633,32 @@ fn doctor_treats_a_clean_session_home_as_ready() {
         .is_some_and(|message| message.contains("ready")));
     assert!(home.join("sessions").is_dir());
 }
+
+#[test]
+fn doctor_reports_when_the_sessions_directory_cannot_be_created() {
+    let home = tmp_dir().join(format!(
+        "doctor-file-home-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    std::fs::write(&home, "not a directory").expect("create file-backed Pandora home");
+
+    let output = run_with_home(&["--json", "doctor"], &home);
+    assert_success(&output, &["--json", "doctor"]);
+    let value: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid doctor JSON");
+    let sessions = value["checks"]
+        .as_array()
+        .and_then(|checks| {
+            checks
+                .iter()
+                .find(|check| check["check"] == "sessions_directory")
+        })
+        .expect("sessions directory check");
+    assert_eq!(sessions["ok"], false);
+    assert!(sessions["message"]
+        .as_str()
+        .is_some_and(|message| message.contains("could not be created")));
+}
