@@ -23,6 +23,15 @@ class InstallerContractTests(unittest.TestCase):
         for asset in re.findall(r'ASSET="(pandora-[^"]+)"', script):
             self.assertIn(f"asset: {asset}", workflow)
 
+    def test_updater_assets_are_published(self):
+        script = (ROOT / "scripts" / "update-cli.sh").read_text(encoding="utf-8")
+        workflow = (ROOT / ".github" / "workflows" / "cli-release.yml").read_text(
+            encoding="utf-8"
+        )
+
+        for asset in re.findall(r'ASSET="(pandora-[^"]+)"', script):
+            self.assertIn(f"asset: {asset}", workflow)
+
     def test_powershell_checks_download_before_replacement(self):
         script = (ROOT / "scripts" / "install-cli.ps1").read_text(encoding="utf-8")
         self.assertLess(
