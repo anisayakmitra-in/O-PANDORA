@@ -451,11 +451,7 @@ impl Gene for BenchmarkGene {
             );
         }
         let s = std::time::Instant::now();
-        let o = Command::new("sh")
-            .arg("-c")
-            .arg(input)
-            .output()
-            .map_err(|e| pandora_types::PandoraError::Internal(format!("Failed: {e}")))?;
+        let o = shell_output(input)?;
         let sd = String::from_utf8_lossy(&o.stderr).to_string();
         if !o.status.success() {
             return Err(pandora_types::PandoraError::Internal(format!(
@@ -635,10 +631,40 @@ impl Evaluator for PythonTestsEvaluator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::OsString;
+    use std::sync::Mutex;
+
+    static SHELL_ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    struct EnvVarGuard {
+        key: &'static str,
+        previous: Option<OsString>,
+    }
+
+    impl EnvVarGuard {
+        fn set(key: &'static str, value: &str) -> Self {
+            let previous = std::env::var_os(key);
+            std::env::set_var(key, value);
+            Self { key, previous }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            if let Some(value) = &self.previous {
+                std::env::set_var(self.key, value);
+            } else {
+                std::env::remove_var(self.key);
+            }
+        }
+    }
 
     #[test]
     fn shell_echo() {
-        std::env::set_var("PANDORA_SHELL_UNSAFE", "1");
+        let _lock = SHELL_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _env = EnvVarGuard::set("PANDORA_SHELL_UNSAFE", "1");
         assert_eq!(
             ShellGene::new().execute("echo hi").expect("genes").trim(),
             "hi"
@@ -656,11 +682,25 @@ mod tests {
     }
     #[test]
     fn workflow_steps() {
-        std::env::set_var("PANDORA_SHELL_UNSAFE", "1");
+        let _lock = SHELL_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _env = EnvVarGuard::set("PANDORA_SHELL_UNSAFE", "1");
         let r = WorkflowGene::new()
             .execute("echo a\necho b")
             .expect("genes");
         assert!(r.contains("step 1: a") && r.contains("step 2: b"));
+    }
+    #[test]
+    fn benchmark_uses_platform_shell() {
+        let _lock = SHELL_ENV_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _env = EnvVarGuard::set("PANDORA_SHELL_UNSAFE", "1");
+        assert!(BenchmarkGene::new()
+            .execute("echo hi")
+            .expect("genes")
+            .contains("hi"));
     }
     #[test]
     fn builtins_have_routing_capabilities() {
