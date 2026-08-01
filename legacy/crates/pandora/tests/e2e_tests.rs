@@ -6,57 +6,14 @@ use pandora_types::recorder::ExecutionFrame;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Path to the pandora binary, relative to the workspace root.
+/// Path to the Pandora binary built by Cargo for these tests.
 fn pandora_bin() -> PathBuf {
-    // Integration tests run from the crate dir (legacy/crates/pandora/),
-    // but the binary is at the workspace root's target/.
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    // Go from legacy/crates/pandora/ up to workspace root
-    let workspace_root = manifest_dir
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
+    PathBuf::from(env!("CARGO_BIN_EXE_pandora"))
+}
 
-    let debug = workspace_root.join("target").join("debug").join("pandora");
-    let release = workspace_root
-        .join("target")
-        .join("release")
-        .join("pandora");
-
-    if cfg!(target_os = "windows") {
-        let debug_exe = workspace_root
-            .join("target")
-            .join("debug")
-            .join("pandora.exe");
-        let release_exe = workspace_root
-            .join("target")
-            .join("release")
-            .join("pandora.exe");
-        if debug_exe.exists() {
-            return debug_exe;
-        }
-        if release_exe.exists() {
-            return release_exe;
-        }
-    }
-
-    if debug.exists() {
-        debug
-    } else if release.exists() {
-        release
-    } else {
-        // Fallback: build it
-        let status = Command::new("cargo")
-            .args(["build", "-p", "pandora"])
-            .current_dir(workspace_root)
-            .status()
-            .expect("failed to build pandora");
-        assert!(status.success(), "cargo build -p pandora failed");
-        debug
-    }
+#[test]
+fn pandora_bin_uses_cargo_test_binary() {
+    assert_eq!(pandora_bin(), PathBuf::from(env!("CARGO_BIN_EXE_pandora")));
 }
 
 fn tmp_dir() -> PathBuf {
