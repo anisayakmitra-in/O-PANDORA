@@ -5006,6 +5006,16 @@ fn remote_token_key(endpoint: &str) -> String {
     format!("remote-{suffix}")
 }
 
+fn redacted_pair_response(
+    response: &pandora_api::protocol::PairResponse,
+    stored: bool,
+) -> serde_json::Value {
+    let mut output = serde_json::to_value(response).expect("pair JSON serialization");
+    output["token"] =
+        serde_json::Value::String(if stored { "[STORED]" } else { "[NOT STORED]" }.to_string());
+    output
+}
+
 fn delete_credential(key: &str) {
     if let Err(error) = pandora_secrets::SecretStore::default().delete(key) {
         eprintln!("Could not delete credential: {error}");
@@ -5092,22 +5102,13 @@ fn cmd_remote(args: &[String]) {
                                     false
                                 }
                             };
-                            if stored {
-                                let mut output = serde_json::to_value(&response)
-                                    .expect("pair JSON serialization");
-                                output["token"] = serde_json::Value::String("[STORED]".to_string());
-                                println!(
-                                    "{}",
-                                    serde_json::to_string_pretty(&output)
-                                        .expect("pair JSON serialization")
-                                );
-                            } else {
-                                println!(
-                                    "{}",
-                                    serde_json::to_string_pretty(&response)
-                                        .expect("pair JSON serialization")
-                                );
-                            }
+                            println!(
+                                "{}",
+                                serde_json::to_string_pretty(&redacted_pair_response(
+                                    &response, stored,
+                                ))
+                                .expect("pair JSON serialization")
+                            );
                         })
                 })
         }
@@ -5427,6 +5428,25 @@ mod cli_integration_tests {
         assert!(!kp.public_key.is_empty());
         assert!(!kp.secret_key.is_empty());
         assert_ne!(kp.public_key, kp.secret_key);
+    }
+
+    #[test]
+    fn pairing_output_never_contains_the_raw_token() {
+        let response = pandora_api::protocol::PairResponse {
+            api_version: "v1".into(),
+            token: "top-secret-paired-token".into(),
+            expires_in_seconds: 3600,
+        };
+
+        for stored in [true, false] {
+            let output = redacted_pair_response(&response, stored);
+            let serialized = serde_json::to_string(&output).expect("serialize redacted response");
+            assert!(!serialized.contains(&response.token));
+            assert_eq!(
+                output["token"],
+                if stored { "[STORED]" } else { "[NOT STORED]" }
+            );
+        }
     }
 
     #[test]
