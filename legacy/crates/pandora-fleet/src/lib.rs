@@ -325,33 +325,18 @@ pub async fn health_check_all(controller: &FleetController) -> Vec<(String, Work
     results
 }
 
-/// Dispatch a task to a remote worker via HTTP. Requires the `reqwest` feature.
+/// Compatibility entry point for fleet dispatch.
+/// Network execution remains disabled until an authenticated protocol is available.
 #[cfg(feature = "reqwest")]
 pub async fn dispatch_task(
-    controller: &FleetController,
-    task_id: &str,
-    plan: &ExecutionPlan,
-    worker_endpoint: &str,
+    _controller: &FleetController,
+    _task_id: &str,
+    _plan: &ExecutionPlan,
+    _worker_endpoint: &str,
 ) -> Result<ExecutionOutcome, pandora_types::PandoraError> {
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(format!("{}/execute", worker_endpoint))
-        .json(plan)
-        .send()
-        .await
-        .map_err(|e| pandora_types::PandoraError::Internal(format!("Dispatch failed: {e}")))?;
-    if !resp.status().is_success() {
-        return Err(pandora_types::PandoraError::Internal(format!(
-            "Worker returned {}",
-            resp.status()
-        )));
-    }
-    let outcome: ExecutionOutcome = resp
-        .json()
-        .await
-        .map_err(|e| pandora_types::PandoraError::Internal(format!("Bad response: {e}")))?;
-    controller.complete_task(task_id, outcome.clone()).await;
-    Ok(outcome)
+    Err(pandora_types::PandoraError::Internal(
+        "Fleet network execution is disabled pending authenticated protocol support".into(),
+    ))
 }
 
 // ── Tests ──
@@ -430,6 +415,16 @@ mod tests {
     async fn fleet_execute_no_workers() {
         let fc = FleetController::new();
         assert!(fc.execute(test_plan()).await.is_err());
+    }
+
+    #[cfg(feature = "reqwest")]
+    #[tokio::test]
+    async fn network_dispatch_returns_disabled_without_sending() {
+        let controller = FleetController::new();
+        let error = dispatch_task(&controller, "task-1", &test_plan(), "http://127.0.0.1:9")
+            .await
+            .expect_err("network dispatch must be disabled");
+        assert!(error.to_string().contains("network execution is disabled"));
     }
 
     fn worker(id: &str, max_conc: usize) -> RemoteWorker {

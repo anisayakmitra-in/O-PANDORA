@@ -1,12 +1,6 @@
-//! Fleet Worker Server — HTTP endpoint for remote execution.
+//! Fleet worker contracts. Network execution is disabled until an authenticated protocol is available.
 
-use axum::{
-    extract::State,
-    routing::{get, post},
-    Json, Router,
-};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkerCapability {
@@ -36,80 +30,29 @@ pub struct WorkerHealth {
     pub tasks_completed: u64,
 }
 
-#[derive(Debug, Deserialize)]
-struct ExecuteRequest {
-    task: String,
-    #[serde(default)]
-    domain: String,
-}
-
-#[derive(Debug, Serialize)]
-struct ExecuteResponse {
-    execution_id: String,
-    success: bool,
-    output: String,
-}
-
 pub struct WorkerState {
     pub capability: WorkerCapability,
     pub uptime: std::time::Instant,
     pub completed: std::sync::atomic::AtomicU64,
 }
 
-pub async fn serve_worker(addr: &str, cap: WorkerCapability) -> Result<(), anyhow::Error> {
-    let state = Arc::new(WorkerState {
-        capability: cap,
-        uptime: std::time::Instant::now(),
-        completed: std::sync::atomic::AtomicU64::new(0),
-    });
-    let app = Router::new()
-        .route("/health", get(worker_health))
-        .route("/capability", get(worker_capability))
-        .route("/execute", post(worker_execute))
-        .with_state(state);
-    println!("[Worker] Listening on {addr}");
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
-    Ok(())
+pub async fn serve_worker(_addr: &str, _cap: WorkerCapability) -> Result<(), anyhow::Error> {
+    anyhow::bail!("Fleet network execution is disabled pending authenticated protocol support")
 }
 
-async fn worker_health(State(s): State<Arc<WorkerState>>) -> Json<WorkerHealth> {
-    Json(WorkerHealth {
-        status: "healthy".into(),
-        uptime_secs: s.uptime.elapsed().as_secs(),
-        tasks_completed: s.completed.load(std::sync::atomic::Ordering::Relaxed),
-    })
-}
+#[cfg(test)]
+mod tests {
+    use super::{serve_worker, WorkerCapability};
 
-async fn worker_capability(State(s): State<Arc<WorkerState>>) -> Json<WorkerCapability> {
-    Json(s.capability.clone())
-}
-
-async fn worker_execute(
-    State(s): State<Arc<WorkerState>>,
-    Json(req): Json<ExecuteRequest>,
-) -> Json<ExecuteResponse> {
-    use pandora_orchestrator::PandoraRuntime;
-    let mut rt = PandoraRuntime::new();
-    let domain = if req.domain.is_empty() {
-        "default"
-    } else {
-        &req.domain
-    };
-    match rt.run(&req.task, domain).await {
-        Ok(r) => {
-            s.completed
-                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            Json(ExecuteResponse {
-                execution_id: r.execution_id,
-                success: r.success,
-                output: r.output,
-            })
-        }
-        Err(e) => Json(ExecuteResponse {
-            execution_id: String::new(),
-            success: false,
-            output: e.to_string(),
-        }),
+    #[tokio::test]
+    async fn network_execution_returns_disabled_without_binding() {
+        let result = tokio::time::timeout(
+            std::time::Duration::from_millis(100),
+            serve_worker("127.0.0.1:0", WorkerCapability::default()),
+        )
+        .await
+        .expect("disabled worker must return without serving");
+        let error = result.expect_err("network worker must be disabled");
+        assert!(error.to_string().contains("network execution is disabled"));
     }
 }
