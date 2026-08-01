@@ -55,6 +55,31 @@ impl Drop for TempDirGuard {
     }
 }
 
+struct AbortOnDrop<T> {
+    handle: Option<tokio::task::JoinHandle<T>>,
+}
+
+impl<T> AbortOnDrop<T> {
+    fn new(handle: tokio::task::JoinHandle<T>) -> Self {
+        Self {
+            handle: Some(handle),
+        }
+    }
+
+    async fn abort_and_join(mut self) -> Result<T, tokio::task::JoinError> {
+        let handle = self.handle.take().expect("abort guard must own a task");
+        handle.abort();
+        handle.await
+    }
+}
+
+impl<T> Drop for AbortOnDrop<T> {
+    fn drop(&mut self) {
+        if let Some(handle) = &self.handle {
+            handle.abort();
+        }
+    }
+}
 #[cfg(test)]
 #[allow(clippy::all)]
 mod tests {
@@ -237,6 +262,54 @@ async fn registry_endpoints_list_registered_components() {
     assert_eq!(genes, vec!["code-audit", "code-review"]);
 }
 
+#[tokio::test]
+async fn registry_endpoints_are_available_under_versioned_paths() {
+    let _guard = ENV_LOCK.lock().await;
+    let home = TempDirGuard::new("pandora-api-routes");
+    let _home = EnvVarGuard::set("PANDORA_HOME", home.path().as_os_str());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("test listener should bind");
+    let address = listener
+        .local_addr()
+        .expect("test listener should expose its address");
+    let server = AbortOnDrop::new(tokio::spawn(crate::serve_listener(
+        listener,
+        home.path().join("sessions"),
+    )));
+    let client = reqwest::Client::new();
+
+    for (legacy_path, versioned_path) in [
+        ("/harnesses", "/api/v1/harnesses"),
+        ("/genes", "/api/v1/genes"),
+    ] {
+        let legacy = client
+            .get(format!("http://{address}{legacy_path}"))
+            .send()
+            .await
+            .expect("legacy request should succeed");
+        let versioned = client
+            .get(format!("http://{address}{versioned_path}"))
+            .send()
+            .await
+            .expect("versioned request should succeed");
+
+        assert!(legacy.status().is_success());
+        assert!(versioned.status().is_success());
+        let legacy = legacy
+            .bytes()
+            .await
+            .expect("legacy response body should be readable");
+        let versioned = versioned
+            .bytes()
+            .await
+            .expect("versioned response body should be readable");
+        assert!(!legacy.is_empty());
+        assert_eq!(versioned, legacy);
+    }
+
+    let _ = server.abort_and_join().await;
+}
 #[tokio::test]
 async fn pairing_attempts_are_rate_limited() {
     let auth = crate::AuthState::new();

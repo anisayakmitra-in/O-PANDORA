@@ -803,6 +803,8 @@ pub fn router(sessions_dir: std::path::PathBuf) -> Router {
         .route("/api/v1/execute", post(execute))
         .route("/api/v1/sessions", get(sessions))
         .route("/api/v1/providers", get(providers))
+        .route("/api/v1/harnesses", get(harnesses_list))
+        .route("/api/v1/genes", get(genes_list))
         .route("/api/v1/ws", get(websocket))
         .route("/api/v1/deliveries", get(deliveries))
         .route("/execute", post(execute))
