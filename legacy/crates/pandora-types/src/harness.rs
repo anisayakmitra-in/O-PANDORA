@@ -9,10 +9,13 @@ use serde::{Deserialize, Serialize};
 #[non_exhaustive]
 pub enum HarnessKind {
     /// Augments one or more constitutional services.
+    #[serde(alias = "source")]
     Source,
     /// Communication/orchestration mesh between harnesses.
+    #[serde(alias = "meta")]
     Meta,
     /// Packages policies, workflows, capabilities, and genes for a domain.
+    #[serde(alias = "domain")]
     Domain,
 }
 
@@ -42,9 +45,13 @@ pub struct HarnessManifest {
     pub version: String,
     pub author: String,
     pub kind: HarnessKind,
+    #[serde(default)]
     pub dependencies: Vec<String>,
+    #[serde(default)]
     pub capabilities: Vec<String>,
+    #[serde(default)]
     pub owned_genes: Vec<String>,
+    #[serde(default)]
     pub slash_commands: Vec<SlashCommand>,
 }
 
@@ -361,4 +368,29 @@ pub fn generate_harness_toml(pkg: &HarnessPackage) -> String {
         }
     }
     lines.join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserializes_scaffolded_lowercase_manifests() {
+        for (kind, expected) in [
+            ("source", HarnessKind::Source),
+            ("meta", HarnessKind::Meta),
+            ("domain", HarnessKind::Domain),
+        ] {
+            let manifest: HarnessManifest = toml::from_str(&format!(
+                "id = \"test\"\nname = \"Test\"\nversion = \"1.0.0\"\nauthor = \"pandora\"\nkind = \"{kind}\""
+            ))
+            .expect("scaffolded manifest");
+
+            assert_eq!(manifest.kind, expected);
+            assert!(manifest.dependencies.is_empty());
+            assert!(manifest.capabilities.is_empty());
+            assert!(manifest.owned_genes.is_empty());
+            assert!(manifest.slash_commands.is_empty());
+        }
+    }
 }
