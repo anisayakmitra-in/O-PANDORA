@@ -286,12 +286,12 @@ impl ApprovalStore {
 #[cfg(test)]
 mod tests {
     use super::{ApprovalStatus, ApprovalStore};
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    static TEST_STORE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     fn test_store() -> (ApprovalStore, std::path::PathBuf) {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("system clock should be after epoch")
-            .as_nanos();
+        let nonce = TEST_STORE_COUNTER.fetch_add(1, Ordering::Relaxed);
         let root = std::env::temp_dir().join(format!(
             "pandora-approval-store-{}-{nonce}",
             std::process::id()
