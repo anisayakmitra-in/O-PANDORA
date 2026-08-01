@@ -34,20 +34,14 @@ fn require_auth(headers: &axum::http::HeaderMap) -> bool {
     }
 
     let expected = match std::env::var("PANDORA_API_TOKEN") {
-        Ok(t) if !t.is_empty() => t,
-        _ => {
-            // In dev mode, warn but allow
-            if env_flag_enabled("PANDORA_DEV_MODE") {
-                eprintln!("[SECURITY] PANDORA_API_TOKEN not set ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â API is unprotected. Set a token or run with --insecure-plaintext.");
-                return true;
-            }
-            // Production: require token
-            return false;
-        }
+        Ok(token) if !token.is_empty() => token,
+        _ => return false,
     };
-    let auth = headers.get("authorization").and_then(|v| v.to_str().ok());
-    auth.and_then(|a| a.strip_prefix("Bearer "))
-        .is_some_and(|t| constant_time_compare(t, &expected))
+    let auth = headers
+        .get("authorization")
+        .and_then(|value| value.to_str().ok());
+    auth.and_then(|value| value.strip_prefix("Bearer "))
+        .is_some_and(|token| constant_time_compare(token, &expected))
 }
 
 fn execution_timeout() -> std::time::Duration {

@@ -103,13 +103,13 @@ mod tests {
     }
 
     #[test]
-    fn require_auth_no_token_set() {
+    fn development_mode_does_not_bypass_auth() {
         let _guard = env_lock();
         let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
         let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
         let _dev_mode = EnvVarGuard::set("PANDORA_DEV_MODE", "1");
         let headers = axum::http::HeaderMap::new();
-        assert!(require_auth(&headers));
+        assert!(!require_auth(&headers));
     }
     #[test]
     fn require_auth_token_set_no_header() {
