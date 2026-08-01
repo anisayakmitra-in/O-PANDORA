@@ -171,6 +171,30 @@ def check_workspace():
                 print(f"  WARNING: {member} does not inherit workspace version")
 
 
+def check_workflow_pins():
+    """Require immutable action references in checked-in workflows."""
+    print("\n[D] WORKFLOW SUPPLY-CHAIN CHECKS")
+    workflow_dir = REPO_ROOT / ".github" / "workflows"
+    if not workflow_dir.exists():
+        check(False, ".github/workflows directory not found")
+        return
+
+    mutable_refs = []
+    for workflow in list(workflow_dir.glob("*.yml")) + list(workflow_dir.glob("*.yaml")):
+        for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
+            match = re.search(r"^\s*-?\s*uses:\s+([^\s#]+)", line)
+            if not match:
+                continue
+            action = match.group(1)
+            if action.startswith("./"):
+                continue
+            if "@" not in action or not re.search(r"@[0-9a-f]{40}$", action):
+                mutable_refs.append(f"{workflow.relative_to(REPO_ROOT)}:{line_number}:{action}")
+
+    check(not mutable_refs, f"Mutable GitHub Action references found: {mutable_refs}")
+    if not mutable_refs:
+        print("  All external actions are pinned to immutable commits")
+
 def check_license():
     """Validate license consistency."""
     print("\n[E] LICENSE CHECKS")
@@ -240,6 +264,7 @@ def main():
     check_version()
     check_identity()
     check_workspace()
+    check_workflow_pins()
     check_license()
     check_architecture_claims()
 
