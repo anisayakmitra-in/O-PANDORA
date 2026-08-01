@@ -65,12 +65,13 @@ struct PackageListResponse {
 impl RegistryClient {
     pub fn new(base_url: &str, token: Option<String>) -> Result<Self, String> {
         let base_url = base_url.trim_end_matches('/').to_string();
-        if !(base_url.starts_with("http://") || base_url.starts_with("https://")) {
-            return Err("Registry URL must use http:// or https://".into());
+        if !uses_allowed_transport(&base_url) {
+            return Err("Registry URL must use HTTPS or loopback HTTP".into());
         }
         let client = Client::builder()
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(60))
+            .redirect(reqwest::redirect::Policy::none())
             .user_agent(format!("pandora/{}", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|e| format!("Could not create registry client: {e}"))?;
@@ -103,17 +104,18 @@ impl RegistryClient {
         destination: &Path,
     ) -> Result<PathBuf, String> {
         let artifact_url = self.artifact_url(package)?;
-        if !(artifact_url.starts_with("http://") || artifact_url.starts_with("https://")) {
-            return Err("Artifact URL must use http:// or https://".into());
+        if !uses_allowed_transport(artifact_url) {
+            return Err("Artifact URL must use HTTPS or loopback HTTP".into());
         }
-        let expected_hash = package
+        let content_hash = package
             .trust
             .content_hash
             .as_deref()
             .ok_or_else(|| "Package has no content hash; refusing installation".to_string())?;
-        let response = self.request(self.client.get(artifact_url.to_string()))?;
+        let expected_hash = canonical_checksum(content_hash)?;
+        let response = self.artifact_request(artifact_url)?;
         let bytes = read_limited(response)?;
-        crate::checksum::verify_checksum_bytes(&bytes, expected_hash)
+        crate::checksum::verify_checksum_bytes(&bytes, &expected_hash)
             .map_err(|e| format!("Artifact verification failed: {e}"))?;
         if let Some(signature) = &package.trust.signature {
             let public_key = package
@@ -125,10 +127,10 @@ impl RegistryClient {
                 package_id: package.id.clone(),
                 version: package.version.clone(),
                 publisher: package.trust.publisher.clone(),
-                public_key: public_key.to_string(),
-                signature: signature.clone(),
+                public_key: encoded_field(public_key),
+                signature: encoded_field(signature),
                 signed_at: String::new(),
-                archive_sha256: expected_hash.to_string(),
+                archive_sha256: content_hash.to_string(),
             };
             let message = format!(
                 "{}:{}:{}:{}",
@@ -160,21 +162,86 @@ impl RegistryClient {
         })
     }
 
-    fn request(&self, mut request: reqwest::blocking::RequestBuilder) -> Result<Response, String> {
-        if let Some(token) = &self.token {
-            request = request.bearer_auth(token);
+    fn request(&self, request: reqwest::blocking::RequestBuilder) -> Result<Response, String> {
+        self.send(request, true, "Registry")
+    }
+
+    fn artifact_request(&self, artifact_url: &str) -> Result<Response, String> {
+        let url = reqwest::Url::parse(artifact_url)
+            .map_err(|error| format!("Invalid artifact URL: {error}"))?;
+        let include_token = is_registry_origin(&self.base_url, &url);
+        self.send(self.client.get(url), include_token, "Artifact")
+    }
+
+    fn send(
+        &self,
+        mut request: reqwest::blocking::RequestBuilder,
+        include_token: bool,
+        target: &str,
+    ) -> Result<Response, String> {
+        if include_token {
+            if let Some(token) = &self.token {
+                request = request.bearer_auth(token);
+            }
         }
         let response = request
             .send()
-            .map_err(|e| format!("Registry request failed: {e}"))?;
+            .map_err(|error| format!("{target} request failed: {error}"))?;
         let status = response.status();
         if !status.is_success() {
-            return Err(format!("Registry returned HTTP {status}"));
+            return Err(format!("{target} returned HTTP {status}"));
         }
         Ok(response)
     }
 }
 
+fn uses_allowed_transport(value: &str) -> bool {
+    let Ok(url) = reqwest::Url::parse(value) else {
+        return false;
+    };
+    if !url.username().is_empty() || url.password().is_some() {
+        return false;
+    }
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    match url.scheme() {
+        "https" => true,
+        "http" => {
+            let loopback_host = host.trim_start_matches('[').trim_end_matches(']');
+            host.eq_ignore_ascii_case("localhost")
+                || loopback_host
+                    .parse::<std::net::IpAddr>()
+                    .is_ok_and(|address| address.is_loopback())
+        }
+        _ => false,
+    }
+}
+
+fn is_registry_origin(base_url: &str, artifact_url: &reqwest::Url) -> bool {
+    let Ok(base_url) = reqwest::Url::parse(base_url) else {
+        return false;
+    };
+    base_url.scheme() == artifact_url.scheme()
+        && base_url.host_str() == artifact_url.host_str()
+        && base_url.port_or_known_default() == artifact_url.port_or_known_default()
+}
+
+fn canonical_checksum(value: &str) -> Result<String, String> {
+    let digest = value.strip_prefix("sha256:").unwrap_or(value);
+    if digest.len() != 64
+        || !digest
+            .chars()
+            .all(|character| character.is_ascii_hexdigit())
+    {
+        return Err("Package content hash must be a 64-character SHA-256 digest".into());
+    }
+    Ok(format!("sha256:{}", digest.to_ascii_lowercase()))
+}
+
+fn encoded_field(value: &str) -> String {
+    value.strip_prefix("base64:").unwrap_or(value).to_string()
+}
 fn read_limited(response: Response) -> Result<Vec<u8>, String> {
     if response
         .content_length()
@@ -364,9 +431,63 @@ mod tests {
     use super::*;
 
     #[test]
-    fn validates_registry_scheme() {
+    fn validates_registry_transport() {
         assert!(RegistryClient::new("localhost:3001", None).is_err());
+        assert!(RegistryClient::new("http://registry.example", None).is_err());
+        assert!(RegistryClient::new("http://localhost:3001", None).is_ok());
         assert!(RegistryClient::new("https://registry.example", None).is_ok());
+    }
+
+    #[test]
+    fn accepts_only_secure_or_loopback_transport() {
+        assert!(uses_allowed_transport(
+            "https://registry.example/package.tar.gz"
+        ));
+        assert!(uses_allowed_transport(
+            "http://127.0.0.1:3001/package.tar.gz"
+        ));
+        assert!(uses_allowed_transport("http://[::1]:3001/package.tar.gz"));
+        assert!(!uses_allowed_transport(
+            "http://registry.example/package.tar.gz"
+        ));
+        assert!(!uses_allowed_transport(
+            "http://localhost.example/package.tar.gz"
+        ));
+        assert!(!uses_allowed_transport(
+            "http://localhost:3001@registry.example/package.tar.gz"
+        ));
+    }
+
+    #[test]
+    fn scopes_artifact_token_to_registry_origin() {
+        let registry = "https://registry.example";
+        assert!(is_registry_origin(
+            registry,
+            &reqwest::Url::parse("https://registry.example/artifact").expect("same origin")
+        ));
+        assert!(!is_registry_origin(
+            registry,
+            &reqwest::Url::parse("https://registry.example:8443/artifact").expect("different port")
+        ));
+        assert!(!is_registry_origin(
+            registry,
+            &reqwest::Url::parse("https://artifact.example/artifact").expect("different host")
+        ));
+    }
+
+    #[test]
+    fn normalizes_checksum_and_encoded_fields() {
+        let digest = "A".repeat(64);
+        assert_eq!(
+            canonical_checksum(&digest).expect("bare digest"),
+            format!("sha256:{}", "a".repeat(64))
+        );
+        assert_eq!(
+            canonical_checksum(&format!("sha256:{digest}")).expect("prefixed digest"),
+            format!("sha256:{}", "a".repeat(64))
+        );
+        assert_eq!(encoded_field("base64:YWJj"), "YWJj");
+        assert_eq!(encoded_field("YWJj"), "YWJj");
     }
 
     #[test]
