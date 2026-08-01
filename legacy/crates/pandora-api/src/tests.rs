@@ -1,7 +1,42 @@
-static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+static ENV_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+fn env_lock() -> tokio::sync::MutexGuard<'static, ()> {
+    ENV_LOCK.blocking_lock()
+}
+
+struct EnvVarGuard {
+    name: &'static str,
+    previous: Option<std::ffi::OsString>,
+}
+
+impl EnvVarGuard {
+    fn set(name: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self {
+        let previous = std::env::var_os(name);
+        std::env::set_var(name, value);
+        Self { name, previous }
+    }
+
+    fn remove(name: &'static str) -> Self {
+        let previous = std::env::var_os(name);
+        std::env::remove_var(name);
+        Self { name, previous }
+    }
+}
+
+impl Drop for EnvVarGuard {
+    fn drop(&mut self) {
+        if let Some(value) = self.previous.take() {
+            std::env::set_var(self.name, value);
+        } else {
+            std::env::remove_var(self.name);
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::all)]
 mod tests {
+    use super::{env_lock, EnvVarGuard};
     use crate::constant_time_compare;
     use crate::require_auth;
 
@@ -22,69 +57,62 @@ mod tests {
 
     #[test]
     fn require_auth_no_token_set() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        // When no token is set, auth is optional (dev mode)
-        std::env::remove_var("PANDORA_API_TOKEN");
-        std::env::set_var("PANDORA_DEV_MODE", "1");
+        let _guard = env_lock();
+        let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+        let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+        let _dev_mode = EnvVarGuard::set("PANDORA_DEV_MODE", "1");
         let headers = axum::http::HeaderMap::new();
         assert!(require_auth(&headers));
-        std::env::remove_var("PANDORA_DEV_MODE");
     }
-
     #[test]
     fn require_auth_token_set_no_header() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        std::env::set_var("PANDORA_API_TOKEN", "secret");
+        let _guard = env_lock();
+        let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+        let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+        let _token = EnvVarGuard::set("PANDORA_API_TOKEN", "secret");
         let headers = axum::http::HeaderMap::new();
         assert!(!require_auth(&headers));
-        std::env::remove_var("PANDORA_API_TOKEN");
     }
-
     #[test]
     fn require_auth_token_set_valid_header() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        std::env::set_var("PANDORA_API_TOKEN", "secret");
+        let _guard = env_lock();
+        let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+        let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+        let _token = EnvVarGuard::set("PANDORA_API_TOKEN", "secret");
         let mut headers = axum::http::HeaderMap::new();
         headers.insert("authorization", "Bearer secret".parse().unwrap());
         assert!(require_auth(&headers));
-        std::env::remove_var("PANDORA_API_TOKEN");
     }
-
     #[test]
     fn require_auth_token_set_wrong_header() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        std::env::set_var("PANDORA_API_TOKEN", "secret");
+        let _guard = env_lock();
+        let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+        let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
+        let _token = EnvVarGuard::set("PANDORA_API_TOKEN", "secret");
         let mut headers = axum::http::HeaderMap::new();
         headers.insert("authorization", "Bearer wrong".parse().unwrap());
         assert!(!require_auth(&headers));
-        std::env::remove_var("PANDORA_API_TOKEN");
     }
-
     #[test]
     fn require_auth_insecure_mode_bypasses() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        std::env::set_var("PANDORA_INSECURE", "1");
-        std::env::set_var("PANDORA_API_TOKEN", "secret");
+        let _guard = env_lock();
+        let _insecure = EnvVarGuard::set("PANDORA_INSECURE", "1");
+        let _token = EnvVarGuard::set("PANDORA_API_TOKEN", "secret");
         let headers = axum::http::HeaderMap::new();
         assert!(require_auth(&headers));
-        std::env::remove_var("PANDORA_INSECURE");
-        std::env::remove_var("PANDORA_API_TOKEN");
     }
-
     #[test]
     fn false_security_flags_do_not_bypass_auth() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        std::env::set_var("PANDORA_INSECURE", "0");
-        std::env::remove_var("PANDORA_API_TOKEN");
-        std::env::remove_var("PANDORA_DEV_MODE");
+        let _guard = env_lock();
+        let _insecure = EnvVarGuard::set("PANDORA_INSECURE", "0");
+        let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+        let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
         assert!(!require_auth(&axum::http::HeaderMap::new()));
-        std::env::remove_var("PANDORA_INSECURE");
     }
-
     #[test]
     fn execution_timeout_defaults_and_rejects_invalid_values() {
-        let _guard = super::ENV_LOCK.lock().unwrap();
-        std::env::remove_var("PANDORA_EXECUTION_TIMEOUT_SECONDS");
+        let _guard = env_lock();
+        let _timeout = EnvVarGuard::remove("PANDORA_EXECUTION_TIMEOUT_SECONDS");
         assert_eq!(
             crate::execution_timeout(),
             std::time::Duration::from_secs(1_800)
@@ -99,9 +127,7 @@ mod tests {
             crate::execution_timeout(),
             std::time::Duration::from_secs(60)
         );
-        std::env::remove_var("PANDORA_EXECUTION_TIMEOUT_SECONDS");
     }
-
     #[test]
     fn session_ids_reject_path_syntax() {
         assert!(crate::is_safe_session_id("abc-123_456"));
@@ -142,8 +168,10 @@ async fn pairing_attempts_are_rate_limited() {
 
 #[tokio::test]
 async fn paired_token_can_be_revoked() {
-    std::env::remove_var("PANDORA_API_TOKEN");
-    std::env::remove_var("PANDORA_DEV_MODE");
+    let _guard = ENV_LOCK.lock().await;
+    let _insecure = EnvVarGuard::remove("PANDORA_INSECURE");
+    let _token = EnvVarGuard::remove("PANDORA_API_TOKEN");
+    let _dev_mode = EnvVarGuard::remove("PANDORA_DEV_MODE");
     let auth = crate::AuthState::new();
     let token = auth.issue().await;
     let mut headers = axum::http::HeaderMap::new();
