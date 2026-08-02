@@ -37,6 +37,127 @@ fn to_err(e: String) -> pandora_types::PandoraError {
     pandora_types::PandoraError::Internal(e)
 }
 
+fn policy_package(
+    id: String,
+    publisher: String,
+    trust_levels: Vec<pandora_types::package_format::PackageTrustLevel>,
+) -> pandora_types::package_format::RegistryPackage {
+    pandora_types::package_format::RegistryPackage {
+        manifest: pandora_types::package_format::PackageManifest {
+            id,
+            publisher: publisher.clone(),
+            ..Default::default()
+        },
+        publisher,
+        trust_levels,
+        ..Default::default()
+    }
+}
+
+fn policy_package_from_gene(
+    manifest: &pandora_types::gene_package::GenePackageManifest,
+) -> pandora_types::package_format::RegistryPackage {
+    policy_package(manifest.id.clone(), manifest.author.clone(), Vec::new())
+}
+
+fn policy_package_from_path(path: &Path) -> pandora_types::package_format::RegistryPackage {
+    let manifest_path = if path.is_dir() {
+        [
+            "pandora.toml",
+            "gene.toml",
+            "harness.toml",
+            "skill.toml",
+            "provider.toml",
+        ]
+        .into_iter()
+        .map(|name| path.join(name))
+        .find(|candidate| candidate.is_file())
+    } else {
+        Some(path.to_path_buf())
+    };
+    let metadata = manifest_path
+        .and_then(|manifest| std::fs::read_to_string(manifest).ok())
+        .and_then(|content| toml::from_str::<toml::Value>(&content).ok());
+    let field = |name| {
+        metadata
+            .as_ref()
+            .and_then(|value| value.get(name))
+            .and_then(toml::Value::as_str)
+            .unwrap_or_default()
+            .to_string()
+    };
+    let id = if field("id").is_empty() {
+        path.file_stem()
+            .and_then(|name| name.to_str())
+            .unwrap_or("local-package")
+            .to_string()
+    } else {
+        field("id")
+    };
+    let publisher = if field("publisher").is_empty() {
+        field("author")
+    } else {
+        field("publisher")
+    };
+    policy_package(id, publisher, Vec::new())
+}
+
+fn enforce_trust_policy(
+    policy: &TrustPolicy,
+    package: &pandora_types::package_format::RegistryPackage,
+) -> Result<(), pandora_types::PandoraError> {
+    policy
+        .evaluate(package)
+        .map_err(|error| pandora_types::PandoraError::policy(error.to_string()))
+}
+
+fn policy_package_from_registry(
+    package: &registry::RegistryPackage,
+) -> pandora_types::package_format::RegistryPackage {
+    use pandora_types::package_format::PackageTrustLevel;
+
+    let normalized = package
+        .trust
+        .level
+        .to_ascii_lowercase()
+        .replace(['-', ' '], "_");
+    let declared = match normalized.as_str() {
+        "verified" | "publisher_verified" => Some(PackageTrustLevel::PublisherVerified),
+        "signed" => Some(PackageTrustLevel::Signed),
+        "source" | "source_available" => Some(PackageTrustLevel::SourceAvailable),
+        "reproducible" | "reproducible_build" => Some(PackageTrustLevel::ReproducibleBuild),
+        "audited" | "security_audited" => Some(PackageTrustLevel::SecurityAudited),
+        "pandora_verified" => Some(PackageTrustLevel::PandoraVerified),
+        _ => None,
+    };
+    let mut trust_levels = declared.into_iter().collect::<Vec<_>>();
+    let mut add = |level| {
+        if !trust_levels.contains(&level) {
+            trust_levels.push(level);
+        }
+    };
+    if normalized == "pandora_verified" {
+        add(PackageTrustLevel::PublisherVerified);
+        add(PackageTrustLevel::ReproducibleBuild);
+        add(PackageTrustLevel::SecurityAudited);
+    }
+    if package.trust.signature.is_some() && package.trust.public_key.is_some() {
+        add(PackageTrustLevel::Signed);
+    }
+    if package
+        .repository
+        .as_deref()
+        .is_some_and(|url| !url.is_empty())
+    {
+        add(PackageTrustLevel::SourceAvailable);
+    }
+    policy_package(
+        package.id.clone(),
+        package.trust.publisher.clone(),
+        trust_levels,
+    )
+}
+
 #[derive(Debug, Clone)]
 pub struct PackageSource {
     pub name: String,
@@ -237,7 +358,11 @@ impl KoPalace {
         None
     }
 
-    /// Install a package with full validation pipeline:
+    fn install_path(&self, path: &Path) -> Result<(), pandora_types::PandoraError> {
+        let mut council = self.council_write();
+        self.loaders.install(&mut council, path)
+    }
+
     /// Install a package with full validation pipeline:
     /// finds package, validates manifest, verifies checksum and signature,
     /// checks trust policy, resolves dependencies, wires lockfile,
@@ -246,9 +371,8 @@ impl KoPalace {
         // If id looks like a path (contains / or \), try auto-detect
         let path = std::path::Path::new(id);
         if path.exists() {
-            // Auto-detect from path
-            let mut council = self.council_write();
-            return self.loaders.install(&mut council, path);
+            enforce_trust_policy(&self.trust_policy, &policy_package_from_path(path))?;
+            return self.install_path(path);
         }
 
         // Step 1: Find package
@@ -277,6 +401,7 @@ impl KoPalace {
         // Step 2: Validate manifest
         validation::validate_strict(&pkg.manifest)
             .map_err(|e| to_err(format!("Manifest validation failed for {id}: {e}")))?;
+        enforce_trust_policy(&self.trust_policy, &policy_package_from_gene(&pkg.manifest))?;
 
         // Step 3: Check if already installed at same version
         let already_installed = self
@@ -303,7 +428,7 @@ impl KoPalace {
             );
         }
 
-        // Step 5: Check trust policy
+        // Step 5: Report active trust policy
         println!(
             "[ko_palace] trust policy: min_trust={:?}, require_signed={}",
             self.trust_policy.min_trust, self.trust_policy.require_signed
@@ -347,6 +472,7 @@ impl KoPalace {
         id: &str,
     ) -> Result<(), pandora_types::PandoraError> {
         let package = registry.get_package(id).map_err(to_err)?;
+        enforce_trust_policy(&self.trust_policy, &policy_package_from_registry(&package))?;
         let staging = pandora_types::gene_package::packages_dir()
             .join(".staging")
             .join(format!(
@@ -360,7 +486,7 @@ impl KoPalace {
         let root = registry
             .download_and_extract(&package, &staging)
             .map_err(to_err)?;
-        let result = self.install(&root.to_string_lossy());
+        let result = self.install_path(&root);
         if result.is_err() {
             let _ = std::fs::remove_dir_all(&staging);
         }
@@ -806,6 +932,64 @@ mod tests {
         let k = KoPalace::new(sc.clone());
         // Should have a trust policy (default or loaded)
         assert!(k.trust_policy().min_trust.rank() <= 6);
+    }
+
+    #[test]
+    fn strict_policy_rejects_unsigned_local_packages() {
+        let sc = Arc::new(RwLock::new(ShadowCouncil::new()));
+        let mut palace = KoPalace::new(sc);
+        palace.trust_policy = TrustPolicy::strict();
+        let root = tmp();
+        let package = root.join("unsigned");
+        std::fs::create_dir_all(&package).expect("create package");
+        std::fs::write(
+            package.join("gene.toml"),
+            r#"id = "unsigned"
+name = "Unsigned"
+kind = "tool"
+version = "1.0.0"
+author = "unknown"
+"#,
+        )
+        .expect("write manifest");
+
+        let result = palace.install(package.to_str().expect("package path"));
+
+        assert!(matches!(
+            result,
+            Err(pandora_types::PandoraError::Policy(_))
+        ));
+        std::fs::remove_dir_all(root).expect("remove package fixture");
+    }
+
+    #[test]
+    fn strict_policy_requires_remote_signature_material() {
+        let mut package = registry::RegistryPackage {
+            id: "signed-package".into(),
+            name: "Signed Package".into(),
+            version: "1.0.0".into(),
+            kind: "gene".into(),
+            description: String::new(),
+            author: "publisher".into(),
+            license: "Apache-2.0".into(),
+            trust: registry::RegistryTrust {
+                level: "pandora_verified".into(),
+                signature: None,
+                public_key: None,
+                content_hash: Some("sha256:00".into()),
+                publisher: "publisher".into(),
+            },
+            compatibility: registry::RegistryCompatibility::default(),
+            repository: Some("https://example.com/source".into()),
+            artifact_url: Some("https://example.com/package.tar.gz".into()),
+            tags: Vec::new(),
+        };
+        let policy = TrustPolicy::strict();
+
+        assert!(enforce_trust_policy(&policy, &policy_package_from_registry(&package)).is_err());
+        package.trust.signature = Some("signature".into());
+        package.trust.public_key = Some("public-key".into());
+        assert!(enforce_trust_policy(&policy, &policy_package_from_registry(&package)).is_ok());
     }
 
     #[test]
