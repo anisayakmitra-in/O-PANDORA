@@ -166,6 +166,7 @@ jobs:
       - name: Install released CLI on Unix
         if: runner.os != 'Windows'
         env:
+          GH_TOKEN: ${{ github.token }}
           PANDORA_VERSION: ${{ github.ref_name }}
           PANDORA_INSTALL_DIR: ${{ runner.temp }}/pandora-bin
         run: |
@@ -176,6 +177,7 @@ jobs:
       - name: Install released CLI on Windows
         if: runner.os == 'Windows'
         env:
+          GH_TOKEN: ${{ github.token }}
           PANDORA_VERSION: ${{ github.ref_name }}
           PANDORA_INSTALL_DIR: ${{ runner.temp }}\pandora-bin
         run: |

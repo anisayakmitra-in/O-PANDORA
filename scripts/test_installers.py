@@ -69,6 +69,26 @@ class InstallerContractTests(unittest.TestCase):
         self.assertIn("& .\\scripts\\install-cli.ps1", workflow)
         self.assertNotIn("raw.githubusercontent.com", workflow)
 
+    def test_installers_require_github_provenance_before_execution(self):
+        checks = {
+            "install-cli.sh": '"$BINARY" --version',
+            "update-cli.sh": 'install -m 0755 "$BINARY" "$TARGET"',
+            "install-cli.ps1": "& $binary --version",
+            "update-cli.ps1": "Copy-Item $binary $target -Force",
+        }
+        for name, execution in checks.items():
+            script = (ROOT / "scripts" / name).read_text(encoding="utf-8")
+            self.assertIn("attestation verify", script, name)
+            self.assertIn("--signer-workflow", script, name)
+            self.assertLess(script.index("attestation verify"), script.index(execution), name)
+
+    def test_installer_smoke_jobs_authorize_attestation_lookup(self):
+        for name in ["cli-release.yml", "installer-smoke.yml"]:
+            workflow = (ROOT / ".github" / "workflows" / name).read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("GH_TOKEN: ${{ github.token }}", workflow, name)
+
     def test_wrapper_does_not_start_setup_or_import(self):
         script = (ROOT / "scripts" / "install.sh").read_text(encoding="utf-8")
         self.assertNotIn("pandora setup 2>/dev/null", script)

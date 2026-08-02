@@ -24,6 +24,16 @@ curl --fail --location --silent --show-error "$BASE_URL/$ASSET.sha256" -o "$CHEC
 EXPECTED="$(awk '{print toupper($1)}' "$CHECKSUM")"
 if [[ "$HASH_TOOL" == "sha256sum" ]]; then ACTUAL="$(sha256sum "$BINARY" | awk '{print toupper($1)}')"; else ACTUAL="$(shasum -a 256 "$BINARY" | awk '{print toupper($1)}')"; fi
 [[ "$EXPECTED" == "$ACTUAL" ]] || { echo "Checksum verification failed." >&2; exit 1; }
+command -v gh >/dev/null || {
+  echo "GitHub CLI authentication is required to verify release provenance." >&2
+  exit 1
+}
+ATTESTATION_ARGS=(attestation verify "$BINARY" --repo "$REPO" --signer-workflow "$REPO/.github/workflows/cli-release.yml" --deny-self-hosted-runners)
+if [[ "$VERSION" != "latest" ]]; then ATTESTATION_ARGS+=(--source-ref "refs/tags/v${VERSION#v}"); fi
+gh "${ATTESTATION_ARGS[@]}" >/dev/null || {
+  echo "Release provenance verification failed; existing binary was not changed." >&2
+  exit 1
+}
 mkdir -p "$INSTALL_DIR"
 TARGET="$INSTALL_DIR/pandora"
 BACKUP="$TARGET.previous"

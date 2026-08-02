@@ -31,7 +31,7 @@ A published artifact must include a checksum, build commit, version, and target.
 - `pandora-macos-x86_64` and `pandora-macos-arm64`
 - `pandora-windows-x86_64.exe` and `pandora-windows-arm64.exe`
 
-Each binary is accompanied by a `.sha256` checksum and metadata file. Each binary also receives a GitHub build-provenance attestation. Tags must be `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N`, and the base version must match `Cargo.toml`. The release job uses the tag commit and does not publish desktop or mobile artifacts. Installers must verify the checksum before replacing an existing binary. Upgrade and uninstall must preserve user configuration and sessions unless the user explicitly requests removal.
+Each binary is accompanied by a `.sha256` checksum and metadata file. Each binary also receives a GitHub build-provenance attestation. Tags must be `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-rc.N`, and the base version must match `Cargo.toml`. The release job uses the tag commit and does not publish desktop or mobile artifacts. Prebuilt installers require an authenticated GitHub CLI and verify the artifact against the repository's `cli-release.yml` provenance before execution or replacement. Versioned installs also bind verification to the release tag. The checksum remains a corruption check; provenance is the release-authenticity check. Upgrade and uninstall must preserve user configuration and sessions unless the user explicitly requests removal.
 
 Provider credentials belong in the OS credential store or the encrypted headless fallback. They must never appear in artifacts, logs, or examples.
 
