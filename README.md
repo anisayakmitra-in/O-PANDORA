@@ -1,5 +1,9 @@
 # O-PANDORA
 
+<p align="center">
+  <img src="assets/logo.png" alt="O-PANDORA official logo" width="280">
+</p>
+
 [![Version](https://img.shields.io/badge/version-0.5.1-blue)](https://github.com/anisayakmitra-in/O-PANDORA/releases/tag/v0.5.1-rc.25)
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
