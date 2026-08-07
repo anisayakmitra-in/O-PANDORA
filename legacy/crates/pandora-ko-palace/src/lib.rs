@@ -983,6 +983,9 @@ author = "unknown"
             repository: Some("https://example.com/source".into()),
             artifact_url: Some("https://example.com/package.tar.gz".into()),
             tags: Vec::new(),
+            downloads: 0,
+            success_rate: 0.0,
+            created_at: None,
         };
         let policy = TrustPolicy::strict();
 

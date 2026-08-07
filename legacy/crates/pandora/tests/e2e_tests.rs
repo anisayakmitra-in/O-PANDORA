@@ -192,6 +192,37 @@ fn marketplace_feeds_use_registry_data() {
 }
 
 #[test]
+fn marketplace_search_applies_supported_filters() {
+    const BODY: &str = r#"{"total":2,"limit":50,"offset":0,"packages":[{"id":"alice/example","name":"Example","version":"1.0.0","kind":"gene","description":"Example package","author":"alice","license":"MIT","trust":{"level":"Official","signature":null,"public_key":null,"content_hash":null,"publisher":"alice"},"compatibility":{"runtimes":["pandora"],"platforms":[]},"repository":null,"artifact_url":null,"tags":[],"downloads":100,"success_rate":0.98},{"id":"bob/example","name":"Example Harness","version":"2.0.0","kind":"domain_harness","description":"Example package","author":"bob","license":"Apache-2.0","trust":{"level":"Community","signature":null,"public_key":null,"content_hash":null,"publisher":"bob"},"compatibility":{"runtimes":["pandora"],"platforms":[]},"repository":null,"artifact_url":null,"tags":[],"downloads":1000,"success_rate":0.80}]}"#;
+    let registry_url = registry_response("/api/v1/search?q=Example", BODY);
+    let home = tmp_dir().join("marketplace-search-filters");
+    let args = [
+        "search",
+        "Example",
+        "--kind",
+        "gene",
+        "--verified",
+        "--publisher",
+        "alice",
+        "--min-downloads",
+        "50",
+        "--registry",
+        registry_url.as_str(),
+    ];
+    let output = run_with_home_and_env(&args, &home, &[]);
+    assert_success(&output, &args);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("alice/example"),
+        "matching package missing: {stdout}"
+    );
+    assert!(
+        !stdout.contains("bob/example"),
+        "non-matching package was not filtered: {stdout}"
+    );
+}
+
+#[test]
 fn tools_list_builtins() {
     let output = run(&["tools"]).0;
     assert_success(&output, &["tools"]);

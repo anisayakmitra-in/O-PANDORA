@@ -80,7 +80,19 @@ enum Commands {
     /// Show package details
     Info { id: String },
     /// Search K-O-Palace registry
-    Search { query: String },
+    Search {
+        query: String,
+        #[arg(long)]
+        kind: Option<String>,
+        #[arg(long)]
+        verified: bool,
+        #[arg(long)]
+        publisher: Option<String>,
+        #[arg(long, alias = "min-installs")]
+        min_downloads: Option<u64>,
+        #[arg(long)]
+        registry: Option<String>,
+    },
     /// Publish current package
     Publish,
     /// List available providers
@@ -357,9 +369,34 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             a.push("info".into());
             a.push(id.clone());
         }
-        Commands::Search { query } => {
+        Commands::Search {
+            query,
+            kind,
+            verified,
+            publisher,
+            min_downloads,
+            registry,
+        } => {
             a.push("search".into());
             a.push(query.clone());
+            if let Some(kind) = kind {
+                a.push("--kind".into());
+                a.push(kind.clone());
+            }
+            if *verified {
+                a.push("--verified".into());
+            }
+            if let Some(publisher) = publisher {
+                a.push("--publisher".into());
+                a.push(publisher.clone());
+            }
+            if let Some(min_downloads) = min_downloads {
+                a.push("--min-downloads".into());
+                a.push(min_downloads.to_string());
+            }
+            if let Some(registry) = registry {
+                a.push(format!("--registry={registry}"));
+            }
         }
         Commands::Publish => a.push("publish".into()),
         Commands::Providers => a.push("providers".into()),
@@ -4545,9 +4582,13 @@ fn cmd_login(_args: &[String]) {
     println!("  Use: PANDORA_TOKEN=<token> to authenticate");
     println!("  Or set: pandora config palace.token <token>");
 }
-fn palace_registry_client() -> Result<pandora_ko_palace::registry::RegistryClient, String> {
-    let registry_url =
-        std::env::var("PANDORA_REGISTRY_URL").unwrap_or_else(|_| "http://localhost:3001".into());
+fn palace_registry_client(
+    registry_url: Option<&str>,
+) -> Result<pandora_ko_palace::registry::RegistryClient, String> {
+    let registry_url = registry_url
+        .map(str::to_owned)
+        .or_else(|| std::env::var("PANDORA_REGISTRY_URL").ok())
+        .unwrap_or_else(|| "http://localhost:3001".into());
     pandora_ko_palace::registry::RegistryClient::new(
         &registry_url,
         std::env::var("PANDORA_TOKEN").ok(),
@@ -4555,7 +4596,7 @@ fn palace_registry_client() -> Result<pandora_ko_palace::registry::RegistryClien
 }
 
 fn cmd_registry_feed(feed: &str, title: &str) {
-    let registry = match palace_registry_client() {
+    let registry = match palace_registry_client(None) {
         Ok(registry) => registry,
         Err(error) => {
             eprintln!("Invalid K-O-Palace configuration: {error}");
@@ -4618,106 +4659,145 @@ fn cmd_newest(_args: &[String]) {
     cmd_registry_feed("newest", "Newest Packages");
 }
 
+fn registry_trust_is_verified(level: &str) -> bool {
+    matches!(
+        level.to_ascii_lowercase().as_str(),
+        "verified" | "official" | "enterprise" | "certified" | "pandora_verified"
+    )
+}
+
 fn cmd_search(args: &[String]) {
     if args.len() < 3 {
-        eprintln!("Usage: pandora search <q> [--kind <type>] [--verified] [--publisher <ns>] [--free] [--min-installs <n>]");
-        return;
+        eprintln!("Usage: pandora search <q> [--kind <type>] [--verified] [--publisher <ns>] [--min-downloads <n>] [--registry <url>]");
+        process::exit(2);
     }
-    let q = &args[2];
+    let query = &args[2];
     let kind_filter = args
         .iter()
-        .position(|a| a == "--kind")
-        .and_then(|i| args.get(i + 1).cloned());
-    let verified_only = args.iter().any(|a| a == "--verified");
+        .position(|arg| arg == "--kind")
+        .and_then(|index| args.get(index + 1).cloned());
+    let verified_only = args.iter().any(|arg| arg == "--verified");
     let publisher_filter = args
         .iter()
-        .position(|a| a == "--publisher")
-        .and_then(|i| args.get(i + 1).cloned());
-    let free_only = args.iter().any(|a| a == "--free");
-    let min_installs: Option<u64> = args
+        .position(|arg| arg == "--publisher")
+        .and_then(|index| args.get(index + 1).cloned());
+    let min_downloads = args
         .iter()
-        .position(|a| a == "--min-installs")
-        .and_then(|i| args.get(i + 1).and_then(|s| s.parse().ok()));
+        .position(|arg| arg == "--min-downloads" || arg == "--min-installs")
+        .and_then(|index| args.get(index + 1))
+        .and_then(|value| value.parse::<u64>().ok());
+    let registry_url = args
+        .iter()
+        .find_map(|arg| arg.strip_prefix("--registry="))
+        .map(str::to_owned)
+        .or_else(|| std::env::var("PANDORA_REGISTRY_URL").ok())
+        .unwrap_or_else(|| "http://localhost:3001".into());
 
-    println!("Search: {q}");
-    if let Some(ref k) = kind_filter {
-        println!("  Filter: kind={k}");
+    println!("Search: {query}");
+    if let Some(kind) = &kind_filter {
+        println!("  Filter: kind={kind}");
     }
     if verified_only {
-        println!("  Filter: verified only");
+        println!("  Filter: verified or stronger");
     }
-    if let Some(ref p) = publisher_filter {
-        println!("  Filter: publisher={p}");
+    if let Some(publisher) = &publisher_filter {
+        println!("  Filter: publisher={publisher}");
     }
-    if free_only {
-        println!("  Filter: free only");
-    }
-    if let Some(n) = min_installs {
-        println!("  Filter: min installs={n}");
+    if let Some(downloads) = min_downloads {
+        println!("  Filter: min downloads={downloads}");
     }
 
-    let registry_url =
-        std::env::var("PANDORA_REGISTRY_URL").unwrap_or_else(|_| "http://localhost:3001".into());
-    let mut remote_found = false;
-    if let Ok(registry) = pandora_ko_palace::registry::RegistryClient::new(
-        &registry_url,
-        std::env::var("PANDORA_TOKEN").ok(),
-    ) {
-        if let Ok(packages) = registry.search(q) {
-            for package in packages {
-                if kind_filter
-                    .as_ref()
-                    .is_some_and(|kind| package.kind != *kind)
-                {
-                    continue;
-                }
-                if verified_only && package.trust.level != "verified" {
-                    continue;
-                }
-                remote_found = true;
-                println!(
-                    "  {} {} v{} (registry, trust={})",
-                    package.kind, package.id, package.version, package.trust.level
-                );
-            }
+    let registry = match palace_registry_client(Some(&registry_url)) {
+        Ok(registry) => registry,
+        Err(error) => {
+            eprintln!("Invalid K-O-Palace configuration: {error}");
+            process::exit(2);
         }
-    }
-    let sc = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
-    let k = pandora_ko_palace::KoPalace::new(sc.clone());
-    let r = k.search(q);
-    let b: Vec<_> = pandora_ko_palace::builtin::all()
-        .into_iter()
-        .filter(|p| p.id.contains(q) || p.description.contains(q))
-        .collect();
-
-    println!(
-        "
-Results:
-"
-    );
-    for p in &r {
-        if let Some(ref kf) = kind_filter {
-            if p.kind != *kf {
-                continue;
-            }
+    };
+    let remote_packages = match registry.search(query) {
+        Ok(packages) => packages,
+        Err(error) => {
+            eprintln!("K-O-Palace search failed: {error}");
+            Vec::new()
         }
-        let badge = if verified_only { " ✓" } else { "" };
-        println!("  {} {} v{} ({}){badge}", p.kind, p.id, p.version, p.kind);
-    }
-    for p in &b {
+    };
+    let mut found = false;
+    for package in remote_packages {
+        if kind_filter
+            .as_ref()
+            .is_some_and(|kind| !package.kind.eq_ignore_ascii_case(kind))
+            || (verified_only && !registry_trust_is_verified(&package.trust.level))
+            || publisher_filter
+                .as_ref()
+                .is_some_and(|publisher| !package.trust.publisher.eq_ignore_ascii_case(publisher))
+            || min_downloads.is_some_and(|minimum| package.downloads < minimum)
+        {
+            continue;
+        }
+        found = true;
         println!(
-            "  {} {} v{} ({}) [built-in]",
-            p.kind, p.id, p.version, p.kind
+            "  {} {} v{} (registry, trust={}, downloads={})",
+            package.kind,
+            package.id,
+            package.version,
+            package.trust.level.to_ascii_lowercase(),
+            package.downloads
         );
     }
-    if r.is_empty() && b.is_empty() && !remote_found {
-        println!("  No matches. Try adjusting filters or search terms.");
+
+    let council = Arc::new(RwLock::new(pandora_shadow_council::ShadowCouncil::new()));
+    let palace = pandora_ko_palace::KoPalace::new(council);
+    if !verified_only && min_downloads.is_none() {
+        for package in palace.search(query) {
+            if kind_filter
+                .as_ref()
+                .is_some_and(|kind| !package.kind.eq_ignore_ascii_case(kind))
+                || publisher_filter.as_ref().is_some_and(|publisher| {
+                    !package
+                        .id
+                        .split_once('/')
+                        .is_some_and(|(namespace, _)| namespace.eq_ignore_ascii_case(publisher))
+                })
+            {
+                continue;
+            }
+            found = true;
+            println!(
+                "  {} {} v{} ({})",
+                package.kind, package.id, package.version, package.kind
+            );
+        }
+
+        for package in pandora_ko_palace::builtin::all()
+            .into_iter()
+            .filter(|package| package.id.contains(query) || package.description.contains(query))
+        {
+            if kind_filter
+                .as_ref()
+                .is_some_and(|kind| !package.kind.eq_ignore_ascii_case(kind))
+                || publisher_filter.as_ref().is_some_and(|publisher| {
+                    !package
+                        .id
+                        .split_once('/')
+                        .is_some_and(|(namespace, _)| namespace.eq_ignore_ascii_case(publisher))
+                })
+            {
+                continue;
+            }
+            found = true;
+            println!(
+                "  {} {} v{} ({}) [built-in]",
+                package.kind, package.id, package.version, package.kind
+            );
+        }
     }
-    println!(
-        "
-  Install: pandora install <namespace/package>"
-    );
-    println!("  Info:    pandora info <namespace/package>");
+
+    if !found {
+        println!("  No matches. Try adjusting filters or search terms.");
+    } else {
+        println!("\n  Install: pandora install <namespace/package>");
+        println!("  Info:    pandora info <namespace/package>");
+    }
 }
 
 fn cmd_palace_shell() {

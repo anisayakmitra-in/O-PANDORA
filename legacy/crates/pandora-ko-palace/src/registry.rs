@@ -35,6 +35,12 @@ pub struct RegistryPackage {
     pub artifact_url: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(default)]
+    pub downloads: u64,
+    #[serde(default)]
+    pub success_rate: f64,
+    #[serde(default)]
+    pub created_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
