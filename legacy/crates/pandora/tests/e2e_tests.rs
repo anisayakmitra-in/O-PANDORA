@@ -231,6 +231,37 @@ fn new_skill_creates_scaffold() {
 }
 
 #[test]
+fn scaffold_commands_reject_path_syntax() {
+    for (label, args) in [
+        ("new", vec!["new", "gene", "../escaped-new"]),
+        ("package", vec!["package", "../escaped-package"]),
+    ] {
+        let root = tmp_dir().join(format!("scaffold-boundary-{label}"));
+        let working = root.join("working");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&working).expect("create scaffold working directory");
+
+        let output = Command::new(pandora_bin())
+            .args(&args)
+            .current_dir(&working)
+            .env("PANDORA_HOME", root.join("home"))
+            .output()
+            .expect("failed to execute pandora");
+
+        assert!(!output.status.success(), "{label} accepted path syntax");
+        assert!(
+            !root.join(format!("escaped-{label}")).exists(),
+            "{label} wrote outside the working directory"
+        );
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("Invalid scaffold name"),
+            "{label} did not explain the validation failure: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+#[test]
 fn deny_rules_support_machine_readable_output() {
     let home = tmp_dir().join("deny-json-home");
     let add = run_with_home(&["--json", "deny", "add", "sudo *"], &home);

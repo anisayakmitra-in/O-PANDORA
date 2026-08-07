@@ -3005,6 +3005,10 @@ fn cmd_package(args: &[String]) {
         return;
     }
     let name = &args[2];
+    if let Err(error) = pandora_ko_palace::validation::validate_package_id(name) {
+        eprintln!("Invalid scaffold name: {error}");
+        process::exit(2);
+    }
     let dir = std::path::Path::new(name);
     if dir.exists() {
         eprintln!("Directory already exists: {name}");
@@ -3038,6 +3042,10 @@ fn cmd_new(args: &[String]) {
         process::exit(1);
     }
     let name = &args[3];
+    if let Err(error) = pandora_ko_palace::validation::validate_package_id(name) {
+        eprintln!("Invalid scaffold name: {error}");
+        process::exit(2);
+    }
     let sn = name.replace("-", "_");
     match args[2].as_str() {
         "gene" => {
