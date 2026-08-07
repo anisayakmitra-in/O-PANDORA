@@ -148,6 +148,18 @@ impl RegistryClient {
         extract_archive_transactionally(&bytes, destination)
     }
 
+    pub fn featured(&self) -> Result<Vec<RegistryPackage>, String> {
+        self.package_list("featured")
+    }
+
+    pub fn trending(&self) -> Result<Vec<RegistryPackage>, String> {
+        self.package_list("trending")
+    }
+
+    pub fn newest(&self) -> Result<Vec<RegistryPackage>, String> {
+        self.package_list("newest")
+    }
+
     pub fn search(&self, query: &str) -> Result<Vec<RegistryPackage>, String> {
         let url = format!(
             "{}/api/v1/search?q={}",
@@ -159,6 +171,16 @@ impl RegistryClient {
                 .json::<PackageListResponse>()
                 .map(|result| result.packages)
                 .map_err(|e| format!("Invalid registry search response: {e}"))
+        })
+    }
+
+    fn package_list(&self, endpoint: &str) -> Result<Vec<RegistryPackage>, String> {
+        let url = format!("{}/api/v1/{endpoint}", self.base_url);
+        self.request(self.client.get(url)).and_then(|response| {
+            response
+                .json::<PackageListResponse>()
+                .map(|result| result.packages)
+                .map_err(|error| format!("Invalid registry {endpoint} response: {error}"))
         })
     }
 
@@ -429,6 +451,77 @@ fn encode_component(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    fn registry_response(path: &str, body: &'static str) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind registry fixture");
+        let address = listener.local_addr().expect("registry fixture address");
+        let path = path.to_string();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept registry request");
+            let mut request = [0_u8; 4096];
+            let read = stream.read(&mut request).expect("read registry request");
+            let request = String::from_utf8_lossy(&request[..read]);
+            assert!(
+                request.starts_with(&format!("GET {path} HTTP/1.1\r\n")),
+                "unexpected registry request: {request}"
+            );
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            )
+            .expect("write registry response");
+        });
+        format!("http://{address}")
+    }
+
+    #[test]
+    fn fetches_curated_package_lists() {
+        const BODY: &str = r#"{
+            "total": 1,
+            "limit": 20,
+            "offset": 0,
+            "packages": [{
+                "id": "alice/example",
+                "name": "Example",
+                "version": "1.0.0",
+                "kind": "gene",
+                "description": "Example package",
+                "author": "alice",
+                "license": "MIT",
+                "trust": {
+                    "level": "Verified",
+                    "signature": null,
+                    "public_key": null,
+                    "content_hash": null,
+                    "publisher": "alice"
+                },
+                "compatibility": {
+                    "runtimes": ["pandora"],
+                    "platforms": []
+                },
+                "repository": null,
+                "artifact_url": null,
+                "tags": []
+            }]
+        }"#;
+
+        for endpoint in ["featured", "trending", "newest"] {
+            let base_url = registry_response(&format!("/api/v1/{endpoint}"), BODY);
+            let client = RegistryClient::new(&base_url, None).expect("registry client");
+            let packages = match endpoint {
+                "featured" => client.featured(),
+                "trending" => client.trending(),
+                "newest" => client.newest(),
+                _ => unreachable!(),
+            }
+            .expect("curated package list");
+            assert_eq!(packages.len(), 1);
+            assert_eq!(packages[0].id, "alice/example");
+        }
+    }
 
     #[test]
     fn validates_registry_transport() {
