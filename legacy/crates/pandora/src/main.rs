@@ -206,8 +206,19 @@ enum Commands {
         #[arg(trailing_var_arg = true)]
         args: Vec<String>,
     },
-    /// Login to K-O-Palace
-    Login,
+    /// Store a K-O-Palace token securely
+    Login {
+        /// Read the token from stdin instead of prompting.
+        #[arg(long)]
+        token_stdin: bool,
+        #[arg(long)]
+        registry: Option<String>,
+    },
+    /// Remove a stored K-O-Palace token
+    Logout {
+        #[arg(long)]
+        registry: Option<String>,
+    },
     /// Browse K-O-Palace marketplace
     Featured,
     /// Browse trending packages
@@ -590,7 +601,24 @@ fn build_args(cmd: &Commands) -> Vec<String> {
             a.push(action.clone());
             a.extend(args.iter().cloned());
         }
-        Commands::Login => a.push("login".into()),
+        Commands::Login {
+            token_stdin,
+            registry,
+        } => {
+            a.push("login".into());
+            if *token_stdin {
+                a.push("--token-stdin".into());
+            }
+            if let Some(registry) = registry {
+                a.push(format!("--registry={registry}"));
+            }
+        }
+        Commands::Logout { registry } => {
+            a.push("logout".into());
+            if let Some(registry) = registry {
+                a.push(format!("--registry={registry}"));
+            }
+        }
         Commands::Featured => a.push("featured".into()),
         Commands::Trending => a.push("trending".into()),
         Commands::Newest => a.push("newest".into()),
@@ -722,6 +750,7 @@ fn dispatch(args: &[String]) {
         Some("artifacts") => cmd_artifacts(args),
         Some("fleet") => cmd_fleet(args),
         Some("login") => cmd_login(args),
+        Some("logout") => cmd_logout(args),
         Some("featured") => cmd_featured(args),
         Some("trending") => cmd_trending(args),
         Some("newest") => cmd_newest(args),
@@ -4576,23 +4605,130 @@ fn cmd_publish(args: &[String]) {
     }
 }
 
-fn cmd_login(_args: &[String]) {
-    println!("K-O-Palace Login");
-    println!("  Registry: https://palace.pandora.dev (default)");
-    println!("  Use: PANDORA_TOKEN=<token> to authenticate");
-    println!("  Or set: pandora config palace.token <token>");
+fn palace_registry_url(registry_url: Option<&str>) -> String {
+    registry_url
+        .map(str::to_owned)
+        .or_else(|| std::env::var("PANDORA_REGISTRY_URL").ok())
+        .or_else(|| pandora_types::config::PandoraConfig::load().registry_url)
+        .unwrap_or_else(|| "http://localhost:3001".into())
+        .trim_end_matches('/')
+        .to_string()
 }
+
+fn palace_credential_key(registry_url: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(registry_url.as_bytes());
+    let suffix = digest[..8]
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    format!("palace-token-{suffix}")
+}
+
+fn palace_registry_token(registry_url: &str) -> Option<String> {
+    std::env::var("PANDORA_TOKEN")
+        .ok()
+        .or_else(|| load_credential(&palace_credential_key(registry_url)).ok())
+}
+
 fn palace_registry_client(
     registry_url: Option<&str>,
 ) -> Result<pandora_ko_palace::registry::RegistryClient, String> {
-    let registry_url = registry_url
-        .map(str::to_owned)
-        .or_else(|| std::env::var("PANDORA_REGISTRY_URL").ok())
-        .unwrap_or_else(|| "http://localhost:3001".into());
+    let registry_url = palace_registry_url(registry_url);
     pandora_ko_palace::registry::RegistryClient::new(
         &registry_url,
-        std::env::var("PANDORA_TOKEN").ok(),
+        palace_registry_token(&registry_url),
     )
+}
+
+fn cmd_login(args: &[String]) {
+    use std::io::Read as _;
+
+    let registry_override = args.iter().find_map(|arg| arg.strip_prefix("--registry="));
+    let registry_url = palace_registry_url(registry_override);
+    if let Err(error) = pandora_ko_palace::registry::RegistryClient::new(&registry_url, None) {
+        eprintln!("Invalid K-O-Palace URL: {error}");
+        process::exit(2);
+    }
+
+    let token = if args.iter().any(|arg| arg == "--token-stdin") {
+        let mut token = String::new();
+        if let Err(error) = std::io::stdin().read_to_string(&mut token) {
+            eprintln!("Could not read K-O-Palace token: {error}");
+            process::exit(1);
+        }
+        token
+    } else if let Ok(token) = std::env::var("PANDORA_TOKEN") {
+        token
+    } else {
+        match rpassword::prompt_password("K-O-Palace token: ") {
+            Ok(token) => token,
+            Err(error) => {
+                eprintln!("Could not read K-O-Palace token: {error}");
+                process::exit(1);
+            }
+        }
+    };
+    let token = token.trim();
+    if token.is_empty() || token.len() > 4096 || !token.bytes().all(|byte| byte.is_ascii_graphic())
+    {
+        eprintln!("K-O-Palace token must be a non-empty ASCII value without whitespace.");
+        process::exit(2);
+    }
+
+    let credential_key = palace_credential_key(&registry_url);
+    let storage = match store_credential(&credential_key, token) {
+        Ok(storage) => storage,
+        Err(error) => {
+            eprintln!("Could not store K-O-Palace token: {error}");
+            process::exit(1);
+        }
+    };
+    let mut config = pandora_types::config::PandoraConfig::load();
+    config.registry_url = Some(registry_url.clone());
+    if let Err(error) = config.save() {
+        delete_credential(&credential_key);
+        eprintln!("Could not save K-O-Palace registry URL: {error}");
+        process::exit(1);
+    }
+
+    if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+        println!(
+            "{}",
+            serde_json::json!({
+                "api_version": "v1",
+                "registry": registry_url,
+                "status": "stored",
+                "storage": storage,
+            })
+        );
+    } else {
+        println!("K-O-Palace token stored securely for {registry_url}.");
+    }
+}
+
+fn cmd_logout(args: &[String]) {
+    let registry_override = args.iter().find_map(|arg| arg.strip_prefix("--registry="));
+    let registry_url = palace_registry_url(registry_override);
+    let credential_key = palace_credential_key(&registry_url);
+    delete_credential(&credential_key);
+
+    if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+        println!(
+            "{}",
+            serde_json::json!({
+                "api_version": "v1",
+                "registry": registry_url,
+                "status": "removed",
+                "environment_override": std::env::var_os("PANDORA_TOKEN").is_some(),
+            })
+        );
+    } else {
+        println!("Removed the stored K-O-Palace token for {registry_url}.");
+        if std::env::var_os("PANDORA_TOKEN").is_some() {
+            println!("PANDORA_TOKEN remains active for this process.");
+        }
+    }
 }
 
 fn cmd_registry_feed(feed: &str, title: &str) {

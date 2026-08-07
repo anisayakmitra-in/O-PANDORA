@@ -6,7 +6,7 @@ use pandora_types::recorder::ExecutionFrame;
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 /// Path to the Pandora binary built by Cargo for these tests.
 fn pandora_bin() -> PathBuf {
@@ -75,9 +75,14 @@ fn assert_no_panic(output: &std::process::Output) {
 }
 
 fn registry_response(path: &str, body: &'static str) -> String {
+    registry_response_with_token(path, body, None)
+}
+
+fn registry_response_with_token(path: &str, body: &'static str, token: Option<&str>) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind registry fixture");
     let address = listener.local_addr().expect("registry fixture address");
     let path = path.to_string();
+    let token = token.map(str::to_owned);
     std::thread::spawn(move || {
         let (mut stream, _) = listener.accept().expect("accept registry request");
         let mut request = [0_u8; 4096];
@@ -87,6 +92,12 @@ fn registry_response(path: &str, body: &'static str) -> String {
             request.starts_with(&format!("GET {path} HTTP/1.1\r\n")),
             "unexpected registry request: {request}"
         );
+        if let Some(token) = token {
+            assert!(
+                request.contains(&format!("authorization: Bearer {token}\r\n")),
+                "registry token missing from request: {request}"
+            );
+        }
         write!(
             stream,
             "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
@@ -189,6 +200,65 @@ fn marketplace_feeds_use_registry_data() {
         assert_eq!(value["feed"], command);
         assert_eq!(value["packages"][0]["id"], "alice/example");
     }
+}
+
+#[test]
+fn palace_login_stores_token_without_echoing_it() {
+    const BODY: &str = r#"{"total":0,"limit":10,"offset":0,"packages":[]}"#;
+    let token = format!("kop_{}", "a".repeat(64));
+    let registry_url = registry_response_with_token("/api/v1/featured", BODY, Some(token.as_str()));
+    let home = tmp_dir().join("palace-login");
+    let mut child = Command::new(pandora_bin())
+        .args([
+            "login",
+            "--token-stdin",
+            "--registry",
+            registry_url.as_str(),
+        ])
+        .env("PANDORA_HOME", &home)
+        .env("PANDORA_CREDENTIALS_KEY", "test-only-key")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("start palace login");
+    child
+        .stdin
+        .take()
+        .expect("login stdin")
+        .write_all(token.as_bytes())
+        .expect("write palace token");
+    let login = child.wait_with_output().expect("wait for palace login");
+    assert_success(&login, &["login", "--token-stdin"]);
+    let login_text = format!(
+        "{}{}",
+        String::from_utf8_lossy(&login.stdout),
+        String::from_utf8_lossy(&login.stderr)
+    );
+    assert!(
+        !login_text.contains(&token),
+        "login output exposed the token: {login_text}"
+    );
+    let config = std::fs::read_to_string(home.join("config.toml"))
+        .expect("login should persist the registry URL");
+    assert!(
+        !config.contains(&token),
+        "login persisted the token in plaintext configuration"
+    );
+
+    let featured = run_with_home_and_env(
+        &["featured"],
+        &home,
+        &[("PANDORA_CREDENTIALS_KEY", "test-only-key")],
+    );
+    assert_success(&featured, &["featured"]);
+
+    let logout = run_with_home_and_env(
+        &["logout", "--registry", registry_url.as_str()],
+        &home,
+        &[("PANDORA_CREDENTIALS_KEY", "test-only-key")],
+    );
+    assert_success(&logout, &["logout"]);
 }
 
 #[test]
