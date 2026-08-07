@@ -2043,7 +2043,7 @@ fn cmd_doctor_json(strict: bool) {
         "sessions": std::fs::read_dir(sessions_dir()).map(|entries| entries.count()).unwrap_or(0),
     });
     let healthy = checks.iter().all(|check| {
-        check["required"].as_bool().unwrap_or(true) && check["ok"].as_bool().unwrap_or(false)
+        !check["required"].as_bool().unwrap_or(true) || check["ok"].as_bool().unwrap_or(false)
     });
     println!(
         "{}",

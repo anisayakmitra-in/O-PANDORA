@@ -528,6 +528,30 @@ fn doctor_json_is_machine_readable() {
     }));
 }
 #[test]
+fn doctor_strict_ignores_optional_dependencies() {
+    let home = tmp_dir().join("doctor-strict-ready-home");
+    let _ = std::fs::remove_dir_all(&home);
+    std::fs::create_dir_all(home.join("credentials")).expect("create credential directory");
+    std::fs::write(home.join("credentials/provider"), "configured")
+        .expect("write credential marker");
+
+    let output = run_with_home_and_env(
+        &["--json", "doctor", "--strict"],
+        &home,
+        &[("PANDORA_CREDENTIALS_KEY", "test-only-key")],
+    );
+
+    assert_success(&output, &["--json", "doctor", "--strict"]);
+    let value: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("valid strict doctor JSON");
+    assert!(value["checks"].as_array().is_some_and(|checks| {
+        checks.iter().all(|check| {
+            check["required"] == serde_json::json!(false) || check["ok"] == serde_json::json!(true)
+        })
+    }));
+}
+
+#[test]
 fn doctor_strict_returns_failure_for_unhealthy_home() {
     let home = tmp_dir().join("doctor-strict-home");
     let output = run_with_home(&["--json", "doctor", "--strict"], &home);
