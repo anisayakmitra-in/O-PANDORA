@@ -3,6 +3,8 @@
 /// These tests verify that the built pandora binary behaves correctly
 /// from the user's perspective. They run the actual binary, not unit tests.
 use pandora_types::recorder::ExecutionFrame;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -72,6 +74,29 @@ fn assert_no_panic(output: &std::process::Output) {
     );
 }
 
+fn registry_response(path: &str, body: &'static str) -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind registry fixture");
+    let address = listener.local_addr().expect("registry fixture address");
+    let path = path.to_string();
+    std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().expect("accept registry request");
+        let mut request = [0_u8; 4096];
+        let read = stream.read(&mut request).expect("read registry request");
+        let request = String::from_utf8_lossy(&request[..read]);
+        assert!(
+            request.starts_with(&format!("GET {path} HTTP/1.1\r\n")),
+            "unexpected registry request: {request}"
+        );
+        write!(
+            stream,
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        )
+        .expect("write registry response");
+    });
+    format!("http://{address}")
+}
+
 #[test]
 fn help_shows_usage() {
     let (output, _) = run(&["--help"]);
@@ -126,6 +151,44 @@ fn config_can_get_and_set_values() {
     let value: serde_json::Value = serde_json::from_slice(&json.stdout).expect("config JSON");
     assert_eq!(value["key"], "default_model");
     assert_eq!(value["value"], "test-model");
+}
+
+#[test]
+fn marketplace_feeds_use_registry_data() {
+    const BODY: &str = r#"{"total":1,"limit":20,"offset":0,"packages":[{"id":"alice/example","name":"Example","version":"1.0.0","kind":"gene","description":"Example package","author":"alice","license":"MIT","trust":{"level":"Verified","signature":null,"public_key":null,"content_hash":null,"publisher":"alice"},"compatibility":{"runtimes":["pandora"],"platforms":[]},"repository":null,"artifact_url":null,"tags":[]}]}"#;
+
+    for command in ["featured", "trending", "newest"] {
+        let registry_url = registry_response(&format!("/api/v1/{command}"), BODY);
+        let home = tmp_dir().join(format!("marketplace-{command}"));
+        let output = run_with_home_and_env(
+            &[command],
+            &home,
+            &[("PANDORA_REGISTRY_URL", registry_url.as_str())],
+        );
+        assert_success(&output, &[command]);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("alice/example"),
+            "{command} did not print registry data: {stdout}"
+        );
+        assert!(
+            !stdout.contains("pandora/coding-domain"),
+            "{command} printed fixture data: {stdout}"
+        );
+
+        let json_registry_url = registry_response(&format!("/api/v1/{command}"), BODY);
+        let json_output = run_with_home_and_env(
+            &["--json", command],
+            &home,
+            &[("PANDORA_REGISTRY_URL", json_registry_url.as_str())],
+        );
+        assert_success(&json_output, &["--json", command]);
+        let value: serde_json::Value =
+            serde_json::from_slice(&json_output.stdout).expect("marketplace feed JSON");
+        assert_eq!(value["api_version"], "v1");
+        assert_eq!(value["feed"], command);
+        assert_eq!(value["packages"][0]["id"], "alice/example");
+    }
 }
 
 #[test]

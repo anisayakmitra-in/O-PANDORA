@@ -4545,103 +4545,77 @@ fn cmd_login(_args: &[String]) {
     println!("  Use: PANDORA_TOKEN=<token> to authenticate");
     println!("  Or set: pandora config palace.token <token>");
 }
-fn cmd_featured(_args: &[String]) {
-    println!("Featured Packages");
-    println!("────────────────────");
-    let featured = vec![
-        (
-            "pandora/coding-domain",
-            "Domain Harness",
-            "42k installs",
-            true,
-        ),
-        (
-            "pandora/security-domain",
-            "Domain Harness",
-            "18k installs",
-            true,
-        ),
-        ("pandora/rust-backend-skill", "Skill", "180k installs", true),
-        ("sayak/eda-skill", "Skill", "2.1k installs", false),
-        (
-            "openclaw/review-meta",
-            "Meta Harness",
-            "980 installs",
-            false,
-        ),
-    ];
-    for (id, kind, installs, verified) in &featured {
-        let badge = if *verified { " 🏷 Verified" } else { "" };
-        println!("  {id:>40}  {kind:<18}  {installs}{badge}");
-    }
-    println!(
-        "
-  Install: pandora install <namespace/package>"
-    );
-    println!("  Search:  pandora search <query>");
+fn palace_registry_client() -> Result<pandora_ko_palace::registry::RegistryClient, String> {
+    let registry_url =
+        std::env::var("PANDORA_REGISTRY_URL").unwrap_or_else(|_| "http://localhost:3001".into());
+    pandora_ko_palace::registry::RegistryClient::new(
+        &registry_url,
+        std::env::var("PANDORA_TOKEN").ok(),
+    )
 }
 
-fn cmd_trending(args: &[String]) {
-    let period = if args.len() >= 3 { &args[2] } else { "week" };
-    println!("Trending ({period})");
-    println!("────────────────────");
-    let trends = vec![
-        ("sayak/eda-skill", "New", "2.1k ☆ 97% success", 42_100),
-        (
-            "community/verilog-domain",
-            "Rising",
-            "980 ☆ 89% success",
-            980,
-        ),
-        (
-            "pandora/security-domain",
-            "Stable",
-            "18k ☆ 99% success",
-            218_000,
-        ),
-        (
-            "openclaw/lighthouse-evaluator",
-            "New",
-            "310 ☆ 95% success",
-            310,
-        ),
-        (
-            "community/terraform-gene",
-            "Popular",
-            "12k ☆ 92% success",
-            312_000,
-        ),
-    ];
-    for (id, status, stats, _total) in &trends {
-        println!("  {id:>40}  {status:<8}  {stats}");
+fn cmd_registry_feed(feed: &str, title: &str) {
+    let registry = match palace_registry_client() {
+        Ok(registry) => registry,
+        Err(error) => {
+            eprintln!("Invalid K-O-Palace configuration: {error}");
+            process::exit(2);
+        }
+    };
+    let packages = match feed {
+        "featured" => registry.featured(),
+        "trending" => registry.trending(),
+        "newest" => registry.newest(),
+        _ => Err(format!("Unsupported K-O-Palace feed: {feed}")),
+    };
+    let packages = match packages {
+        Ok(packages) => packages,
+        Err(error) => {
+            eprintln!("K-O-Palace {feed} request failed: {error}");
+            process::exit(1);
+        }
+    };
+
+    if env::var("PANDORA_OUTPUT").as_deref() == Ok("json") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "api_version": "v1",
+                "feed": feed,
+                "packages": packages,
+            }))
+            .expect("registry feed is serializable")
+        );
+        return;
     }
-    println!(
-        "
-  Periods: week, month, all"
-    );
+
+    println!("{title}");
+    println!("--------------------");
+    if packages.is_empty() {
+        println!("  No packages returned.");
+        return;
+    }
+    for package in packages {
+        println!(
+            "  {:<36} {:<18} v{} [{}]",
+            package.id,
+            package.kind,
+            package.version,
+            package.trust.level.to_ascii_lowercase()
+        );
+    }
+}
+
+fn cmd_featured(_args: &[String]) {
+    cmd_registry_feed("featured", "Featured Packages");
+}
+
+fn cmd_trending(_args: &[String]) {
+    cmd_registry_feed("trending", "Trending Packages");
 }
 
 fn cmd_newest(_args: &[String]) {
-    println!("Newest Packages");
-    println!("────────────────────");
-    let newest = vec![
-        (
-            "community/semgrep-evaluator",
-            "evaluator",
-            "Published today",
-        ),
-        ("sayak/vivado-gene", "gene", "Published yesterday"),
-        ("openclaw/stm32-plan", "plan", "Published 2 days ago"),
-        (
-            "community/playwright-evaluator",
-            "evaluator",
-            "Published 3 days ago",
-        ),
-        ("pandora/rust-refactor-plan", "plan", "Published 4 days ago"),
-    ];
-    for (id, kind, date) in &newest {
-        println!("  {id:>40}  {kind:<12}  {date}");
-    }
+    cmd_registry_feed("newest", "Newest Packages");
 }
 
 fn cmd_search(args: &[String]) {
