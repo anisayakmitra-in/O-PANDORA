@@ -36,7 +36,7 @@
 - Governance checks remain in force.
 - Online mutation is not allowed; adaptation occurs between executions through approved packages or plans.
 
-The current read-only proposal implementation is `pandora-orchestrator::gepa::GepaObserver`. The lifecycle and target interfaces are documented in [Evolution architecture](EVOLUTION.md); a production DSR service is not yet implemented.
+The current read-only proposal implementation is `pandora_orchestrator::engines::mutation::MutationEngine`. `EvolutionEngine` creates the first RSI proposal state, and `ReplacementEngine` validates DSR request metadata. The interfaces are documented in [Evolution architecture](EVOLUTION.md); production package activation is not implemented.
 
 ---
 

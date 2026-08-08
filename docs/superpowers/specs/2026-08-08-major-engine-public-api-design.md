@@ -21,7 +21,7 @@ The next major release will make engine ownership and names explicit. This is a 
 
 ## Public Module Shape
 
-`pandora-orchestrator` will expose behavior through an `engines` namespace:
+`pandora-orchestrator` will expose behavior through the `pandora_orchestrator::engines` namespace:
 
 ```text
 pandora_orchestrator::engines
@@ -67,13 +67,13 @@ Later slices will move concrete runtime behavior out of `pandora-types` one engi
 
 | Current implementation | Target owner |
 |---|---|
-| `CapabilityResolutionEngine` | `pandora-orchestrator::engines::capability` |
-| `ProviderIntelligenceEngine` | `pandora-orchestrator::engines::provider` |
-| `ExecutionRecorder` | `pandora-orchestrator::engines::recording` |
-| `ReplayEngine` | `pandora-orchestrator::engines::replay` |
-| `TelemetryEngine` | `pandora-orchestrator::engines::telemetry` |
-| `FailureIntelligenceEngine` | `pandora-orchestrator::engines::failure` |
-| `KnowledgeDistillationEngine` | `pandora-orchestrator::engines::knowledge` |
+| `CapabilityResolutionEngine` | `pandora_orchestrator::engines::capability` |
+| `ProviderIntelligenceEngine` | `pandora_orchestrator::engines::provider` |
+| `ExecutionRecorder` | `pandora_orchestrator::engines::recording` |
+| `ReplayEngine` | `pandora_orchestrator::engines::replay` |
+| `TelemetryEngine` | `pandora_orchestrator::engines::telemetry` |
+| `FailureIntelligenceEngine` | `pandora_orchestrator::engines::failure` |
+| `KnowledgeDistillationEngine` | `pandora_orchestrator::engines::knowledge` |
 
 `PolicyEngine` will move to `pandora-services` because policy evaluation implements the governance service. `WorkflowEngine` will move to `pandora-services` because workflow planning implements the workflow service. Their data contracts remain in `pandora-types`.
 

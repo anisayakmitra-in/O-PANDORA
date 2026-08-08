@@ -10,9 +10,8 @@
 
 pub mod agentic_loop;
 pub mod constitutional_floor;
-pub mod gepa;
+pub mod engines;
 pub mod provider_adapter;
-pub mod rsi;
 
 use anyhow::Result;
 use pandora_services::ExecutionController;
@@ -966,9 +965,11 @@ impl PandoraRuntime {
                     .collect::<Vec<_>>()
             ),
         );
-        let observer = crate::gepa::GepaObserver::new(crate::gepa::GepaObserver::default_dir());
-        let coordinator = crate::rsi::RsiCoordinator::new(&observer);
-        let _proposals = coordinator.propose(&session);
+        let observer = crate::engines::mutation::MutationEngine::new(
+            crate::engines::mutation::MutationEngine::default_dir(),
+        );
+        let evolution_engine = crate::engines::evolution::EvolutionEngine::new(&observer);
+        let _proposals = evolution_engine.propose(&session);
         // ponytail: store by execution_id for now; real session mgmt later
         self.sessions.create(&execution_id, task);
         if let Some(stored_session) = self.sessions.get_mut(&execution_id) {
@@ -1433,7 +1434,7 @@ mod tests {
             2
         );
 
-        let observer = crate::gepa::GepaObserver::new(home.join("mutations"));
+        let observer = crate::engines::mutation::MutationEngine::new(home.join("mutations"));
         let candidates = observer.list();
         let candidate = candidates
             .iter()
@@ -1442,6 +1443,7 @@ mod tests {
         assert_eq!(candidate.failure_count, 2);
         let _ = std::fs::remove_dir_all(home);
     }
+
     #[test]
     fn execution_target_requires_connection_and_model() {
         let mut runtime = PandoraRuntime::new();

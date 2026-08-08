@@ -19,7 +19,7 @@ create a versioned proposal
 review, test, and approve
 ```
 
-The current implementation is `pandora-orchestrator::gepa::GepaObserver`. It reads session history and writes mutation candidates. It does not apply mutations automatically. Candidates must carry their target, rationale, evidence, confidence, proposed package or plan change, and provenance.
+`pandora_orchestrator::engines::mutation::MutationEngine` implements the current GEPA strategy. It reads session history and writes mutation proposals. It does not apply them. Proposals carry their target, rationale, evidence, confidence, proposed package or plan change, and provenance.
 
 ## RSI orchestration
 
@@ -33,7 +33,7 @@ RSI is the bounded loop that connects GEPA to DSR:
 6. activate only between executions; and
 7. record the result for the next observation cycle.
 
-`pandora-orchestrator::rsi::RsiCoordinator` currently implements proposal generation and DSR request validation. It deliberately does not activate replacements, modify source code, or bypass governance. That boundary is the safety property, not a missing shortcut.
+`pandora_orchestrator::engines::evolution::EvolutionEngine` creates the initial `AwaitingApproval` proposal in the RSI lifecycle. `pandora_orchestrator::engines::replacement::ReplacementEngine` validates the metadata required for a DSR request. Neither engine approves, installs, or activates a replacement.
 
 ## DSR
 

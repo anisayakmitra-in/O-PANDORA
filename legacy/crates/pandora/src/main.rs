@@ -1961,8 +1961,8 @@ fn cmd_mutation(args: &[String]) {
     }
     let sub = &args[2];
     let json = env::var("PANDORA_OUTPUT").as_deref() == Ok("json");
-    let observer = pandora_orchestrator::gepa::GepaObserver::new(
-        pandora_orchestrator::gepa::GepaObserver::default_dir(),
+    let observer = pandora_orchestrator::engines::mutation::MutationEngine::new(
+        pandora_orchestrator::engines::mutation::MutationEngine::default_dir(),
     );
 
     match sub.as_str() {
