@@ -34,7 +34,7 @@ use pandora_types::provenance::{ExecutionProvenanceGraph, ProvenanceNodeKind};
 use pandora_types::parliament::ParliamentVerdict;
 use pandora_types::provider_db::{ProviderDb, ProviderObservation};
 use pandora_types::provider_intel::ProviderIntelligenceEngine;
-use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, ReplayId};
+use pandora_types::recorder::{ExecutionFrame, ExecutionRecorder, RecordedProperties};
 use pandora_types::runtime_context::RuntimeContext;
 use pandora_types::session::SessionStore;
 use pandora_types::telemetry_engine::TelemetryEngine;
@@ -729,6 +729,22 @@ impl PandoraRuntime {
         };
 
         // Stage 5: Recorder — record for replay
+        let recording_id = self.recorder.begin(
+            task,
+            domain,
+            &execution_id,
+            &session.id,
+            &self.ctx.project_id,
+            RecordedProperties {
+                memory_mode: format!("{:?}", self.ctx.properties.memory_mode).to_lowercase(),
+                loop_mode: format!("{:?}", self.plan.control_strategy).to_lowercase(),
+                safety_level: format!("{:?}", self.ctx.properties.safety_level).to_lowercase(),
+                execution_backend: format!("{:?}", self.ctx.properties.execution_backend)
+                    .to_lowercase(),
+                reasoning_depth: self.ctx.properties.reasoning_depth,
+                telemetry_level: self.ctx.properties.telemetry_level,
+            },
+        );
         let frame_id = format!("frame-{execution_id}-1");
         let frame = ExecutionFrame {
             frame_id: frame_id.clone(),
@@ -748,10 +764,10 @@ impl PandoraRuntime {
             telemetry: vec![],
             timestamp: chrono::Utc::now(),
         };
-        session.add_frame(frame.clone());
-        let _ = self
-            .recorder
-            .record_frame(&ReplayId(frame_id.clone()), frame);
+        session.add_frame(frame);
+        for frame in &session.timeline {
+            self.recorder.record_frame(&recording_id, frame.clone())?;
+        }
         if self.cancel_token.is_cancelled() {
             return Err(anyhow::anyhow!("Execution cancelled"));
         }
@@ -768,11 +784,11 @@ impl PandoraRuntime {
 
         session
             .metadata
-            .insert("replay_id".to_string(), frame_id.clone());
+            .insert("replay_id".to_string(), recording_id.0.clone());
 
         let rec_out = RecorderStageOutput {
-            replay_id: frame_id,
-            frame_count: 1,
+            replay_id: recording_id.0.clone(),
+            frame_count: session.timeline.len(),
         };
 
         // Stage 6: Telemetry — begin/end trace with spans
@@ -910,6 +926,15 @@ impl PandoraRuntime {
         }
 
         let total = start.elapsed();
+        let total_retries = session.timeline.iter().map(|frame| frame.retries).sum();
+        self.recorder.finalize(
+            &recording_id,
+            total.as_millis() as u64,
+            response.len(),
+            0.0,
+            total_retries,
+            success,
+        )?;
 
         // ── Finalize session ──
         session.status = if success {
@@ -1285,7 +1310,7 @@ mod tests {
             .enable("persistence-harness")
             .expect("enable test harness");
 
-        tokio::runtime::Builder::new_current_thread()
+        let report = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("test runtime")
@@ -1296,6 +1321,17 @@ mod tests {
                 None,
             ))
             .expect("execution should succeed");
+
+        let recording = runtime
+            .recorder
+            .get(&pandora_types::recorder::ReplayId(report.replay_id.clone()))
+            .expect("execution recorder should retain the completed run");
+        assert!(recording.success);
+        assert_eq!(recording.total_tokens, report.output.len());
+        assert!(recording
+            .frames
+            .iter()
+            .any(|frame| frame.step_kind == "execute"));
 
         let json = std::fs::read_to_string(home.join("sessions/persisted-session.json"))
             .expect("persisted session file");
@@ -1372,7 +1408,7 @@ mod tests {
             .enable_gene("unstable-gene")
             .expect("enable test gene");
 
-        tokio::runtime::Builder::new_current_thread()
+        let report = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("test runtime")
@@ -1383,6 +1419,19 @@ mod tests {
                 None,
             ))
             .expect("execution should complete after tool failures");
+
+        let recording = runtime
+            .recorder
+            .get(&pandora_types::recorder::ReplayId(report.replay_id.clone()))
+            .expect("execution recorder should retain gene frames");
+        assert_eq!(
+            recording
+                .frames
+                .iter()
+                .filter(|frame| frame.step_kind == "gene" && !frame.success)
+                .count(),
+            2
+        );
 
         let observer = crate::gepa::GepaObserver::new(home.join("mutations"));
         let candidates = observer.list();
