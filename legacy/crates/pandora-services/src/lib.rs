@@ -360,6 +360,7 @@ use pandora_types::provenance::{ExecutionProvenanceGraph, ProvenanceNodeKind};
 pub struct ExecutionController {
     pub decision_log: DecisionLog,
     pub graph: ExecutionProvenanceGraph,
+    execution_id: String,
     max_retries: u32,
 }
 
@@ -368,6 +369,7 @@ impl ExecutionController {
         Self {
             decision_log: DecisionLog::new(),
             graph: ExecutionProvenanceGraph::new("default"),
+            execution_id: "default".into(),
             max_retries: 3,
         }
     }
@@ -411,6 +413,8 @@ impl ExecutionController {
         }
     }
     pub fn start_trace(&mut self, execution_id: &str, task: &str) {
+        self.execution_id = execution_id.to_string();
+        self.decision_log = DecisionLog::new();
         self.graph = ExecutionProvenanceGraph::new(execution_id);
         let tid = format!("task-{execution_id}");
         let oid = format!("outcome-{execution_id}");
@@ -431,7 +435,7 @@ impl ExecutionController {
         self.max_retries = n;
     }
     pub fn decide(&mut self, stage: &str, chosen: &str, reason: &str, rejected: Vec<(&str, &str)>) {
-        let mut d = Decision::new("default", 0, stage, chosen, reason);
+        let mut d = Decision::new(&self.execution_id, 0, stage, chosen, reason);
         for (name, r) in rejected {
             d = d.reject(name, r);
         }
@@ -855,5 +859,34 @@ impl StorageService for DefaultLedgerService {
             .iter()
             .map(|e| e.split('\n').next().unwrap_or(e).to_string())
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ExecutionController;
+
+    #[test]
+    fn start_trace_scopes_decisions_to_the_current_execution() {
+        let mut controller = ExecutionController::new();
+        controller.decide("stale", "old", "old execution", vec![]);
+
+        controller.start_trace("execution-one", "first task");
+        controller.decide("provider", "local", "selected", vec![]);
+
+        assert_eq!(controller.decision_log.len(), 1);
+        assert_eq!(
+            controller.decision_log.decisions[0].session_id,
+            "execution-one"
+        );
+
+        controller.start_trace("execution-two", "second task");
+        controller.decide("provider", "remote", "selected", vec![]);
+
+        assert_eq!(controller.decision_log.len(), 1);
+        assert_eq!(
+            controller.decision_log.decisions[0].session_id,
+            "execution-two"
+        );
     }
 }

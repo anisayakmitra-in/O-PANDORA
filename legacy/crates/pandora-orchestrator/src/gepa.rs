@@ -161,10 +161,10 @@ impl GepaObserver {
         let mut log = DecisionLog::new();
 
         // Build decisions from the execution timeline
-        for frame in &session.timeline {
-            let decision = Decision::new(
+        for (turn, frame) in session.timeline.iter().enumerate() {
+            let mut decision = Decision::new(
                 &session.id,
-                0, // turn is inferred from timeline position
+                turn as u32,
                 &frame.step_kind,
                 &frame.step_label,
                 format!("{} via {}/{}", frame.step_kind, frame.provider, frame.model),
@@ -175,6 +175,9 @@ impl GepaObserver {
             } else {
                 pandora_types::decision::Outcome::failure("execution_error")
             });
+            if frame.step_kind == "gene" {
+                decision = decision.with_gene(&frame.step_label);
+            }
             log.record(decision);
         }
 

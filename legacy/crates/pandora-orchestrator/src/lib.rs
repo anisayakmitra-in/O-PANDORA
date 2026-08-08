@@ -400,6 +400,7 @@ impl PandoraRuntime {
             anyhow::bail!("invalid execution id");
         }
         let start = Instant::now();
+        self.controller.start_trace(&execution_id, task);
 
         // ── Provenance: initialize graph ──
         self.provenance = ExecutionProvenanceGraph::new(&execution_id);
@@ -635,6 +636,25 @@ impl PandoraRuntime {
 
             // --- Record tool results in self-improvement modules ---
             for tr in &result.tool_results {
+                session.add_frame(ExecutionFrame {
+                    frame_id: format!("frame-{}-{}", execution_id, tr.tool_call_id),
+                    parent_id: None,
+                    step_kind: "gene".into(),
+                    step_label: tr.tool_name.clone(),
+                    provider: provider_name.clone(),
+                    model: model.clone(),
+                    input_hash: format!("h{:x}", tr.input.len() as u64),
+                    output_hash: format!("h{:x}", tr.output.len() as u64),
+                    duration_ms: tr.duration_ms,
+                    tokens_used: tr.output.len(),
+                    cost: 0.0,
+                    success: tr.success,
+                    retries: 0,
+                    artifacts: vec![],
+                    telemetry: vec![],
+                    timestamp: chrono::Utc::now(),
+                });
+
                 // 1. EventStore: record each tool call as a pipeline event
                 self.event_store.push(
                     &execution_id,
@@ -728,6 +748,7 @@ impl PandoraRuntime {
             telemetry: vec![],
             timestamp: chrono::Utc::now(),
         };
+        session.add_frame(frame.clone());
         let _ = self
             .recorder
             .record_frame(&ReplayId(frame_id.clone()), frame);
@@ -901,9 +922,13 @@ impl PandoraRuntime {
         session.replay_id = Some(replay_id.clone());
         // Store decision log
         let decision_count = self.controller.decision_log.len();
+        session.metadata.insert(
+            "decisions".to_string(),
+            serde_json::to_string(&self.controller.decision_log.decisions)?,
+        );
         session
             .metadata
-            .insert("decisions".to_string(), decision_count.to_string());
+            .insert("decision_count".to_string(), decision_count.to_string());
         session.metadata.insert(
             "decision_log".to_string(),
             format!(
@@ -916,6 +941,9 @@ impl PandoraRuntime {
                     .collect::<Vec<_>>()
             ),
         );
+        let observer = crate::gepa::GepaObserver::new(crate::gepa::GepaObserver::default_dir());
+        let coordinator = crate::rsi::RsiCoordinator::new(&observer);
+        let _proposals = coordinator.propose(&session);
         // ponytail: store by execution_id for now; real session mgmt later
         self.sessions.create(&execution_id, task);
         if let Some(stored_session) = self.sessions.get_mut(&execution_id) {
@@ -1104,6 +1132,95 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
+    struct FailingGene {
+        manifest: pandora_types::gene::GeneManifest,
+    }
+
+    impl pandora_types::gene::Gene for FailingGene {
+        fn manifest(&self) -> &pandora_types::gene::GeneManifest {
+            &self.manifest
+        }
+
+        fn execute(&self, _input: &str) -> Result<String, pandora_types::PandoraError> {
+            Err(pandora_types::PandoraError::gene("expected test failure"))
+        }
+    }
+
+    struct EvolutionProvider {
+        calls: std::sync::atomic::AtomicUsize,
+    }
+
+    impl EvolutionProvider {
+        fn new() -> Self {
+            Self {
+                calls: std::sync::atomic::AtomicUsize::new(0),
+            }
+        }
+    }
+
+    impl pandora_types::provider::Provider for EvolutionProvider {
+        fn name(&self) -> &str {
+            "evolution-provider"
+        }
+
+        fn manifest(&self) -> pandora_types::provider::ProviderManifest {
+            pandora_types::provider::ProviderManifest {
+                name: self.name().into(),
+                endpoint: "test://evolution".into(),
+                models: vec!["evolution-model".into()],
+                capabilities: vec!["text".into(), "tools".into()],
+                locality: "test".into(),
+            }
+        }
+
+        fn generate(
+            &self,
+            _request: pandora_types::provider::GenerationRequest,
+        ) -> Result<String, pandora_types::PandoraError> {
+            Ok("final response".into())
+        }
+
+        fn generate_with_tools(
+            &self,
+            _request: pandora_types::provider::GenerationRequest,
+            _tools: &[pandora_types::provider::ToolDefinition],
+            _messages: &[pandora_types::provider::ChatMessage],
+        ) -> Result<pandora_types::provider::ChatCompletion, pandora_types::PandoraError> {
+            let call = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if call == 0 {
+                return Ok(pandora_types::provider::ChatCompletion {
+                    text: String::new(),
+                    tool_calls: vec![
+                        pandora_types::provider::ToolCall {
+                            id: "call-one".into(),
+                            name: "unstable-gene".into(),
+                            arguments: r#"{"input":"first"}"#.into(),
+                        },
+                        pandora_types::provider::ToolCall {
+                            id: "call-two".into(),
+                            name: "unstable-gene".into(),
+                            arguments: r#"{"input":"second"}"#.into(),
+                        },
+                    ],
+                    finish_reason: "tool_calls".into(),
+                    tokens_used: 1,
+                });
+            }
+
+            Ok(pandora_types::provider::ChatCompletion {
+                text: "final response".into(),
+                tool_calls: vec![],
+                finish_reason: "stop".into(),
+                tokens_used: 1,
+            })
+        }
+
+        fn supports_tools(&self) -> bool {
+            true
+        }
+    }
+
     #[test]
     fn runtime_initializes() {
         let rt = PandoraRuntime::new();
@@ -1188,6 +1305,92 @@ mod tests {
         assert!(session.completed_at.is_some());
         assert_eq!(session.workflow.as_deref(), Some("full-pipeline"));
         assert!(session.replay_id.is_some());
+        assert!(session
+            .timeline
+            .iter()
+            .any(|frame| frame.step_kind == "execute"));
+        let decisions: Vec<pandora_types::Decision> = serde_json::from_str(
+            session
+                .metadata
+                .get("decisions")
+                .expect("serialized decisions metadata"),
+        )
+        .expect("decision metadata should be structured JSON");
+        assert!(!decisions.is_empty());
+        assert!(decisions
+            .iter()
+            .all(|decision| decision.session_id == "persisted-session"));
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn failed_gene_evidence_creates_a_gepa_candidate() {
+        let _lock = TEST_ENVIRONMENT_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let home =
+            std::env::temp_dir().join(format!("pandora-runtime-gepa-{}", rand::random::<u64>()));
+        let _home = TestEnvVar::set("PANDORA_HOME", &home);
+        let mut runtime = PandoraRuntime::new();
+        runtime.providers = ProviderRegistry::new();
+        runtime.register_provider(Arc::new(EvolutionProvider::new()));
+        runtime
+            .council
+            .install(Box::new(PersistenceHarness {
+                manifest: pandora_types::harness::HarnessManifestBuilder::default()
+                    .id("evolution-harness")
+                    .name("Evolution harness")
+                    .version("1.0.0")
+                    .author("test")
+                    .kind(pandora_types::harness::HarnessKind::Domain)
+                    .capability("coding")
+                    .build()
+                    .expect("valid test harness"),
+            }))
+            .expect("install test harness");
+        runtime
+            .council
+            .enable("evolution-harness")
+            .expect("enable test harness");
+        runtime
+            .council
+            .install_gene(Box::new(FailingGene {
+                manifest: pandora_types::gene::GeneManifestBuilder::default()
+                    .id("unstable-gene")
+                    .name("Unstable gene")
+                    .kind(pandora_types::gene::GeneKind::Evolution)
+                    .version("1.0.0")
+                    .author("test")
+                    .capability("coding")
+                    .owner_harness("evolution-harness")
+                    .build()
+                    .expect("valid test gene"),
+            }))
+            .expect("install test gene");
+        runtime
+            .council
+            .enable_gene("unstable-gene")
+            .expect("enable test gene");
+
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test runtime")
+            .block_on(runtime.run_with_execution_id_and_stream(
+                "gepa-session".into(),
+                "write code with the failing gene",
+                "coding",
+                None,
+            ))
+            .expect("execution should complete after tool failures");
+
+        let observer = crate::gepa::GepaObserver::new(home.join("mutations"));
+        let candidates = observer.list();
+        let candidate = candidates
+            .iter()
+            .find(|candidate| candidate.target_id == "unstable-gene")
+            .expect("failed gene should produce a mutation candidate");
+        assert_eq!(candidate.failure_count, 2);
         let _ = std::fs::remove_dir_all(home);
     }
     #[test]
