@@ -918,11 +918,10 @@ impl PandoraRuntime {
         );
         // ponytail: store by execution_id for now; real session mgmt later
         self.sessions.create(&execution_id, task);
-        if let Some(s) = self.sessions.get_mut(&execution_id) {
-            s.status = session.status.clone();
-            s.completed_at = session.completed_at;
-            s.replay_id = session.replay_id.clone();
+        if let Some(stored_session) = self.sessions.get_mut(&execution_id) {
+            *stored_session = session;
         }
+        self.sessions.save()?;
 
         Ok(ExecutionReport {
             execution_id,
@@ -1045,6 +1044,66 @@ impl Default for PandoraRuntime {
 mod tests {
     use super::*;
 
+    static TEST_ENVIRONMENT_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    struct TestEnvVar {
+        key: &'static str,
+        previous: Option<std::ffi::OsString>,
+    }
+
+    impl TestEnvVar {
+        fn set(key: &'static str, value: &std::path::Path) -> Self {
+            let previous = std::env::var_os(key);
+            std::env::set_var(key, value);
+            Self { key, previous }
+        }
+    }
+
+    impl Drop for TestEnvVar {
+        fn drop(&mut self) {
+            match self.previous.take() {
+                Some(value) => std::env::set_var(self.key, value),
+                None => std::env::remove_var(self.key),
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct PersistenceHarness {
+        manifest: pandora_types::harness::HarnessManifest,
+    }
+
+    impl pandora_types::harness::Harness for PersistenceHarness {
+        fn manifest(&self) -> &pandora_types::harness::HarnessManifest {
+            &self.manifest
+        }
+    }
+
+    struct PersistenceProvider;
+
+    impl pandora_types::provider::Provider for PersistenceProvider {
+        fn name(&self) -> &str {
+            "persistence-provider"
+        }
+
+        fn manifest(&self) -> pandora_types::provider::ProviderManifest {
+            pandora_types::provider::ProviderManifest {
+                name: self.name().into(),
+                endpoint: "test://persistence".into(),
+                models: vec!["persistence-model".into()],
+                capabilities: vec!["text".into()],
+                locality: "test".into(),
+            }
+        }
+
+        fn generate(
+            &self,
+            _request: pandora_types::provider::GenerationRequest,
+        ) -> Result<String, pandora_types::PandoraError> {
+            Ok("persisted response".into())
+        }
+    }
+
     #[test]
     fn runtime_initializes() {
         let rt = PandoraRuntime::new();
@@ -1055,10 +1114,12 @@ mod tests {
 
     #[test]
     fn runtime_persists_events_under_pandora_home() {
+        let _lock = TEST_ENVIRONMENT_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let home =
             std::env::temp_dir().join(format!("pandora-runtime-home-{}", rand::random::<u64>()));
-        let previous_home = std::env::var_os("PANDORA_HOME");
-        std::env::set_var("PANDORA_HOME", &home);
+        let _home = TestEnvVar::set("PANDORA_HOME", &home);
 
         let runtime = PandoraRuntime::new();
         runtime
@@ -1072,13 +1133,61 @@ mod tests {
             .expect("event should be accepted");
         runtime.event_store.flush().expect("event should persist");
 
-        match previous_home {
-            Some(value) => std::env::set_var("PANDORA_HOME", value),
-            None => std::env::remove_var("PANDORA_HOME"),
-        }
-
         assert!(home.join("events/runtime-home.events.json").is_file());
         assert!(!home.join("events/events/runtime-home.events.json").exists());
+        let _ = std::fs::remove_dir_all(home);
+    }
+
+    #[test]
+    fn successful_execution_persists_completed_session() {
+        let _lock = TEST_ENVIRONMENT_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let home =
+            std::env::temp_dir().join(format!("pandora-runtime-session-{}", rand::random::<u64>()));
+        let _home = TestEnvVar::set("PANDORA_HOME", &home);
+        let mut runtime = PandoraRuntime::new();
+        runtime.providers = ProviderRegistry::new();
+        runtime.register_provider(Arc::new(PersistenceProvider));
+        runtime
+            .council
+            .install(Box::new(PersistenceHarness {
+                manifest: pandora_types::harness::HarnessManifestBuilder::default()
+                    .id("persistence-harness")
+                    .name("Persistence harness")
+                    .version("1.0.0")
+                    .author("test")
+                    .kind(pandora_types::harness::HarnessKind::Domain)
+                    .capability("coding")
+                    .build()
+                    .expect("valid test harness"),
+            }))
+            .expect("install test harness");
+        runtime
+            .council
+            .enable("persistence-harness")
+            .expect("enable test harness");
+
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("test runtime")
+            .block_on(runtime.run_with_execution_id_and_stream(
+                "persisted-session".into(),
+                "write code",
+                "coding",
+                None,
+            ))
+            .expect("execution should succeed");
+
+        let json = std::fs::read_to_string(home.join("sessions/persisted-session.json"))
+            .expect("persisted session file");
+        let session: pandora_types::Session =
+            serde_json::from_str(&json).expect("valid persisted session");
+        assert_eq!(session.status, pandora_types::SessionStatus::Completed);
+        assert!(session.completed_at.is_some());
+        assert_eq!(session.workflow.as_deref(), Some("full-pipeline"));
+        assert!(session.replay_id.is_some());
         let _ = std::fs::remove_dir_all(home);
     }
     #[test]
