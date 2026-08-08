@@ -7,6 +7,8 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Path to the Pandora binary built by Cargo for these tests.
 fn pandora_bin() -> PathBuf {
@@ -18,10 +20,25 @@ fn pandora_bin_uses_cargo_test_binary() {
     assert_eq!(pandora_bin(), PathBuf::from(env!("CARGO_BIN_EXE_pandora")));
 }
 
+static NEXT_TMP_DIR: AtomicU64 = AtomicU64::new(0);
+
 fn tmp_dir() -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("pandora-e2e-{}", std::process::id()));
+    let sequence = NEXT_TMP_DIR.fetch_add(1, Ordering::Relaxed);
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos();
+    let dir = std::env::temp_dir().join(format!(
+        "pandora-e2e-{}-{timestamp}-{sequence}",
+        std::process::id()
+    ));
     let _ = std::fs::create_dir_all(&dir);
     dir
+}
+
+#[test]
+fn test_workspaces_are_unique() {
+    assert_ne!(tmp_dir(), tmp_dir());
 }
 
 fn run(args: &[&str]) -> (std::process::Output, PathBuf) {
