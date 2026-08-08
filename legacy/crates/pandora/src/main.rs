@@ -3065,6 +3065,23 @@ fn cmd_lineage(_args: &[String]) {
     );
 }
 
+fn package_manifest_toml(name: &str) -> String {
+    let manifest = pandora_types::package_format::PackageManifest {
+        id: name.to_string(),
+        name: name.to_string(),
+        version: "0.2.0".to_string(),
+        kind: pandora_types::package_format::PackageKind::Gene,
+        publisher: "you".to_string(),
+        description: format!("A {name} gene"),
+        author: "you".to_string(),
+        license: "MIT".to_string(),
+        pandora_version: ">=1.0".to_string(),
+        lifecycle: pandora_types::package_format::PackageStatus::Draft,
+        ..Default::default()
+    };
+    toml::to_string_pretty(&manifest).expect("canonical package manifest serialization")
+}
+
 fn cmd_package(args: &[String]) {
     if args.len() < 3 {
         eprintln!("Usage: pandora package <name>");
@@ -3081,22 +3098,7 @@ fn cmd_package(args: &[String]) {
         process::exit(1);
     }
     let _ = std::fs::create_dir_all(dir.join("src"));
-    std::fs::write(
-        dir.join("pandora.toml"),
-        format!(
-            "id = \"{name}\"
-publisher = \"you\"
-name = \"{name}\"
-kind = \"gene\"
-version = \"0.2.0\"
-author = \"you\"
-description = \"A {name} gene\"
-license = \"MIT\"
-pandora_version = \">=1.0\"
-"
-        ),
-    )
-    .expect("CLI I/O");
+    std::fs::write(dir.join("pandora.toml"), package_manifest_toml(name)).expect("CLI I/O");
     println!("Created {name}/pandora.toml");
     println!("  tar czf {name}.pandora.tar.gz {name}/");
     println!("  pandora login && pandora publish {name}/");
@@ -3183,11 +3185,7 @@ fn cmd_new(args: &[String]) {
         "package" => {
             let dir = std::path::Path::new(".").join(name);
             std::fs::create_dir_all(&dir).expect("CLI I/O");
-            std::fs::write(
-                dir.join("pandora.toml"),
-                format!("[package]\nid = {name}\nname = {name}\nversion = 0.2.0\nkind = gene\n"),
-            )
-            .expect("CLI I/O");
+            std::fs::write(dir.join("pandora.toml"), package_manifest_toml(name)).expect("CLI I/O");
             println!("Created: {name}/");
         }
         "evaluator" => {

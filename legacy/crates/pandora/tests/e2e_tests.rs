@@ -368,9 +368,38 @@ fn new_harness_creates_scaffold() {
 fn new_package_creates_manifest() {
     let (output, dir) = run(&["new", "package", "e2e-test-pkg"]);
     assert_success(&output, &["new", "package", "e2e-test-pkg"]);
-    assert!(
-        dir.join("e2e-test-pkg").join("pandora.toml").exists(),
-        "Package must have pandora.toml"
+    let manifest_path = dir.join("e2e-test-pkg").join("pandora.toml");
+    assert!(manifest_path.exists(), "Package must have pandora.toml");
+    let manifest = std::fs::read_to_string(manifest_path).expect("read package manifest");
+    let parsed: pandora_types::package_format::PackageManifest =
+        toml::from_str(&manifest).expect("new package must use the canonical manifest");
+    assert_eq!(parsed.id, "e2e-test-pkg");
+    assert_eq!(
+        parsed.kind,
+        pandora_types::package_format::PackageKind::Gene
+    );
+    assert_eq!(
+        parsed.lifecycle,
+        pandora_types::package_format::PackageStatus::Draft
+    );
+}
+
+#[test]
+fn package_command_creates_canonical_manifest() {
+    let (output, dir) = run(&["package", "e2e-package-command"]);
+    assert_success(&output, &["package", "e2e-package-command"]);
+    let manifest = std::fs::read_to_string(dir.join("e2e-package-command").join("pandora.toml"))
+        .expect("read package manifest");
+    let parsed: pandora_types::package_format::PackageManifest =
+        toml::from_str(&manifest).expect("package command must use the canonical manifest");
+    assert_eq!(parsed.id, "e2e-package-command");
+    assert_eq!(
+        parsed.kind,
+        pandora_types::package_format::PackageKind::Gene
+    );
+    assert_eq!(
+        parsed.lifecycle,
+        pandora_types::package_format::PackageStatus::Draft
     );
 }
 

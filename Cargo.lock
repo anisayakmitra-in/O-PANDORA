@@ -1230,6 +1230,7 @@ dependencies = [
  "sha2",
  "shellexpand",
  "tokio",
+ "toml",
  "tracing-subscriber",
 ]
 
